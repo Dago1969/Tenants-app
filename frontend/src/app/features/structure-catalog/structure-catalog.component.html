@@ -1,0 +1,120 @@
+<section class="structure-shell">
+  <div class="structure-card">
+    <header class="structure-header">
+      <div>
+        <p class="structure-type-code" *ngIf="currentType">{{ currentType.code }}</p>
+        <h2>{{ translate(titleKey) }}</h2>
+        <p class="structure-type-description" *ngIf="currentType">{{ currentType.description }}</p>
+      </div>
+      <button class="structure-secondary-btn" type="button" (click)="startCreate()">
+        {{ translate('crud.actions.new') }}
+      </button>
+    </header>
+
+    <div class="structure-function-box" *ngIf="currentType">
+      <strong>{{ translate('structures.field.functionDescription') }}:</strong>
+      <span>{{ currentType.functionDescription }}</span>
+    </div>
+
+    <p class="structure-status structure-status-error" *ngIf="errorMessage">{{ errorMessage }}</p>
+    <p class="structure-status structure-status-success" *ngIf="successMessage">{{ successMessage }}</p>
+
+    <div class="structure-grid-layout">
+      <section class="structure-form-panel">
+        <h3>{{ translate(isEditMode() ? 'crud.actions.update' : 'crud.actions.create') }}</h3>
+
+        <form class="structure-form" (ngSubmit)="save()">
+          <label>
+            <span>{{ translate('structures.field.code') }}</span>
+            <input [(ngModel)]="formModel.code" name="code" required />
+          </label>
+
+          <label>
+            <span>{{ translate('structures.field.name') }}</span>
+            <input [(ngModel)]="formModel.name" name="name" required />
+          </label>
+
+          <label>
+            <span>{{ translate('structures.field.description') }}</span>
+            <textarea [(ngModel)]="formModel.description" name="description"></textarea>
+          </label>
+
+          <label>
+            <span>{{ translate('structures.field.address') }}</span>
+            <input [(ngModel)]="formModel.address" name="address" required />
+          </label>
+
+          <label>
+            <span>{{ translate('structures.field.city') }}</span>
+            <input [(ngModel)]="formModel.city" name="city" />
+          </label>
+
+          <label>
+            <span>{{ translate('structures.field.province') }}</span>
+            <input [(ngModel)]="formModel.province" name="province" />
+          </label>
+
+          <label>
+            <span>{{ translate('structures.field.region') }}</span>
+            <input [(ngModel)]="formModel.region" name="region" />
+          </label>
+
+          <label>
+            <span>{{ translate('structures.field.phone') }}</span>
+            <input [(ngModel)]="formModel.phone" name="phone" />
+          </label>
+
+          <label>
+            <span>{{ translate('structures.field.email') }}</span>
+            <input [(ngModel)]="formModel.email" name="email" />
+          </label>
+
+          <label *ngIf="hasParentRequirement()">
+            <span>{{ translate('structures.field.parentStructureId') }}</span>
+            <select [(ngModel)]="formModel.parentStructureId" name="parentStructureId">
+              <option [ngValue]="null"></option>
+              <option *ngFor="let option of parentOptions" [ngValue]="option.id">{{ parentLabel(option) }}</option>
+            </select>
+          </label>
+
+          <label class="structure-checkbox-row">
+            <input type="checkbox" [(ngModel)]="formModel.active" name="active" />
+            <span>{{ translate('structures.field.active') }}</span>
+          </label>
+
+          <div class="structure-actions">
+            <button class="structure-secondary-btn" type="button" (click)="startCreate()">
+              {{ translate('crud.actions.reset') }}
+            </button>
+            <button class="structure-primary-btn" type="submit" [disabled]="saving">
+              {{ translate(isEditMode() ? 'crud.actions.update' : 'crud.actions.create') }}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <section class="structure-list-panel">
+        <h3>{{ translate('search.results') }}</h3>
+        <p *ngIf="loading">{{ translate('structures.message.loading') }}</p>
+
+        <div class="structure-list" *ngIf="!loading">
+          <article class="structure-list-item" *ngFor="let structure of structures; trackBy: trackByStructure">
+            <div class="structure-list-item-main">
+              <p class="structure-list-code">{{ structure.code }}</p>
+              <h4>{{ structure.name }}</h4>
+              <p>{{ structure.city }}<span *ngIf="structure.city && structure.region">, </span>{{ structure.region }}</p>
+              <p *ngIf="structure.parentStructureName">
+                <strong>{{ translate('structures.field.parentStructureId') }}:</strong> {{ structure.parentStructureName }}
+              </p>
+              <p class="structure-list-function">{{ structure.functionDescription }}</p>
+            </div>
+            <div class="structure-list-actions">
+              <button class="structure-icon-btn" type="button" (click)="edit(structure)">✎</button>
+              <button class="structure-icon-btn structure-icon-btn-danger" type="button" (click)="delete(structure)">⌫</button>
+            </div>
+          </article>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>

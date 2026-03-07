@@ -1,0 +1,326 @@
+.authz-shell {
+  min-height: 100vh;
+  padding: 32px 20px 48px;
+  background:
+    radial-gradient(circle at top left, rgba(188, 218, 172, 0.28), transparent 34%),
+    linear-gradient(180deg, #f4f6f0 0%, #eef1ea 100%);
+}
+
+.authz-card {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 36px 42px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #d5dfcf;
+  border-radius: 16px;
+  box-shadow: 0 18px 40px rgba(77, 94, 63, 0.12);
+}
+
+.authz-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.authz-header h2 {
+  margin: 0;
+  color: #395f31;
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.authz-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: flex-end;
+}
+
+.authz-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 240px;
+  color: #44533e;
+  font-weight: 600;
+}
+
+.authz-filter select {
+  min-height: 40px;
+  padding: 9px 12px;
+  border: 1px solid #9fc38a;
+  border-radius: 2px;
+  background: #ffffff;
+  color: #22311f;
+  box-shadow: inset 0 1px 2px rgba(73, 99, 56, 0.06);
+}
+
+.authz-filter select:focus {
+  outline: none;
+  border-color: #6d9853;
+  box-shadow: 0 0 0 3px rgba(142, 179, 109, 0.18);
+}
+
+.authz-btn {
+  min-width: 180px;
+  min-height: 42px;
+  padding: 11px 18px;
+  border: none;
+  border-radius: 2px;
+  background: #4d78c2;
+  color: #ffffff;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(77, 120, 194, 0.24);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.authz-btn:hover {
+  transform: translateY(-1px);
+  background: #4067a9;
+}
+
+.authz-btn:disabled,
+.authz-filter select:disabled,
+.authz-section select:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.authz-status {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #d7e2cf;
+  background: #f7f9f5;
+  color: #44533e;
+}
+
+.authz-status-error {
+  background: #fdecec;
+  color: #b42828;
+  border-color: #f5c5c5;
+}
+
+.authz-status-success {
+  background: #edf8ef;
+  color: #21643a;
+  border-color: #c9e7d1;
+}
+
+.authz-modules {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.authz-module-card {
+  padding: 22px 20px;
+  background: linear-gradient(180deg, #fbfdf9 0%, #f4f7f1 100%);
+  border: 1px solid #d6e0cf;
+  border-radius: 16px;
+  box-shadow: 0 10px 22px rgba(73, 99, 56, 0.08);
+}
+
+.authz-module-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.authz-module-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex: 1;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.authz-module-code {
+  margin: 0 0 6px;
+  color: #6c7f60;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.authz-module-header h3 {
+  margin: 0;
+  color: #35522e;
+  font-size: 1.1rem;
+}
+
+.authz-module-chevron {
+  color: #56724d;
+  font-size: 1rem;
+  font-weight: 700;
+  transform: rotate(-90deg);
+  transition: transform 0.2s ease;
+}
+
+.authz-module-chevron-open {
+  transform: rotate(0deg);
+}
+
+.authz-scope-filter {
+  min-width: 210px;
+}
+
+.authz-scope-control {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.authz-section + .authz-section {
+  margin-top: 18px;
+}
+
+.authz-section {
+  padding: 14px 16px 12px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+}
+
+.authz-section-fields {
+  background: linear-gradient(180deg, #f7fbf5 0%, #eef6ea 100%);
+  border-color: #d9e8d2;
+}
+
+.authz-section-functions {
+  background: linear-gradient(180deg, #f6f8ff 0%, #edf2ff 100%);
+  border-color: #d8e0fb;
+}
+
+.authz-section-custom-functions {
+  background: linear-gradient(180deg, #fff8ef 0%, #fff1dd 100%);
+  border-color: #f0dbb8;
+}
+
+.authz-section-header {
+  margin-bottom: 8px;
+}
+
+.authz-section-header h4 {
+  margin: 0;
+  color: #56724d;
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+.authz-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 56px 180px;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 0;
+  border-top: 1px solid rgba(124, 140, 113, 0.18);
+}
+
+.authz-grid-head {
+  padding-top: 0;
+  border-top: none;
+  color: #44533e;
+  font-size: 0.84rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.authz-section select {
+  min-height: 38px;
+  padding: 8px 10px;
+  border: 1px solid #9fc38a;
+  border-radius: 2px;
+  background: #ffffff;
+  color: #22311f;
+}
+
+.authz-section select:focus {
+  outline: none;
+  border-color: #6d9853;
+  box-shadow: 0 0 0 3px rgba(142, 179, 109, 0.18);
+}
+
+.authz-state-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  font-size: 1rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.authz-state-icon-allow {
+  color: #21643a;
+  background: #edf8ef;
+  border-color: #b8ddc4;
+}
+
+.authz-state-icon-readonly {
+  color: #8a5a14;
+  background: #fff3df;
+  border-color: #f0d1a0;
+}
+
+.authz-state-icon-deny {
+  color: #a32d2d;
+  background: #fdecec;
+  border-color: #f0b9b9;
+}
+
+.authz-state-icon-neutral {
+  color: #4e5c49;
+  background: #eef2eb;
+  border-color: #d8e1d2;
+}
+
+@media (max-width: 900px) {
+  .authz-header,
+  .authz-module-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .authz-toolbar {
+    width: 100%;
+  }
+
+  .authz-filter,
+  .authz-scope-filter,
+  .authz-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .authz-shell {
+    padding: 18px 12px 28px;
+  }
+
+  .authz-card {
+    padding: 22px 16px;
+    border-radius: 12px;
+  }
+
+  .authz-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .authz-grid-head {
+    display: none;
+  }
+}

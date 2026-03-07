@@ -1,0 +1,14 @@
+D:\workspace\QTM\TENANTS-APP\src\test\java\com\qtm\tenants\authorization\AuthorizationScopeTest.java
+D:\workspace\QTM\TENANTS-APP\src\test\java\com\qtm\tenants\authorization\service\ControllerFunctionAuthorizationServiceTest.java
+D:\workspace\QTM\TENANTS-APP\src\test\java\com\qtm\tenants\function\controller\FunctionControllerIntegrationTest.java
+D:\workspace\QTM\TENANTS-APP\src\test\java\com\qtm\tenants\function\service\FunctionServiceTest.java
+D:\workspace\QTM\TENANTS-APP\src\test\java\com\qtm\tenants\medic\controller\MedicControllerIntegrationTest.java
+D:\workspace\QTM\TENANTS-APP\src\test\java\com\qtm\tenants\medic\service\MedicServiceTest.java
+D:\workspace\QTM\TENANTS-APP\src\test\java\com\qtm\tenants\module\service\ModuleServiceTest.java
+D:\workspace\QTM\TENANTS-APP\src\test\java\com\qtm\tenants\nurse\controller\NurseControllerIntegrationTest.java
+D:\workspace\QTM\TENANTS-APP\src\test\java\com\qtm\tenants\nurse\service\NurseServiceTest.java
+D:\workspace\QTM\TENANTS-APP\src\test\java\com\qtm\tenants\patient\service\PatientServiceTest.java
+D:\workspace\QTM\TENANTS-APP\src\test\java\com\qtm\tenants\role\service\RoleServiceTest.java
+D:\workspace\QTM\TENANTS-APP\src\test\java\com\qtm\tenants\structure\service\StructureServiceTest.java
+D:\workspace\QTM\TENANTS-APP\src\test\java\com\qtm\tenants\TenantsAppApplicationTests.java
+D:\workspace\QTM\TENANTS-APP\src\test\java\com\qtm\tenants\user\service\UserServiceTest.java

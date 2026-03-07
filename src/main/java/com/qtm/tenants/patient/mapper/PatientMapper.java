@@ -1,0 +1,80 @@
+package com.qtm.tenants.patient.mapper;
+
+import com.qtm.tenants.patient.dto.PatientDto;
+import com.qtm.tenants.patient.entity.PatientEntity;
+import org.springframework.stereotype.Component;
+
+/**
+ * Mapper paziente entity/dto.
+ */
+@Component
+public class PatientMapper {
+
+    public PatientDto toDto(PatientEntity entity) {
+        PatientDto dto = new PatientDto();
+        dto.setId(entity.getId());
+        dto.setAssistedId(entity.getAssistedId());
+        dto.setFirstName(entity.getFirstName());
+        dto.setLastName(entity.getLastName());
+        dto.setFiscalCode(entity.getFiscalCode());
+        dto.setEmail(entity.getEmail());
+        dto.setPrimaryPhone(entity.getPrimaryPhone());
+        dto.setSecondaryPhone(entity.getSecondaryPhone());
+        dto.setRegion(entity.getRegion());
+        dto.setProvince(entity.getProvince());
+        dto.setDeliveryAddress(entity.getDeliveryAddress());
+        dto.setSecondaryAddresses(entity.getSecondaryAddresses());
+        dto.setCommunicationChannels(entity.getCommunicationChannels());
+        dto.setIdentificationDocumentReference(entity.getIdentificationDocumentReference());
+        dto.setDataProcessingConsent(entity.getDataProcessingConsent());
+        dto.setDataProcessingConsentDateTime(entity.getDataProcessingConsentDateTime());
+        dto.setDataProcessingConsentRevocationLog(entity.getDataProcessingConsentRevocationLog());
+        dto.setAdditionalConsents(entity.getAdditionalConsents());
+        dto.setTherapyStatus(entity.getTherapyStatus());
+        dto.setPrescribingSpecialist(entity.getPrescribingSpecialist());
+        dto.setReferenceHospitalStructure(entity.getReferenceHospitalStructure());
+        dto.setReferencePharmacy(entity.getReferencePharmacy());
+        dto.setPreferredPickupPharmacy(entity.getPreferredPickupPharmacy());
+        dto.setDeliveryMode(entity.getDeliveryMode());
+        dto.setReminderEnabled(entity.getReminderEnabled());
+        dto.setCaregiverFullName(entity.getCaregiverFullName());
+        dto.setCaregiverPhone(entity.getCaregiverPhone());
+        dto.setPreferredContact(entity.getPreferredContact());
+        dto.setStructureId(entity.getStructureId());
+        return dto;
+    }
+
+    public PatientEntity toEntity(PatientDto dto) {
+        PatientEntity entity = new PatientEntity();
+        entity.setId(dto.getId());
+        entity.setAssistedId(dto.getAssistedId());
+        entity.setFirstName(dto.getFirstName());
+        entity.setLastName(dto.getLastName());
+        entity.setFiscalCode(dto.getFiscalCode());
+        entity.setEmail(dto.getEmail());
+        entity.setPrimaryPhone(dto.getPrimaryPhone());
+        entity.setSecondaryPhone(dto.getSecondaryPhone());
+        entity.setRegion(dto.getRegion());
+        entity.setProvince(dto.getProvince());
+        entity.setDeliveryAddress(dto.getDeliveryAddress());
+        entity.setSecondaryAddresses(dto.getSecondaryAddresses());
+        entity.setCommunicationChannels(dto.getCommunicationChannels());
+        entity.setIdentificationDocumentReference(dto.getIdentificationDocumentReference());
+        entity.setDataProcessingConsent(dto.getDataProcessingConsent());
+        entity.setDataProcessingConsentDateTime(dto.getDataProcessingConsentDateTime());
+        entity.setDataProcessingConsentRevocationLog(dto.getDataProcessingConsentRevocationLog());
+        entity.setAdditionalConsents(dto.getAdditionalConsents());
+        entity.setTherapyStatus(dto.getTherapyStatus());
+        entity.setPrescribingSpecialist(dto.getPrescribingSpecialist());
+        entity.setReferenceHospitalStructure(dto.getReferenceHospitalStructure());
+        entity.setReferencePharmacy(dto.getReferencePharmacy());
+        entity.setPreferredPickupPharmacy(dto.getPreferredPickupPharmacy());
+        entity.setDeliveryMode(dto.getDeliveryMode());
+        entity.setReminderEnabled(dto.getReminderEnabled());
+        entity.setCaregiverFullName(dto.getCaregiverFullName());
+        entity.setCaregiverPhone(dto.getCaregiverPhone());
+        entity.setPreferredContact(dto.getPreferredContact());
+        entity.setStructureId(dto.getStructureId());
+        return entity;
+    }
+}

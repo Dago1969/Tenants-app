@@ -1,0 +1,78 @@
+<section class="mapping-shell">
+  <div class="mapping-card">
+    <header class="mapping-header">
+      <div>
+        <h2>{{ translate('controllerFunctionMappings.title') }}</h2>
+        <p>{{ translate('controllerFunctionMappings.subtitle') }}</p>
+      </div>
+    </header>
+
+    <p class="mapping-status mapping-status-error" *ngIf="errorMessage">{{ errorMessage }}</p>
+    <p class="mapping-status mapping-status-success" *ngIf="successMessage">{{ successMessage }}</p>
+    <p class="mapping-status" *ngIf="loading">{{ translate('controllerFunctionMappings.loading') }}</p>
+
+    <div class="mapping-modules" *ngIf="!loading && modules.length > 0">
+      <section class="mapping-module-card" *ngFor="let module of modules">
+        <div class="mapping-module-header">
+          <div>
+            <p class="mapping-module-code">{{ module.moduleCode }}</p>
+            <h3>{{ module.moduleName }}</h3>
+          </div>
+
+          <button
+            class="mapping-btn"
+            type="button"
+            (click)="saveModule(module)"
+            [disabled]="isSavingModule(module.moduleCode)"
+          >
+            {{ translate('controllerFunctionMappings.actions.saveModule') }}
+          </button>
+        </div>
+
+        <div class="mapping-empty" *ngIf="!hasAnyMethods(module)">
+          {{ translate('controllerFunctionMappings.empty.module') }}
+        </div>
+
+        <div class="mapping-section" *ngIf="module.commonMethods.length > 0">
+          <div class="mapping-section-header">
+            <h4>{{ translate('controllerFunctionMappings.common.title') }}</h4>
+          </div>
+
+          <div class="mapping-grid mapping-grid-head">
+            <span>{{ translate('controllerFunctionMappings.methodName') }}</span>
+            <span>{{ translate('controllerFunctionMappings.functionCode') }}</span>
+          </div>
+
+          <div class="mapping-grid" *ngFor="let method of module.commonMethods; trackBy: trackByMethod">
+            <span>{{ method.methodName }}</span>
+            <select [(ngModel)]="method.functionCode" [disabled]="isSavingModule(module.moduleCode)">
+              <option *ngFor="let option of functionOptions" [ngValue]="option.code">
+                {{ option.code }} - {{ option.name }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="mapping-section" *ngIf="module.customMethods.length > 0">
+          <div class="mapping-section-header">
+            <h4>{{ translate('controllerFunctionMappings.custom.title') }}</h4>
+          </div>
+
+          <div class="mapping-grid mapping-grid-head">
+            <span>{{ translate('controllerFunctionMappings.methodName') }}</span>
+            <span>{{ translate('controllerFunctionMappings.functionCode') }}</span>
+          </div>
+
+          <div class="mapping-grid" *ngFor="let method of module.customMethods; trackBy: trackByMethod">
+            <span>{{ method.methodName }}</span>
+            <select [(ngModel)]="method.functionCode" [disabled]="isSavingModule(module.moduleCode)">
+              <option *ngFor="let option of functionOptions" [ngValue]="option.code">
+                {{ option.code }} - {{ option.name }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>
