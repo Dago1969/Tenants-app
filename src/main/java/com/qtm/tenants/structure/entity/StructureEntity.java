@@ -1,10 +1,7 @@
 package com.qtm.tenants.structure.entity;
 
-import com.qtm.tenants.structure.StructureType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -57,9 +54,8 @@ public class StructureEntity {
     @Column(name = "active")
     private Boolean active = true;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "structure_type")
-    private StructureType structureType;
+    private String structureType;
 
     @Column(name = "parent_structure_id")
     private Long parentStructureId;

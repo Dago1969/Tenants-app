@@ -309,10 +309,7 @@ public class AuthorizationManagementService {
 
     private AuthorizationScope parseFunctionScope(String code) {
         AuthorizationScope resolved = parseScope(code, "scope funzione");
-        if (resolved == AuthorizationScope.ALLOW || resolved == AuthorizationScope.DENY) {
-            return resolved;
-        }
-        return resolved.allowsFunctionExecution() ? AuthorizationScope.ALLOW : AuthorizationScope.DENY;
+        return resolved.allowsFunctionExecution() ? AuthorizationScope.FULL_EDIT : AuthorizationScope.READ_ONLY;
     }
 
     private String toModuleAuthorizationCode(AuthorizationScope scope) {

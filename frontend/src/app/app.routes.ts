@@ -8,6 +8,7 @@ import { ModulesSearchComponent } from './features/modules-search/modules-search
 import { FunctionsCrudComponent } from './features/functions/functions-crud.component';
 import { FunctionsSearchComponent } from './features/functions-search/functions-search.component';
 import { PatientsCrudComponent } from './features/patients/patients-crud.component';
+import { PatientsSearchComponent } from './features/patients-search/patients-search.component';
 import { MedicsCrudComponent } from './features/medics/medics-crud.component';
 import { NursesCrudComponent } from './features/nurses/nurses-crud.component';
 import { NotAuthorizedComponent } from './features/not-authorized/not-authorized.component';
@@ -53,6 +54,7 @@ export const appRoutes: Routes = [
   { path: 'structures/specialist-clinics', component: StructureCatalogComponent, canActivate: [authGuard, moduleVisibilityGuard('STRUCTURE')], data: { structureType: 'SPECIALIST_CLINIC', titleKey: 'structures.type.specialistClinic.title' } },
   { path: 'structures/vendors', component: StructureCatalogComponent, canActivate: [authGuard, moduleVisibilityGuard('STRUCTURE')], data: { structureType: 'VENDOR', titleKey: 'structures.type.vendor.title' } },
   { path: 'patients', component: PatientsCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('PATIENT')] },
+  { path: 'patients/search', component: PatientsSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('PATIENT')] },
   { path: 'medics', component: MedicsCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('MEDIC')] },
   { path: 'nurses', component: NursesCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('NURSE')] },
   { path: 'not-authorized', component: NotAuthorizedComponent },

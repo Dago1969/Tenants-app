@@ -31,6 +31,7 @@ public class StructureService {
 
     private final StructureRepository structureRepository;
     private final StructureMapper structureMapper;
+    private final StructureTypeRegistry structureTypeRegistry;
 
     @Transactional
     public StructureDto create(StructureDto structureDto) {
@@ -76,18 +77,18 @@ public class StructureService {
     @Transactional(readOnly = true)
     public List<StructureParentOptionDto> findParentOptions(String structureTypeCode) {
         StructureType structureType = resolveStructureType(structureTypeCode);
-        if (structureType.getParentType() == null) {
+        if (structureType.getParentTypeCode() == null) {
             return List.of();
         }
 
-        return structureRepository.findAllByStructureTypeOrderByNameAsc(structureType.getParentType()).stream()
+        return structureRepository.findAllByStructureTypeOrderByNameAsc(structureType.getParentTypeCode()).stream()
                 .map(structureMapper::toParentOptionDto)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public List<StructureTypeDto> findSupportedTypes() {
-        return List.of(StructureType.values()).stream()
+        return structureTypeRegistry.findAll().stream()
                 .map(structureMapper::toTypeDto)
                 .toList();
     }
@@ -96,9 +97,9 @@ public class StructureService {
         if (structureTypeCode != null && !structureTypeCode.isBlank()) {
             StructureType structureType = resolveStructureType(structureTypeCode);
             if (parentStructureId != null) {
-                return structureRepository.findAllByStructureTypeAndParentStructureIdOrderByNameAsc(structureType, parentStructureId);
+                return structureRepository.findAllByStructureTypeAndParentStructureIdOrderByNameAsc(structureType.getCode(), parentStructureId);
             }
-            return structureRepository.findAllByStructureTypeOrderByNameAsc(structureType);
+            return structureRepository.findAllByStructureTypeOrderByNameAsc(structureType.getCode());
         }
 
         if (parentStructureId != null) {
@@ -132,10 +133,10 @@ public class StructureService {
     }
 
     private void applyParentValidation(StructureEntity entity, StructureType structureType) {
-        StructureType expectedParentType = structureType.getParentType();
+        String expectedParentTypeCode = structureType.getParentTypeCode();
         Long parentStructureId = entity.getParentStructureId();
 
-        if (expectedParentType == null) {
+        if (expectedParentTypeCode == null) {
             entity.setParentStructureId(null);
             return;
         }
@@ -145,7 +146,8 @@ public class StructureService {
         }
 
         StructureEntity parent = findEntityById(parentStructureId);
-        if (parent.getStructureType() != expectedParentType) {
+        if (!expectedParentTypeCode.equalsIgnoreCase(parent.getStructureType())) {
+            StructureType expectedParentType = structureTypeRegistry.getRequiredByCode(expectedParentTypeCode);
             throw new ResponseStatusException(
                     BAD_REQUEST,
                     "La struttura parent deve essere di tipo " + expectedParentType.getDescription()
@@ -172,7 +174,7 @@ public class StructureService {
         }
 
         try {
-            return StructureType.fromCode(structureTypeCode);
+            return structureTypeRegistry.getRequiredByCode(structureTypeCode);
         } catch (IllegalArgumentException exception) {
             throw new ResponseStatusException(BAD_REQUEST, exception.getMessage());
         }

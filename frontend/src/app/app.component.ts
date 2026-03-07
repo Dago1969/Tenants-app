@@ -37,6 +37,8 @@ export class AppComponent implements OnDestroy {
   selectedRole = '';
   selectedClient = '';
   hiddenModuleCodes = new Set<string>();
+  managementMenuOpen = true;
+  registryMenuOpen = true;
   structuresMenuOpen = true;
   private readonly subscriptions = new Subscription();
 
@@ -58,24 +60,31 @@ export class AppComponent implements OnDestroy {
   }
 
   menuItems: MenuItem[] = [
-    { labelKey: 'menu.dashboard', route: '/dashboard' },
+    { labelKey: 'menu.dashboard', route: '/dashboard' }
+  ];
+
+  managementMenuItems: MenuItem[] = [
     { labelKey: 'menu.users', route: '/users', moduleCode: 'USER' },
     { labelKey: 'menu.usersSearch', route: '/users/search', moduleCode: 'USER' },
-    { labelKey: 'menu.medicsSearch', route: '/medics/search', moduleCode: 'MEDIC' },
-    { labelKey: 'menu.nursesSearch', route: '/nurses/search', moduleCode: 'NURSE' },
     { labelKey: 'menu.roles', route: '/roles', moduleCode: 'ROLE' },
     { labelKey: 'menu.roles.new', route: '/roles/new', moduleCode: 'ROLE' },
     { labelKey: 'menu.modules', route: '/modules', moduleCode: 'MODULE' },
     { labelKey: 'menu.modulesSearch', route: '/modules/search', moduleCode: 'MODULE' },
     { labelKey: 'menu.functions', route: '/functions', moduleCode: 'FUNCTION' },
     { labelKey: 'menu.functionsSearch', route: '/functions/search', moduleCode: 'FUNCTION' },
-    { labelKey: 'menu.patients', route: '/patients', moduleCode: 'PATIENT' },
-    { labelKey: 'menu.medics', route: '/medics', moduleCode: 'MEDIC' },
-    { labelKey: 'menu.nurses', route: '/nurses', moduleCode: 'NURSE' },
     { labelKey: 'menu.authorizations', route: '/authorizations' },
-    { labelKey: 'menu.controllerFunctionMappings', route: '/controller-function-mappings' }
-    ,{ labelKey: 'menu.authorizationFunctions', route: '/authorization-functions' }
-    ,{ labelKey: 'menu.authorizationFunctionsSearch', route: '/authorization-functions/search' }
+    { labelKey: 'menu.controllerFunctionMappings', route: '/controller-function-mappings' },
+    { labelKey: 'menu.authorizationFunctions', route: '/authorization-functions' },
+    { labelKey: 'menu.authorizationFunctionsSearch', route: '/authorization-functions/search' }
+  ];
+
+  registryMenuItems: MenuItem[] = [
+    { labelKey: 'menu.patients', route: '/patients', moduleCode: 'PATIENT' },
+    { labelKey: 'menu.patientsSearch', route: '/patients/search', moduleCode: 'PATIENT' },
+    { labelKey: 'menu.medics', route: '/medics', moduleCode: 'MEDIC' },
+    { labelKey: 'menu.medicsSearch', route: '/medics/search', moduleCode: 'MEDIC' },
+    { labelKey: 'menu.nurses', route: '/nurses', moduleCode: 'NURSE' },
+    { labelKey: 'menu.nursesSearch', route: '/nurses/search', moduleCode: 'NURSE' }
   ];
 
   structureMenuItems: MenuItem[] = [
@@ -98,12 +107,36 @@ export class AppComponent implements OnDestroy {
     return this.structureMenuItems.filter((item) => !item.moduleCode || !this.hiddenModuleCodes.has(item.moduleCode));
   }
 
+  get visibleManagementMenuItems(): MenuItem[] {
+    return this.managementMenuItems.filter((item) => !item.moduleCode || !this.hiddenModuleCodes.has(item.moduleCode));
+  }
+
+  get visibleRegistryMenuItems(): MenuItem[] {
+    return this.registryMenuItems.filter((item) => !item.moduleCode || !this.hiddenModuleCodes.has(item.moduleCode));
+  }
+
+  get isManagementMenuVisible(): boolean {
+    return this.visibleManagementMenuItems.length > 0;
+  }
+
+  get isRegistryMenuVisible(): boolean {
+    return this.visibleRegistryMenuItems.length > 0;
+  }
+
   get isStructureMenuVisible(): boolean {
     return this.visibleStructureMenuItems.length > 0;
   }
 
   toggleStructuresMenu(): void {
     this.structuresMenuOpen = !this.structuresMenuOpen;
+  }
+
+  toggleManagementMenu(): void {
+    this.managementMenuOpen = !this.managementMenuOpen;
+  }
+
+  toggleRegistryMenu(): void {
+    this.registryMenuOpen = !this.registryMenuOpen;
   }
 
   translate(key: MessageKey): string {

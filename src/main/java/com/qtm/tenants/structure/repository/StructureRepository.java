@@ -1,6 +1,5 @@
 package com.qtm.tenants.structure.repository;
 
-import com.qtm.tenants.structure.StructureType;
 import com.qtm.tenants.structure.entity.StructureEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -12,10 +11,10 @@ import java.util.Optional;
  */
 public interface StructureRepository extends JpaRepository<StructureEntity, Long> {
 
-    List<StructureEntity> findAllByStructureTypeOrderByNameAsc(StructureType structureType);
+        List<StructureEntity> findAllByStructureTypeOrderByNameAsc(String structureType);
 
     List<StructureEntity> findAllByStructureTypeAndParentStructureIdOrderByNameAsc(
-            StructureType structureType,
+            String structureType,
             Long parentStructureId
     );
 

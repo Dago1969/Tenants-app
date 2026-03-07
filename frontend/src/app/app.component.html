@@ -8,6 +8,38 @@
     <nav>
       <a *ngFor="let item of visibleMenuItems" [routerLink]="item.route" routerLinkActive="active">{{ translate(item.labelKey) }}</a>
 
+      <div class="nav-group" *ngIf="isManagementMenuVisible">
+        <button class="nav-group-toggle" type="button" (click)="toggleManagementMenu()">
+          <span>{{ translate('menu.management') }}</span>
+          <span class="nav-group-chevron" [class.nav-group-chevron-open]="managementMenuOpen">v</span>
+        </button>
+
+        <div class="nav-group-children" *ngIf="managementMenuOpen">
+          <a
+            *ngFor="let item of visibleManagementMenuItems"
+            [routerLink]="item.route"
+            routerLinkActive="active"
+            class="nav-group-link"
+          >{{ translate(item.labelKey) }}</a>
+        </div>
+      </div>
+
+      <div class="nav-group" *ngIf="isRegistryMenuVisible">
+        <button class="nav-group-toggle" type="button" (click)="toggleRegistryMenu()">
+          <span>{{ translate('menu.registry') }}</span>
+          <span class="nav-group-chevron" [class.nav-group-chevron-open]="registryMenuOpen">v</span>
+        </button>
+
+        <div class="nav-group-children" *ngIf="registryMenuOpen">
+          <a
+            *ngFor="let item of visibleRegistryMenuItems"
+            [routerLink]="item.route"
+            routerLinkActive="active"
+            class="nav-group-link"
+          >{{ translate(item.labelKey) }}</a>
+        </div>
+      </div>
+
       <div class="nav-group" *ngIf="isStructureMenuVisible">
         <button class="nav-group-toggle" type="button" (click)="toggleStructuresMenu()">
           <span>{{ translate('menu.structures') }}</span>
