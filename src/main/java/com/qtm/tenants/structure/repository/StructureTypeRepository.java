@@ -11,4 +11,6 @@ import java.util.List;
 public interface StructureTypeRepository extends JpaRepository<StructureTypeEntity, String> {
 
     List<StructureTypeEntity> findAllByOrderByDisplayOrderAscCodeAsc();
+
+    boolean existsByParentTypeCode(String parentTypeCode);
 }

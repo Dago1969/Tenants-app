@@ -124,6 +124,24 @@ public class AuthorizationManagementService {
         return getRoleMatrix(roleId);
     }
 
+        @Transactional
+        public void initializeRoleAuthorizations(String targetRoleId, String sourceRoleId) {
+                AuthorizationUpdateRequestDto request = new AuthorizationUpdateRequestDto();
+                if (sourceRoleId != null && !sourceRoleId.isBlank()) {
+                        AuthorizationRoleMatrixDto sourceMatrix = getRoleMatrix(sourceRoleId);
+                        request.setModules(sourceMatrix.getModules().stream()
+                                        .map(this::copyModuleAuthorization)
+                                        .toList());
+                        updateRoleMatrix(targetRoleId, request);
+                        return;
+                }
+
+                request.setModules(MODULE_DEFINITIONS.values().stream()
+                                .map(this::buildDefaultDeniedModule)
+                                .toList());
+                updateRoleMatrix(targetRoleId, request);
+        }
+
     private void updateFieldAuthorizations(
             ModuleDefinition definition,
             ModuleRoleAuthorizationEntity moduleRoleAuthorization,
@@ -339,6 +357,41 @@ public class AuthorizationManagementService {
                 .filter(fieldName -> !excludedFields.contains(fieldName))
                 .map(fieldName -> aliases.getOrDefault(fieldName, fieldName))
                 .toList();
+    }
+
+    private AuthorizationModuleDto copyModuleAuthorization(AuthorizationModuleDto sourceModule) {
+        return new AuthorizationModuleDto(
+                sourceModule.getModuleCode(),
+                sourceModule.getModuleName(),
+                sourceModule.getEntityName(),
+                sourceModule.getModuleAuthorization(),
+                sourceModule.getFields() == null ? List.of() : sourceModule.getFields().stream()
+                        .map(field -> new AuthorizationFieldDto(field.getFieldName(), field.getAuthorization()))
+                        .toList(),
+                sourceModule.getFunctions() == null ? List.of() : sourceModule.getFunctions().stream()
+                        .map(function -> new AuthorizationFunctionDto(
+                                function.getFunctionCode(),
+                                function.getFunctionName(),
+                                function.getAuthorization(),
+                                function.isCommonFunction()
+                        ))
+                        .toList()
+        );
+    }
+
+    private AuthorizationModuleDto buildDefaultDeniedModule(ModuleDefinition definition) {
+        return new AuthorizationModuleDto(
+                definition.code(),
+                definition.name(),
+                definition.entityName(),
+                AuthorizationScope.DENY.getCode(),
+                definition.fields().stream()
+                        .map(field -> new AuthorizationFieldDto(field, AuthorizationScope.HIDE_FIELD.getCode()))
+                        .toList(),
+                controllerFunctionAuthorizationService.getSupportedFunctionCodes(definition.code()).stream()
+                        .map(functionCode -> new AuthorizationFunctionDto(functionCode, functionCode, AuthorizationScope.DENY.getCode(), controllerFunctionAuthorizationService.isCommonFunctionCode(functionCode)))
+                        .toList()
+        );
     }
 
     private record ModuleDefinition(String code, String name, String entityName, List<String> fields) {

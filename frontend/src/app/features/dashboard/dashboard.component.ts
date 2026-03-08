@@ -82,17 +82,13 @@ export class DashboardComponent implements OnInit {
   hiddenModuleCodes = new Set<string>();
 
   readonly dashboardLinks: DashboardLink[] = [
-    { route: '/users', labelKey: 'menu.users', moduleCode: 'USER' },
-    { route: '/roles', labelKey: 'menu.roles', moduleCode: 'ROLE' },
-    { route: '/modules', labelKey: 'menu.modules', moduleCode: 'MODULE' },
+    { route: '/users/search', labelKey: 'menu.usersSearch', moduleCode: 'USER' },
+    { route: '/roles', labelKey: 'roles.search.title', moduleCode: 'ROLE' },
     { route: '/modules/search', labelKey: 'menu.modulesSearch', moduleCode: 'MODULE' },
-    { route: '/functions', labelKey: 'menu.functions', moduleCode: 'FUNCTION' },
     { route: '/functions/search', labelKey: 'menu.functionsSearch', moduleCode: 'FUNCTION' },
-    { route: '/structures', labelKey: 'menu.structures', moduleCode: 'STRUCTURE' },
-    { route: '/patients', labelKey: 'menu.patients', moduleCode: 'PATIENT' },
-    { route: '/medics', labelKey: 'menu.medics', moduleCode: 'MEDIC' },
+    { route: '/structures/asl', labelKey: 'menu.structure.aslSearch', moduleCode: 'STRUCTURE' },
+    { route: '/patients/search', labelKey: 'menu.patientsSearch', moduleCode: 'PATIENT' },
     { route: '/medics/search', labelKey: 'menu.medicsSearch', moduleCode: 'MEDIC' },
-    { route: '/nurses', labelKey: 'menu.nurses', moduleCode: 'NURSE' },
     { route: '/nurses/search', labelKey: 'menu.nursesSearch', moduleCode: 'NURSE' }
   ];
 

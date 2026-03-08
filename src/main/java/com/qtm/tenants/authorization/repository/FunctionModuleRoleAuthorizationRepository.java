@@ -12,6 +12,8 @@ import java.util.Optional;
 public interface FunctionModuleRoleAuthorizationRepository extends JpaRepository<FunctionModuleRoleAuthorizationEntity, Long> {
     List<FunctionModuleRoleAuthorizationEntity> findAllByRoleId(String roleId);
 
+    void deleteAllByRoleId(String roleId);
+
     List<FunctionModuleRoleAuthorizationEntity> findAllByRoleIdAndModuleCode(String roleId, String moduleCode);
 
     Optional<FunctionModuleRoleAuthorizationEntity> findByRoleIdAndModuleCodeAndFunctionCode(

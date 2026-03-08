@@ -23,6 +23,32 @@
   font-weight: 700;
 }
 
+.crud-log-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.crud-log-entry {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  font-weight: 600;
+}
+
+.crud-log-entry-success {
+  background: #edf8ee;
+  color: #1e6b33;
+  border-color: #b6dec0;
+}
+
+.crud-log-entry-error {
+  background: #fdecec;
+  color: #b42828;
+  border-color: #f5c5c5;
+}
+
 .crud-error {
   margin: 18px 0 0;
   padding: 12px 14px;

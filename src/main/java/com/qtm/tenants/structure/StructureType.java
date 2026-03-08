@@ -15,4 +15,5 @@ public class StructureType {
     private final String functionDescription;
     private final String parentTypeCode;
     private final String parentTypeDescription;
+    private final Integer displayOrder;
 }

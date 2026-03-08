@@ -14,12 +14,16 @@ import { SearchField, SearchPageComponent } from '../../shared/search-page.compo
       [endpoint]="endpoint"
       [filters]="filters"
       [resultColumns]="resultColumns"
+      [moduleCode]="moduleCode"
+      [createFunctionCode]="createFunctionCode"
     />
   `
 })
 export class UsersSearchComponent {
   titleKey = 'users.search.title' as const;
   endpoint = 'users/search';
+  moduleCode = 'USER';
+  createFunctionCode = 'CREATE';
 
   filters: SearchField[] = [
     { key: 'username', labelKey: 'users.field.username', type: 'text' },

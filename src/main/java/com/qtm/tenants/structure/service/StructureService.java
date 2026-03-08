@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.LinkedHashMap;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,7 +46,22 @@ public class StructureService {
 
     @Transactional(readOnly = true)
     public List<StructureDto> findAll(String structureTypeCode, Long parentStructureId) {
-        List<StructureEntity> entities = resolveEntities(structureTypeCode, parentStructureId);
+        return findAll(structureTypeCode, parentStructureId, null, null, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<StructureDto> findAll(
+            String structureTypeCode,
+            Long parentStructureId,
+            String code,
+            String name,
+            String city
+    ) {
+        List<StructureEntity> entities = resolveEntities(structureTypeCode, parentStructureId).stream()
+                .filter(entity -> matchesFilter(entity.getCode(), code))
+                .filter(entity -> matchesFilter(entity.getName(), name))
+                .filter(entity -> matchesFilter(entity.getCity(), city))
+                .toList();
         return toDtos(entities);
     }
 
@@ -107,7 +123,7 @@ public class StructureService {
         }
 
         return structureRepository.findAll().stream()
-                .sorted((left, right) -> left.getName().compareToIgnoreCase(right.getName()))
+                .sorted(structureImportanceComparator())
                 .toList();
     }
 
@@ -183,5 +199,30 @@ public class StructureService {
     private StructureEntity findEntityById(Long id) {
         return structureRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Struttura non trovata"));
+    }
+
+    private boolean matchesFilter(String value, String filter) {
+        if (filter == null || filter.isBlank()) {
+            return true;
+        }
+
+        return value != null && value.toLowerCase().contains(filter.trim().toLowerCase());
+    }
+
+    private Comparator<StructureEntity> structureImportanceComparator() {
+        return Comparator
+                .comparingInt(this::resolveDisplayOrder)
+                .thenComparing(StructureEntity::getName, String.CASE_INSENSITIVE_ORDER)
+                .thenComparing(StructureEntity::getCode, String.CASE_INSENSITIVE_ORDER);
+    }
+
+    private int resolveDisplayOrder(StructureEntity entity) {
+        if (entity.getStructureType() == null || entity.getStructureType().isBlank()) {
+            return Integer.MAX_VALUE;
+        }
+
+        return structureTypeRegistry.findByCode(entity.getStructureType())
+                .map(StructureType::getDisplayOrder)
+                .orElse(Integer.MAX_VALUE);
     }
 }

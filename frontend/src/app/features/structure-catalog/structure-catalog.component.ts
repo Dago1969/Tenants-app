@@ -12,8 +12,11 @@ interface StructureDto {
   name: string;
   description: string;
   address: string;
+  cityId?: number | null;
   city: string;
+  provinceId?: number | null;
   province: string;
+  regionId?: number | null;
   region: string;
   phone: string;
   email: string;
@@ -41,6 +44,11 @@ interface StructureParentOptionDto {
   structureTypeDescription: string;
 }
 
+interface GeographyOptionDto {
+  id: number;
+  name: string;
+}
+
 @Component({
   selector: 'app-structure-catalog',
   standalone: true,
@@ -51,6 +59,9 @@ interface StructureParentOptionDto {
 export class StructureCatalogComponent implements OnInit {
   structures: StructureDto[] = [];
   parentOptions: StructureParentOptionDto[] = [];
+  regionOptions: GeographyOptionDto[] = [];
+  provinceOptions: GeographyOptionDto[] = [];
+  cityOptions: GeographyOptionDto[] = [];
   currentType: StructureTypeDto | null = null;
   titleKey = 'structures.title' as MessageKey;
   loading = false;
@@ -58,6 +69,7 @@ export class StructureCatalogComponent implements OnInit {
   errorMessage = '';
   successMessage = '';
   formModel: StructureDto = this.createEmptyForm();
+  selectedStructureId: number | null = null;
 
   constructor(
     private readonly http: HttpClient,
@@ -70,6 +82,7 @@ export class StructureCatalogComponent implements OnInit {
       this.titleKey = routeTitleKey as MessageKey;
     }
 
+    this.loadRegions();
     this.loadTypeMetadata();
   }
 
@@ -91,6 +104,8 @@ export class StructureCatalogComponent implements OnInit {
       this.formModel.structureType = this.currentType.code;
       this.formModel.active = true;
     }
+    this.provinceOptions = [];
+    this.cityOptions = [];
     this.errorMessage = '';
     this.successMessage = '';
   }
@@ -100,8 +115,31 @@ export class StructureCatalogComponent implements OnInit {
       ...structure,
       parentStructureId: structure.parentStructureId ?? null
     };
+    this.loadProvinces();
+    this.loadCities();
     this.errorMessage = '';
     this.successMessage = '';
+  }
+
+  onRegionChange(): void {
+    this.formModel.region = this.findOptionName(this.regionOptions, this.formModel.regionId);
+    this.formModel.provinceId = null;
+    this.formModel.province = '';
+    this.formModel.cityId = null;
+    this.formModel.city = '';
+    this.cityOptions = [];
+    this.loadProvinces();
+  }
+
+  onProvinceChange(): void {
+    this.formModel.province = this.findOptionName(this.provinceOptions, this.formModel.provinceId);
+    this.formModel.cityId = null;
+    this.formModel.city = '';
+    this.loadCities();
+  }
+
+  onCityChange(): void {
+    this.formModel.city = this.findOptionName(this.cityOptions, this.formModel.cityId);
   }
 
   delete(structure: StructureDto): void {
@@ -172,6 +210,7 @@ export class StructureCatalogComponent implements OnInit {
         this.startCreate();
         this.loadParentOptions();
         this.loadStructures();
+        this.loadStructureFromRoute();
       },
       error: () => {
         this.currentType = null;
@@ -201,6 +240,28 @@ export class StructureCatalogComponent implements OnInit {
     });
   }
 
+  private loadStructureFromRoute(): void {
+    const idParam = this.route.snapshot.paramMap.get('id');
+    if (!idParam) {
+      return;
+    }
+
+    const id = Number(idParam);
+    if (Number.isNaN(id)) {
+      return;
+    }
+
+    this.selectedStructureId = id;
+    this.http.get<StructureDto>(`${environment.apiBaseUrl}/structures/${id}`).subscribe({
+      next: (structure) => {
+        this.edit(structure);
+      },
+      error: () => {
+        this.errorMessage = this.translate('structures.message.loadError');
+      }
+    });
+  }
+
   private loadParentOptions(): void {
     if (!this.currentType?.parentTypeCode) {
       this.parentOptions = [];
@@ -218,14 +279,68 @@ export class StructureCatalogComponent implements OnInit {
     });
   }
 
+  private loadRegions(): void {
+    this.http.get<GeographyOptionDto[]>(`${environment.apiBaseUrl}/geography/regions`).subscribe({
+      next: (options) => {
+        this.regionOptions = options ?? [];
+      },
+      error: () => {
+        this.regionOptions = [];
+      }
+    });
+  }
+
+  private loadProvinces(): void {
+    if (typeof this.formModel.regionId !== 'number') {
+      this.provinceOptions = [];
+      return;
+    }
+
+    this.http.get<GeographyOptionDto[]>(`${environment.apiBaseUrl}/geography/provinces/by-region/${this.formModel.regionId}`).subscribe({
+      next: (options) => {
+        this.provinceOptions = options ?? [];
+      },
+      error: () => {
+        this.provinceOptions = [];
+      }
+    });
+  }
+
+  private loadCities(): void {
+    if (typeof this.formModel.provinceId !== 'number') {
+      this.cityOptions = [];
+      return;
+    }
+
+    this.http.get<GeographyOptionDto[]>(`${environment.apiBaseUrl}/geography/cities/by-province/${this.formModel.provinceId}`).subscribe({
+      next: (options) => {
+        this.cityOptions = options ?? [];
+      },
+      error: () => {
+        this.cityOptions = [];
+      }
+    });
+  }
+
+  private findOptionName(options: GeographyOptionDto[], optionId?: number | null): string {
+    if (typeof optionId !== 'number') {
+      return '';
+    }
+
+    return options.find((option) => option.id === optionId)?.name ?? '';
+  }
+
   private createEmptyForm(): StructureDto {
     return {
       code: '',
       name: '',
       description: '',
       address: '',
+      cityId: null,
       city: '',
+      provinceId: null,
       province: '',
+      regionId: null,
       region: '',
       phone: '',
       email: '',

@@ -51,7 +51,7 @@ public class PatientService {
 
     private static final Set<String> PROTECTED_FIELDS = Set.of(
             "assistedId", "firstName", "lastName", "fiscalCode", "email", "primaryPhone", "secondaryPhone",
-            "region", "province", "deliveryAddress", "secondaryAddresses", "communicationChannels",
+            "regionId", "region", "provinceId", "province", "cityId", "city", "deliveryAddress", "secondaryAddresses", "communicationChannels",
             "identificationDocumentReference", "dataProcessingConsent", "dataProcessingConsentDateTime",
             "dataProcessingConsentRevocationLog", "additionalConsents", "therapyStatus", "prescribingSpecialist",
             "referenceHospitalStructure", "referencePharmacy", "preferredPickupPharmacy", "deliveryMode",
@@ -131,8 +131,12 @@ public class PatientService {
         current.setEmail(patientDto.getEmail());
         current.setPrimaryPhone(patientDto.getPrimaryPhone());
         current.setSecondaryPhone(patientDto.getSecondaryPhone());
+        current.setRegionId(patientDto.getRegionId());
         current.setRegion(patientDto.getRegion());
+        current.setProvinceId(patientDto.getProvinceId());
         current.setProvince(patientDto.getProvince());
+        current.setCityId(patientDto.getCityId());
+        current.setCity(patientDto.getCity());
         current.setDeliveryAddress(patientDto.getDeliveryAddress());
         current.setSecondaryAddresses(patientDto.getSecondaryAddresses());
         current.setCommunicationChannels(patientDto.getCommunicationChannels());

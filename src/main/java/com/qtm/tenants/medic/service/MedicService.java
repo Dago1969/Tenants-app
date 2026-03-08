@@ -51,7 +51,7 @@ public class MedicService {
 
     private static final Set<String> PROTECTED_FIELDS = Set.of(
             "doctorFlyerId", "fullName", "email", "primaryPhone", "secondaryPhone",
-            "region", "province", "deliveryAddress", "secondaryAddresses", "structureId",
+            "regionId", "region", "provinceId", "province", "cityId", "city", "deliveryAddress", "secondaryAddresses", "structureId",
             "specialization", "dataProcessingConsent", "dataProcessingConsentDateTime",
             "dataProcessingConsentRevocationLog", "additionalConsents"
     );
@@ -128,8 +128,12 @@ public class MedicService {
         current.setEmail(medicDto.getEmail());
         current.setPrimaryPhone(medicDto.getPrimaryPhone());
         current.setSecondaryPhone(medicDto.getSecondaryPhone());
+        current.setRegionId(medicDto.getRegionId());
         current.setRegion(medicDto.getRegion());
+        current.setProvinceId(medicDto.getProvinceId());
         current.setProvince(medicDto.getProvince());
+        current.setCityId(medicDto.getCityId());
+        current.setCity(medicDto.getCity());
         current.setDeliveryAddress(medicDto.getDeliveryAddress());
         current.setSecondaryAddresses(medicDto.getSecondaryAddresses());
         current.setStructureId(medicDto.getStructureId());

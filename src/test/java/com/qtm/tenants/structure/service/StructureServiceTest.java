@@ -13,10 +13,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyIterable;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.when;
 
 /**
@@ -52,7 +54,8 @@ class StructureServiceTest {
             "Azienda Sanitaria Locale",
             "Nodo capofila territoriale",
             null,
-            null
+            null,
+            10
         );
 
         when(structureRepository.save(any(StructureEntity.class))).thenReturn(saved);
@@ -75,5 +78,55 @@ class StructureServiceTest {
         assertThat(created.getId()).isEqualTo(1L);
         assertThat(loaded.getName()).isEqualTo("Poliambulatorio Roma");
         assertThat(structureService.findAll(null, null)).hasSize(1);
+    }
+
+    @Test
+    void shouldReturnStructuresOrderedByTypeImportanceWithTypeInSelectionLabel() {
+        StructureType hospitalType = new StructureType(
+                "HOSP",
+                "Ospedale",
+                "Struttura ospedaliera",
+                null,
+                null,
+                1
+        );
+        StructureType districtType = new StructureType(
+                "DIST",
+                "Distretto",
+                "Struttura territoriale",
+                null,
+                null,
+                5
+        );
+
+        StructureEntity district = new StructureEntity();
+        district.setId(10L);
+        district.setCode("DIST-001");
+        district.setName("Distretto Nord");
+        district.setStructureType("DIST");
+        district.setActive(true);
+
+        StructureEntity hospital = new StructureEntity();
+        hospital.setId(20L);
+        hospital.setCode("HOSP-001");
+        hospital.setName("Ospedale Centrale");
+        hospital.setStructureType("HOSP");
+        hospital.setActive(true);
+
+        when(structureRepository.findAll()).thenReturn(List.of(district, hospital));
+        when(structureRepository.findAllById(argThat(ids -> {
+            Set<?> values = ids instanceof Set<?> set ? set : Set.of();
+            return values.isEmpty();
+        }))).thenReturn(List.of());
+        when(structureTypeRegistry.findByCode("DIST")).thenReturn(Optional.of(districtType));
+        when(structureTypeRegistry.findByCode("HOSP")).thenReturn(Optional.of(hospitalType));
+
+        List<StructureDto> structures = structureService.findAll(null, null);
+
+        assertThat(structures)
+                .extracting(StructureDto::getId)
+                .containsExactly(20L, 10L);
+        assertThat(structures.get(0).getSelectionLabel()).isEqualTo("Ospedale Centrale - Ospedale");
+        assertThat(structures.get(1).getSelectionLabel()).isEqualTo("Distretto Nord - Distretto");
     }
 }

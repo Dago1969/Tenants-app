@@ -19,4 +19,6 @@ public interface FieldAuthorizationRepository extends JpaRepository<FieldAuthori
             ModuleRoleAuthorizationEntity moduleRoleAuthorization,
             String entityName
         );
+
+    void deleteAllByModuleRoleAuthorizationRoleId(String roleId);
 }

@@ -50,10 +50,13 @@ public class StructureController {
     public ResponseEntity<List<StructureDto>> findAll(
             @RequestParam(required = false) String structureType,
             @RequestParam(required = false) Long parentStructureId,
+                        @RequestParam(required = false) String code,
+                        @RequestParam(required = false) String name,
+                        @RequestParam(required = false) String city,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
         controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
-        return ResponseEntity.ok(structureService.findAll(structureType, parentStructureId));
+                return ResponseEntity.ok(structureService.findAll(structureType, parentStructureId, code, name, city));
     }
 
     @GetMapping("/types")

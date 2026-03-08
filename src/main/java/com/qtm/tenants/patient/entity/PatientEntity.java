@@ -47,11 +47,23 @@ public class PatientEntity {
     @Column(name = "secondary_phone")
     private String secondaryPhone;
 
+    @Column(name = "region_id")
+    private Long regionId;
+
     @Column(name = "region")
     private String region;
 
+    @Column(name = "province_id")
+    private Long provinceId;
+
     @Column(name = "province")
     private String province;
+
+    @Column(name = "city_id")
+    private Long cityId;
+
+    @Column(name = "city")
+    private String city;
 
     @Column(name = "delivery_address")
     private String deliveryAddress;

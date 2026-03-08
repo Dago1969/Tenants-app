@@ -48,8 +48,24 @@ public class MedicController {
     /**
      * Azione specifica del modulo FUNCTION usata dalla matrice autorizzazioni per la funzione APPROVE.
      */
-    @PostMapping("/{code}/approve")
+    @PostMapping("/approve/{code}")
     public ResponseEntity<MedicDto> approve(
+            @PathVariable Long id,
+            @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
+    ) {
+        controllerFunctionAuthorizationService.requireFullEditPermission(
+            selectedRole,
+            MODULE_CODE,
+            ControllerFunctionAuthorizationService.APPROVE_FUNCTION_CODE
+        );
+        return ResponseEntity.ok(medicService.findById(id));
+    }
+
+     /**
+     * Azione specifica del modulo FUNCTION usata dalla matrice autorizzazioni per la funzione TEST.
+     */
+    @PostMapping("/test2/{code}")
+    public ResponseEntity<MedicDto> test2(
             @PathVariable Long id,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {

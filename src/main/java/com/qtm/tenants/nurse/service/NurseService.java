@@ -51,7 +51,7 @@ public class NurseService {
 
     private static final Set<String> PROTECTED_FIELDS = Set.of(
             "nurseProjectId", "fullName", "email", "primaryPhone", "secondaryPhone",
-            "region", "province", "coverageArea", "referenceProvider",
+            "regionId", "region", "provinceId", "province", "cityId", "city", "coverageArea", "referenceProvider",
             "professionalRegister", "enabled"
     );
 
@@ -127,8 +127,12 @@ public class NurseService {
         current.setEmail(nurseDto.getEmail());
         current.setPrimaryPhone(nurseDto.getPrimaryPhone());
         current.setSecondaryPhone(nurseDto.getSecondaryPhone());
+        current.setRegionId(nurseDto.getRegionId());
         current.setRegion(nurseDto.getRegion());
+        current.setProvinceId(nurseDto.getProvinceId());
         current.setProvince(nurseDto.getProvince());
+        current.setCityId(nurseDto.getCityId());
+        current.setCity(nurseDto.getCity());
         current.setCoverageArea(nurseDto.getCoverageArea());
         current.setReferenceProvider(nurseDto.getReferenceProvider());
         current.setProfessionalRegister(nurseDto.getProfessionalRegister());

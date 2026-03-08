@@ -12,6 +12,7 @@ import { SearchField, SearchPageComponent } from '../../shared/search-page.compo
     <app-search-page
       [titleKey]="titleKey"
       [endpoint]="endpoint"
+      [deleteCheckEndpoint]="deleteCheckEndpoint"
       [filters]="filters"
       [resultColumns]="resultColumns"
       [createRoute]="createRoute"
@@ -22,6 +23,7 @@ import { SearchField, SearchPageComponent } from '../../shared/search-page.compo
 export class RolesSearchComponent {
   titleKey = 'roles.search.title' as const;
   endpoint = 'roles';
+  deleteCheckEndpoint = 'roles/delete-check';
   createRoute = '/roles/new';
   detailRouteBase = '/roles';
 

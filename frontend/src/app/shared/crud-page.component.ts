@@ -1,22 +1,26 @@
 import { CommonModule, Location } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Component, Input, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { environment } from '../../environments/environment';
 import { FunctionAuthorizationService } from '../core/function-authorization.service';
-import { MessageKey, t } from '../i18n/messages';
+import { hasMessageKey, MessageKey, t } from '../i18n/messages';
 
 export interface CrudField {
   key: string;
   labelKey: MessageKey;
   type: 'text' | 'number' | 'checkbox' | 'datetime-local' | 'select';
+  hidden?: boolean;
+  createOnly?: boolean;
   readonly?: boolean;
   lockOnEdit?: boolean;
   optionsEndpoint?: string;
   options?: Array<{ value: string; label: string }>;
   optionValueKey?: string;
   optionLabelKey?: string;
+  resetFieldsOnChange?: string[];
+  includeValueInOptionLabel?: boolean;
   relatedFields?: Record<string, string>;
 }
 
@@ -29,9 +33,15 @@ export interface CrudFolder {
 type CrudEntity = Record<string, unknown> & { id?: string | number };
 
 interface SelectOption {
-  value: string;
+  value: string | number;
   label: string;
   source: Record<string, unknown>;
+}
+
+interface OperationLogEntry {
+  id: number;
+  type: 'success' | 'error';
+  message: string;
 }
 
 /**
@@ -51,7 +61,16 @@ interface SelectOption {
           </div>
         </header>
 
-        <p *ngIf="errorMessage" class="crud-error">{{ errorMessage }}</p>
+        <div *ngIf="operationLogs.length > 0" class="crud-log-panel">
+          <div
+            *ngFor="let log of operationLogs"
+            class="crud-log-entry"
+            [class.crud-log-entry-success]="log.type === 'success'"
+            [class.crud-log-entry-error]="log.type === 'error'"
+          >
+            {{ log.message }}
+          </div>
+        </div>
 
         <div *ngIf="folders.length > 0" class="crud-folder-tabs">
         <button
@@ -135,14 +154,15 @@ export class CrudPageComponent implements OnInit {
   @Input() fieldPermissionsEndpoint = '';
   @Input() entityKey = 'id';
   @Input() moduleCode = '';
-  @Input() createFunctionCode = '';
+  @Input() createFunctionCode = 'CREATE';
+  @Input() updateFunctionCode = 'UPDATE';
 
   formModel: CrudEntity = {};
-  errorMessage = '';
   activeFolder = '';
   isViewMode = false;
   fieldPermissions: Record<string, string> = {};
   fieldOptions: Record<string, SelectOption[]> = {};
+  operationLogs: OperationLogEntry[] = [];
   protected loadedEntityKeyValue: string | number | null = null;
 
   constructor(
@@ -169,8 +189,16 @@ export class CrudPageComponent implements OnInit {
     }
 
     if ((!idParam || idParam === 'new') && this.moduleCode && this.createFunctionCode) {
-      const canCreate = await this.canUseCreateFunction();
+      const canCreate = await this.canUseFunction(this.createFunctionCode);
       if (!canCreate) {
+        void this.router.navigateByUrl('/forbidden');
+        return;
+      }
+    }
+
+    if (idParam && idParam !== 'new' && !this.isViewMode && this.moduleCode && this.updateFunctionCode) {
+      const canUpdate = await this.canUseFunction(this.updateFunctionCode);
+      if (!canUpdate) {
         void this.router.navigateByUrl('/forbidden');
         return;
       }
@@ -185,9 +213,9 @@ export class CrudPageComponent implements OnInit {
     }
   }
 
-  private async canUseCreateFunction(): Promise<boolean> {
+  private async canUseFunction(functionCode: string): Promise<boolean> {
     try {
-      return await this.functionAuthorizationService.canUseFunction(this.moduleCode, this.createFunctionCode);
+      return await this.functionAuthorizationService.canUseFunction(this.moduleCode, functionCode);
     } catch {
       return false;
     }
@@ -195,17 +223,18 @@ export class CrudPageComponent implements OnInit {
 
   get currentFields(): CrudField[] {
     if (this.folders.length === 0) {
-      return this.fields.filter((field) => !this.isFieldHidden(field.key));
+      return this.fields.filter((field) => this.shouldDisplayField(field));
     }
 
     const active = this.folders.find((folder) => folder.key === this.activeFolder);
-    return (active?.fields ?? []).filter((field) => !this.isFieldHidden(field.key));
+    return (active?.fields ?? []).filter((field) => this.shouldDisplayField(field));
   }
 
   isFieldDisabled(field: CrudField): boolean {
     return this.isViewMode
       || field.readonly === true
       || (field.lockOnEdit === true && this.loadedEntityKeyValue !== null)
+      || this.hasUnresolvedSelectDependencies(field)
       || this.getFieldPermission(field.key) === 'read-only';
   }
 
@@ -220,6 +249,8 @@ export class CrudPageComponent implements OnInit {
   onSelectChange(field: CrudField, value: unknown): void {
     this.formModel[field.key] = value;
     this.applyRelatedFields(field, value);
+    this.resetFieldsOnChange(field);
+    this.loadSelectOptions();
   }
 
   save(): void {
@@ -230,9 +261,11 @@ export class CrudPageComponent implements OnInit {
         .subscribe({
           next: () => {
             this.resetForm();
+            this.pushOperationLog('success', 'crud.success.update');
           },
-          error: () => {
-            this.errorMessage = t('crud.error.update');
+          error: (error) => {
+            const message = this.buildErrorMessage('crud.error.update', error);
+            this.pushOperationLog('error', message);
           }
         });
       return;
@@ -241,9 +274,11 @@ export class CrudPageComponent implements OnInit {
     this.http.post<CrudEntity>(`${environment.apiBaseUrl}/${this.endpoint}`, payload).subscribe({
       next: () => {
         this.resetForm();
+        this.pushOperationLog('success', 'crud.success.create');
       },
-      error: () => {
-        this.errorMessage = t('crud.error.create');
+      error: (error) => {
+        const message = this.buildErrorMessage('crud.error.create', error);
+        this.pushOperationLog('error', message);
       }
     });
   }
@@ -251,6 +286,7 @@ export class CrudPageComponent implements OnInit {
   resetForm(): void {
     this.formModel = {};
     this.loadedEntityKeyValue = null;
+    this.loadSelectOptions();
   }
 
   cancel(): void {
@@ -263,12 +299,18 @@ export class CrudPageComponent implements OnInit {
   }
 
   private buildPayload(): CrudEntity {
-    return this.fields
-      .filter((field) => !this.isFieldHidden(field.key))
+    return this.getAllFields()
+      .filter((field) => this.shouldDisplayField(field))
       .reduce<CrudEntity>((accumulator, field) => {
       accumulator[field.key] = this.formModel[field.key];
       return accumulator;
     }, {});
+  }
+
+  private shouldDisplayField(field: CrudField): boolean {
+    return !field.hidden
+      && !(field.createOnly === true && this.loadedEntityKeyValue !== null)
+      && !this.isFieldHidden(field.key);
   }
 
   private loadSelectOptions(): void {
@@ -291,7 +333,13 @@ export class CrudPageComponent implements OnInit {
         continue;
       }
 
-      this.http.get<Record<string, unknown>[]>(`${environment.apiBaseUrl}/${field.optionsEndpoint}`).subscribe({
+      const resolvedEndpoint = this.resolveOptionsEndpoint(field);
+      if (!resolvedEndpoint) {
+        this.fieldOptions[field.key] = [];
+        continue;
+      }
+
+      this.http.get<Record<string, unknown>[]>(`${environment.apiBaseUrl}/${resolvedEndpoint}`).subscribe({
         next: (items) => {
           this.fieldOptions[field.key] = (items ?? [])
             .map((item) => this.mapToSelectOption(field, item))
@@ -315,10 +363,13 @@ export class CrudPageComponent implements OnInit {
     }
 
     const rawLabel = item[labelKey];
-    const value = String(rawValue);
-    const label = typeof rawLabel === 'string' && rawLabel.trim().length > 0 && rawLabel !== value
-      ? `${value} - ${rawLabel}`
-      : value;
+    const value = rawValue;
+    const baseLabel = typeof rawLabel === 'string' && rawLabel.trim().length > 0
+      ? rawLabel
+      : String(rawValue);
+    const label = field.includeValueInOptionLabel === true && baseLabel !== String(rawValue)
+      ? `${rawValue} - ${baseLabel}`
+      : baseLabel;
 
     return {
       value,
@@ -333,7 +384,7 @@ export class CrudPageComponent implements OnInit {
     }
 
     const normalizedValue = typeof value === 'string' || typeof value === 'number' ? String(value) : '';
-    const option = this.getFieldOptions(field).find((currentOption) => currentOption.value === normalizedValue);
+    const option = this.getFieldOptions(field).find((currentOption) => String(currentOption.value) === normalizedValue);
 
     for (const [targetField, sourceField] of Object.entries(field.relatedFields)) {
       this.formModel[targetField] = option?.source[sourceField] ?? '';
@@ -341,9 +392,47 @@ export class CrudPageComponent implements OnInit {
   }
 
   private getAllFields(): CrudField[] {
-    return this.folders.length > 0
-      ? this.folders.flatMap((folder) => folder.fields)
-      : this.fields;
+    const mergedFields = [...this.fields, ...this.folders.flatMap((folder) => folder.fields)];
+    const uniqueFields = new Map<string, CrudField>();
+    for (const field of mergedFields) {
+      uniqueFields.set(field.key, field);
+    }
+    return Array.from(uniqueFields.values());
+  }
+
+  private resetFieldsOnChange(field: CrudField): void {
+    for (const targetField of field.resetFieldsOnChange ?? []) {
+      this.formModel[targetField] = targetField.endsWith('Id') ? null : '';
+    }
+  }
+
+  private hasUnresolvedSelectDependencies(field: CrudField): boolean {
+    return field.type === 'select'
+      && !!field.optionsEndpoint
+      && this.resolveOptionsEndpoint(field) === null
+      && this.extractEndpointPlaceholders(field.optionsEndpoint).length > 0;
+  }
+
+  private resolveOptionsEndpoint(field: CrudField): string | null {
+    if (!field.optionsEndpoint) {
+      return null;
+    }
+
+    let hasMissingValue = false;
+    const resolvedEndpoint = field.optionsEndpoint.replace(/\{(\w+)\}/g, (_match, placeholder: string) => {
+      const rawValue = this.formModel[placeholder];
+      if (rawValue === null || rawValue === undefined || String(rawValue).trim().length === 0) {
+        hasMissingValue = true;
+        return '';
+      }
+      return encodeURIComponent(String(rawValue));
+    });
+
+    return hasMissingValue ? null : resolvedEndpoint;
+  }
+
+  private extractEndpointPlaceholders(optionsEndpoint: string): string[] {
+    return Array.from(optionsEndpoint.matchAll(/\{(\w+)\}/g), (match) => match[1]);
   }
 
   private getFieldPermission(fieldKey: string): string {
@@ -370,14 +459,84 @@ export class CrudPageComponent implements OnInit {
       next: (entity) => {
         this.loadedEntityKeyValue = id;
         this.formModel = { ...entity };
+        this.loadSelectOptions();
         for (const field of this.getAllFields().filter((currentField) => currentField.type === 'select')) {
           this.applyRelatedFields(field, this.formModel[field.key]);
         }
       },
-      error: () => {
-        this.errorMessage = t('crud.error.load');
+      error: (error) => {
+        const message = this.buildErrorMessage('crud.error.load', error);
+        this.pushOperationLog('error', message);
       }
     });
+  }
+
+  private pushOperationLog(type: 'success' | 'error', message: MessageKey | string): void {
+    this.operationLogs = [
+      {
+        id: Date.now() + this.operationLogs.length,
+        type,
+        message: this.resolveMessage(message)
+      },
+      ...this.operationLogs
+    ].slice(0, 5);
+  }
+
+  private buildErrorMessage(messageKey: MessageKey, error: unknown): string {
+    const baseMessage = this.translate(messageKey);
+    const reason = this.extractErrorReason(error);
+    if (!reason) {
+      return baseMessage;
+    }
+
+    return `${baseMessage} ${this.translate('common.reason')}: ${reason}`;
+  }
+
+  private extractErrorReason(error: unknown): string | null {
+    if (!(error instanceof HttpErrorResponse)) {
+      return null;
+    }
+
+    const responseError = error.error;
+    if (typeof responseError === 'string') {
+      return this.normalizeErrorReason(responseError);
+    }
+
+    if (responseError && typeof responseError === 'object') {
+      const candidate = this.findObjectErrorReason(responseError as Record<string, unknown>);
+      return candidate ? this.normalizeErrorReason(candidate) : null;
+    }
+
+    return this.normalizeErrorReason(error.message);
+  }
+
+  private findObjectErrorReason(errorBody: Record<string, unknown>): string | null {
+    const candidates = [errorBody['detail'], errorBody['message'], errorBody['error'], errorBody['title']];
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string' && candidate.trim().length > 0) {
+        return candidate;
+      }
+    }
+
+    return null;
+  }
+
+  private normalizeErrorReason(reason: string | null | undefined): string | null {
+    if (!reason) {
+      return null;
+    }
+
+    const normalized = reason
+      .replace(/^\d+\s+[A-Z_-]+\s+/i, '')
+      .replace(/^error:\s*/i, '')
+      .replace(/^"|"$/g, '')
+      .trim();
+
+    return normalized.length > 0 ? normalized : null;
+  }
+
+  private resolveMessage(message: MessageKey | string): string {
+    return hasMessageKey(message) ? this.translate(message) : message;
   }
 
   private getDefaultRoute(): string {

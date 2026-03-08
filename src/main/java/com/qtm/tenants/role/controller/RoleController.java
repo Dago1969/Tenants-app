@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -60,6 +61,15 @@ public class RoleController {
         return ResponseEntity.ok(roleService.findById(id));
     }
 
+        @GetMapping("/delete-check/{id}")
+        public ResponseEntity<com.qtm.tenants.role.dto.RoleDeleteCheckDto> getDeleteCheck(
+                        @PathVariable String id,
+                        @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
+        ) {
+                controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
+                return ResponseEntity.ok(roleService.getDeleteCheck(id));
+        }
+
     @PutMapping("/{id}")
     public ResponseEntity<RoleDto> update(
             @PathVariable String id,
@@ -77,6 +87,7 @@ public class RoleController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @PathVariable String id,
+            @RequestParam(required = false) String replacementRoleId,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
         controllerFunctionAuthorizationService.requireFullEditPermission(
@@ -84,7 +95,7 @@ public class RoleController {
                 MODULE_CODE,
                 ControllerFunctionAuthorizationService.DELETE_FUNCTION_CODE
         );
-        roleService.delete(id);
+                roleService.delete(id, replacementRoleId);
         return ResponseEntity.noContent().build();
     }
 }

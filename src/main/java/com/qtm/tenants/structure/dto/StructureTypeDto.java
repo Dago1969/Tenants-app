@@ -19,4 +19,5 @@ public class StructureTypeDto {
     private String functionDescription;
     private String parentTypeCode;
     private String parentTypeDescription;
+    private Integer displayOrder;
 }

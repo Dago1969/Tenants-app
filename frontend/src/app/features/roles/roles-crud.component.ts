@@ -15,6 +15,17 @@ export class RolesCrudComponent {
   endpoint = 'roles';
   fields: CrudField[] = [
     { key: 'id', labelKey: 'roles.field.id', type: 'text' },
-    { key: 'description', labelKey: 'roles.field.description', type: 'text' }
+    { key: 'name', labelKey: 'roles.field.name', type: 'text' },
+    { key: 'description', labelKey: 'roles.field.description', type: 'text' },
+    {
+      key: 'sourceRoleId',
+      labelKey: 'roles.field.sourceRoleId',
+      type: 'select',
+      createOnly: true,
+      optionsEndpoint: 'roles',
+      optionValueKey: 'id',
+      optionLabelKey: 'description',
+      includeValueInOptionLabel: true
+    }
   ];
 }

@@ -22,6 +22,9 @@ public class RoleEntity {
     @Column(name = "id", nullable = false, unique = true)
     private String id;
 
+    @Column(name = "name", nullable = false)
+    private String name;
+
     @Column(name = "description", nullable = false)
     private String description;
 }

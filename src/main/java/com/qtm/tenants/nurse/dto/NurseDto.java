@@ -18,8 +18,12 @@ public class NurseDto {
     private String email;
     private String primaryPhone;
     private String secondaryPhone;
+    private Long regionId;
     private String region;
+    private Long provinceId;
     private String province;
+    private Long cityId;
+    private String city;
     private String coverageArea;
     private String referenceProvider;
     private String professionalRegister;

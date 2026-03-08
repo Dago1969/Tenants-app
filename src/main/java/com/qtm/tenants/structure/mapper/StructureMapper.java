@@ -26,10 +26,14 @@ public class StructureMapper {
         dto.setId(entity.getId());
         dto.setCode(entity.getCode());
         dto.setName(entity.getName());
+        dto.setSelectionLabel(buildSelectionLabel(entity.getName(), structureType));
         dto.setDescription(entity.getDescription());
         dto.setAddress(entity.getAddress());
+        dto.setCityId(entity.getCityId());
         dto.setCity(entity.getCity());
+        dto.setProvinceId(entity.getProvinceId());
         dto.setProvince(entity.getProvince());
+        dto.setRegionId(entity.getRegionId());
         dto.setRegion(entity.getRegion());
         dto.setPhone(entity.getPhone());
         dto.setEmail(entity.getEmail());
@@ -37,9 +41,18 @@ public class StructureMapper {
         dto.setStructureType(structureType == null ? entity.getStructureType() : structureType.getCode());
         dto.setStructureTypeDescription(structureType == null ? null : structureType.getDescription());
         dto.setFunctionDescription(structureType == null ? null : structureType.getFunctionDescription());
+        dto.setStructureTypeDisplayOrder(structureType == null ? null : structureType.getDisplayOrder());
         dto.setParentStructureId(entity.getParentStructureId());
         dto.setParentStructureName(parentStructureName);
         return dto;
+    }
+
+    private String buildSelectionLabel(String structureName, StructureType structureType) {
+        if (structureType == null || structureType.getDescription() == null || structureType.getDescription().isBlank()) {
+            return structureName;
+        }
+
+        return structureName + " - " + structureType.getDescription();
     }
 
     public StructureEntity toEntity(StructureDto dto) {
@@ -54,8 +67,11 @@ public class StructureMapper {
         entity.setName(dto.getName());
         entity.setDescription(dto.getDescription());
         entity.setAddress(dto.getAddress());
+        entity.setCityId(dto.getCityId());
         entity.setCity(dto.getCity());
+        entity.setProvinceId(dto.getProvinceId());
         entity.setProvince(dto.getProvince());
+        entity.setRegionId(dto.getRegionId());
         entity.setRegion(dto.getRegion());
         entity.setPhone(dto.getPhone());
         entity.setEmail(dto.getEmail());
@@ -70,7 +86,8 @@ public class StructureMapper {
                 type.getDescription(),
                 type.getFunctionDescription(),
             type.getParentTypeCode(),
-            type.getParentTypeDescription()
+                type.getParentTypeDescription(),
+                type.getDisplayOrder()
         );
     }
 

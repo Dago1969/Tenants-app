@@ -45,18 +45,27 @@
           </label>
 
           <label>
-            <span>{{ translate('structures.field.city') }}</span>
-            <input [(ngModel)]="formModel.city" name="city" />
+            <span>{{ translate('structures.field.region') }}</span>
+            <select [(ngModel)]="formModel.regionId" name="regionId" (ngModelChange)="onRegionChange()">
+              <option [ngValue]="null"></option>
+              <option *ngFor="let option of regionOptions" [ngValue]="option.id">{{ option.name }}</option>
+            </select>
           </label>
 
           <label>
             <span>{{ translate('structures.field.province') }}</span>
-            <input [(ngModel)]="formModel.province" name="province" />
+            <select [(ngModel)]="formModel.provinceId" name="provinceId" (ngModelChange)="onProvinceChange()" [disabled]="!formModel.regionId">
+              <option [ngValue]="null"></option>
+              <option *ngFor="let option of provinceOptions" [ngValue]="option.id">{{ option.name }}</option>
+            </select>
           </label>
 
           <label>
-            <span>{{ translate('structures.field.region') }}</span>
-            <input [(ngModel)]="formModel.region" name="region" />
+            <span>{{ translate('structures.field.city') }}</span>
+            <select [(ngModel)]="formModel.cityId" name="cityId" (ngModelChange)="onCityChange()" [disabled]="!formModel.provinceId">
+              <option [ngValue]="null"></option>
+              <option *ngFor="let option of cityOptions" [ngValue]="option.id">{{ option.name }}</option>
+            </select>
           </label>
 
           <label>

@@ -18,8 +18,12 @@ public class MedicMapper {
         dto.setEmail(entity.getEmail());
         dto.setPrimaryPhone(entity.getPrimaryPhone());
         dto.setSecondaryPhone(entity.getSecondaryPhone());
+        dto.setRegionId(entity.getRegionId());
         dto.setRegion(entity.getRegion());
+        dto.setProvinceId(entity.getProvinceId());
         dto.setProvince(entity.getProvince());
+        dto.setCityId(entity.getCityId());
+        dto.setCity(entity.getCity());
         dto.setDeliveryAddress(entity.getDeliveryAddress());
         dto.setSecondaryAddresses(entity.getSecondaryAddresses());
         dto.setStructureId(entity.getStructureId());
@@ -39,8 +43,12 @@ public class MedicMapper {
         entity.setEmail(dto.getEmail());
         entity.setPrimaryPhone(dto.getPrimaryPhone());
         entity.setSecondaryPhone(dto.getSecondaryPhone());
+        entity.setRegionId(dto.getRegionId());
         entity.setRegion(dto.getRegion());
+        entity.setProvinceId(dto.getProvinceId());
         entity.setProvince(dto.getProvince());
+        entity.setCityId(dto.getCityId());
+        entity.setCity(dto.getCity());
         entity.setDeliveryAddress(dto.getDeliveryAddress());
         entity.setSecondaryAddresses(dto.getSecondaryAddresses());
         entity.setStructureId(dto.getStructureId());

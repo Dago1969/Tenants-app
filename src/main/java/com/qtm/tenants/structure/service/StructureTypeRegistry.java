@@ -46,7 +46,8 @@ public class StructureTypeRegistry {
                     entity.getDescription(),
                     entity.getFunctionDescription(),
                     parentCode,
-                    parentEntity == null ? null : parentEntity.getDescription()
+                    parentEntity == null ? null : parentEntity.getDescription(),
+                    entity.getDisplayOrder()
             ));
         }
 

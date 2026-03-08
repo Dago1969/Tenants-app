@@ -21,4 +21,6 @@ public interface StructureRepository extends JpaRepository<StructureEntity, Long
     List<StructureEntity> findAllByParentStructureIdOrderByNameAsc(Long parentStructureId);
 
     Optional<StructureEntity> findByCode(String code);
+
+        boolean existsByStructureType(String structureType);
 }

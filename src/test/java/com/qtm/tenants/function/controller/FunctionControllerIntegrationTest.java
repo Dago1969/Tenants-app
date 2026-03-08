@@ -47,4 +47,5 @@ class FunctionControllerIntegrationTest {
                 .andExpect(jsonPath("$.code").value("FUNC-MENU"))
                 .andExpect(jsonPath("$.name").value("Menu funzioni"));
     }
+
 }

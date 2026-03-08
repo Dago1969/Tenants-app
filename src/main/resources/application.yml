@@ -23,3 +23,7 @@ spring:
 logging:
   level:
     root: INFO
+
+qtm:
+  dashboard:
+    api-base-url: http://localhost:8086/api

@@ -11,11 +11,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -52,6 +54,7 @@ class UserServiceTest {
         when(userRepository.save(any(UserEntity.class))).thenReturn(saved);
         when(userRepository.findById(1L)).thenReturn(Optional.of(saved));
         when(userRepository.findAll()).thenReturn(List.of(saved));
+        when(userRepository.findByUsernameIgnoreCase("mrossi")).thenReturn(Optional.empty());
         when(roleRepository.findById("ADMIN")).thenReturn(Optional.of(role));
 
         UserDto toCreate = new UserDto();
@@ -66,5 +69,22 @@ class UserServiceTest {
         assertThat(created.getId()).isEqualTo(1L);
         assertThat(loaded.getUsername()).isEqualTo("mrossi");
         assertThat(userService.findAll()).hasSize(1);
+    }
+
+    @Test
+    void shouldRejectDuplicateUsername() {
+        UserEntity existing = new UserEntity();
+        existing.setId(99L);
+        existing.setUsername("mrossi");
+
+        when(userRepository.findByUsernameIgnoreCase("mrossi")).thenReturn(Optional.of(existing));
+
+        UserDto toCreate = new UserDto();
+        toCreate.setUsername("mrossi");
+        toCreate.setEnabled(true);
+
+        assertThatThrownBy(() -> userService.create(toCreate))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Username gia presente: mrossi");
     }
 }

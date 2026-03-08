@@ -14,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 import java.util.Locale;
 
+import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 /**
@@ -29,6 +30,7 @@ public class UserService {
 
     @Transactional
     public UserDto create(UserDto userDto) {
+        validateUsernameUniqueness(userDto.getUsername(), null);
         UserEntity entity = userMapper.toEntity(userDto);
         entity.setRole(findRoleById(userDto.getRoleId()));
         UserEntity saved = userRepository.save(entity);
@@ -59,6 +61,7 @@ public class UserService {
     @Transactional
     public UserDto update(Long id, UserDto userDto) {
         UserEntity current = findEntityById(id);
+        validateUsernameUniqueness(userDto.getUsername(), id);
         current.setUsername(userDto.getUsername());
         current.setEnabled(userDto.isEnabled());
         current.setRole(findRoleById(userDto.getRoleId()));
@@ -95,5 +98,18 @@ public class UserService {
 
         return roleRepository.findById(roleId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Ruolo non trovato"));
+    }
+
+    private void validateUsernameUniqueness(String username, Long currentId) {
+        if (username == null || username.isBlank()) {
+            return;
+        }
+
+        userRepository.findByUsernameIgnoreCase(username.trim())
+                .ifPresent(existing -> {
+                    if (currentId == null || !existing.getId().equals(currentId)) {
+                        throw new ResponseStatusException(CONFLICT, "Username gia presente: " + username.trim());
+                    }
+                });
     }
 }

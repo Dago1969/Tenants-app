@@ -64,39 +64,32 @@ export class AppComponent implements OnDestroy {
   ];
 
   managementMenuItems: MenuItem[] = [
-    { labelKey: 'menu.users', route: '/users', moduleCode: 'USER' },
     { labelKey: 'menu.usersSearch', route: '/users/search', moduleCode: 'USER' },
-    { labelKey: 'menu.roles', route: '/roles', moduleCode: 'ROLE' },
-    { labelKey: 'menu.roles.new', route: '/roles/new', moduleCode: 'ROLE' },
-    { labelKey: 'menu.modules', route: '/modules', moduleCode: 'MODULE' },
+    { labelKey: 'roles.search.title', route: '/roles', moduleCode: 'ROLE' },
     { labelKey: 'menu.modulesSearch', route: '/modules/search', moduleCode: 'MODULE' },
-    { labelKey: 'menu.functions', route: '/functions', moduleCode: 'FUNCTION' },
     { labelKey: 'menu.functionsSearch', route: '/functions/search', moduleCode: 'FUNCTION' },
+    { labelKey: 'menu.structureTypesSearch', route: '/structure-types/search', moduleCode: 'STRUCTURE' },
     { labelKey: 'menu.authorizations', route: '/authorizations' },
     { labelKey: 'menu.controllerFunctionMappings', route: '/controller-function-mappings' },
-    { labelKey: 'menu.authorizationFunctions', route: '/authorization-functions' },
     { labelKey: 'menu.authorizationFunctionsSearch', route: '/authorization-functions/search' }
   ];
 
   registryMenuItems: MenuItem[] = [
-    { labelKey: 'menu.patients', route: '/patients', moduleCode: 'PATIENT' },
     { labelKey: 'menu.patientsSearch', route: '/patients/search', moduleCode: 'PATIENT' },
-    { labelKey: 'menu.medics', route: '/medics', moduleCode: 'MEDIC' },
     { labelKey: 'menu.medicsSearch', route: '/medics/search', moduleCode: 'MEDIC' },
-    { labelKey: 'menu.nurses', route: '/nurses', moduleCode: 'NURSE' },
     { labelKey: 'menu.nursesSearch', route: '/nurses/search', moduleCode: 'NURSE' }
   ];
 
   structureMenuItems: MenuItem[] = [
-    { labelKey: 'menu.structure.asl', route: '/structures/asl', moduleCode: 'STRUCTURE' },
-    { labelKey: 'menu.structure.hospital', route: '/structures/hospitals', moduleCode: 'STRUCTURE' },
-    { labelKey: 'menu.structure.hospitalPharmacy', route: '/structures/hospital-pharmacies', moduleCode: 'STRUCTURE' },
-    { labelKey: 'menu.structure.retailPharmacy', route: '/structures/retail-pharmacies', moduleCode: 'STRUCTURE' },
-    { labelKey: 'menu.structure.logisticsWarehouse', route: '/structures/logistics-warehouses', moduleCode: 'STRUCTURE' },
-    { labelKey: 'menu.structure.materialWarehouse', route: '/structures/material-warehouses', moduleCode: 'STRUCTURE' },
-    { labelKey: 'menu.structure.pharmaCompany', route: '/structures/pharma-companies', moduleCode: 'STRUCTURE' },
-    { labelKey: 'menu.structure.specialistClinic', route: '/structures/specialist-clinics', moduleCode: 'STRUCTURE' },
-    { labelKey: 'menu.structure.vendor', route: '/structures/vendors', moduleCode: 'STRUCTURE' }
+    { labelKey: 'menu.structure.aslSearch', route: '/structures/asl', moduleCode: 'STRUCTURE' },
+    { labelKey: 'menu.structure.hospitalSearch', route: '/structures/hospitals', moduleCode: 'STRUCTURE' },
+    { labelKey: 'menu.structure.hospitalPharmacySearch', route: '/structures/hospital-pharmacies', moduleCode: 'STRUCTURE' },
+    { labelKey: 'menu.structure.retailPharmacySearch', route: '/structures/retail-pharmacies', moduleCode: 'STRUCTURE' },
+    { labelKey: 'menu.structure.logisticsWarehouseSearch', route: '/structures/logistics-warehouses', moduleCode: 'STRUCTURE' },
+    { labelKey: 'menu.structure.materialWarehouseSearch', route: '/structures/material-warehouses', moduleCode: 'STRUCTURE' },
+    { labelKey: 'menu.structure.pharmaCompanySearch', route: '/structures/pharma-companies', moduleCode: 'STRUCTURE' },
+    { labelKey: 'menu.structure.specialistClinicSearch', route: '/structures/specialist-clinics', moduleCode: 'STRUCTURE' },
+    { labelKey: 'menu.structure.vendorSearch', route: '/structures/vendors', moduleCode: 'STRUCTURE' }
   ];
 
   get visibleMenuItems(): MenuItem[] {
