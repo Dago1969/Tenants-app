@@ -27,8 +27,22 @@ export class UsersSearchComponent {
 
   filters: SearchField[] = [
     { key: 'username', labelKey: 'users.field.username', type: 'text' },
-    { key: 'roleId', labelKey: 'users.field.roleId', type: 'text' },
-    { key: 'structureId', labelKey: 'users.field.structureId', type: 'number' },
+    {
+      key: 'roleId',
+      labelKey: 'users.field.roleId',
+      type: 'select',
+      optionsEndpoint: 'roles',
+      optionValueKey: 'id',
+      optionLabelKey: 'description'
+    },
+    {
+      key: 'structureId',
+      labelKey: 'users.field.structureId',
+      type: 'select',
+      optionsEndpoint: 'structures',
+      optionValueKey: 'id',
+      optionLabelKey: 'selectionLabel'
+    },
     { key: 'enabled', labelKey: 'users.field.enabled', type: 'boolean' }
   ];
 

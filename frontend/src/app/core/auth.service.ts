@@ -1,3 +1,4 @@
+// ...existing code...
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 
@@ -6,6 +7,50 @@ import { BehaviorSubject, Observable } from 'rxjs';
  */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+    /**
+     * Estrae il nome completo (name) dal JWT.
+     */
+    getName(): string | null {
+      const token = this.getToken();
+      if (!token) return null;
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.name || null;
+      } catch {
+        return null;
+      }
+    }
+
+    /**
+     * Estrae lo preferred_username dal JWT.
+     */
+    getPreferredUsername(): string | null {
+      const token = this.getToken();
+      if (!token) return null;
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.preferred_username || null;
+      } catch {
+        return null;
+      }
+    }
+  /**
+   * Estrae il nome visualizzato dal token JWT:
+   * - name (nome completo)
+   * - preferred_username
+   * - username
+   * - sub (UUID, solo fallback)
+   */
+  getUsername(): string | null {
+    const token = this.getToken();
+    if (!token) return null;
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.name || payload.preferred_username || payload.username || payload.sub || null;
+    } catch {
+      return null;
+    }
+  }
   private readonly tokenStorageKey = 'qtm_access_token';
   private readonly roleStorageKey = 'qtm_selected_role';
   private readonly clientStorageKey = 'qtm_selected_client';

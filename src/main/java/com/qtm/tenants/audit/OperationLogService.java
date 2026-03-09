@@ -38,15 +38,27 @@ public class OperationLogService {
     }
 
     private String resolveUsername(String candidate) {
+        // Se viene passato un candidato esplicito, usalo
         if (candidate != null && !candidate.isBlank()) {
             return candidate;
         }
 
+        // Recupera l'utente autenticato dal SecurityContext
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || authentication.getName() == null) {
             return "anonymous";
         }
 
+        // Se il principal è un JWT, prova a estrarre il preferred_username
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof org.springframework.security.oauth2.jwt.Jwt jwt) {
+            String preferred = jwt.getClaimAsString("preferred_username");
+            if (preferred != null && !preferred.isBlank()) {
+                return preferred;
+            }
+        }
+
+        // Fallback: usa il nome dell'autenticazione
         return authentication.getName();
     }
 

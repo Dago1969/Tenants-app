@@ -5,6 +5,10 @@ import com.qtm.tenants.user.dto.UserDto;
 import com.qtm.tenants.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,6 +30,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class UserController {
 
+        private static final Logger log = LoggerFactory.getLogger(UserController.class);
+
     private static final String MODULE_CODE = "USER";
 
     private final UserService userService;
@@ -44,13 +50,25 @@ public class UserController {
         return ResponseEntity.ok(userService.create(userDto));
     }
 
-    @GetMapping
-    public ResponseEntity<List<UserDto>> findAll(
-            @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
-    ) {
-        controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
-        return ResponseEntity.ok(userService.findAll());
-    }
+        @GetMapping
+        public ResponseEntity<List<UserDto>> findAll(
+                        @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole,
+                        @AuthenticationPrincipal Jwt jwt
+        ) {
+                if (jwt != null) {
+                        String preferredUsername = jwt.getClaimAsString("preferred_username");
+                        String username = jwt.getClaimAsString("username");
+                        String sub = jwt.getSubject();
+                        log.info("[TENANTS-APP] JWT subject: {}", sub);
+                        log.info("[TENANTS-APP] JWT preferred_username: {}", preferredUsername);
+                        log.info("[TENANTS-APP] JWT username: {}", username);
+                        log.info("[TENANTS-APP] JWT claims: {}", jwt.getClaims());
+                } else {
+                        log.warn("[TENANTS-APP] Nessun principal JWT disponibile");
+                }
+                controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
+                return ResponseEntity.ok(userService.findAll());
+        }
 
     @GetMapping("/search")
     public ResponseEntity<List<UserDto>> search(

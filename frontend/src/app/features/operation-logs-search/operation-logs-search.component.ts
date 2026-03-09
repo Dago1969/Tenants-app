@@ -27,10 +27,41 @@ export class OperationLogsSearchComponent {
   endpoint = 'operation-logs/search';
 
   filters: SearchField[] = [
-    { key: 'moduleCode', labelKey: 'operationLogs.field.moduleCode', type: 'text' },
-    { key: 'functionCode', labelKey: 'operationLogs.field.functionCode', type: 'text' },
-    { key: 'operation', labelKey: 'operationLogs.field.operation', type: 'text' },
-    { key: 'username', labelKey: 'operationLogs.field.username', type: 'text' },
+    {
+      key: 'moduleCode',
+      labelKey: 'operationLogs.field.moduleCode',
+      type: 'select',
+      optionsEndpoint: 'modules',
+      optionValueKey: 'code',
+      optionLabelKey: 'name'
+    },
+    {
+      key: 'functionCode',
+      labelKey: 'operationLogs.field.functionCode',
+      type: 'select',
+      optionsEndpoint: 'functions',
+      optionValueKey: 'code',
+      optionLabelKey: 'name'
+    },
+    {
+      key: 'operation',
+      labelKey: 'operationLogs.field.operation',
+      type: 'select',
+      options: [
+        { value: 'INSERT', label: 'Inserimento' },
+        { value: 'UPDATE', label: 'Modifica' },
+        { value: 'DELETE', label: 'Cancellazione' }
+      ]
+    },
+    {
+      key: 'username',
+      labelKey: 'operationLogs.field.username',
+      type: 'autocomplete',
+      optionsEndpoint: 'users/search',
+      optionsQueryParamKey: 'username',
+      optionValueKey: 'username',
+      optionLabelKey: 'username'
+    },
     { key: 'roleId', labelKey: 'operationLogs.field.roleId', type: 'text' },
     { key: 'targetId', labelKey: 'operationLogs.field.targetId', type: 'text' },
     { key: 'description', labelKey: 'operationLogs.field.description', type: 'text' }

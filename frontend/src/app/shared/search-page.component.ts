@@ -11,12 +11,13 @@ import { hasMessageKey, MessageKey, t } from '../i18n/messages';
 export interface SearchField {
   key: string;
   labelKey: MessageKey;
-  type: 'text' | 'number' | 'boolean' | 'select';
+  type: 'text' | 'number' | 'boolean' | 'select' | 'autocomplete';
   optionsEndpoint?: string;
   options?: Array<{ value: string; label: string }>;
   displayValueMap?: Record<string, string>;
   optionValueKey?: string;
   optionLabelKey?: string;
+  optionsQueryParamKey?: string;
 }
 
 type SearchResult = Record<string, unknown> & { id?: string | number };
@@ -77,7 +78,7 @@ type DeleteDialogMode = 'confirm' | 'reassign';
             <label style="display:flex; flex-direction:column; gap:4px;">
               <span>{{ translate(field.labelKey) }}</span>
               <input
-                *ngIf="field.type !== 'boolean' && field.type !== 'select'"
+                *ngIf="field.type !== 'boolean' && field.type !== 'select' && field.type !== 'autocomplete'"
                 [type]="field.type"
                 [(ngModel)]="filterModel[field.key]"
                 [name]="field.key"
@@ -102,6 +103,19 @@ type DeleteDialogMode = 'confirm' | 'reassign';
                 <option value=""></option>
                 <option *ngFor="let option of getFieldOptions(field)" [ngValue]="option.value">{{ option.label }}</option>
               </select>
+              <input
+                *ngIf="field.type === 'autocomplete'"
+                type="text"
+                [attr.list]="getAutocompleteListId(field)"
+                [(ngModel)]="filterModel[field.key]"
+                [name]="field.key"
+                (input)="onAutocompleteInput(field, autocompleteValue.value)"
+                #autocompleteValue
+                style="border:1px solid #bfc9d9; border-radius:4px; padding:6px 8px; background:#f8fafc;"
+              />
+              <datalist *ngIf="field.type === 'autocomplete'" [id]="getAutocompleteListId(field)">
+                <option *ngFor="let option of getAutocompleteOptions(field)" [value]="option.value">{{ option.label }}</option>
+              </datalist>
             </label>
           </ng-container>
           <div style="display:flex; gap:8px; align-items:end;">
@@ -210,6 +224,7 @@ export class SearchPageComponent implements OnInit {
   selectedRole = '';
   selectedClient = '';
   fieldOptions: Record<string, SelectOption[]> = {};
+  autocompleteOptions: Record<string, SelectOption[]> = {};
   canCreate = true;
   canEdit = true;
   canDelete = true;
@@ -244,6 +259,14 @@ export class SearchPageComponent implements OnInit {
 
   getFieldOptions(field: SearchField): SelectOption[] {
     return this.fieldOptions[field.key] ?? [];
+  }
+
+  getAutocompleteOptions(field: SearchField): SelectOption[] {
+    return this.autocompleteOptions[field.key] ?? [];
+  }
+
+  getAutocompleteListId(field: SearchField): string {
+    return `search-autocomplete-${field.key}`;
   }
 
   getDisplayValue(field: SearchField, value: unknown): string {
@@ -308,6 +331,34 @@ export class SearchPageComponent implements OnInit {
   resetFilters(): void {
     this.filterModel = {};
     this.results = [];
+    this.autocompleteOptions = {};
+  }
+
+  onAutocompleteInput(field: SearchField, rawValue: string): void {
+    const value = rawValue.trim();
+    if (!field.optionsEndpoint) {
+      return;
+    }
+
+    if (value.length === 0) {
+      this.autocompleteOptions[field.key] = [];
+      return;
+    }
+
+    let params = new HttpParams().set(field.optionsQueryParamKey ?? field.key, value);
+    params = params.set('enabled', 'true');
+
+    this.http.get<Record<string, unknown>[]>(`${environment.apiBaseUrl}/${field.optionsEndpoint}`, { params }).subscribe({
+      next: (items) => {
+        this.autocompleteOptions[field.key] = (items ?? [])
+          .map((item) => this.mapToSelectOption(field, item))
+          .filter((option): option is SelectOption => option !== null)
+          .slice(0, 20);
+      },
+      error: () => {
+        this.autocompleteOptions[field.key] = [];
+      }
+    });
   }
 
   openView(id: unknown): void {

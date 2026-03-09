@@ -4,6 +4,12 @@ import com.qtm.tenants.role.dto.RoleDto;
 import com.qtm.tenants.role.entity.RoleEntity;
 import com.qtm.tenants.role.mapper.RoleMapper;
 import com.qtm.tenants.role.repository.RoleRepository;
+import com.qtm.tenants.authorization.AuthorizationManagementService;
+import com.qtm.tenants.authorization.ModuleRoleAuthorizationRepository;
+import com.qtm.tenants.authorization.FieldAuthorizationRepository;
+import com.qtm.tenants.authorization.repository.FunctionModuleRoleAuthorizationRepository;
+import com.qtm.tenants.user.repository.UserRepository;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,6 +21,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
@@ -25,12 +32,32 @@ class RoleServiceTest {
 
     @Mock
     private RoleRepository roleRepository;
+    @Mock
+    private RoleMapper roleMapper;
+    @Mock
+    private AuthorizationManagementService authorizationManagementService;
+    @Mock
+    private ModuleRoleAuthorizationRepository moduleRoleAuthorizationRepository;
+    @Mock
+    private FieldAuthorizationRepository fieldAuthorizationRepository;
+    @Mock
+    private FunctionModuleRoleAuthorizationRepository functionModuleRoleAuthorizationRepository;
+    @Mock
+    private UserRepository userRepository;
 
     private RoleService roleService;
 
     @BeforeEach
     void setUp() {
-        roleService = new RoleService(roleRepository, new RoleMapper());
+        roleService = new RoleService(
+            roleRepository,
+            roleMapper,
+            authorizationManagementService,
+            moduleRoleAuthorizationRepository,
+            fieldAuthorizationRepository,
+            functionModuleRoleAuthorizationRepository,
+            userRepository
+        );
     }
 
     @Test

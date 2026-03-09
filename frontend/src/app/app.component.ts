@@ -34,6 +34,8 @@ interface MenuItem {
   styleUrl: './app.component.css'
 })
 export class AppComponent implements OnDestroy {
+    username: string | null = null;
+    preferredUsername: string | null = null;
   selectedRole = '';
   selectedClient = '';
   hiddenModuleCodes = new Set<string>();
@@ -49,6 +51,22 @@ export class AppComponent implements OnDestroy {
     this.storeTokenFromQueryString();
     this.selectedRole = this.authService.getSelectedRole();
     this.selectedClient = this.authService.getSelectedClient();
+    this.username = this.authService.getName();
+    this.preferredUsername = this.authService.getPreferredUsername();
+    // Log info utente dal JWT
+    const token = this.authService.getToken();
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        // Loggo tutti i claim disponibili
+        console.log('[TENANTS-APP] JWT payload:', payload);
+        console.log('[TENANTS-APP] getUsername():', this.username);
+      } catch (e) {
+        console.warn('[TENANTS-APP] Errore decodifica JWT:', e);
+      }
+    } else {
+      console.warn('[TENANTS-APP] Nessun token JWT trovato');
+    }
     this.loadModuleVisibility();
 
     this.subscriptions.add(
