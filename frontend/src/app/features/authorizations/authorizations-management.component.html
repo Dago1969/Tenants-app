@@ -26,13 +26,20 @@
     <div class="authz-modules" *ngIf="!loading && modules.length > 0">
       <section class="authz-module-card" *ngFor="let module of modules">
         <div class="authz-module-header">
-          <button class="authz-module-toggle" type="button" (click)="toggleModule(module.moduleCode)">
-            <span>
+          <button
+            class="authz-module-toggle"
+            type="button"
+            (click)="toggleModule(module.moduleCode)"
+            [attr.aria-expanded]="isModuleExpanded(module.moduleCode)"
+          >
+            <span class="authz-module-title-wrap">
               <p class="authz-module-code">{{ module.moduleCode }}</p>
               <h3>{{ translateModuleLabel(module) }}</h3>
             </span>
             <span class="authz-module-chevron" [class.authz-module-chevron-open]="isModuleExpanded(module.moduleCode)">
-              v
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M7 10l5 5 5-5"></path>
+              </svg>
             </span>
           </button>
 
@@ -54,8 +61,15 @@
 
         <div *ngIf="isModuleExpanded(module.moduleCode)">
         <div class="authz-section authz-section-fields" *ngIf="hasFieldRows(module)">
-          <div class="authz-section-header">
-            <h4>{{ translate('authorizations.fields.title') }}</h4>
+          <div class="authz-section-header" style="display: flex; align-items: center; gap: 16px;">
+            <h4 style="margin-bottom: 0;">{{ translate('authorizations.fields.title') }}</h4>
+            <select [(ngModel)]="fieldBulkRule[module.moduleCode]" [disabled]="saving || module.moduleAuthorization === 'deny'">
+              <option [ngValue]="undefined">{{ translate('authorizations.fields.bulkSelectPlaceholder') }}</option>
+              <option *ngFor="let option of fieldScopeOptions" [ngValue]="option.value">{{ translate(option.labelKey) }}</option>
+            </select>
+            <button class="authz-btn" type="button" (click)="applyRuleToAllFields(module)" [disabled]="!fieldBulkRule[module.moduleCode] || saving || module.moduleAuthorization === 'deny'">
+              {{ translate('authorizations.fields.bulkApply') }}
+            </button>
           </div>
 
           <div class="authz-grid authz-grid-head">

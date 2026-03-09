@@ -74,6 +74,14 @@ const MODULE_DISPLAY_ORDER = ['USER', 'PATIENT', 'MEDIC', 'NURSE', 'ROLE', 'MODU
   styleUrl: './authorizations-management.component.css'
 })
 export class AuthorizationsManagementComponent implements OnInit {
+    // Stato temporaneo per la regola selezionata per ogni modulo
+    fieldBulkRule: { [moduleCode: string]: FieldAuthorizationCode } = {};
+    // Applica la regola selezionata a tutti gli attributi del modulo
+    applyRuleToAllFields(module: AuthorizationModuleDto): void {
+      const rule = this.fieldBulkRule[module.moduleCode];
+      if (!rule) return;
+      (module.fields ?? []).forEach(field => field.authorization = rule);
+    }
   roles: RoleDto[] = [];
   selectedRoleId = '';
   modules: AuthorizationModuleDto[] = [];
@@ -314,21 +322,10 @@ export class AuthorizationsManagementComponent implements OnInit {
       return;
     }
 
-    if (this.expandedModuleCodes.size === 0) {
-      this.expandedModuleCodes = new Set(this.modules.map((module) => module.moduleCode));
-      return;
-    }
-
     const availableCodes = new Set(this.modules.map((module) => module.moduleCode));
     this.expandedModuleCodes = new Set(
       [...this.expandedModuleCodes].filter((moduleCode) => availableCodes.has(moduleCode))
     );
-
-    this.modules.forEach((module) => {
-      if (!this.expandedModuleCodes.has(module.moduleCode)) {
-        this.expandedModuleCodes.add(module.moduleCode);
-      }
-    });
   }
 
   private getModuleOrder(moduleCode: string): number {
