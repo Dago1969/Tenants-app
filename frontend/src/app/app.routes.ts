@@ -23,6 +23,7 @@ import { StructureCatalogComponent } from './features/structure-catalog/structur
 import { StructureSearchComponent } from './features/structure-search/structure-search.component';
 import { StructureTypesSearchComponent } from './features/structure-types-search/structure-types-search.component';
 import { StructureTypesCrudComponent } from './features/structure-types-crud/structure-types-crud.component';
+import { OperationLogsSearchComponent } from './features/operation-logs-search/operation-logs-search.component';
 import { moduleVisibilityGuard } from './core/module-visibility.guard';
 
 /**
@@ -40,6 +41,7 @@ export const appRoutes: Routes = [
   { path: 'roles/:id', component: RolesCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('ROLE')] },
   { path: 'authorizations', component: AuthorizationsManagementComponent, canActivate: [authGuard] },
   { path: 'controller-function-mappings', component: ControllerFunctionMappingsComponent, canActivate: [authGuard] },
+  { path: 'operation-logs/search', component: OperationLogsSearchComponent, canActivate: [authGuard] },
   { path: 'authorization-functions', loadComponent: () => import('./features/authorization-functions/authorization-functions-crud.component').then(m => m.AuthorizationFunctionsCrudComponent), canActivate: [authGuard] },
   { path: 'authorization-functions/search', loadComponent: () => import('./features/authorization-functions-search/authorization-functions-search.component').then(m => m.AuthorizationFunctionsSearchComponent), canActivate: [authGuard] },
   { path: 'modules', component: ModulesCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('MODULE')] },

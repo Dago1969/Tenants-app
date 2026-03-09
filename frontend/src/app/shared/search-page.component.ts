@@ -115,14 +115,14 @@ type DeleteDialogMode = 'confirm' | 'reassign';
             <tr>
               <th>{{ translate(resultIdLabelKey) }}</th>
               <th *ngFor="let column of resultColumns">{{ translate(column.labelKey) }}</th>
-              <th>{{ translate('search.actions') }}</th>
+              <th *ngIf="hasRowActions">{{ translate('search.actions') }}</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let row of results">
               <td>{{ getRowIdentifier(row) }}</td>
               <td *ngFor="let column of resultColumns">{{ getDisplayValue(column, row[column.key]) }}</td>
-              <td class="actions">
+              <td *ngIf="hasRowActions" class="actions">
                 <button *ngIf="showEditAction && canEdit" class="icon-btn" type="button" (click)="openEdit(getRowIdentifier(row))" [title]="translate('search.action.edit')">
                   <span style="font-size:1.2rem;">✏️</span>
                 </button>
@@ -137,7 +137,7 @@ type DeleteDialogMode = 'confirm' | 'reassign';
           </tbody>
         </table>
       </div>
-      <button *ngIf="canCreate" class="search-new-btn" type="button" (click)="openEdit('new')">{{ translate('crud.actions.new') }}</button>
+      <button *ngIf="showCreateAction && canCreate" class="search-new-btn" type="button" (click)="openEdit('new')">{{ translate('crud.actions.new') }}</button>
 
       <div *ngIf="deleteDialogOpen" class="search-dialog-backdrop" (click)="closeDeleteDialog()">
         <div class="search-dialog" role="dialog" aria-modal="true" aria-labelledby="search-delete-dialog-title" (click)="$event.stopPropagation()">
@@ -199,6 +199,7 @@ export class SearchPageComponent implements OnInit {
   @Input() resultIdKey = 'id';
   @Input() resultIdLabelKey: MessageKey = 'common.id';
   @Input() autoSearch = false;
+  @Input() showCreateAction = true;
   @Input() showEditAction = true;
   @Input() showViewAction = true;
   @Input() showDeleteAction = true;
@@ -266,6 +267,10 @@ export class SearchPageComponent implements OnInit {
 
   get canConfirmDeleteDialog(): boolean {
     return this.deleteDialogMode === 'confirm' || this.deleteDialogReplacementRoleId.trim().length > 0;
+  }
+
+  get hasRowActions(): boolean {
+    return this.showEditAction || this.showViewAction || this.showDeleteAction;
   }
 
   search(showFeedback = true): void {
