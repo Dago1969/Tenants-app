@@ -1,9 +1,8 @@
-package com.qtm.tenants.medic.controller;
+package com.qtm.tenants.doctor.controller;
 
 import com.qtm.tenants.authorization.service.ControllerFunctionAuthorizationService;
-import com.qtm.tenants.function.dto.FunctionDto;
-import com.qtm.tenants.medic.dto.MedicDto;
-import com.qtm.tenants.medic.service.MedicService;
+import com.qtm.tenants.doctor.dto.DoctorDto;
+import com.qtm.tenants.doctor.service.DoctorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -20,21 +19,21 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Controller REST CRUD medici.
+ * Controller REST CRUD dottori.
  */
 @RestController
-@RequestMapping("/api/tenants/medics")
+@RequestMapping("/api/tenants/doctors")
 @RequiredArgsConstructor
-public class MedicController {
+public class DoctorController {
 
-    private static final String MODULE_CODE = "MEDIC";
+    private static final String MODULE_CODE = "DOCTOR";
 
-    private final MedicService medicService;
+    private final DoctorService doctorService;
     private final ControllerFunctionAuthorizationService controllerFunctionAuthorizationService;
 
     @PostMapping
-    public ResponseEntity<MedicDto> create(
-            @RequestBody MedicDto medicDto,
+    public ResponseEntity<DoctorDto> create(
+            @RequestBody DoctorDto doctorDto,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
         controllerFunctionAuthorizationService.requireFullEditPermission(
@@ -42,14 +41,14 @@ public class MedicController {
                 MODULE_CODE,
                 ControllerFunctionAuthorizationService.CREATE_FUNCTION_CODE
         );
-        return ResponseEntity.ok(medicService.create(medicDto));
+        return ResponseEntity.ok(doctorService.create(doctorDto));
     }
 
     /**
      * Azione specifica del modulo FUNCTION usata dalla matrice autorizzazioni per la funzione APPROVE.
      */
     @PostMapping("/approve/{code}")
-    public ResponseEntity<MedicDto> approve(
+        public ResponseEntity<DoctorDto> approve(
             @PathVariable Long id,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
@@ -58,14 +57,14 @@ public class MedicController {
             MODULE_CODE,
             ControllerFunctionAuthorizationService.APPROVE_FUNCTION_CODE
         );
-        return ResponseEntity.ok(medicService.findById(id));
+        return ResponseEntity.ok(doctorService.findById(id));
     }
 
      /**
      * Azione specifica del modulo FUNCTION usata dalla matrice autorizzazioni per la funzione TEST.
      */
     @PostMapping("/test2/{code}")
-    public ResponseEntity<MedicDto> test2(
+        public ResponseEntity<DoctorDto> test2(
             @PathVariable Long id,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
@@ -74,11 +73,11 @@ public class MedicController {
             MODULE_CODE,
             ControllerFunctionAuthorizationService.APPROVE_FUNCTION_CODE
         );
-        return ResponseEntity.ok(medicService.findById(id));
+        return ResponseEntity.ok(doctorService.findById(id));
     }
 
         @PostMapping("/test/{code}")
-    public ResponseEntity<MedicDto> test(
+    public ResponseEntity<DoctorDto> test(
             @PathVariable Long id,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
@@ -87,24 +86,24 @@ public class MedicController {
             MODULE_CODE,
             ControllerFunctionAuthorizationService.APPROVE_FUNCTION_CODE
         );
-        return ResponseEntity.ok(medicService.findById(id));
+        return ResponseEntity.ok(doctorService.findById(id));
     }
 
     @GetMapping
-    public ResponseEntity<List<MedicDto>> findAll(
+    public ResponseEntity<List<DoctorDto>> findAll(
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
         controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
-        return ResponseEntity.ok(medicService.findAll());
+        return ResponseEntity.ok(doctorService.findAll());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<MedicDto> findById(
+    public ResponseEntity<DoctorDto> findById(
             @PathVariable Long id,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
         controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
-        return ResponseEntity.ok(medicService.findById(id));
+        return ResponseEntity.ok(doctorService.findById(id));
     }
 
     @GetMapping("/permissions")
@@ -112,13 +111,13 @@ public class MedicController {
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
         controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
-        return ResponseEntity.ok(medicService.getFieldAuthorizationsForCurrentRole());
+        return ResponseEntity.ok(doctorService.getFieldAuthorizationsForCurrentRole());
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<MedicDto> update(
+        public ResponseEntity<DoctorDto> update(
             @PathVariable Long id,
-            @RequestBody MedicDto medicDto,
+            @RequestBody DoctorDto doctorDto,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
         controllerFunctionAuthorizationService.requireFullEditPermission(
@@ -126,7 +125,7 @@ public class MedicController {
                 MODULE_CODE,
                 ControllerFunctionAuthorizationService.UPDATE_FUNCTION_CODE
         );
-        return ResponseEntity.ok(medicService.update(id, medicDto));
+        return ResponseEntity.ok(doctorService.update(id, doctorDto));
     }
 
     @DeleteMapping("/{id}")
@@ -139,7 +138,7 @@ public class MedicController {
                 MODULE_CODE,
                 ControllerFunctionAuthorizationService.DELETE_FUNCTION_CODE
         );
-        medicService.delete(id);
+        doctorService.delete(id);
         return ResponseEntity.noContent().build();
     }
 }

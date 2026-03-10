@@ -95,7 +95,7 @@ export class AppComponent implements OnDestroy {
 
   registryMenuItems: MenuItem[] = [
     { labelKey: 'menu.patientsSearch', route: '/patients/search', moduleCode: 'PATIENT' },
-    { labelKey: 'menu.medicsSearch', route: '/medics/search', moduleCode: 'MEDIC' },
+    { labelKey: 'menu.doctorsSearch', route: '/doctors/search', moduleCode: 'DOCTOR' },
     { labelKey: 'menu.nursesSearch', route: '/nurses/search', moduleCode: 'NURSE' }
   ];
 

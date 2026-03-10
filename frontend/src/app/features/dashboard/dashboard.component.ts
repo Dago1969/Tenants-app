@@ -88,7 +88,7 @@ export class DashboardComponent implements OnInit {
     { route: '/functions/search', labelKey: 'menu.functionsSearch', moduleCode: 'FUNCTION' },
     { route: '/structures/asl', labelKey: 'menu.structure.aslSearch', moduleCode: 'STRUCTURE' },
     { route: '/patients/search', labelKey: 'menu.patientsSearch', moduleCode: 'PATIENT' },
-    { route: '/medics/search', labelKey: 'menu.medicsSearch', moduleCode: 'MEDIC' },
+    { route: '/doctors/search', labelKey: 'menu.doctorsSearch', moduleCode: 'DOCTOR' },
     { route: '/nurses/search', labelKey: 'menu.nursesSearch', moduleCode: 'NURSE' }
   ];
 

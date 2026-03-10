@@ -26,12 +26,12 @@ import java.util.stream.Collectors;
 public class AuthorizationBootstrap implements CommandLineRunner {
 
     private static final String MODULE_PATIENT = "PATIENT";
-    private static final String MODULE_MEDIC = "MEDIC";
+    private static final String MODULE_DOCTOR = "DOCTOR";
     private static final String MODULE_NURSE = "NURSE";
     private static final String MODULE_FUNCTION = "FUNCTION";
-    private static final List<String> MODULE_CODES = List.of("USER", "STRUCTURE", "ROLE", "MODULE", MODULE_FUNCTION, MODULE_PATIENT, MODULE_MEDIC, MODULE_NURSE);
+    private static final List<String> MODULE_CODES = List.of("USER", "STRUCTURE", "ROLE", "MODULE", MODULE_FUNCTION, MODULE_PATIENT, MODULE_DOCTOR, MODULE_NURSE);
     private static final String ENTITY_PATIENT = "patient";
-    private static final String ENTITY_MEDIC = "medic";
+    private static final String ENTITY_DOCTOR = "doctor";
     private static final String ENTITY_NURSE = "nurse";
 
     private static final List<String> PATIENT_FIELDS = List.of(
@@ -43,7 +43,7 @@ public class AuthorizationBootstrap implements CommandLineRunner {
             "reminderEnabled", "caregiverFullName", "caregiverPhone", "preferredContact", "structureId"
     );
 
-            private static final List<String> MEDIC_FIELDS = List.of(
+            private static final List<String> DOCTOR_FIELDS = List.of(
                 "doctorFlyerId", "fullName", "email", "primaryPhone", "secondaryPhone",
                 "region", "province", "deliveryAddress", "secondaryAddresses", "structureId",
                 "specialization", "dataProcessingConsent", "dataProcessingConsentDateTime",
@@ -79,8 +79,8 @@ public class AuthorizationBootstrap implements CommandLineRunner {
                 if (MODULE_PATIENT.equals(moduleCode)) {
                     ensurePatientFieldAuthorizations(moduleRoleAuthorization, adminRole);
                 }
-                if (MODULE_MEDIC.equals(moduleCode)) {
-                    ensureMedicFieldAuthorizations(moduleRoleAuthorization, adminRole);
+                if (MODULE_DOCTOR.equals(moduleCode)) {
+                    ensureDoctorFieldAuthorizations(moduleRoleAuthorization, adminRole);
                 }
                 if (MODULE_NURSE.equals(moduleCode)) {
                     ensureNurseFieldAuthorizations(moduleRoleAuthorization, adminRole);
@@ -158,32 +158,32 @@ public class AuthorizationBootstrap implements CommandLineRunner {
         return AuthorizationScope.READ_ONLY;
     }
 
-    private void ensureMedicFieldAuthorizations(
+    private void ensureDoctorFieldAuthorizations(
             ModuleRoleAuthorizationEntity moduleRoleAuthorization,
             boolean adminRole
     ) {
         Map<String, FieldAuthorizationEntity> existingByField = fieldAuthorizationRepository
                 .findAllByModuleRoleAuthorizationModuleCodeAndModuleRoleAuthorizationRoleIdAndEntityName(
-                        MODULE_MEDIC,
+                        MODULE_DOCTOR,
                         moduleRoleAuthorization.getRole().getId(),
-                        ENTITY_MEDIC
+                        ENTITY_DOCTOR
                 ).stream().collect(Collectors.toMap(FieldAuthorizationEntity::getFieldName, Function.identity()));
 
-        for (String field : MEDIC_FIELDS) {
+        for (String field : DOCTOR_FIELDS) {
             if (existingByField.containsKey(field)) {
                 continue;
             }
 
             FieldAuthorizationEntity fieldAuthorization = new FieldAuthorizationEntity();
             fieldAuthorization.setModuleRoleAuthorization(moduleRoleAuthorization);
-            fieldAuthorization.setEntityName(ENTITY_MEDIC);
+            fieldAuthorization.setEntityName(ENTITY_DOCTOR);
             fieldAuthorization.setFieldName(field);
-            fieldAuthorization.setAuthorization(defaultMedicFieldScope(adminRole, field));
+            fieldAuthorization.setAuthorization(defaultDoctorFieldScope(adminRole, field));
             fieldAuthorizationRepository.save(fieldAuthorization);
         }
     }
 
-    private AuthorizationScope defaultMedicFieldScope(boolean adminRole, String field) {
+    private AuthorizationScope defaultDoctorFieldScope(boolean adminRole, String field) {
         if (adminRole) {
             return AuthorizationScope.FULL_EDIT;
         }

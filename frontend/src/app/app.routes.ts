@@ -9,13 +9,13 @@ import { FunctionsCrudComponent } from './features/functions/functions-crud.comp
 import { FunctionsSearchComponent } from './features/functions-search/functions-search.component';
 import { PatientsCrudComponent } from './features/patients/patients-crud.component';
 import { PatientsSearchComponent } from './features/patients-search/patients-search.component';
-import { MedicsCrudComponent } from './features/medics/medics-crud.component';
+import { DoctorsCrudComponent } from './features/doctors/doctors-crud.component';
 import { NursesCrudComponent } from './features/nurses/nurses-crud.component';
 import { NotAuthorizedComponent } from './features/not-authorized/not-authorized.component';
 import { ForbiddenComponent } from './features/forbidden/forbidden.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { UsersSearchComponent } from './features/users-search/users-search.component';
-import { MedicsSearchComponent } from './features/medics-search/medics-search.component';
+import { DoctorsSearchComponent } from './features/doctors-search/doctors-search.component';
 import { NursesSearchComponent } from './features/nurses-search/nurses-search.component';
 import { AuthorizationsManagementComponent } from './features/authorizations/authorizations-management.component';
 import { ControllerFunctionMappingsComponent } from './features/controller-function-mappings/controller-function-mappings.component';
@@ -34,7 +34,7 @@ export const appRoutes: Routes = [
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
   { path: 'users', component: UsersCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('USER')] },
   { path: 'users/search', component: UsersSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('USER')] },
-  { path: 'medics/search', component: MedicsSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('MEDIC')] },
+  { path: 'doctors/search', component: DoctorsSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('DOCTOR')] },
   { path: 'nurses/search', component: NursesSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('NURSE')] },
   { path: 'roles', component: RolesSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('ROLE')] },
   { path: 'roles/new', component: RolesCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('ROLE')] },
@@ -81,7 +81,7 @@ export const appRoutes: Routes = [
   { path: 'structures/vendors/manage/:id', component: StructureCatalogComponent, canActivate: [authGuard, moduleVisibilityGuard('STRUCTURE')], data: { structureType: 'VENDOR', titleKey: 'structures.type.vendor.title' } },
   { path: 'patients', component: PatientsCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('PATIENT')] },
   { path: 'patients/search', component: PatientsSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('PATIENT')] },
-  { path: 'medics', component: MedicsCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('MEDIC')] },
+  { path: 'doctors', component: DoctorsCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('DOCTOR')] },
   { path: 'nurses', component: NursesCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('NURSE')] },
   { path: 'not-authorized', component: NotAuthorizedComponent },
   { path: 'forbidden', component: ForbiddenComponent },

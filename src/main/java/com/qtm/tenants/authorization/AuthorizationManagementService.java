@@ -10,7 +10,7 @@ import com.qtm.tenants.authorization.repository.FunctionModuleRoleAuthorizationR
 import com.qtm.tenants.authorization.service.ControllerFunctionAuthorizationService;
 import com.qtm.tenants.function.entity.FunctionEntity;
 import com.qtm.tenants.function.repository.FunctionRepository;
-import com.qtm.tenants.medic.entity.MedicEntity;
+import com.qtm.tenants.doctor.entity.DoctorEntity;
 import com.qtm.tenants.module.entity.ModuleEntity;
 import com.qtm.tenants.module.repository.ModuleRepository;
 import com.qtm.tenants.nurse.entity.NurseEntity;
@@ -57,10 +57,10 @@ public class AuthorizationManagementService {
                     resolveEntityFields(PatientEntity.class, Set.of("id"), Map.of())
             ),
             new ModuleDefinition(
-                    "MEDIC",
-                    "Medici",
-                    "medic",
-                    resolveEntityFields(MedicEntity.class, Set.of("id"), Map.of())
+                    "DOCTOR",
+                    "Dottori",
+                    "doctor",
+                    resolveEntityFields(DoctorEntity.class, Set.of("id"), Map.of())
             ),
             new ModuleDefinition(
                     "NURSE",
@@ -226,17 +226,25 @@ public class AuthorizationManagementService {
             ModuleDefinition definition,
             Map<String, FunctionEntity> functionsByCode
     ) {
-        ModuleEntity module = ensureModule(definition);
-        ModuleRoleAuthorizationEntity moduleRoleAuthorization = ensureModuleRoleAuthorization(module, role, AuthorizationScope.ALLOW);
+        Optional<ModuleEntity> module = moduleRepository.findById(definition.code());
+        Optional<ModuleRoleAuthorizationEntity> moduleRoleAuthorization = module
+                .flatMap(currentModule -> moduleRoleAuthorizationRepository.findByModuleCodeAndRoleId(currentModule.getCode(), role.getId()));
 
-        Map<String, AuthorizationScope> fieldScopes = fieldAuthorizationRepository
-                .findAllByModuleRoleAuthorizationAndEntityName(moduleRoleAuthorization, definition.entityName()).stream()
-                .collect(Collectors.toMap(
-                        FieldAuthorizationEntity::getFieldName,
-                        FieldAuthorizationEntity::getAuthorization,
-                        (left, right) -> right,
-                        LinkedHashMap::new
-                ));
+        AuthorizationScope moduleScope = moduleRoleAuthorization
+                .map(ModuleRoleAuthorizationEntity::getAuthorization)
+                .filter(java.util.Objects::nonNull)
+                .orElse(AuthorizationScope.ALLOW);
+
+        Map<String, AuthorizationScope> fieldScopes = moduleRoleAuthorization
+                .map(currentAuthorization -> fieldAuthorizationRepository
+                        .findAllByModuleRoleAuthorizationAndEntityName(currentAuthorization, definition.entityName()).stream()
+                        .collect(Collectors.toMap(
+                                FieldAuthorizationEntity::getFieldName,
+                                FieldAuthorizationEntity::getAuthorization,
+                                (left, right) -> right,
+                                LinkedHashMap::new
+                        )))
+                .orElseGet(LinkedHashMap::new);
 
         List<AuthorizationFieldDto> fields = definition.fields().stream()
                 .map(field -> new AuthorizationFieldDto(
@@ -245,14 +253,16 @@ public class AuthorizationManagementService {
                 ))
                 .toList();
 
-        Map<String, AuthorizationScope> functionScopes = functionModuleRoleAuthorizationRepository
-                .findAllByRoleIdAndModuleCode(role.getId(), module.getCode()).stream()
-                .collect(Collectors.toMap(
-                        entity -> entity.getFunction().getCode(),
-                        FunctionModuleRoleAuthorizationEntity::getAuthorization,
-                        (left, right) -> right,
-                        LinkedHashMap::new
-                ));
+        Map<String, AuthorizationScope> functionScopes = module
+                .map(currentModule -> functionModuleRoleAuthorizationRepository
+                        .findAllByRoleIdAndModuleCode(role.getId(), currentModule.getCode()).stream()
+                        .collect(Collectors.toMap(
+                                entity -> entity.getFunction().getCode(),
+                                FunctionModuleRoleAuthorizationEntity::getAuthorization,
+                                (left, right) -> right,
+                                LinkedHashMap::new
+                        )))
+                .orElseGet(LinkedHashMap::new);
 
         List<AuthorizationFunctionDto> functions = controllerFunctionAuthorizationService.getSupportedFunctionCodes(definition.code()).stream()
                 .map(functionsByCode::get)
@@ -260,16 +270,16 @@ public class AuthorizationManagementService {
                 .map(function -> new AuthorizationFunctionDto(
                         function.getCode(),
                         function.getName(),
-                        toFunctionAuthorizationCode(functionScopes.getOrDefault(function.getCode(), moduleRoleAuthorization.getAuthorization())),
+                        toFunctionAuthorizationCode(functionScopes.getOrDefault(function.getCode(), moduleScope)),
                         controllerFunctionAuthorizationService.isCommonFunctionCode(function.getCode())
                 ))
                 .toList();
 
         return new AuthorizationModuleDto(
                 definition.code(),
-                module.getName(),
+                module.map(ModuleEntity::getName).orElse(definition.name()),
                 definition.entityName(),
-                toModuleAuthorizationCode(moduleRoleAuthorization.getAuthorization()),
+                toModuleAuthorizationCode(moduleScope),
                 fields,
                 functions
         );

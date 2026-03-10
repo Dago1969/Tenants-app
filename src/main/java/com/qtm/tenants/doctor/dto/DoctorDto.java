@@ -1,4 +1,4 @@
-package com.qtm.tenants.medic.dto;
+package com.qtm.tenants.doctor.dto;
 
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -7,12 +7,12 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 /**
- * DTO medico tenant.
+ * DTO dottore tenant.
  */
 @Getter
 @Setter
 @NoArgsConstructor
-public class MedicDto {
+public class DoctorDto {
 
     private Long id;
     private String doctorFlyerId;

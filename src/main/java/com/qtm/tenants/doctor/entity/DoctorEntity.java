@@ -1,4 +1,4 @@
-package com.qtm.tenants.medic.entity;
+package com.qtm.tenants.doctor.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,11 +16,11 @@ import java.time.LocalDateTime;
  * Entity medico tenant con dati identificativi, di contatto e consensi privacy.
  */
 @Entity
-@Table(name = "medics")
+@Table(name = "doctors")
 @Getter
 @Setter
 @NoArgsConstructor
-public class MedicEntity {
+public class DoctorEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

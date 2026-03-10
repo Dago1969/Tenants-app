@@ -45,7 +45,7 @@ interface AuthorizationRoleMatrixDto {
 const MODULE_TITLE_KEYS: Record<string, MessageKey> = {
   USER: 'menu.users',
   PATIENT: 'menu.patients',
-  MEDIC: 'menu.medics',
+  DOCTOR: 'menu.doctors',
   NURSE: 'menu.nurses',
   ROLE: 'menu.roles',
   MODULE: 'menu.modules',
@@ -56,7 +56,7 @@ const MODULE_TITLE_KEYS: Record<string, MessageKey> = {
 const MODULE_MESSAGE_PREFIXES: Record<string, string> = {
   USER: 'users',
   PATIENT: 'patients',
-  MEDIC: 'medics',
+  DOCTOR: 'doctors',
   NURSE: 'nurses',
   ROLE: 'roles',
   MODULE: 'modules',
@@ -64,7 +64,7 @@ const MODULE_MESSAGE_PREFIXES: Record<string, string> = {
   STRUCTURE: 'structures'
 };
 
-const MODULE_DISPLAY_ORDER = ['USER', 'PATIENT', 'MEDIC', 'NURSE', 'ROLE', 'MODULE', 'FUNCTION', 'STRUCTURE'];
+const MODULE_DISPLAY_ORDER = ['USER', 'PATIENT', 'DOCTOR', 'NURSE', 'ROLE', 'MODULE', 'FUNCTION', 'STRUCTURE'];
 
 @Component({
   selector: 'app-authorizations-management',

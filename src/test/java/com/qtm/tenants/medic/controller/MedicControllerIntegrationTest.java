@@ -1,8 +1,8 @@
-package com.qtm.tenants.medic.controller;
+package com.qtm.tenants.doctor.controller;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.qtm.tenants.medic.dto.MedicDto;
+import com.qtm.tenants.doctor.dto.DoctorDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -19,12 +19,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Test integrativo del controller medici con stack Spring reale (controller/service/repository).
+ * Test integrativo del controller dottori con stack Spring reale (controller/service/repository).
  */
 @SpringBootTest
 @AutoConfigureMockMvc(addFilters = false)
 @Transactional
-class MedicControllerIntegrationTest {
+class DoctorControllerIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -33,8 +33,8 @@ class MedicControllerIntegrationTest {
     private ObjectMapper objectMapper;
 
     @Test
-    void shouldCreateAndLoadMedicViaRestApi() throws Exception {
-        MedicDto payload = new MedicDto();
+        void shouldCreateAndLoadDoctorViaRestApi() throws Exception {
+        DoctorDto payload = new DoctorDto();
         payload.setDoctorFlyerId("DOC-IT-100");
         payload.setFullName("Lucia Verdi");
         payload.setEmail("lucia.verdi@qtm.local");
@@ -43,27 +43,27 @@ class MedicControllerIntegrationTest {
         payload.setSpecialization("Neurologia");
         payload.setDataProcessingConsent(Boolean.TRUE);
 
-        MvcResult createResult = mockMvc.perform(post("/api/tenants/medics")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(payload)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").isNumber())
-                .andExpect(jsonPath("$.fullName").value("Lucia Verdi"))
-                .andReturn();
+        MvcResult createResult = mockMvc.perform(post("/api/tenants/doctors")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(payload)))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").isNumber())
+            .andExpect(jsonPath("$.fullName").value("Lucia Verdi"))
+            .andReturn();
 
         JsonNode createdJson = objectMapper.readTree(createResult.getResponse().getContentAsString());
         long createdId = createdJson.get("id").asLong();
 
-        mockMvc.perform(get("/api/tenants/medics/{id}", createdId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(createdId))
-                .andExpect(jsonPath("$.doctorFlyerId").value("DOC-IT-100"))
-                .andExpect(jsonPath("$.specialization").value("Neurologia"));
-    }
+        mockMvc.perform(get("/api/tenants/doctors/{id}", createdId))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(createdId))
+            .andExpect(jsonPath("$.doctorFlyerId").value("DOC-IT-100"))
+            .andExpect(jsonPath("$.specialization").value("Neurologia"));
+        }
 
     @Test
-    void shouldExposeMedicFieldPermissionsEndpoint() throws Exception {
-        MvcResult result = mockMvc.perform(get("/api/tenants/medics/permissions"))
+    void shouldExposeDoctorFieldPermissionsEndpoint() throws Exception {
+        MvcResult result = mockMvc.perform(get("/api/tenants/doctors/permissions"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.doctorFlyerId").exists())
                 .andExpect(jsonPath("$.fullName").exists())

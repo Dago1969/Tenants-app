@@ -1,11 +1,11 @@
-package com.qtm.tenants.medic.service;
+package com.qtm.tenants.doctor.service;
 
 import com.qtm.tenants.authorization.FieldAuthorizationRepository;
 import com.qtm.tenants.authorization.ModuleRoleAuthorizationRepository;
-import com.qtm.tenants.medic.dto.MedicDto;
-import com.qtm.tenants.medic.entity.MedicEntity;
-import com.qtm.tenants.medic.mapper.MedicMapper;
-import com.qtm.tenants.medic.repository.MedicRepository;
+import com.qtm.tenants.doctor.dto.DoctorDto;
+import com.qtm.tenants.doctor.entity.DoctorEntity;
+import com.qtm.tenants.doctor.mapper.DoctorMapper;
+import com.qtm.tenants.doctor.repository.DoctorRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,13 +20,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 /**
- * Test unitario del service medici: verifica CRUD base e mapping dto/entity.
+ * Test unitario del service dottori: verifica CRUD base e mapping dto/entity.
  */
 @ExtendWith(MockitoExtension.class)
-class MedicServiceTest {
+class DoctorServiceTest {
 
     @Mock
-    private MedicRepository medicRepository;
+    private DoctorRepository doctorRepository;
 
     @Mock
     private ModuleRoleAuthorizationRepository moduleRoleAuthorizationRepository;
@@ -34,21 +34,21 @@ class MedicServiceTest {
     @Mock
     private FieldAuthorizationRepository fieldAuthorizationRepository;
 
-    private MedicService medicService;
+    private DoctorService doctorService;
 
     @BeforeEach
     void setUp() {
-        medicService = new MedicService(
-                medicRepository,
-                new MedicMapper(),
-                moduleRoleAuthorizationRepository,
-                fieldAuthorizationRepository
+        doctorService = new DoctorService(
+            doctorRepository,
+            new DoctorMapper(),
+            moduleRoleAuthorizationRepository,
+            fieldAuthorizationRepository
         );
     }
 
     @Test
-    void shouldCreateAndReadMedic() {
-        MedicEntity saved = new MedicEntity();
+    void shouldCreateAndReadDoctor() {
+        DoctorEntity saved = new DoctorEntity();
         saved.setId(1L);
         saved.setDoctorFlyerId("DOC-000001");
         saved.setFullName("Mario Rossi");
@@ -56,22 +56,22 @@ class MedicServiceTest {
         saved.setStructureId(3L);
         saved.setSpecialization("Cardiologia");
 
-        when(medicRepository.save(any(MedicEntity.class))).thenReturn(saved);
-        when(medicRepository.findById(1L)).thenReturn(Optional.of(saved));
-        when(medicRepository.findAll()).thenReturn(List.of(saved));
+        when(doctorRepository.save(any(DoctorEntity.class))).thenReturn(saved);
+        when(doctorRepository.findById(1L)).thenReturn(Optional.of(saved));
+        when(doctorRepository.findAll()).thenReturn(List.of(saved));
 
-        MedicDto toCreate = new MedicDto();
+        DoctorDto toCreate = new DoctorDto();
         toCreate.setFullName("Mario Rossi");
         toCreate.setEmail("mario.rossi@qtm.local");
         toCreate.setStructureId(3L);
         toCreate.setSpecialization("Cardiologia");
 
-        MedicDto created = medicService.create(toCreate);
-        MedicDto loaded = medicService.findById(1L);
+        DoctorDto created = doctorService.create(toCreate);
+        DoctorDto loaded = doctorService.findById(1L);
 
         assertThat(created.getId()).isEqualTo(1L);
         assertThat(created.getDoctorFlyerId()).isEqualTo("DOC-000001");
         assertThat(loaded.getSpecialization()).isEqualTo("Cardiologia");
-        assertThat(medicService.findAll()).hasSize(1);
+        assertThat(doctorService.findAll()).hasSize(1);
     }
 }

@@ -1,14 +1,14 @@
-package com.qtm.tenants.medic.service;
+package com.qtm.tenants.doctor.service;
 
 import com.qtm.tenants.authorization.AuthorizationScope;
 import com.qtm.tenants.authorization.FieldAuthorizationEntity;
 import com.qtm.tenants.authorization.FieldAuthorizationRepository;
 import com.qtm.tenants.authorization.ModuleRoleAuthorizationEntity;
 import com.qtm.tenants.authorization.ModuleRoleAuthorizationRepository;
-import com.qtm.tenants.medic.dto.MedicDto;
-import com.qtm.tenants.medic.entity.MedicEntity;
-import com.qtm.tenants.medic.mapper.MedicMapper;
-import com.qtm.tenants.medic.repository.MedicRepository;
+import com.qtm.tenants.doctor.dto.DoctorDto;
+import com.qtm.tenants.doctor.entity.DoctorEntity;
+import com.qtm.tenants.doctor.mapper.DoctorMapper;
+import com.qtm.tenants.doctor.repository.DoctorRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,16 +38,16 @@ import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 /**
- * Service orchestratore CRUD medici con applicazione policy di visibilita campi per ruolo.
+ * Service orchestratore CRUD dottori con applicazione policy di visibilita campi per ruolo.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class MedicService {
+public class DoctorService {
 
     private static final String DOCTOR_ID_PREFIX = "DOC-";
-    private static final String MODULE_CODE = "MEDIC";
-    private static final String ENTITY_NAME = "medic";
+    private static final String MODULE_CODE = "DOCTOR";
+    private static final String ENTITY_NAME = "doctor";
 
     private static final Set<String> PROTECTED_FIELDS = Set.of(
             "doctorFlyerId", "fullName", "email", "primaryPhone", "secondaryPhone",
@@ -56,42 +56,42 @@ public class MedicService {
             "dataProcessingConsentRevocationLog", "additionalConsents"
     );
 
-    private final MedicRepository medicRepository;
-    private final MedicMapper medicMapper;
+    private final DoctorRepository doctorRepository;
+    private final DoctorMapper doctorMapper;
     private final ModuleRoleAuthorizationRepository moduleRoleAuthorizationRepository;
     private final FieldAuthorizationRepository fieldAuthorizationRepository;
 
     @Transactional
-    public MedicDto create(MedicDto medicDto) {
+    public DoctorDto create(DoctorDto doctorDto) {
         AuthorizationPolicy policy = resolveAuthorizationPolicy();
         enforceModuleWriteAllowed(policy);
-        enforceFieldWriteAllowed(medicDto, null, policy.fieldScopes());
+        enforceFieldWriteAllowed(doctorDto, null, policy.fieldScopes());
 
-        MedicEntity saved = medicRepository.save(medicMapper.toEntity(medicDto));
+        DoctorEntity saved = doctorRepository.save(doctorMapper.toEntity(doctorDto));
 
         if (saved.getDoctorFlyerId() == null || saved.getDoctorFlyerId().isBlank()) {
             saved.setDoctorFlyerId(buildDoctorFlyerId(saved.getId()));
-            saved = medicRepository.save(saved);
+            saved = doctorRepository.save(saved);
         }
 
-        return applyReadAuthorization(medicMapper.toDto(saved), policy);
+        return applyReadAuthorization(doctorMapper.toDto(saved), policy);
     }
 
     @Transactional(readOnly = true)
-    public List<MedicDto> findAll() {
+    public List<DoctorDto> findAll() {
         AuthorizationPolicy policy = resolveAuthorizationPolicy();
         enforceModuleReadAllowed(policy);
-        return medicRepository.findAll().stream()
-                .map(medicMapper::toDto)
+        return doctorRepository.findAll().stream()
+                .map(doctorMapper::toDto)
                 .map(dto -> applyReadAuthorization(dto, policy))
                 .toList();
     }
 
     @Transactional(readOnly = true)
-    public MedicDto findById(Long id) {
+    public DoctorDto findById(Long id) {
         AuthorizationPolicy policy = resolveAuthorizationPolicy();
         enforceModuleReadAllowed(policy);
-        return applyReadAuthorization(medicMapper.toDto(findEntityById(id)), policy);
+        return applyReadAuthorization(doctorMapper.toDto(findEntityById(id)), policy);
     }
 
     @Transactional(readOnly = true)
@@ -115,51 +115,51 @@ public class MedicService {
     }
 
     @Transactional
-    public MedicDto update(Long id, MedicDto medicDto) {
+    public DoctorDto update(Long id, DoctorDto doctorDto) {
         AuthorizationPolicy policy = resolveAuthorizationPolicy();
         enforceModuleWriteAllowed(policy);
 
-        MedicEntity current = findEntityById(id);
-        MedicDto currentDto = medicMapper.toDto(current);
-        enforceFieldWriteAllowed(medicDto, currentDto, policy.fieldScopes());
+        DoctorEntity current = findEntityById(id);
+        DoctorDto currentDto = doctorMapper.toDto(current);
+        enforceFieldWriteAllowed(doctorDto, currentDto, policy.fieldScopes());
 
-        current.setDoctorFlyerId(medicDto.getDoctorFlyerId());
-        current.setFullName(medicDto.getFullName());
-        current.setEmail(medicDto.getEmail());
-        current.setPrimaryPhone(medicDto.getPrimaryPhone());
-        current.setSecondaryPhone(medicDto.getSecondaryPhone());
-        current.setRegionId(medicDto.getRegionId());
-        current.setRegion(medicDto.getRegion());
-        current.setProvinceId(medicDto.getProvinceId());
-        current.setProvince(medicDto.getProvince());
-        current.setCityId(medicDto.getCityId());
-        current.setCity(medicDto.getCity());
-        current.setDeliveryAddress(medicDto.getDeliveryAddress());
-        current.setSecondaryAddresses(medicDto.getSecondaryAddresses());
-        current.setStructureId(medicDto.getStructureId());
-        current.setSpecialization(medicDto.getSpecialization());
-        current.setDataProcessingConsent(medicDto.getDataProcessingConsent());
-        current.setDataProcessingConsentDateTime(medicDto.getDataProcessingConsentDateTime());
-        current.setDataProcessingConsentRevocationLog(medicDto.getDataProcessingConsentRevocationLog());
-        current.setAdditionalConsents(medicDto.getAdditionalConsents());
+        current.setDoctorFlyerId(doctorDto.getDoctorFlyerId());
+        current.setFullName(doctorDto.getFullName());
+        current.setEmail(doctorDto.getEmail());
+        current.setPrimaryPhone(doctorDto.getPrimaryPhone());
+        current.setSecondaryPhone(doctorDto.getSecondaryPhone());
+        current.setRegionId(doctorDto.getRegionId());
+        current.setRegion(doctorDto.getRegion());
+        current.setProvinceId(doctorDto.getProvinceId());
+        current.setProvince(doctorDto.getProvince());
+        current.setCityId(doctorDto.getCityId());
+        current.setCity(doctorDto.getCity());
+        current.setDeliveryAddress(doctorDto.getDeliveryAddress());
+        current.setSecondaryAddresses(doctorDto.getSecondaryAddresses());
+        current.setStructureId(doctorDto.getStructureId());
+        current.setSpecialization(doctorDto.getSpecialization());
+        current.setDataProcessingConsent(doctorDto.getDataProcessingConsent());
+        current.setDataProcessingConsentDateTime(doctorDto.getDataProcessingConsentDateTime());
+        current.setDataProcessingConsentRevocationLog(doctorDto.getDataProcessingConsentRevocationLog());
+        current.setAdditionalConsents(doctorDto.getAdditionalConsents());
 
-        return applyReadAuthorization(medicMapper.toDto(medicRepository.save(current)), policy);
+        return applyReadAuthorization(doctorMapper.toDto(doctorRepository.save(current)), policy);
     }
 
     @Transactional
     public void delete(Long id) {
         AuthorizationPolicy policy = resolveAuthorizationPolicy();
         enforceModuleWriteAllowed(policy);
-        medicRepository.delete(findEntityById(id));
+        doctorRepository.delete(findEntityById(id));
     }
 
     private String buildDoctorFlyerId(Long id) {
         return DOCTOR_ID_PREFIX + String.format("%06d", id);
     }
 
-    private MedicEntity findEntityById(Long id) {
-        return medicRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Medico non trovato"));
+    private DoctorEntity findEntityById(Long id) {
+        return doctorRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Dottore non trovato"));
     }
 
     private AuthorizationPolicy resolveAuthorizationPolicy() {
@@ -173,7 +173,7 @@ public class MedicService {
                 .findByModuleCodeAndRoleId(MODULE_CODE, roleId.get())
                 .orElseThrow(() -> new ResponseStatusException(
                         FORBIDDEN,
-                        "Ruolo senza autorizzazioni configurate per modulo MEDIC"
+                        "Ruolo senza autorizzazioni configurate per modulo DOCTOR"
                 ));
 
         Map<String, AuthorizationScope> fieldScopes = fieldAuthorizationRepository
@@ -324,19 +324,19 @@ public class MedicService {
 
     private void enforceModuleReadAllowed(AuthorizationPolicy policy) {
         if (!policy.moduleScope().allowsModuleAccess()) {
-            throw new ResponseStatusException(FORBIDDEN, "Ruolo non autorizzato alla visualizzazione modulo MEDIC");
+            throw new ResponseStatusException(FORBIDDEN, "Ruolo non autorizzato alla visualizzazione modulo DOCTOR");
         }
     }
 
     private void enforceModuleWriteAllowed(AuthorizationPolicy policy) {
         if (!policy.moduleScope().allowsModuleAccess()) {
-            throw new ResponseStatusException(FORBIDDEN, "Ruolo non autorizzato alla modifica modulo MEDIC");
+            throw new ResponseStatusException(FORBIDDEN, "Ruolo non autorizzato alla modifica modulo DOCTOR");
         }
     }
 
     private void enforceFieldWriteAllowed(
-            MedicDto requested,
-            MedicDto current,
+            DoctorDto requested,
+            DoctorDto current,
             Map<String, AuthorizationScope> fieldScopes
     ) {
         BeanWrapper requestedWrapper = new BeanWrapperImpl(requested);
@@ -353,13 +353,13 @@ public class MedicService {
             if (!java.util.Objects.equals(requestedValue, currentValue)) {
                 throw new ResponseStatusException(
                         FORBIDDEN,
-                        "Ruolo non autorizzato a modificare il campo medic." + field
+                        "Ruolo non autorizzato a modificare il campo doctor." + field
                 );
             }
         }
     }
 
-    private MedicDto applyReadAuthorization(MedicDto dto, AuthorizationPolicy policy) {
+    private DoctorDto applyReadAuthorization(DoctorDto dto, AuthorizationPolicy policy) {
         if (policy.fieldScopes().isEmpty()) {
             return dto;
         }

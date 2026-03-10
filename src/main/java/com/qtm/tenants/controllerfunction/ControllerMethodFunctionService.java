@@ -3,7 +3,7 @@ package com.qtm.tenants.controllerfunction;
 import com.qtm.tenants.function.entity.FunctionEntity;
 import com.qtm.tenants.function.repository.FunctionRepository;
 import com.qtm.tenants.function.controller.FunctionController;
-import com.qtm.tenants.medic.controller.MedicController;
+import com.qtm.tenants.doctor.controller.DoctorController;
 import com.qtm.tenants.module.controller.ModuleController;
 import com.qtm.tenants.module.entity.ModuleEntity;
 import com.qtm.tenants.module.repository.ModuleRepository;
@@ -72,10 +72,10 @@ public class ControllerMethodFunctionService {
             APPROVE_FUNCTION_CODE
     );
 
-    private static final Map<String, Class<?>> MODULE_CONTROLLERS = Map.of(
+        private static final Map<String, Class<?>> MODULE_CONTROLLERS = Map.of(
             "USER", UserController.class,
             "PATIENT", PatientController.class,
-            "MEDIC", MedicController.class,
+            "DOCTOR", DoctorController.class,
             "NURSE", NurseController.class,
             "ROLE", RoleController.class,
             "MODULE", ModuleController.class,

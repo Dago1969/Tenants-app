@@ -1,17 +1,17 @@
-package com.qtm.tenants.medic.mapper;
+package com.qtm.tenants.doctor.mapper;
 
-import com.qtm.tenants.medic.dto.MedicDto;
-import com.qtm.tenants.medic.entity.MedicEntity;
+import com.qtm.tenants.doctor.dto.DoctorDto;
+import com.qtm.tenants.doctor.entity.DoctorEntity;
 import org.springframework.stereotype.Component;
 
 /**
- * Mapper medico entity/dto.
+ * Mapper dottore entity/dto.
  */
 @Component
-public class MedicMapper {
+public class DoctorMapper {
 
-    public MedicDto toDto(MedicEntity entity) {
-        MedicDto dto = new MedicDto();
+    public DoctorDto toDto(DoctorEntity entity) {
+        DoctorDto dto = new DoctorDto();
         dto.setId(entity.getId());
         dto.setDoctorFlyerId(entity.getDoctorFlyerId());
         dto.setFullName(entity.getFullName());
@@ -35,8 +35,8 @@ public class MedicMapper {
         return dto;
     }
 
-    public MedicEntity toEntity(MedicDto dto) {
-        MedicEntity entity = new MedicEntity();
+    public DoctorEntity toEntity(DoctorDto dto) {
+        DoctorEntity entity = new DoctorEntity();
         entity.setId(dto.getId());
         entity.setDoctorFlyerId(dto.getDoctorFlyerId());
         entity.setFullName(dto.getFullName());
