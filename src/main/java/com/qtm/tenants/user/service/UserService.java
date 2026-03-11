@@ -37,12 +37,10 @@ public class UserService {
         return userMapper.toDto(saved);
     }
 
-    @Transactional(readOnly = true)
     public List<UserDto> findAll() {
         return userRepository.findAll().stream().map(userMapper::toDto).toList();
     }
 
-    @Transactional(readOnly = true)
     public List<UserDto> search(String username, String roleId, Long structureId, Boolean enabled) {
         return userRepository.findAll().stream()
                 .filter(user -> containsIgnoreCase(user.getUsername(), username))
@@ -53,12 +51,10 @@ public class UserService {
                 .toList();
     }
 
-    @Transactional(readOnly = true)
     public UserDto findById(Long id) {
         return userMapper.toDto(findEntityById(id));
     }
 
-    @Transactional
     public UserDto update(Long id, UserDto userDto) {
         UserEntity current = findEntityById(id);
         validateUsernameUniqueness(userDto.getUsername(), id);
@@ -69,7 +65,6 @@ public class UserService {
         return userMapper.toDto(userRepository.save(current));
     }
 
-    @Transactional
     public void delete(Long id) {
         userRepository.delete(findEntityById(id));
     }

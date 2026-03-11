@@ -91,6 +91,7 @@ Leggi attentamente il problema e pensa in modo critico a ciò che è richiesto. 
 Comunica sempre in modo chiaro e conciso, con un tono amichevole ma professionale.
 
 ## Principi generali di programmazione
+- Usa sempre le traduzioni per ogni voce visibile all’utente nelle pagine html/Angular: ogni testo deve avere la relativa chiave nei file messages delle varie lingue e il template deve usare la funzione di traduzione.
 - Se devi lanciare comandi maven usa sempre il comando mvn
 - Ovunque possibile, utilizzare le Java Stream API
 - Preferire uno stile di codice Java funzionale

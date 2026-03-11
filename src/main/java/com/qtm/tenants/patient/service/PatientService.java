@@ -6,9 +6,6 @@ import com.qtm.tenants.authorization.FieldAuthorizationRepository;
 import com.qtm.tenants.authorization.ModuleRoleAuthorizationEntity;
 import com.qtm.tenants.authorization.ModuleRoleAuthorizationRepository;
 import com.qtm.tenants.patient.dto.PatientDto;
-import com.qtm.tenants.patient.entity.PatientEntity;
-import com.qtm.tenants.patient.mapper.PatientMapper;
-import com.qtm.tenants.patient.repository.PatientRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -45,7 +42,6 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 @Slf4j
 public class PatientService {
 
-    private static final String ASSISTED_ID_PREFIX = "QTM-";
     private static final String MODULE_CODE = "PATIENT";
     private static final String ENTITY_NAME = "patient";
 
@@ -58,8 +54,7 @@ public class PatientService {
             "reminderEnabled", "caregiverFullName", "caregiverPhone", "preferredContact", "structureId"
     );
 
-    private final PatientRepository patientRepository;
-    private final PatientMapper patientMapper;
+    private final DashboardPatientClient dashboardPatientClient;
     private final ModuleRoleAuthorizationRepository moduleRoleAuthorizationRepository;
     private final FieldAuthorizationRepository fieldAuthorizationRepository;
 
@@ -69,22 +64,14 @@ public class PatientService {
         enforceModuleWriteAllowed(policy);
         enforceFieldWriteAllowed(patientDto, null, policy.fieldScopes());
 
-        PatientEntity saved = patientRepository.save(patientMapper.toEntity(patientDto));
-
-        if (saved.getAssistedId() == null || saved.getAssistedId().isBlank()) {
-            saved.setAssistedId(buildAssistedId(saved.getId()));
-            saved = patientRepository.save(saved);
-        }
-
-        return applyReadAuthorization(patientMapper.toDto(saved), policy);
+        return applyReadAuthorization(dashboardPatientClient.create(patientDto), policy);
     }
 
     @Transactional(readOnly = true)
     public List<PatientDto> findAll() {
         AuthorizationPolicy policy = resolveAuthorizationPolicy();
         enforceModuleReadAllowed(policy);
-        return patientRepository.findAll().stream()
-                .map(patientMapper::toDto)
+        return dashboardPatientClient.findAll().stream()
                 .map(dto -> applyReadAuthorization(dto, policy))
                 .toList();
     }
@@ -93,7 +80,7 @@ public class PatientService {
     public PatientDto findById(Long id) {
         AuthorizationPolicy policy = resolveAuthorizationPolicy();
         enforceModuleReadAllowed(policy);
-        return applyReadAuthorization(patientMapper.toDto(findEntityById(id)), policy);
+        return applyReadAuthorization(findPatientById(id), policy);
     }
 
     @Transactional(readOnly = true)
@@ -121,58 +108,29 @@ public class PatientService {
         AuthorizationPolicy policy = resolveAuthorizationPolicy();
         enforceModuleWriteAllowed(policy);
 
-        PatientEntity current = findEntityById(id);
-        PatientDto currentDto = patientMapper.toDto(current);
+        PatientDto currentDto = findPatientById(id);
         enforceFieldWriteAllowed(patientDto, currentDto, policy.fieldScopes());
 
-        current.setFirstName(patientDto.getFirstName());
-        current.setLastName(patientDto.getLastName());
-        current.setFiscalCode(patientDto.getFiscalCode());
-        current.setEmail(patientDto.getEmail());
-        current.setPrimaryPhone(patientDto.getPrimaryPhone());
-        current.setSecondaryPhone(patientDto.getSecondaryPhone());
-        current.setRegionId(patientDto.getRegionId());
-        current.setRegion(patientDto.getRegion());
-        current.setProvinceId(patientDto.getProvinceId());
-        current.setProvince(patientDto.getProvince());
-        current.setCityId(patientDto.getCityId());
-        current.setCity(patientDto.getCity());
-        current.setDeliveryAddress(patientDto.getDeliveryAddress());
-        current.setSecondaryAddresses(patientDto.getSecondaryAddresses());
-        current.setCommunicationChannels(patientDto.getCommunicationChannels());
-        current.setIdentificationDocumentReference(patientDto.getIdentificationDocumentReference());
-        current.setDataProcessingConsent(patientDto.getDataProcessingConsent());
-        current.setDataProcessingConsentDateTime(patientDto.getDataProcessingConsentDateTime());
-        current.setDataProcessingConsentRevocationLog(patientDto.getDataProcessingConsentRevocationLog());
-        current.setAdditionalConsents(patientDto.getAdditionalConsents());
-        current.setTherapyStatus(patientDto.getTherapyStatus());
-        current.setPrescribingSpecialist(patientDto.getPrescribingSpecialist());
-        current.setReferenceHospitalStructure(patientDto.getReferenceHospitalStructure());
-        current.setReferencePharmacy(patientDto.getReferencePharmacy());
-        current.setPreferredPickupPharmacy(patientDto.getPreferredPickupPharmacy());
-        current.setDeliveryMode(patientDto.getDeliveryMode());
-        current.setReminderEnabled(patientDto.getReminderEnabled());
-        current.setCaregiverFullName(patientDto.getCaregiverFullName());
-        current.setCaregiverPhone(patientDto.getCaregiverPhone());
-        current.setPreferredContact(patientDto.getPreferredContact());
-        current.setStructureId(patientDto.getStructureId());
-        return applyReadAuthorization(patientMapper.toDto(patientRepository.save(current)), policy);
-    }
-
-    private String buildAssistedId(Long id) {
-        return ASSISTED_ID_PREFIX + String.format("%06d", id);
+        return applyReadAuthorization(dashboardPatientClient.update(id, patientDto), policy);
     }
 
     @Transactional
     public void delete(Long id) {
         AuthorizationPolicy policy = resolveAuthorizationPolicy();
         enforceModuleWriteAllowed(policy);
-        patientRepository.delete(findEntityById(id));
+        findPatientById(id);
+        dashboardPatientClient.delete(id);
     }
 
-    private PatientEntity findEntityById(Long id) {
-        return patientRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Paziente non trovato"));
+    private PatientDto findPatientById(Long id) {
+        try {
+            return dashboardPatientClient.findById(id);
+        } catch (ResponseStatusException exception) {
+            if (exception.getStatusCode() == NOT_FOUND) {
+                throw new ResponseStatusException(NOT_FOUND, "Paziente non trovato", exception);
+            }
+            throw exception;
+        }
     }
 
     private AuthorizationPolicy resolveAuthorizationPolicy() {

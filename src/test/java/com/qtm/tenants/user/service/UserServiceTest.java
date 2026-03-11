@@ -51,17 +51,17 @@ class UserServiceTest {
         saved.setRole(role);
         saved.setStructureId(2L);
 
-        when(userRepository.save(any(UserEntity.class))).thenReturn(saved);
-        when(userRepository.findById(1L)).thenReturn(Optional.of(saved));
-        when(userRepository.findAll()).thenReturn(List.of(saved));
-        when(userRepository.findByUsernameIgnoreCase("mrossi")).thenReturn(Optional.empty());
-        when(roleRepository.findById("ADMIN")).thenReturn(Optional.of(role));
-
         UserDto toCreate = new UserDto();
         toCreate.setUsername("mrossi");
         toCreate.setEnabled(true);
         toCreate.setRoleId("ADMIN");
         toCreate.setStructureId(2L);
+
+        when(userRepository.save(any(UserEntity.class))).thenReturn(saved);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(saved));
+        when(userRepository.findAll()).thenReturn(List.of(saved));
+        when(userRepository.findByUsernameIgnoreCase("mrossi")).thenReturn(Optional.empty());
+        when(roleRepository.findById("ADMIN")).thenReturn(Optional.of(role));
 
         UserDto created = userService.create(toCreate);
         UserDto loaded = userService.findById(1L);
