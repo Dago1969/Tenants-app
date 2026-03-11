@@ -5,7 +5,7 @@ import com.qtm.tenants.authorization.FieldAuthorizationEntity;
 import com.qtm.tenants.authorization.FieldAuthorizationRepository;
 import com.qtm.tenants.authorization.ModuleRoleAuthorizationEntity;
 import com.qtm.tenants.authorization.ModuleRoleAuthorizationRepository;
-import com.qtm.tenants.patient.dto.PatientDto;
+import com.qtm.commonlib.dto.PatientDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

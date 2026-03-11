@@ -1,6 +1,6 @@
 package com.qtm.tenants.patient.mapper;
 
-import com.qtm.tenants.patient.dto.PatientDto;
+import com.qtm.commonlib.dto.PatientDto;
 import com.qtm.tenants.patient.entity.PatientEntity;
 import org.springframework.stereotype.Component;
 

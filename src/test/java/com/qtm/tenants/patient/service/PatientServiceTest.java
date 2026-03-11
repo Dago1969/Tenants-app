@@ -2,7 +2,7 @@ package com.qtm.tenants.patient.service;
 
 import com.qtm.tenants.authorization.FieldAuthorizationRepository;
 import com.qtm.tenants.authorization.ModuleRoleAuthorizationRepository;
-import com.qtm.tenants.patient.dto.PatientDto;
+import com.qtm.commonlib.dto.PatientDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;

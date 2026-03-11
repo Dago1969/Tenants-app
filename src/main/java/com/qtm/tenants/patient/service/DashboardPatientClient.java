@@ -1,6 +1,6 @@
 package com.qtm.tenants.patient.service;
 
-import com.qtm.tenants.patient.dto.PatientDto;
+import com.qtm.commonlib.dto.PatientDto;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
