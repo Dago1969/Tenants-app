@@ -64,7 +64,8 @@ const MODULE_MESSAGE_PREFIXES: Record<string, string> = {
   MODULE: 'modules',
   FUNCTION: 'functions',
   STRUCTURE: 'structures',
-  PROJECT: 'projects'
+  PROJECT: 'projects',
+  TENANT: 'tenants'
 };
 
 const MODULE_DISPLAY_ORDER = ['USER', 'PATIENT', 'DOCTOR', 'NURSE', 'ROLE', 'MODULE', 'FUNCTION', 'STRUCTURE', 'PROJECT', 'TENANT'];
