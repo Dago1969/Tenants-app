@@ -50,7 +50,9 @@ const MODULE_TITLE_KEYS: Record<string, MessageKey> = {
   ROLE: 'menu.roles',
   MODULE: 'menu.modules',
   FUNCTION: 'menu.functions',
-  STRUCTURE: 'menu.structures'
+  STRUCTURE: 'menu.structures',
+  PROJECT: 'menu.projects',
+  TENANT: 'menu.tenants'
 };
 
 const MODULE_MESSAGE_PREFIXES: Record<string, string> = {
@@ -61,10 +63,11 @@ const MODULE_MESSAGE_PREFIXES: Record<string, string> = {
   ROLE: 'roles',
   MODULE: 'modules',
   FUNCTION: 'functions',
-  STRUCTURE: 'structures'
+  STRUCTURE: 'structures',
+  PROJECT: 'projects'
 };
 
-const MODULE_DISPLAY_ORDER = ['USER', 'PATIENT', 'DOCTOR', 'NURSE', 'ROLE', 'MODULE', 'FUNCTION', 'STRUCTURE'];
+const MODULE_DISPLAY_ORDER = ['USER', 'PATIENT', 'DOCTOR', 'NURSE', 'ROLE', 'MODULE', 'FUNCTION', 'STRUCTURE', 'PROJECT', 'TENANT'];
 
 @Component({
   selector: 'app-authorizations-management',

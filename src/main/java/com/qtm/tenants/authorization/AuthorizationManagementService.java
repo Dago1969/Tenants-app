@@ -1,5 +1,6 @@
 package com.qtm.tenants.authorization;
 
+import com.qtm.commonlib.dto.ProjectDto;
 import com.qtm.tenants.authorization.dto.AuthorizationFieldDto;
 import com.qtm.tenants.authorization.dto.AuthorizationFunctionDto;
 import com.qtm.tenants.authorization.dto.AuthorizationModuleDto;
@@ -71,7 +72,9 @@ public class AuthorizationManagementService {
             new ModuleDefinition("ROLE", "Ruoli", "role", resolveEntityFields(RoleEntity.class, Set.of(), Map.of())),
             new ModuleDefinition("MODULE", "Moduli", "module", resolveEntityFields(ModuleEntity.class, Set.of(), Map.of())),
             new ModuleDefinition("FUNCTION", "Funzioni", "function", resolveEntityFields(FunctionEntity.class, Set.of(), Map.of())),
-            new ModuleDefinition("STRUCTURE", "Strutture", "structure", resolveEntityFields(StructureEntity.class, Set.of("id"), Map.of()))
+            new ModuleDefinition("STRUCTURE", "Strutture", "structure", resolveEntityFields(StructureEntity.class, Set.of("id"), Map.of())),
+            new ModuleDefinition("PROJECT", "Progetti", "project", resolveEntityFields(ProjectDto.class, Set.of("id"), Map.of())),
+            new ModuleDefinition("TENANT", "Tenants", "tenant", List.of())
     ).stream().collect(Collectors.toMap(ModuleDefinition::code, definition -> definition, (left, right) -> right, LinkedHashMap::new));
 
     private final RoleRepository roleRepository;
@@ -184,7 +187,7 @@ public class AuthorizationManagementService {
             Map<String, FunctionEntity> functionsByCode,
             List<AuthorizationFunctionDto> requestedFunctions
     ) {
-        Set<String> supportedFunctionCodes = controllerFunctionAuthorizationService.getSupportedFunctionCodes(definition.code())
+        Set<String> supportedFunctionCodes = getSupportedFunctionCodesSafely(definition.code())
                 .stream()
                 .collect(Collectors.toSet());
         List<AuthorizationFunctionDto> safeRequestedFunctions = requestedFunctions == null ? List.of() : requestedFunctions;
@@ -264,7 +267,7 @@ public class AuthorizationManagementService {
                         )))
                 .orElseGet(LinkedHashMap::new);
 
-        List<AuthorizationFunctionDto> functions = controllerFunctionAuthorizationService.getSupportedFunctionCodes(definition.code()).stream()
+        List<AuthorizationFunctionDto> functions = getSupportedFunctionCodesSafely(definition.code()).stream()
                 .map(functionsByCode::get)
                 .filter(java.util.Objects::nonNull)
                 .map(function -> new AuthorizationFunctionDto(
@@ -398,11 +401,22 @@ public class AuthorizationManagementService {
                 definition.fields().stream()
                         .map(field -> new AuthorizationFieldDto(field, AuthorizationScope.HIDE_FIELD.getCode()))
                         .toList(),
-                controllerFunctionAuthorizationService.getSupportedFunctionCodes(definition.code()).stream()
+                                getSupportedFunctionCodesSafely(definition.code()).stream()
                         .map(functionCode -> new AuthorizationFunctionDto(functionCode, functionCode, AuthorizationScope.DENY.getCode(), controllerFunctionAuthorizationService.isCommonFunctionCode(functionCode)))
                         .toList()
         );
     }
+
+        private List<String> getSupportedFunctionCodesSafely(String moduleCode) {
+                try {
+                        return controllerFunctionAuthorizationService.getSupportedFunctionCodes(moduleCode);
+                } catch (ResponseStatusException exception) {
+                        if (exception.getStatusCode().value() == NOT_FOUND.value()) {
+                                return List.of();
+                        }
+                        throw exception;
+                }
+        }
 
     private record ModuleDefinition(String code, String name, String entityName, List<String> fields) {
     }
