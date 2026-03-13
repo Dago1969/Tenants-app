@@ -333,12 +333,13 @@ export class CrudPageComponent implements OnInit, OnChanges {
   }
 
   private buildPayload(): CrudEntity {
+    // I campi hidden devono essere inclusi nel payload, ma non visualizzati in UI
     return this.getAllFields()
-      .filter((field) => this.shouldDisplayField(field))
+      .filter((field) => !field.createOnly || this.loadedEntityKeyValue === null)
       .reduce<CrudEntity>((accumulator, field) => {
-      accumulator[field.key] = this.formModel[field.key];
-      return accumulator;
-    }, {});
+        accumulator[field.key] = this.formModel[field.key];
+        return accumulator;
+      }, {});
   }
 
   private shouldDisplayField(field: CrudField): boolean {
@@ -517,13 +518,11 @@ export class CrudPageComponent implements OnInit, OnChanges {
   }
 
   private buildErrorMessage(messageKey: MessageKey, error: unknown): string {
-    const baseMessage = this.translate(messageKey);
     const reason = this.extractErrorReason(error);
-    if (!reason) {
-      return baseMessage;
+    if (reason) {
+      return `${this.translate(messageKey)} ${this.translate('common.reason')}: ${reason}`;
     }
-
-    return `${baseMessage} ${this.translate('common.reason')}: ${reason}`;
+    return this.translate(messageKey);
   }
 
   private extractErrorReason(error: unknown): string | null {
@@ -533,7 +532,8 @@ export class CrudPageComponent implements OnInit, OnChanges {
 
     const responseError = error.error;
     if (typeof responseError === 'string') {
-      return this.normalizeErrorReason(responseError);
+      const parsedReason = this.extractJsonStringErrorReason(responseError);
+      return parsedReason ?? this.normalizeErrorReason(responseError);
     }
 
     if (responseError && typeof responseError === 'object') {
@@ -548,11 +548,62 @@ export class CrudPageComponent implements OnInit, OnChanges {
     const candidates = [errorBody['detail'], errorBody['message'], errorBody['error'], errorBody['title']];
     for (const candidate of candidates) {
       if (typeof candidate === 'string' && candidate.trim().length > 0) {
-        return candidate;
+        const nestedReason = this.extractJsonStringErrorReason(candidate);
+        return nestedReason ?? candidate;
+      }
+
+      if (candidate && typeof candidate === 'object') {
+        const nestedReason = this.findObjectErrorReason(candidate as Record<string, unknown>);
+        if (nestedReason) {
+          return nestedReason;
+        }
       }
     }
 
     return null;
+  }
+
+  private extractJsonStringErrorReason(responseError: string): string | null {
+    const normalizedResponseError = responseError.trim();
+    const directCandidate = this.extractReasonFromJsonCandidate(normalizedResponseError);
+    if (directCandidate) {
+      return directCandidate;
+    }
+
+    const jsonStartIndex = normalizedResponseError.indexOf('{');
+    const jsonEndIndex = normalizedResponseError.lastIndexOf('}');
+    if (jsonStartIndex < 0 || jsonEndIndex <= jsonStartIndex) {
+      return null;
+    }
+
+    return this.extractReasonFromJsonCandidate(normalizedResponseError.slice(jsonStartIndex, jsonEndIndex + 1));
+  }
+
+  private extractReasonFromJsonCandidate(jsonCandidate: string): string | null {
+    try {
+      const parsedCandidate = JSON.parse(jsonCandidate) as unknown;
+      return this.extractReasonFromParsedJson(parsedCandidate);
+    } catch {
+      return null;
+    }
+  }
+
+  private extractReasonFromParsedJson(parsedValue: unknown): string | null {
+    if (!parsedValue) {
+      return null;
+    }
+
+    if (typeof parsedValue === 'string') {
+      const nestedReason = this.extractJsonStringErrorReason(parsedValue);
+      return nestedReason ?? this.normalizeErrorReason(parsedValue);
+    }
+
+    if (typeof parsedValue !== 'object') {
+      return null;
+    }
+
+    const candidate = this.findObjectErrorReason(parsedValue as Record<string, unknown>);
+    return candidate ? this.normalizeErrorReason(candidate) : null;
   }
 
   private normalizeErrorReason(reason: string | null | undefined): string | null {

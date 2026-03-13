@@ -19,8 +19,8 @@ export class ProjectsCrudComponent {
     { key: 'code', labelKey: 'projects.field.code', type: 'text', lockOnEdit: true },
     // Mostra il client*code del tenant corrente come campo non modificabile
     { key: 'clientCode', labelKey: 'projects.field.clientCode', type: 'text', readonly: true },
-    { key: 'tenantId', labelKey: 'projects.field.tenantId', type: 'number' }, // hidden solo a livello UI, ma incluso nel payload
-    { key: 'tenant', labelKey: 'projects.field.tenant', type: 'text' },
+    { key: 'tenantId', labelKey: 'projects.field.tenantId', type: 'number', hidden: true }, // hidden a livello UI, incluso nel payload
+    // { key: 'tenant', labelKey: 'projects.field.tenant', type: 'text' }, // eliminato come richiesto
     { key: 'descrizione', labelKey: 'projects.field.descrizione', type: 'text' },
     { key: 'dataInizio', labelKey: 'projects.field.dataInizio', type: 'date' },
     { key: 'dataFine', labelKey: 'projects.field.dataFine', type: 'date' }
