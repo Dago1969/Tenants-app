@@ -19,7 +19,7 @@ export class TenantPointerApiService {
   constructor(private http: HttpClient) {}
 
   getTenantPointerByClientCode(clientCode: string): Observable<TenantAppPointerDto | null> {
-    const requestUrl = `${this.baseUrl}/tenant-app-pointers/by-client/${clientCode}`;
+    const requestUrl = `${this.baseUrl}/tenant-app-pointers/by-client/${encodeURIComponent(clientCode)}`;
     // eslint-disable-next-line no-console
     console.log('[TenantPointerApiService] GET', requestUrl);
 
