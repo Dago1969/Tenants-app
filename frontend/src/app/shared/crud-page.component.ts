@@ -10,7 +10,7 @@ import { hasMessageKey, MessageKey, t } from '../i18n/messages';
 export interface CrudField {
   key: string;
   labelKey: MessageKey;
-  type: 'text' | 'number' | 'checkbox' | 'datetime-local' | 'select';
+  type: 'text' | 'number' | 'checkbox' | 'date' | 'datetime-local' | 'select';
   hidden?: boolean;
   createOnly?: boolean;
   readonly?: boolean;

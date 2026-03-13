@@ -52,6 +52,7 @@ export const appRoutes: Routes = [
   { path: 'functions/search', component: FunctionsSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('FUNCTION')] },
   { path: 'projects/search', component: ProjectsSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('PROJECT')] },
   { path: 'projects/new', component: ProjectsCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('PROJECT')] },
+  { path: 'projects/:id', component: ProjectsCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('PROJECT')] },
   { path: 'structure-types/search', component: StructureTypesSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('STRUCTURE')] },
   { path: 'structure-types/manage', component: StructureTypesCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('STRUCTURE')] },
   { path: 'structure-types/manage/:code', component: StructureTypesCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('STRUCTURE')] },
