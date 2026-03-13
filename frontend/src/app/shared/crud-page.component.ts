@@ -1,6 +1,6 @@
 import { CommonModule, Location } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { environment } from '../../environments/environment';
@@ -146,7 +146,7 @@ interface OperationLogEntry {
     </section>
   `
 })
-export class CrudPageComponent implements OnInit {
+export class CrudPageComponent implements OnInit, OnChanges {
   @Input({ required: true }) titleKey!: MessageKey;
   @Input({ required: true }) endpoint!: string;
   @Input() fields: CrudField[] = [];
@@ -156,6 +156,7 @@ export class CrudPageComponent implements OnInit {
   @Input() moduleCode = '';
   @Input() createFunctionCode = 'CREATE';
   @Input() updateFunctionCode = 'UPDATE';
+  @Input() initialFormModel: CrudEntity = {};
 
   formModel: CrudEntity = {};
   activeFolder = '';
@@ -174,7 +175,16 @@ export class CrudPageComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    // eslint-disable-next-line no-console
+    console.log('[CrudPageComponent] ngOnInit for endpoint', this.endpoint, 'with initial model:', this.initialFormModel);
+    this.applyInitialFormModel('ngOnInit');
     void this.initializePage();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['initialFormModel']) {
+      this.applyInitialFormModel('ngOnChanges');
+    }
   }
 
   private async initializePage(): Promise<void> {
@@ -254,6 +264,8 @@ export class CrudPageComponent implements OnInit {
   }
 
   save(): void {
+    // eslint-disable-next-line no-console
+    console.log('[CrudPageComponent] Saving payload for endpoint', this.endpoint, ':', this.buildPayload());
     const payload = this.buildPayload();
     if (this.loadedEntityKeyValue !== null) {
       this.http
@@ -264,6 +276,8 @@ export class CrudPageComponent implements OnInit {
             this.pushOperationLog('success', 'crud.success.update');
           },
           error: (error) => {
+            // eslint-disable-next-line no-console
+            console.error('[CrudPageComponent] Update failed for endpoint', this.endpoint, 'payload:', payload, 'error:', error);
             const message = this.buildErrorMessage('crud.error.update', error);
             this.pushOperationLog('error', message);
           }
@@ -277,6 +291,8 @@ export class CrudPageComponent implements OnInit {
         this.pushOperationLog('success', 'crud.success.create');
       },
       error: (error) => {
+        // eslint-disable-next-line no-console
+        console.error('[CrudPageComponent] Create failed for endpoint', this.endpoint, 'payload:', payload, 'error:', error);
         const message = this.buildErrorMessage('crud.error.create', error);
         this.pushOperationLog('error', message);
       }
@@ -287,6 +303,24 @@ export class CrudPageComponent implements OnInit {
     this.formModel = {};
     this.loadedEntityKeyValue = null;
     this.loadSelectOptions();
+  }
+
+  private applyInitialFormModel(source: string): void {
+    if (this.loadedEntityKeyValue !== null) {
+      return;
+    }
+
+    if (Object.keys(this.initialFormModel ?? {}).length === 0) {
+      return;
+    }
+
+    this.formModel = {
+      ...this.formModel,
+      ...this.initialFormModel
+    };
+
+    // eslint-disable-next-line no-console
+    console.log(`[CrudPageComponent] Applied initial form model from ${source}:`, this.formModel);
   }
 
   cancel(): void {

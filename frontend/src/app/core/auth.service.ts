@@ -97,7 +97,10 @@ export class AuthService {
   }
 
   getSelectedClient(): string {
-    return localStorage.getItem(this.clientStorageKey) ?? '';
+    const value = localStorage.getItem(this.clientStorageKey) ?? '';
+    // eslint-disable-next-line no-console
+    console.log('[AuthService] getSelectedClient() ->', value);
+    return value;
   }
 
   private isTokenExpired(token: string): boolean {
