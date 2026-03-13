@@ -42,6 +42,8 @@ export class ProjectsCrudComponent {
           // eslint-disable-next-line no-console
           console.log('[ProjectsCrudComponent] Tenant pointer lookup result:', tenant);
           if (tenant) {
+            // Log dettagliato della risposta API
+            console.log('[ProjectsCrudComponent] tenantPointerApi.getTenantPointerByClientCode response:', JSON.stringify(tenant));
             this.formModel = {
               ...this.formModel,
               clientCode: tenant.clientCode,
@@ -49,7 +51,7 @@ export class ProjectsCrudComponent {
               tenantId: tenant.id
             };
             // eslint-disable-next-line no-console
-            console.log('[ProjectsCrudComponent] tenantId valorizzato:', tenant.id);
+            console.log('[ProjectsCrudComponent] tenantId assegnato:', tenant.id);
           } else {
             this.formModel = {
               ...this.formModel,
@@ -62,7 +64,7 @@ export class ProjectsCrudComponent {
           }
 
           // eslint-disable-next-line no-console
-          console.log('[ProjectsCrudComponent] Form model prepared for CRUD page:', this.formModel);
+          console.log('[ProjectsCrudComponent] Form model finale:', JSON.stringify(this.formModel));
         },
         error: (err) => {
           this.formModel = {
