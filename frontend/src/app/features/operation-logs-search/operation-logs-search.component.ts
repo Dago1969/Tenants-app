@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { SearchField, SearchPageComponent } from '../../shared/search-page.component';
+import { t } from '../../i18n/messages';
 
 /**
  * Pagina di consultazione dei log operativi generati dalle API tenant.
@@ -48,9 +49,9 @@ export class OperationLogsSearchComponent {
       labelKey: 'operationLogs.field.operation',
       type: 'select',
       options: [
-        { value: 'INSERT', label: 'Inserimento' },
-        { value: 'UPDATE', label: 'Modifica' },
-        { value: 'DELETE', label: 'Cancellazione' }
+        { value: 'INSERT', label: t('operationLogs.operation.insert') },
+        { value: 'UPDATE', label: t('operationLogs.operation.update') },
+        { value: 'DELETE', label: t('operationLogs.operation.delete') }
       ]
     },
     {

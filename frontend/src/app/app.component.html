@@ -3,7 +3,7 @@
     <h1>{{ translate('app.title') }}</h1>
     <div *ngIf="username" class="user-info-bar" style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;margin-bottom:18px;margin-left:18px;">
       <span style="display:flex;align-items:center;gap:8px;">
-        <span class="user-icon" aria-label="Utente loggato" style="font-size:1.2em;">👤</span>
+        <span class="user-icon" [attr.aria-label]="translate('app.loggedUserAriaLabel')" style="font-size:1.2em;">👤</span>
         <span class="user-label" style="font-size:1em;">{{ username }}</span>
       </span>
       <span *ngIf="preferredUsername" class="user-preferred-username" style="font-size:0.95em;color:#e0e8f8;margin-left:28px;">{{ preferredUsername }}</span>

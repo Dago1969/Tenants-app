@@ -3,6 +3,10 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "i18n:sync": "node ./scripts/sync-i18n.mjs",
+    "prestart": "npm run i18n:sync",
+    "prebuild": "npm run i18n:sync",
+    "pretest": "npm run i18n:sync",
     "start": "ng serve --port 4201",
     "build": "ng build",
     "test": "ng test"

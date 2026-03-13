@@ -11,6 +11,8 @@ import { PatientsCrudComponent } from './features/patients/patients-crud.compone
 import { PatientsSearchComponent } from './features/patients-search/patients-search.component';
 import { DoctorsCrudComponent } from './features/doctors/doctors-crud.component';
 import { NursesCrudComponent } from './features/nurses/nurses-crud.component';
+import { ProjectsSearchComponent } from './features/projects/projects-search.component';
+import { ProjectsCrudComponent } from './features/projects/projects-crud.component';
 import { NotAuthorizedComponent } from './features/not-authorized/not-authorized.component';
 import { ForbiddenComponent } from './features/forbidden/forbidden.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
@@ -48,6 +50,8 @@ export const appRoutes: Routes = [
   { path: 'modules/search', component: ModulesSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('MODULE')] },
   { path: 'functions', component: FunctionsCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('FUNCTION')] },
   { path: 'functions/search', component: FunctionsSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('FUNCTION')] },
+  { path: 'projects/search', component: ProjectsSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('PROJECT')] },
+  { path: 'projects/new', component: ProjectsCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('PROJECT')] },
   { path: 'structure-types/search', component: StructureTypesSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('STRUCTURE')] },
   { path: 'structure-types/manage', component: StructureTypesCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('STRUCTURE')] },
   { path: 'structure-types/manage/:code', component: StructureTypesCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('STRUCTURE')] },
