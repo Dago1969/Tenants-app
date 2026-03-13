@@ -26,7 +26,8 @@ export class UsersSearchComponent {
   createFunctionCode = 'CREATE';
 
   filters: SearchField[] = [
-    { key: 'username', labelKey: 'users.field.username', type: 'text' },
+     { key: 'username', labelKey: 'users.field.username', type: 'text' },
+    { key: 'email', labelKey: 'users.field.email', type: 'text' },
     {
       key: 'roleId',
       labelKey: 'users.field.roleId',
@@ -47,9 +48,10 @@ export class UsersSearchComponent {
   ];
 
   resultColumns: SearchField[] = [
-    { key: 'username', labelKey: 'users.field.username', type: 'text' },
-    { key: 'roleId', labelKey: 'users.field.roleId', type: 'text' },
-    { key: 'structureId', labelKey: 'users.field.structureId', type: 'number' },
-    { key: 'enabled', labelKey: 'users.field.enabled', type: 'boolean' }
+     { key: 'username', labelKey: 'users.field.username', type: 'text' },
+    { key: 'email', labelKey: 'users.field.email', type: 'text' },
+     { key: 'roleId', labelKey: 'users.field.roleId', type: 'text' },
+     { key: 'structureId', labelKey: 'users.field.structureId', type: 'number' },
+     { key: 'enabled', labelKey: 'users.field.enabled', type: 'boolean' }
   ];
 }
