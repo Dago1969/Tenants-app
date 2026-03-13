@@ -1,4 +1,6 @@
+
 package com.qtm.tenants.role.service;
+import com.qtm.tenants.user.service.UserRemoteService;
 
 import com.qtm.tenants.role.dto.RoleDto;
 import com.qtm.tenants.role.entity.RoleEntity;
@@ -8,7 +10,6 @@ import com.qtm.tenants.authorization.AuthorizationManagementService;
 import com.qtm.tenants.authorization.ModuleRoleAuthorizationRepository;
 import com.qtm.tenants.authorization.FieldAuthorizationRepository;
 import com.qtm.tenants.authorization.repository.FunctionModuleRoleAuthorizationRepository;
-import com.qtm.tenants.user.repository.UserRepository;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,7 +44,7 @@ class RoleServiceTest {
     @Mock
     private FunctionModuleRoleAuthorizationRepository functionModuleRoleAuthorizationRepository;
     @Mock
-    private UserRepository userRepository;
+    private UserRemoteService userRemoteService;
 
     private RoleService roleService;
 
@@ -56,7 +57,7 @@ class RoleServiceTest {
             moduleRoleAuthorizationRepository,
             fieldAuthorizationRepository,
             functionModuleRoleAuthorizationRepository,
-            userRepository
+            userRemoteService
         );
     }
 

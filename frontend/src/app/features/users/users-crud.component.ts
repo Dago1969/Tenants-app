@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { AuthService } from '../../core/auth.service';
 import { CrudField, CrudFolder, CrudPageComponent } from '../../shared/crud-page.component';
 
 /**
@@ -16,16 +17,23 @@ import { CrudField, CrudFolder, CrudPageComponent } from '../../shared/crud-page
       [folders]="folders"
       [moduleCode]="moduleCode"
       [createFunctionCode]="createFunctionCode"
+      [initialFormModel]="initialFormModel"
     />
   `
 })
 export class UsersCrudComponent {
+  constructor(private readonly authService: AuthService) {}
+
   titleKey = 'users.title' as const;
   endpoint = 'users';
   moduleCode = 'USER';
   createFunctionCode = 'CREATE';
+  initialFormModel = this.authService.getSelectedClient().trim().length > 0
+    ? { clientId: this.authService.getSelectedClient().trim() }
+    : {};
 
   fields: CrudField[] = [
+    { key: 'clientId', labelKey: 'users.field.clientId', type: 'text', hidden: true },
     { key: 'username', labelKey: 'users.field.username', type: 'text', lockOnEdit: true },
     { key: 'email', labelKey: 'users.field.email', type: 'text' },
     { key: 'enabled', labelKey: 'users.field.enabled', type: 'checkbox' },

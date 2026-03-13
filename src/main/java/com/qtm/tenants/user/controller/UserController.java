@@ -1,8 +1,8 @@
 package com.qtm.tenants.user.controller;
 
+import com.qtm.commonlib.dto.UserDto;
 import com.qtm.tenants.authorization.service.ControllerFunctionAuthorizationService;
-import com.qtm.tenants.user.dto.UserDto;
-import com.qtm.tenants.user.service.UserService;
+import com.qtm.tenants.user.service.UserRemoteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.slf4j.Logger;
@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * Controller REST CRUD utenti.
+ * Controller REST utenti tenant delegato al repository remoto centralizzato in QTMDB.
  */
 @RestController
 @RequestMapping("/api/tenants/users")
@@ -34,20 +34,22 @@ public class UserController {
 
     private static final String MODULE_CODE = "USER";
 
-    private final UserService userService;
+        private final UserRemoteService userRemoteService;
     private final ControllerFunctionAuthorizationService controllerFunctionAuthorizationService;
 
     @PostMapping
     public ResponseEntity<UserDto> create(
             @RequestBody UserDto userDto,
-            @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
+                        @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole,
+                        @RequestHeader(name = "X-Selected-Client", required = false) String selectedClient
     ) {
         controllerFunctionAuthorizationService.requireFullEditPermission(
                 selectedRole,
                 MODULE_CODE,
                 ControllerFunctionAuthorizationService.CREATE_FUNCTION_CODE
         );
-        return ResponseEntity.ok(userService.create(userDto));
+                enrichClientId(userDto, selectedClient);
+        return ResponseEntity.ok(userRemoteService.create(userDto));
     }
 
         @GetMapping
@@ -67,19 +69,20 @@ public class UserController {
                         log.warn("[TENANTS-APP] Nessun principal JWT disponibile");
                 }
                 controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
-                return ResponseEntity.ok(userService.findAll());
+                return ResponseEntity.ok(userRemoteService.findAll());
         }
 
     @GetMapping("/search")
-    public ResponseEntity<List<UserDto>> search(
+        public ResponseEntity<List<UserDto>> search(
             @RequestParam(required = false) String username,
+                        @RequestParam(required = false) String email,
             @RequestParam(required = false) String roleId,
             @RequestParam(required = false) Long structureId,
             @RequestParam(required = false) Boolean enabled,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
         controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
-        return ResponseEntity.ok(userService.search(username, roleId, structureId, enabled));
+                return ResponseEntity.ok(userRemoteService.search(username, email, roleId, structureId, enabled));
     }
 
     @GetMapping("/{id}")
@@ -88,22 +91,38 @@ public class UserController {
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
         controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
-        return ResponseEntity.ok(userService.findById(id));
+                return ResponseEntity.ok(userRemoteService.findById(id));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<UserDto> update(
             @PathVariable Long id,
             @RequestBody UserDto userDto,
-            @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
+                        @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole,
+                        @RequestHeader(name = "X-Selected-Client", required = false) String selectedClient
     ) {
         controllerFunctionAuthorizationService.requireFullEditPermission(
                 selectedRole,
                 MODULE_CODE,
                 ControllerFunctionAuthorizationService.UPDATE_FUNCTION_CODE
         );
-        return ResponseEntity.ok(userService.update(id, userDto));
+                enrichClientId(userDto, selectedClient);
+        return ResponseEntity.ok(userRemoteService.update(id, userDto));
     }
+
+        private void enrichClientId(UserDto userDto, String selectedClient) {
+                if (userDto == null) {
+                        return;
+                }
+
+                if (userDto.getClientId() != null && !userDto.getClientId().isBlank()) {
+                        return;
+                }
+
+                if (selectedClient != null && !selectedClient.isBlank()) {
+                        userDto.setClientId(selectedClient.trim());
+                }
+        }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
@@ -115,7 +134,7 @@ public class UserController {
                 MODULE_CODE,
                 ControllerFunctionAuthorizationService.DELETE_FUNCTION_CODE
         );
-        userService.delete(id);
+        userRemoteService.delete(id);
         return ResponseEntity.noContent().build();
     }
 }

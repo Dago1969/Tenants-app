@@ -1,6 +1,7 @@
 package com.qtm.tenants.authorization;
 
 import com.qtm.commonlib.dto.ProjectDto;
+import com.qtm.commonlib.dto.UserDto;
 import com.qtm.tenants.authorization.dto.AuthorizationFieldDto;
 import com.qtm.tenants.authorization.dto.AuthorizationFunctionDto;
 import com.qtm.tenants.authorization.dto.AuthorizationModuleDto;
@@ -19,7 +20,6 @@ import com.qtm.tenants.patient.entity.PatientEntity;
 import com.qtm.tenants.role.entity.RoleEntity;
 import com.qtm.tenants.role.repository.RoleRepository;
 import com.qtm.tenants.structure.entity.StructureEntity;
-import com.qtm.tenants.user.entity.UserEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,7 +64,7 @@ public class AuthorizationManagementService {
                     "USER",
                     "Utenti",
                     "user",
-                    resolveEntityFields(UserEntity.class, Set.of("id"), Map.of("role", "roleId")),
+                    resolveEntityFields(UserDto.class, Set.of("id", "password", "clientId"), Map.of()),
                     List.of()
             ),
             new ModuleDefinition(

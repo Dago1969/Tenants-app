@@ -93,6 +93,7 @@ Comunica sempre in modo chiaro e conciso, con un tono amichevole ma professional
 ## Principi generali di programmazione
 - Usa sempre le traduzioni per ogni voce visibile all’utente nelle pagine html/Angular: ogni testo deve avere la relativa chiave nei file messages delle varie lingue e il template deve usare la funzione di traduzione.
 - Se devi lanciare comandi maven usa sempre il comando mvn
+- Quando devi compilare o buildare una componente frontend, esegui sempre il comando dalla directory `frontend` del progetto.
 - Ovunque possibile, utilizzare le Java Stream API
 - Preferire uno stile di codice Java funzionale
 - Rispettare il principio di single responsibility
@@ -106,11 +107,9 @@ Comunica sempre in modo chiaro e conciso, con un tono amichevole ma professional
 - verificare sempre che il progetto/solution/workspace sia compilabile dopo ogni modifica, anche se non si è apportate modifiche al codice sorgente. Questo aiuta a garantire che le dipendenze siano aggiornate e che il progetto sia in uno stato funzionante.
 
 ## Architettura applicativa
-- Utilizza nei progetti sempre lombok per ridurre la verbosità del codice
+ Utilizza nei progetti sempre lombok per ridurre la verbosità del codice
+ - Per i client remoti Spring, **non usare Feign**, ma utilizzare **sempre RestClient (Spring 6+)**.
 ### Comunicazione e conversione dati
-- Utilizzare i DTO e non le Entity per la comunicazione verso l'esterno (servizi REST)
-- Utilizzare i DTO e non le Entity per la comunicazione tra controller e service
-- La conversione da Entity a DTO e viceversa deve essere gestita da un Mapper nel service Spring
 - Quando generi Entity ed il DB è di tipo SQLite nelle annotazioni @Table sempre nomi in minuscole 
 ed anche per i campi usare sempre il minuscolo 
 
