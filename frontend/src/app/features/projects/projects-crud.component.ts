@@ -46,8 +46,10 @@ export class ProjectsCrudComponent {
               ...this.formModel,
               clientCode: tenant.clientCode,
               tenant: tenant.clientName,
-              tenantId: tenant.id // <--- AGGIUNTO tenantId
+              tenantId: tenant.id
             };
+            // eslint-disable-next-line no-console
+            console.log('[ProjectsCrudComponent] tenantId valorizzato:', tenant.id);
           } else {
             this.formModel = {
               ...this.formModel,
@@ -55,6 +57,8 @@ export class ProjectsCrudComponent {
               tenant: '',
               tenantId: null
             };
+            // eslint-disable-next-line no-console
+            console.log('[ProjectsCrudComponent] tenantId non valorizzato, tenant pointer non trovato');
           }
 
           // eslint-disable-next-line no-console
