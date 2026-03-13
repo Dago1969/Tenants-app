@@ -26,9 +26,18 @@ export class UsersCrudComponent {
   createFunctionCode = 'CREATE';
 
   fields: CrudField[] = [
-     { key: 'username', labelKey: 'users.field.username', type: 'text', lockOnEdit: true },
+    { key: 'username', labelKey: 'users.field.username', type: 'text', lockOnEdit: true },
     { key: 'email', labelKey: 'users.field.email', type: 'text' },
-     { key: 'enabled', labelKey: 'users.field.enabled', type: 'checkbox' },
+    { key: 'enabled', labelKey: 'users.field.enabled', type: 'checkbox' },
+    {
+      key: 'projectId',
+      labelKey: 'users.field.projectId',
+      type: 'select',
+      optionsEndpoint: 'projects', // endpoint REST per i progetti
+      optionValueKey: 'id',
+      optionLabelKey: 'code',
+      // TODO: se serve mostrare anche descrizione, usare una funzione custom per label
+    },
     {
       key: 'roleId',
       labelKey: 'users.field.roleId',
@@ -53,9 +62,17 @@ export class UsersCrudComponent {
       key: 'account',
       titleKey: 'users.folder.account',
       fields: [
-          { key: 'username', labelKey: 'users.field.username', type: 'text', lockOnEdit: true },
-          { key: 'email', labelKey: 'users.field.email', type: 'text' },
-          { key: 'enabled', labelKey: 'users.field.enabled', type: 'checkbox' },
+        { key: 'username', labelKey: 'users.field.username', type: 'text', lockOnEdit: true },
+        { key: 'email', labelKey: 'users.field.email', type: 'text' },
+        { key: 'enabled', labelKey: 'users.field.enabled', type: 'checkbox' },
+        {
+          key: 'projectId',
+          labelKey: 'users.field.projectId',
+          type: 'select',
+          optionsEndpoint: 'projects',
+          optionValueKey: 'id',
+          optionLabelKey: 'code',
+        },
         {
           key: 'roleId',
           labelKey: 'users.field.roleId',
