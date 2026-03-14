@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.util.List;
 
@@ -49,17 +51,30 @@ public class ProjectController {
         return ResponseEntity.status(HttpStatus.CREATED).body(projectService.create(projectDto));
     }
 
-    @GetMapping
-    public ResponseEntity<List<ProjectDto>> findAll(
-            @RequestParam(required = false) String code,
-            @RequestParam(required = false) String tenant,
-            @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
-    ) {
-        log.info("[ProjectController] GET /api/tenants/projects selectedRole={} code={} tenant={}",
-                selectedRole, code, tenant);
-        controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
-        return ResponseEntity.ok(projectService.findAll(code, tenant));
-    }
+        @GetMapping
+        public ResponseEntity<List<ProjectDto>> findAll(
+                        @RequestParam(required = false) String code,
+                        @RequestParam(required = false) String tenant,
+                        @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole,
+                        @RequestHeader(name = "X-Selected-Client", required = false) String selectedClient,
+                        @AuthenticationPrincipal Jwt jwt
+        ) {
+                String effectiveTenant = tenant;
+                if (effectiveTenant == null || effectiveTenant.isBlank()) {
+                        if (selectedClient != null && !selectedClient.isBlank()) {
+                                effectiveTenant = selectedClient;
+                        } else if (jwt != null) {
+                                effectiveTenant = jwt.getClaimAsString("client_code");
+                                if (effectiveTenant == null || effectiveTenant.isBlank()) {
+                                        effectiveTenant = jwt.getClaimAsString("tenant");
+                                }
+                        }
+                }
+                log.info("[ProjectController] GET /api/tenants/projects selectedRole={} code={} tenant={} (effettivo)",
+                                selectedRole, code, effectiveTenant);
+                controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
+                return ResponseEntity.ok(projectService.findAll(code, effectiveTenant));
+        }
 
     @GetMapping("/{id}")
     public ResponseEntity<ProjectDto> findById(

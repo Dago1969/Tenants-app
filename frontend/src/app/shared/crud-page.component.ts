@@ -87,23 +87,23 @@ interface OperationLogEntry {
         <form class="crud-form" (ngSubmit)="save()">
           <div class="crud-fields">
             <div class="crud-field-row" *ngFor="let field of currentFields">
+
               <label class="crud-label" [for]="field.key">{{ translate(field.labelKey) }}</label>
 
-
-              <input
-                *ngIf="field.type !== 'checkbox' && field.type !== 'select'"
-                class="crud-input"
-                [id]="field.key"
-                [type]="field.type"
-                [(ngModel)]="formModel[field.key]"
-                [name]="field.key"
-                [disabled]="isFieldDisabled(field)"
-                (blur)="onFieldBlur(field)"
-              />
-
-              <!-- Messaggio di errore username già esistente -->
-              <div *ngIf="field.key === 'username' && usernameTaken" class="crud-error">
-                {{ translate(usernameTakenMessageKey) }}
+              <div *ngIf="field.type !== 'checkbox' && field.type !== 'select'" style="display: flex; flex-direction: column; align-items: flex-start;">
+                <input
+                  class="crud-input"
+                  [id]="field.key"
+                  [type]="field.type"
+                  [(ngModel)]="formModel[field.key]"
+                  [name]="field.key"
+                  [disabled]="isFieldDisabled(field)"
+                  (blur)="onFieldBlur(field)"
+                />
+                <!-- Messaggio di errore username già esistente, ora sempre subito sotto l'input -->
+                <div *ngIf="field.key === 'username' && usernameTaken" class="crud-error" style="margin-top: 2px;">
+                  {{ translate(usernameTakenMessageKey) }}
+                </div>
               </div>
 
               <select

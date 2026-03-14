@@ -1,9 +1,13 @@
-# Compilazione globale
-
+#QTM CUSTOM INSTRUCTIONS
 Quando l’utente chiede "compila tutto" devi SEMPRE:
+- Quando devi compilare o buildare una componente frontend, esegui sempre il comando dalla directory `frontend` del progetto.
 
 1. Eseguire la compilazione di tutti i progetti della workspace (sia backend che frontend) con i comandi appropriati (mvn clean install -DskipTests=true per il backend, npm run build per il frontend dove presente).
 2. Confermare che tutti i progetti siano compilati correttamente.
+
+
+# Compilazione globale
+
 # Istruzioni per GitHub Copilot Chat
 
 ## Stile di interazione
@@ -98,8 +102,19 @@ Comunica sempre in modo chiaro e conciso, con un tono amichevole ma professional
 
 ## Principi generali di programmazione
 - Usa sempre le traduzioni per ogni voce visibile all’utente nelle pagine html/Angular: ogni testo deve avere la relativa chiave nei file messages delle varie lingue e il template deve usare la funzione di traduzione.
+- Quando modifichi un testo visibile in una pagina frontend devi SEMPRE:
+  - leggere prima il template/componente interessato e individuare dove viene risolto il testo
+  - usare o creare una chiave di traduzione nei file messages/properties di tutte le lingue gestite
+  - aggiornare il template/componente affinche usi la chiave di traduzione e non testo inline
+  - mantenere coerente il naming delle chiavi con il modulo/pagina di appartenenza
+  - verificare che il significato funzionale del testo non cambi accidentalmente
+  - ricompilare sempre il frontend dal path `frontend` dopo la modifica
+- Quando modifichi un testo visibile in una pagina frontend NON devi MAI:
+  - inserire testo hardcoded in html, template inline, componenti TypeScript o costanti locali se il testo e mostrato all’utente
+  - aggiornare solo una lingua lasciando chiavi mancanti o traduzioni disallineate
+  - riutilizzare chiavi esistenti con significato diverso solo per evitare di crearne una nuova
+  - modificare testi utente senza controllare eventuali validazioni, messaggi di errore e test collegati
 - Se devi lanciare comandi maven usa sempre il comando mvn
-- Quando devi compilare o buildare una componente frontend, esegui sempre il comando dalla directory `frontend` del progetto.
 - Ovunque possibile, utilizzare le Java Stream API
 - Preferire uno stile di codice Java funzionale
 - Rispettare il principio di single responsibility
