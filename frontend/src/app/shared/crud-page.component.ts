@@ -89,6 +89,7 @@ interface OperationLogEntry {
             <div class="crud-field-row" *ngFor="let field of currentFields">
               <label class="crud-label" [for]="field.key">{{ translate(field.labelKey) }}</label>
 
+
               <input
                 *ngIf="field.type !== 'checkbox' && field.type !== 'select'"
                 class="crud-input"
@@ -97,7 +98,13 @@ interface OperationLogEntry {
                 [(ngModel)]="formModel[field.key]"
                 [name]="field.key"
                 [disabled]="isFieldDisabled(field)"
+                (blur)="onFieldBlur(field)"
               />
+
+              <!-- Messaggio di errore username già esistente -->
+              <div *ngIf="field.key === 'username' && usernameTaken" class="crud-error">
+                {{ translate('users.error.username.taken' as MessageKey) }}
+              </div>
 
               <select
                 *ngIf="field.type === 'select'"
@@ -159,6 +166,29 @@ export class CrudPageComponent implements OnInit, OnChanges {
   @Input() initialFormModel: CrudEntity = {};
 
   formModel: CrudEntity = {};
+  usernameTaken = false;
+    onFieldBlur(field: CrudField): void {
+      if (field.key === 'username' && this.formModel['username'] && !this.loadedEntityKeyValue) {
+        const usernameRaw = this.formModel['username'];
+        const username = typeof usernameRaw === 'string' ? usernameRaw.trim() : '';
+        if (!username) {
+          this.usernameTaken = false;
+          return;
+        }
+        // Chiamata asincrona per verifica username
+        this.http.get<any[]>(`${environment.apiBaseUrl}/users/search`, { params: { username } }).subscribe({
+          next: (users) => {
+            this.usernameTaken = Array.isArray(users) && users.length > 0;
+          },
+          error: () => {
+            this.usernameTaken = false;
+          }
+        });
+      }
+      if (field.key === 'username' && !this.formModel['username']) {
+        this.usernameTaken = false;
+      }
+    }
   activeFolder = '';
   isViewMode = false;
   fieldPermissions: Record<string, string> = {};
@@ -264,6 +294,11 @@ export class CrudPageComponent implements OnInit, OnChanges {
   }
 
   save(): void {
+    // Blocca il salvataggio se username già preso
+    if (this.usernameTaken) {
+      this.pushOperationLog('error', 'users.error.username.taken');
+      return;
+    }
     // eslint-disable-next-line no-console
     console.log('[CrudPageComponent] Saving payload for endpoint', this.endpoint, ':', this.buildPayload());
     const payload = this.buildPayload();

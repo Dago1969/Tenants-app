@@ -1,3 +1,9 @@
+# Compilazione globale
+
+Quando l’utente chiede "compila tutto" devi SEMPRE:
+
+1. Eseguire la compilazione di tutti i progetti della workspace (sia backend che frontend) con i comandi appropriati (mvn clean install -DskipTests=true per il backend, npm run build per il frontend dove presente).
+2. Confermare che tutti i progetti siano compilati correttamente.
 # Istruzioni per GitHub Copilot Chat
 
 ## Stile di interazione
