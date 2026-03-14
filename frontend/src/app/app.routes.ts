@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth.guard';
 import { UsersCrudComponent } from './features/users/users-crud.component';
+import { UsersManageComponent } from './features/users/users-manage.component';
 import { RolesCrudComponent } from './features/roles/roles-crud.component';
 import { RolesSearchComponent } from './features/roles-search/roles-search.component';
 import { ModulesCrudComponent } from './features/modules/modules-crud.component';
@@ -34,8 +35,10 @@ import { moduleVisibilityGuard } from './core/module-visibility.guard';
 export const appRoutes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
-  { path: 'users', component: UsersCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('USER')] },
-  { path: 'users/search', component: UsersSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('USER')] },
+  { path: 'users', component: UsersSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('USER')] },
+  { path: 'users/:id', component: UsersCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('USER')] },
+  { path: 'users/configure/:id', component: UsersManageComponent, canActivate: [authGuard, moduleVisibilityGuard('USER')] },
+  { path: 'users/:id/configure', redirectTo: 'users/configure/:id', pathMatch: 'full' },
   { path: 'doctors/search', component: DoctorsSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('DOCTOR')] },
   { path: 'nurses/search', component: NursesSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('NURSE')] },
   { path: 'roles', component: RolesSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('ROLE')] },

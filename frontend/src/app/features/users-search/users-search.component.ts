@@ -16,6 +16,8 @@ import { SearchField, SearchPageComponent } from '../../shared/search-page.compo
       [resultColumns]="resultColumns"
       [moduleCode]="moduleCode"
       [createFunctionCode]="createFunctionCode"
+      [showManageAction]="true"
+      [detailRouteBase]="'users'"
     />
   `
 })

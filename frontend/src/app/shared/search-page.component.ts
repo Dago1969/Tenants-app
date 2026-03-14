@@ -146,6 +146,9 @@ type DeleteDialogMode = 'confirm' | 'reassign';
                 <button *ngIf="showDeleteAction && canDelete" class="icon-btn" type="button" (click)="deleteRecord(getRowIdentifier(row))" [title]="translate('search.action.delete')">
                   <span style="font-size:1.2rem;">🗑️</span>
                 </button>
+                <button *ngIf="showManageAction" class="icon-btn" type="button" (click)="openManage(getRowIdentifier(row))" [title]="translate('search.action.configure')">
+                  <span style="font-size:1.2rem;">⚙️</span>
+                </button>
               </td>
             </tr>
           </tbody>
@@ -217,6 +220,7 @@ export class SearchPageComponent implements OnInit {
   @Input() showEditAction = true;
   @Input() showViewAction = true;
   @Input() showDeleteAction = true;
+  @Input() showManageAction = false;
   @Input() deleteCheckEndpoint = '';
 
   filterModel: Record<string, string> = {};
@@ -293,7 +297,7 @@ export class SearchPageComponent implements OnInit {
   }
 
   get hasRowActions(): boolean {
-    return this.showEditAction || this.showViewAction || this.showDeleteAction;
+    return this.showEditAction || this.showViewAction || this.showDeleteAction || this.showManageAction;
   }
 
   search(showFeedback = true): void {
@@ -373,6 +377,14 @@ export class SearchPageComponent implements OnInit {
     this.openCrudPage(id, 'edit');
   }
 
+  openManage(id: unknown): void {
+    const normalizedId = this.normalizeId(id);
+    if (normalizedId === null) {
+      return;
+    }
+    void this.router.navigate([`/users/configure/${normalizedId}`]);
+  }
+
   deleteRecord(id: unknown): void {
     if (!this.canDelete) {
       return;
@@ -430,6 +442,12 @@ export class SearchPageComponent implements OnInit {
 
   private getBaseEndpoint(): string {
     return this.endpoint.replace(/\/search$/, '');
+  }
+
+  private buildExternalDetailUrl(normalizedId: string): string {
+    const normalizedRouteBase = this.detailRouteBase.trim().replace(/^\/+|\/+$/g, '');
+    const routeBase = normalizedRouteBase.length > 0 ? normalizedRouteBase : 'users';
+    return `${window.location.origin}/${routeBase}/${normalizedId}`;
   }
 
   private handleDeleteWithPrecheck(normalizedId: string): void {

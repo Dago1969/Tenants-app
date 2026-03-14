@@ -45,9 +45,6 @@ interface OperationLogEntry {
   message: string;
 }
 
-/**
- * Componente riusabile per pagine CRUD tenant senza lista oggetti.
- */
 @Component({
   selector: 'app-crud-page',
   standalone: true,
@@ -169,7 +166,7 @@ interface OperationLogEntry {
             </div>
           </div>
 
-          <div class="crud-actions" *ngIf="!isViewMode">
+          <div class="crud-actions" *ngIf="!hideActions && !isViewMode">
             <button class="crud-btn crud-btn-secondary" type="button" (click)="cancel()">
               {{ translate('crud.actions.cancel') }}
             </button>
@@ -178,9 +175,15 @@ interface OperationLogEntry {
             </button>
           </div>
 
-          <div class="crud-actions" *ngIf="isViewMode">
+          <div class="crud-actions" *ngIf="!hideActions && isViewMode">
             <button class="crud-btn crud-btn-secondary" type="button" (click)="cancel()">
               {{ translate('crud.actions.back') }}
+            </button>
+          </div>
+
+          <div class="crud-actions" *ngIf="hideActions && showCancel">
+            <button class="crud-btn crud-btn-secondary" type="button" (click)="cancel()">
+              {{ translate('crud.actions.cancel') }}
             </button>
           </div>
         </form>
@@ -192,6 +195,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
   readonly requiredFieldMessageKey = 'crud.validation.required' as MessageKey;
   readonly usernameTakenMessageKey: MessageKey = 'users.error.username.taken';
 
+
   @Input({ required: true }) titleKey!: MessageKey;
   @Input({ required: true }) endpoint!: string;
   @Input() fields: CrudField[] = [];
@@ -202,6 +206,9 @@ export class CrudPageComponent implements OnInit, OnChanges {
   @Input() createFunctionCode = 'CREATE';
   @Input() updateFunctionCode = 'UPDATE';
   @Input() initialFormModel: CrudEntity = {};
+  @Input() forceViewMode = false;
+  @Input() hideActions = false;
+  @Input() showCancel = false;
 
   formModel: CrudEntity = {};
   usernameTaken = false;
@@ -372,7 +379,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
     const idParam = this.route.snapshot.queryParamMap.get(this.entityKey) ?? this.route.snapshot.paramMap.get(this.entityKey);
     const modeParam = this.route.snapshot.queryParamMap.get('mode');
 
-    if (modeParam === 'view') {
+    if (this.forceViewMode || modeParam === 'view') {
       this.isViewMode = true;
     }
 

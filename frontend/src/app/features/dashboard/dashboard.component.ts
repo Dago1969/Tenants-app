@@ -82,7 +82,7 @@ export class DashboardComponent implements OnInit {
   hiddenModuleCodes = new Set<string>();
 
   readonly dashboardLinks: DashboardLink[] = [
-    { route: '/users/search', labelKey: 'menu.usersSearch', moduleCode: 'USER' },
+    { route: '/users', labelKey: 'menu.usersSearch', moduleCode: 'USER' },
     { route: '/roles', labelKey: 'roles.search.title', moduleCode: 'ROLE' },
     { route: '/modules/search', labelKey: 'menu.modulesSearch', moduleCode: 'MODULE' },
     { route: '/functions/search', labelKey: 'menu.functionsSearch', moduleCode: 'FUNCTION' },
