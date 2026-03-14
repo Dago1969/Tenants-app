@@ -21,7 +21,7 @@ export class UserTenantProjectRelationApiService {
   /**
    * Restituisce tutte le relazioni utente-progetto per uno user e un tenant.
    */
-  getRelationsByUserAndTenant(userId: number, tenantId: number): Observable<UserTenantProjectRelationDto[]> {
-    return this.http.get<UserTenantProjectRelationDto[]>(`${this.baseUrl}/user-tenant-project-relations?userId=${userId}&tenantId=${tenantId}`);
+  getRelationsByUserAndTenant(userId: number, tenant: string): Observable<UserTenantProjectRelationDto[]> {
+    return this.http.get<UserTenantProjectRelationDto[]>(`${this.baseUrl}/user-tenant-project-relations?userId=${userId}&tenant=${encodeURIComponent(tenant)}`);
   }
 }

@@ -23,7 +23,7 @@ export class ProjectApiService {
   /**
    * Restituisce tutti i progetti attivi per il tenant corrente.
    */
-  getProjectsByTenant(tenantId: number): Observable<ProjectDto[]> {
-    return this.http.get<ProjectDto[]>(`${this.baseUrl}/tenants/projects?tenantId=${tenantId}`);
+  getProjectsByTenant(tenant: string): Observable<ProjectDto[]> {
+    return this.http.get<ProjectDto[]>(`${this.baseUrl}/projects?tenant=${encodeURIComponent(tenant)}`);
   }
 }

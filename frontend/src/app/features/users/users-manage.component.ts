@@ -38,16 +38,25 @@ import { CrudPageComponent } from '../../shared/crud-page.component';
           <div class="card-header">
             <h2>Progetti</h2>
           </div>
-          <div class="card-body">
-            <h3>Progetti attivi per il tenant</h3>
-            <ul>
-              <li *ngFor="let project of allProjects">{{ project.code }} - {{ project.descrizione }}</li>
-            </ul>
-            <h3>Progetti autorizzati per questo utente</h3>
-            <ul>
-              <li *ngFor="let project of authorizedProjects">{{ project.code }} - {{ project.descrizione }}</li>
-            </ul>
-          </div>
+         <div class="card-body" style="border: 2px solid red;">
+  <div style="display: flex; gap: 2rem; background-color: #f0f0f0;">
+    
+    <div style="flex: 1; border: 1px solid blue;">
+      <h2 style="color: black !important; display: block !important;">TITOLO TEST ATTIVI</h2>
+      <ul>
+        <li *ngFor="let project of allProjects">{{ project.code }}</li>
+      </ul>
+    </div>
+
+    <div style="flex: 1; border: 1px solid green;">
+      <h2 style="color: black !important; display: block !important;">TITOLO TEST ASSOCIATI</h2>
+      <ul>
+        <li *ngFor="let project of authorizedProjects">{{ project.code }}</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
         </div>
       </div>
     </app-crud-page>
@@ -83,11 +92,11 @@ export class UsersManageComponent implements OnInit {
       return;
     }
 
-    this.projectApi.getProjectsByTenant(Number(clientCode)).subscribe((projects) => {
+    this.projectApi.getProjectsByTenant(clientCode).subscribe((projects) => {
       this.allProjects = projects;
     });
 
-    this.userTenantProjectRelationApi.getRelationsByUserAndTenant(userId, Number(clientCode)).subscribe((relations) => {
+    this.userTenantProjectRelationApi.getRelationsByUserAndTenant(userId, clientCode).subscribe((relations) => {
       const projectIds = new Set(relations.map(r => r.projectId));
       this.authorizedProjects = this.allProjects.filter(p => projectIds.has(p.id));
     });

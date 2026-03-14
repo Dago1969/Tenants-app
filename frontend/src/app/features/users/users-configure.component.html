@@ -8,6 +8,56 @@
   [initialFormModel]="initialFormModel"
   [hideActions]="true"
 >
+ Certamente! Ho modificato la struttura della prima subcard inserendo un contenitore Flexbox per creare le due colonne. Entrambe punteranno alla stessa lista (così vedrai gli stessi valori), ma avranno i due titoli distinti che cercavi.
+
+Sostituisci il blocco della prima subcard con questo:
+
+HTML
+<div class="subcard" style="position: relative; margin-top: 32px; margin-bottom: 18px; padding: 25px 22px 18px 22px; border: 1px solid #d5dfcf; border-radius: 10px; background: #f7faf5;">
+  
+  <span style="position: absolute; top: -12px; left: 20px; background: #f7faf5; padding: 0 10px; color: #395f31; font-weight: bold; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">
+    Progetti
+  </span>
+  <div style="display: flex; gap: 40px; align-items: flex-start;">
+    
+    <div style="flex: 1;">
+      <h3 style="margin-top:0; color:#395f31; font-size:1.1rem; font-weight:600; border-bottom: 1px solid #d5dfcf; padding-bottom: 8px; margin-bottom: 12px;">
+        Progetti Attivi
+      </h3>
+      
+      <ng-container *ngIf="loadingProjects">Caricamento...</ng-container>
+      
+      <ul *ngIf="!loadingProjects && projects.length > 0" style="margin:0; padding-left:18px; color:#395f31;">
+        <li *ngFor="let p of projects" style="margin-bottom: 4px;">
+          {{ p.descrizione }} <span style="color:#6d9853; font-size:0.95em;">({{ p.code }})</span>
+        </li>
+      </ul>
+      
+      <div *ngIf="!loadingProjects && projects.length === 0" style="color:#aaa;">Nessun progetto</div>
+    </div>
+
+    <div style="flex: 1;">
+      <h3 style="margin-top:0; color:#395f31; font-size:1.1rem; font-weight:600; border-bottom: 1px solid #d5dfcf; padding-bottom: 8px; margin-bottom: 12px;">
+        Progetti Associati
+      </h3>
+      
+      <ng-container *ngIf="loadingProjects">Caricamento...</ng-container>
+
+      <ul *ngIf="!loadingProjects && projects.length > 0" style="margin:0; padding-left:18px; color:#395f31;">
+        <li *ngFor="let p of projects" style="margin-bottom: 4px;">
+          {{ p.descrizione }} <span style="color:#6d9853; font-size:0.95em;">({{ p.code }})</span>
+        </li>
+      </ul>
+
+      <div *ngIf="!loadingProjects && projects.length === 0" style="color:#aaa;">Nessun progetto</div>
+    </div>
+
+  </div>
+</div>
+  <div class="subcard" style="margin-bottom: 28px; padding: 18px 22px; border: 1px solid #d5dfcf; border-radius: 10px; background: #f7faf5;">
+    <h3 style="margin-top:0; color:#395f31; font-size:1.1rem; font-weight:600;">Ruoli</h3>
+    <div style="color:#6d9853;">[Elenco ruoli utente]</div>
+  </div>
   <div class="crud-actions" style="display: flex; justify-content: flex-end; margin-top: 32px;">
     <button 
       class="crud-btn crud-btn-secondary"
