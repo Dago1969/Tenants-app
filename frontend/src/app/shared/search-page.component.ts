@@ -90,7 +90,7 @@ type DeleteDialogMode = 'confirm' | 'reassign';
                 [name]="field.key"
                 style="border:1px solid #bfc9d9; border-radius:4px; padding:6px 8px; background:#f8fafc;"
               >
-                <option value="">-</option>
+                <option value="">{{ translate('search.option.all') }}</option>
                 <option value="true">{{ translate('search.boolean.true') }}</option>
                 <option value="false">{{ translate('search.boolean.false') }}</option>
               </select>

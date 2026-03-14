@@ -48,6 +48,9 @@ export class AppComponent implements OnDestroy {
     private readonly authService: AuthService,
     private readonly http: HttpClient
   ) {
+    if (typeof document !== 'undefined') {
+      document.title = t('app.title');
+    }
     this.storeTokenFromQueryString();
     this.selectedRole = this.authService.getSelectedRole();
     this.selectedClient = this.authService.getSelectedClient();

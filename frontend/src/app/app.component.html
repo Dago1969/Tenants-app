@@ -9,8 +9,8 @@
       <span *ngIf="preferredUsername" class="user-preferred-username" style="font-size:0.95em;color:#e0e8f8;margin-left:28px;">{{ preferredUsername }}</span>
     </div>
     <p class="selection-info" *ngIf="selectedClient || selectedRole">
-      <strong>{{ translate('common.client') }}:</strong> {{ selectedClient || '-' }}<br />
-      <strong>{{ translate('common.role') }}:</strong> {{ selectedRole || '-' }}
+      <strong>{{ translate('common.client') }}:</strong> {{ selectedClient || translate('common.notAvailable') }}<br />
+      <strong>{{ translate('common.role') }}:</strong> {{ selectedRole || translate('common.notAvailable') }}
     </p>
     <nav>
       <a *ngFor="let item of visibleMenuItems" [routerLink]="item.route" routerLinkActive="active">{{ translate(item.labelKey) }}</a>

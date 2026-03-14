@@ -103,7 +103,7 @@ interface OperationLogEntry {
 
               <!-- Messaggio di errore username già esistente -->
               <div *ngIf="field.key === 'username' && usernameTaken" class="crud-error">
-                {{ translate('users.error.username.taken' as MessageKey) }}
+                {{ translate(usernameTakenMessageKey) }}
               </div>
 
               <select
@@ -154,6 +154,7 @@ interface OperationLogEntry {
   `
 })
 export class CrudPageComponent implements OnInit, OnChanges {
+  readonly usernameTakenMessageKey: MessageKey = 'users.error.username.taken';
   @Input({ required: true }) titleKey!: MessageKey;
   @Input({ required: true }) endpoint!: string;
   @Input() fields: CrudField[] = [];
