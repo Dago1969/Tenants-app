@@ -171,9 +171,11 @@ interface OperationLogEntry {
               {{ translate('crud.actions.cancel') }}
             </button>
             <button class="crud-btn crud-btn-primary" type="submit">
-              {{ loadedEntityKeyValue !== null ? translate('crud.actions.update') : translate('crud.actions.create') }}
+              {{ loadedEntityKeyValue !== null || isEditMode ? translate('crud.actions.update') : translate('crud.actions.create') }}
             </button>
           </div>
+
+          <ng-content></ng-content>
 
           <div class="crud-actions" *ngIf="!hideActions && isViewMode">
             <button class="crud-btn crud-btn-secondary" type="button" (click)="cancel()">
@@ -205,6 +207,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
   @Input() moduleCode = '';
   @Input() createFunctionCode = 'CREATE';
   @Input() updateFunctionCode = 'UPDATE';
+  @Input() isEditMode = false;
   @Input() initialFormModel: CrudEntity = {};
   @Input() forceViewMode = false;
   @Input() hideActions = false;
@@ -254,7 +257,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
   isFieldDisabled(field: CrudField): boolean {
     return this.isViewMode
       || field.readonly === true
-      || (field.lockOnEdit === true && this.loadedEntityKeyValue !== null)
+      || (field.lockOnEdit === true && (this.loadedEntityKeyValue !== null || this.isEditMode))
       || this.hasUnresolvedSelectDependencies(field)
       || this.getFieldPermission(field.key) === 'read-only';
   }
@@ -323,7 +326,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
     // eslint-disable-next-line no-console
     console.log('[CrudPageComponent] Saving payload for endpoint', this.endpoint, ':', payload);
 
-    if (this.loadedEntityKeyValue !== null) {
+    if (this.loadedEntityKeyValue !== null || this.isEditMode) {
       this.http
         .put<CrudEntity>(`${environment.apiBaseUrl}/${this.endpoint}/${this.loadedEntityKeyValue}`, payload)
         .subscribe({
@@ -417,7 +420,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
   }
 
   private applyInitialFormModel(source: string): void {
-    if (this.loadedEntityKeyValue !== null) {
+    if (this.loadedEntityKeyValue !== null && !this.isEditMode) {
       return;
     }
 
