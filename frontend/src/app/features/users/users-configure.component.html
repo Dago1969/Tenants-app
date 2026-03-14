@@ -6,4 +6,16 @@
   [moduleCode]="moduleCode"
   [createFunctionCode]="createFunctionCode"
   [initialFormModel]="initialFormModel"
-/>
+  [hideActions]="true"
+>
+  <div class="crud-actions" style="display: flex; justify-content: flex-end; margin-top: 32px;">
+    <button 
+      class="crud-btn crud-btn-secondary"
+      type="button"
+      (click)="goBack()"
+      style="min-width: 150px; background: #4d78c2; color: #fff; box-shadow: 0 8px 18px rgba(77,120,194,0.24); font-weight: 700; border: none; border-radius: 2px; padding: 11px 18px;"
+    >
+      Annulla
+    </button>
+  </div>
+</app-crud-page>

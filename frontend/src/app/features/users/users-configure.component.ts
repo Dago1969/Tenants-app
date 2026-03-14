@@ -15,6 +15,10 @@ import { CrudField, CrudFolder, CrudPageComponent } from '../../shared/crud-page
 export class UsersConfigureComponent {
   constructor(private readonly authService: AuthService) {}
 
+  goBack() {
+    window.history.back();
+  }
+
   titleKey = 'users.configure.title' as const;
   endpoint = 'users';
   moduleCode = 'USER';
