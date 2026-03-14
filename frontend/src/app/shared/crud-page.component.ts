@@ -1,7 +1,7 @@
 import { CommonModule, Location } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, NgForm, NgModel } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { environment } from '../../environments/environment';
 import { FunctionAuthorizationService } from '../core/function-authorization.service';
@@ -22,6 +22,7 @@ export interface CrudField {
   resetFieldsOnChange?: string[];
   includeValueInOptionLabel?: boolean;
   relatedFields?: Record<string, string>;
+  required?: boolean;
 }
 
 export interface CrudFolder {
@@ -73,53 +74,87 @@ interface OperationLogEntry {
         </div>
 
         <div *ngIf="folders.length > 0" class="crud-folder-tabs">
-        <button
-          *ngFor="let folder of folders"
-          type="button"
-          (click)="activeFolder = folder.key"
-          class="crud-folder-btn"
-          [class.active]="activeFolder === folder.key"
-        >
-          {{ translate(folder.titleKey) }}
-        </button>
+          <button
+            *ngFor="let folder of folders"
+            type="button"
+            (click)="activeFolder = folder.key"
+            class="crud-folder-btn"
+            [class.active]="activeFolder === folder.key"
+          >
+            {{ translate(folder.titleKey) }}
+          </button>
         </div>
 
-        <form class="crud-form" (ngSubmit)="save()">
+        <form class="crud-form" #crudForm="ngForm" (ngSubmit)="save(crudForm)" novalidate>
           <div class="crud-fields">
             <div class="crud-field-row" *ngFor="let field of currentFields">
+              <label class="crud-label" [for]="field.key">
+                {{ translate(field.labelKey) }}
+                <span *ngIf="field.required === true" class="crud-required-marker">*</span>
+              </label>
 
-              <label class="crud-label" [for]="field.key">{{ translate(field.labelKey) }}</label>
+              <div *ngIf="field.type !== 'checkbox' && field.type !== 'select'" class="crud-field-control">
+                <ng-container *ngIf="field.key === 'username'; else genericInput">
+                  <input
+                    class="crud-input"
+                    [class.crud-input-invalid]="shouldShowRequiredError(field, usernameInput) || usernameTaken"
+                    [id]="field.key"
+                    [type]="field.type"
+                    [(ngModel)]="formModel[field.key]"
+                    [name]="field.key"
+                    [disabled]="isFieldDisabled(field)"
+                    (blur)="onFieldBlur(field)"
+                    [required]="field.required === true"
+                    #usernameInput="ngModel"
+                  />
+                  <div *ngIf="usernameTaken" class="crud-field-error">
+                    {{ translate(usernameTakenMessageKey) }}
+                  </div>
+                  <div *ngIf="shouldShowRequiredError(field, usernameInput) && !usernameTaken" class="crud-field-error">
+                    {{ translate(requiredFieldMessageKey) }}
+                  </div>
+                </ng-container>
 
-              <div *ngIf="field.type !== 'checkbox' && field.type !== 'select'" style="display: flex; flex-direction: column; align-items: flex-start;">
-                <input
-                  class="crud-input"
-                  [id]="field.key"
-                  [type]="field.type"
-                  [(ngModel)]="formModel[field.key]"
-                  [name]="field.key"
-                  [disabled]="isFieldDisabled(field)"
-                  (blur)="onFieldBlur(field)"
-                />
-                <!-- Messaggio di errore username già esistente, ora sempre subito sotto l'input -->
-                <div *ngIf="field.key === 'username' && usernameTaken" class="crud-error" style="margin-top: 2px;">
-                  {{ translate(usernameTakenMessageKey) }}
-                </div>
+                <ng-template #genericInput>
+                  <input
+                    class="crud-input"
+                    [class.crud-input-invalid]="shouldShowRequiredError(field, genericField)"
+                    [id]="field.key"
+                    [type]="field.type"
+                    [(ngModel)]="formModel[field.key]"
+                    [name]="field.key"
+                    [disabled]="isFieldDisabled(field)"
+                    (blur)="onFieldBlur(field)"
+                    [required]="field.required === true"
+                    #genericField="ngModel"
+                  />
+                  <div *ngIf="shouldShowRequiredError(field, genericField)" class="crud-field-error">
+                    {{ translate(requiredFieldMessageKey) }}
+                  </div>
+                </ng-template>
               </div>
 
-              <select
-                *ngIf="field.type === 'select'"
-                class="crud-input"
-                [id]="field.key"
-                [ngModel]="formModel[field.key]"
-                (ngModelChange)="onSelectChange(field, $event)"
-                [name]="field.key"
-                [disabled]="isFieldDisabled(field)"
-              >
-                <option value=""></option>
-                <option *ngFor="let option of getFieldOptions(field)" [ngValue]="option.value">
-                  {{ option.label }}
-                </option>
-              </select>
+              <div *ngIf="field.type === 'select'" class="crud-field-control">
+                <select
+                  class="crud-input"
+                  [class.crud-input-invalid]="shouldShowRequiredError(field, selectField)"
+                  [id]="field.key"
+                  [ngModel]="formModel[field.key]"
+                  (ngModelChange)="onSelectChange(field, $event)"
+                  [name]="field.key"
+                  [disabled]="isFieldDisabled(field)"
+                  [required]="field.required === true"
+                  #selectField="ngModel"
+                >
+                  <option value=""></option>
+                  <option *ngFor="let option of getFieldOptions(field)" [ngValue]="option.value">
+                    {{ option.label }}
+                  </option>
+                </select>
+                <div *ngIf="shouldShowRequiredError(field, selectField)" class="crud-field-error">
+                  {{ translate(requiredFieldMessageKey) }}
+                </div>
+              </div>
 
               <label *ngIf="field.type === 'checkbox'" class="crud-checkbox-wrap" [for]="field.key">
                 <input
@@ -132,7 +167,7 @@ interface OperationLogEntry {
                 />
               </label>
             </div>
-        </div>
+          </div>
 
           <div class="crud-actions" *ngIf="!isViewMode">
             <button class="crud-btn crud-btn-secondary" type="button" (click)="cancel()">
@@ -154,7 +189,9 @@ interface OperationLogEntry {
   `
 })
 export class CrudPageComponent implements OnInit, OnChanges {
+  readonly requiredFieldMessageKey = 'crud.validation.required' as MessageKey;
   readonly usernameTakenMessageKey: MessageKey = 'users.error.username.taken';
+
   @Input({ required: true }) titleKey!: MessageKey;
   @Input({ required: true }) endpoint!: string;
   @Input() fields: CrudField[] = [];
@@ -168,28 +205,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
 
   formModel: CrudEntity = {};
   usernameTaken = false;
-    onFieldBlur(field: CrudField): void {
-      if (field.key === 'username' && this.formModel['username'] && !this.loadedEntityKeyValue) {
-        const usernameRaw = this.formModel['username'];
-        const username = typeof usernameRaw === 'string' ? usernameRaw.trim() : '';
-        if (!username) {
-          this.usernameTaken = false;
-          return;
-        }
-        // Chiamata asincrona per verifica username
-        this.http.get<any[]>(`${environment.apiBaseUrl}/users/search`, { params: { username } }).subscribe({
-          next: (users) => {
-            this.usernameTaken = Array.isArray(users) && users.length > 0;
-          },
-          error: () => {
-            this.usernameTaken = false;
-          }
-        });
-      }
-      if (field.key === 'username' && !this.formModel['username']) {
-        this.usernameTaken = false;
-      }
-    }
+  submissionAttempted = false;
   activeFolder = '';
   isViewMode = false;
   fieldPermissions: Record<string, string> = {};
@@ -216,6 +232,136 @@ export class CrudPageComponent implements OnInit, OnChanges {
     if (changes['initialFormModel']) {
       this.applyInitialFormModel('ngOnChanges');
     }
+  }
+
+  get currentFields(): CrudField[] {
+    if (this.folders.length === 0) {
+      return this.fields.filter((field) => this.shouldDisplayField(field));
+    }
+
+    const active = this.folders.find((folder) => folder.key === this.activeFolder);
+    return (active?.fields ?? []).filter((field) => this.shouldDisplayField(field));
+  }
+
+  isFieldDisabled(field: CrudField): boolean {
+    return this.isViewMode
+      || field.readonly === true
+      || (field.lockOnEdit === true && this.loadedEntityKeyValue !== null)
+      || this.hasUnresolvedSelectDependencies(field)
+      || this.getFieldPermission(field.key) === 'read-only';
+  }
+
+  translate(key: MessageKey): string {
+    return t(key);
+  }
+
+  getFieldOptions(field: CrudField): SelectOption[] {
+    return this.fieldOptions[field.key] ?? [];
+  }
+
+  onFieldBlur(field: CrudField): void {
+    if (field.key === 'username' && this.formModel['username'] && !this.loadedEntityKeyValue) {
+      const usernameRaw = this.formModel['username'];
+      const username = typeof usernameRaw === 'string' ? usernameRaw.trim() : '';
+      if (!username) {
+        this.usernameTaken = false;
+        return;
+      }
+
+      this.http.get<unknown[]>(`${environment.apiBaseUrl}/users/search`, { params: { username } }).subscribe({
+        next: (users) => {
+          this.usernameTaken = Array.isArray(users) && users.length > 0;
+        },
+        error: () => {
+          this.usernameTaken = false;
+        }
+      });
+    }
+
+    if (field.key === 'username' && !this.formModel['username']) {
+      this.usernameTaken = false;
+    }
+  }
+
+  shouldShowRequiredError(field: CrudField, control: NgModel | null): boolean {
+    if (field.required !== true || control === null) {
+      return false;
+    }
+
+    return control.invalid === true
+      && (control.touched === true || control.dirty === true || this.submissionAttempted);
+  }
+
+  onSelectChange(field: CrudField, value: unknown): void {
+    this.formModel[field.key] = value;
+    this.applyRelatedFields(field, value);
+    this.resetFieldsOnChange(field);
+    this.loadSelectOptions();
+  }
+
+  save(form: NgForm): void {
+    this.submissionAttempted = true;
+    if (form.invalid) {
+      form.control.markAllAsTouched();
+      return;
+    }
+
+    if (this.usernameTaken) {
+      this.pushOperationLog('error', 'users.error.username.taken');
+      return;
+    }
+
+    const payload = this.buildPayload();
+    // eslint-disable-next-line no-console
+    console.log('[CrudPageComponent] Saving payload for endpoint', this.endpoint, ':', payload);
+
+    if (this.loadedEntityKeyValue !== null) {
+      this.http
+        .put<CrudEntity>(`${environment.apiBaseUrl}/${this.endpoint}/${this.loadedEntityKeyValue}`, payload)
+        .subscribe({
+          next: () => {
+            this.resetForm();
+            this.pushOperationLog('success', 'crud.success.update');
+          },
+          error: (error) => {
+            // eslint-disable-next-line no-console
+            console.error('[CrudPageComponent] Update failed for endpoint', this.endpoint, 'payload:', payload, 'error:', error);
+            const message = this.buildErrorMessage('crud.error.update', error);
+            this.pushOperationLog('error', message);
+          }
+        });
+      return;
+    }
+
+    this.http.post<CrudEntity>(`${environment.apiBaseUrl}/${this.endpoint}`, payload).subscribe({
+      next: () => {
+        this.resetForm();
+        this.pushOperationLog('success', 'crud.success.create');
+      },
+      error: (error) => {
+        // eslint-disable-next-line no-console
+        console.error('[CrudPageComponent] Create failed for endpoint', this.endpoint, 'payload:', payload, 'error:', error);
+        const message = this.buildErrorMessage('crud.error.create', error);
+        this.pushOperationLog('error', message);
+      }
+    });
+  }
+
+  resetForm(): void {
+    this.formModel = {};
+    this.loadedEntityKeyValue = null;
+    this.usernameTaken = false;
+    this.submissionAttempted = false;
+    this.loadSelectOptions();
+  }
+
+  cancel(): void {
+    if (window.history.length > 1) {
+      this.location.back();
+      return;
+    }
+
+    void this.router.navigateByUrl(this.getDefaultRoute());
   }
 
   private async initializePage(): Promise<void> {
@@ -262,85 +408,6 @@ export class CrudPageComponent implements OnInit, OnChanges {
     }
   }
 
-  get currentFields(): CrudField[] {
-    if (this.folders.length === 0) {
-      return this.fields.filter((field) => this.shouldDisplayField(field));
-    }
-
-    const active = this.folders.find((folder) => folder.key === this.activeFolder);
-    return (active?.fields ?? []).filter((field) => this.shouldDisplayField(field));
-  }
-
-  isFieldDisabled(field: CrudField): boolean {
-    return this.isViewMode
-      || field.readonly === true
-      || (field.lockOnEdit === true && this.loadedEntityKeyValue !== null)
-      || this.hasUnresolvedSelectDependencies(field)
-      || this.getFieldPermission(field.key) === 'read-only';
-  }
-
-  translate(key: MessageKey): string {
-    return t(key);
-  }
-
-  getFieldOptions(field: CrudField): SelectOption[] {
-    return this.fieldOptions[field.key] ?? [];
-  }
-
-  onSelectChange(field: CrudField, value: unknown): void {
-    this.formModel[field.key] = value;
-    this.applyRelatedFields(field, value);
-    this.resetFieldsOnChange(field);
-    this.loadSelectOptions();
-  }
-
-  save(): void {
-    // Blocca il salvataggio se username già preso
-    if (this.usernameTaken) {
-      this.pushOperationLog('error', 'users.error.username.taken');
-      return;
-    }
-    // eslint-disable-next-line no-console
-    console.log('[CrudPageComponent] Saving payload for endpoint', this.endpoint, ':', this.buildPayload());
-    const payload = this.buildPayload();
-    if (this.loadedEntityKeyValue !== null) {
-      this.http
-        .put<CrudEntity>(`${environment.apiBaseUrl}/${this.endpoint}/${this.loadedEntityKeyValue}`, payload)
-        .subscribe({
-          next: () => {
-            this.resetForm();
-            this.pushOperationLog('success', 'crud.success.update');
-          },
-          error: (error) => {
-            // eslint-disable-next-line no-console
-            console.error('[CrudPageComponent] Update failed for endpoint', this.endpoint, 'payload:', payload, 'error:', error);
-            const message = this.buildErrorMessage('crud.error.update', error);
-            this.pushOperationLog('error', message);
-          }
-        });
-      return;
-    }
-
-    this.http.post<CrudEntity>(`${environment.apiBaseUrl}/${this.endpoint}`, payload).subscribe({
-      next: () => {
-        this.resetForm();
-        this.pushOperationLog('success', 'crud.success.create');
-      },
-      error: (error) => {
-        // eslint-disable-next-line no-console
-        console.error('[CrudPageComponent] Create failed for endpoint', this.endpoint, 'payload:', payload, 'error:', error);
-        const message = this.buildErrorMessage('crud.error.create', error);
-        this.pushOperationLog('error', message);
-      }
-    });
-  }
-
-  resetForm(): void {
-    this.formModel = {};
-    this.loadedEntityKeyValue = null;
-    this.loadSelectOptions();
-  }
-
   private applyInitialFormModel(source: string): void {
     if (this.loadedEntityKeyValue !== null) {
       return;
@@ -359,17 +426,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
     console.log(`[CrudPageComponent] Applied initial form model from ${source}:`, this.formModel);
   }
 
-  cancel(): void {
-    if (window.history.length > 1) {
-      this.location.back();
-      return;
-    }
-
-    void this.router.navigateByUrl(this.getDefaultRoute());
-  }
-
   private buildPayload(): CrudEntity {
-    // I campi hidden devono essere inclusi nel payload, ma non visualizzati in UI
     return this.getAllFields()
       .filter((field) => !field.createOnly || this.loadedEntityKeyValue === null)
       .reduce<CrudEntity>((accumulator, field) => {
@@ -530,6 +587,8 @@ export class CrudPageComponent implements OnInit, OnChanges {
       next: (entity) => {
         this.loadedEntityKeyValue = id;
         this.formModel = { ...entity };
+        this.submissionAttempted = false;
+        this.usernameTaken = false;
         this.loadSelectOptions();
         for (const field of this.getAllFields().filter((currentField) => currentField.type === 'select')) {
           this.applyRelatedFields(field, this.formModel[field.key]);

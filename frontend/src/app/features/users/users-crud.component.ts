@@ -34,8 +34,8 @@ export class UsersCrudComponent {
 
   fields: CrudField[] = [
     { key: 'clientId', labelKey: 'users.field.clientId', type: 'text', hidden: true },
-    { key: 'username', labelKey: 'users.field.username', type: 'text', lockOnEdit: true },
-    { key: 'email', labelKey: 'users.field.email', type: 'text' },
+    { key: 'username', labelKey: 'users.field.username', type: 'text', lockOnEdit: true, required: true },
+    { key: 'email', labelKey: 'users.field.email', type: 'text', required: true },
     { key: 'enabled', labelKey: 'users.field.enabled', type: 'checkbox' },
     {
       key: 'projectId',
@@ -70,8 +70,8 @@ export class UsersCrudComponent {
       key: 'account',
       titleKey: 'users.folder.account',
       fields: [
-        { key: 'username', labelKey: 'users.field.username', type: 'text', lockOnEdit: true },
-        { key: 'email', labelKey: 'users.field.email', type: 'text' },
+        { key: 'username', labelKey: 'users.field.username', type: 'text', lockOnEdit: true, required: true },
+        { key: 'email', labelKey: 'users.field.email', type: 'text', required: true },
         { key: 'enabled', labelKey: 'users.field.enabled', type: 'checkbox' },
         {
           key: 'projectId',

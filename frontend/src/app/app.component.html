@@ -67,7 +67,7 @@
 
   <main class="content">
     <div style="display:flex;justify-content:flex-end;align-items:center;margin-bottom:16px;">
-      <a href="http://localhost:4200/dashboard" target="_blank" style="background:#111827;color:#fff;padding:8px 18px;border-radius:8px;text-decoration:none;font-weight:500;box-shadow:0 2px 8px #0001;">&larr; {{ translate('app.backToDashboard') }}</a>
+      <a [routerLink]="['/dashboard']" style="background:#111827;color:#fff;padding:8px 18px;border-radius:8px;text-decoration:none;font-weight:500;box-shadow:0 2px 8px #0001;">&larr; {{ translate('app.backToDashboard') }}</a>
     </div>
     <router-outlet></router-outlet>
   </main>
