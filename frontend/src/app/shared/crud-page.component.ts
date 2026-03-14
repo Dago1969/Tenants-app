@@ -211,6 +211,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
   fieldPermissions: Record<string, string> = {};
   fieldOptions: Record<string, SelectOption[]> = {};
   operationLogs: OperationLogEntry[] = [];
+  private operationLogTimeouts: Record<number, any> = {};
   protected loadedEntityKeyValue: string | number | null = null;
 
   constructor(
@@ -601,15 +602,27 @@ export class CrudPageComponent implements OnInit, OnChanges {
     });
   }
 
+  /**
+   * Aggiunge un messaggio di log (success/error) e lo rimuove automaticamente dopo 10s (success) o 20s (error).
+   */
   private pushOperationLog(type: 'success' | 'error', message: MessageKey | string): void {
-    this.operationLogs = [
-      {
-        id: Date.now() + this.operationLogs.length,
-        type,
-        message: this.resolveMessage(message)
-      },
-      ...this.operationLogs
-    ].slice(0, 5);
+    const entry: OperationLogEntry = {
+      id: Date.now() + this.operationLogs.length,
+      type,
+      message: this.resolveMessage(message)
+    };
+    this.operationLogs = [entry, ...this.operationLogs].slice(0, 5);
+
+    // Cancella eventuale timeout precedente per questo id
+    if (this.operationLogTimeouts[entry.id]) {
+      clearTimeout(this.operationLogTimeouts[entry.id]);
+    }
+    // Imposta timeout per rimozione automatica
+    const timeoutMs = type === 'error' ? 20000 : 10000;
+    this.operationLogTimeouts[entry.id] = setTimeout(() => {
+      this.operationLogs = this.operationLogs.filter((log) => log.id !== entry.id);
+      delete this.operationLogTimeouts[entry.id];
+    }, timeoutMs);
   }
 
   private buildErrorMessage(messageKey: MessageKey, error: unknown): string {
