@@ -46,7 +46,15 @@ export class UsersConfigureComponent implements OnInit {
       console.warn('[associateProject] userId o tenantCode mancante', { userId, tenantCode });
       return;
     }
-    // Recupera il tenantId numerico dal backend
+    // Aggiornamento ottimistico (asincrono): sposta subito il progetto tra gli associati
+    const selectedProject = this.projects.find(p => p.id === projectId);
+    if (selectedProject && !this.associatedProjects.some(p => p.id === projectId)) {
+      this.associatedProjects = [...this.associatedProjects, selectedProject];
+    }
+    // Rimuovi subito dagli attivi
+    this.projects = this.projects.filter(p => p.id !== projectId);
+
+    // Poi chiama il backend normalmente e riallinea le liste al ritorno (sincrono)
     this.tenantPointerApi.getTenantPointerByClientCode(tenantCode).subscribe({
       next: (tenantPointer) => {
         if (!tenantPointer || !tenantPointer.id) {
@@ -63,8 +71,8 @@ export class UsersConfigureComponent implements OnInit {
         this.userTenantProjectRelationApi.addRelation(relation).subscribe({
           next: (res) => {
             console.log('[associateProject] Successo:', res);
-            // Dopo associazione, redirect alla pagina di gestione utente per aggiornare tutto
-            this.router.navigate(['/users/manage', userId]);
+            // Riallinea le liste dal backend
+            this.refreshConfigurationData();
           },
           error: (err) => {
             console.error('[associateProject] Errore:', err);
@@ -78,12 +86,11 @@ export class UsersConfigureComponent implements OnInit {
   }
 
 
-  ngOnInit(): void {
-    console.log('[UsersConfigureComponent] ngOnInit');
+
+  refreshConfigurationData(): void {
     const tenantCode = this.authService.getSelectedClient();
     const userIdParam = this.route.snapshot.paramMap.get('id');
     const userId = userIdParam ? Number(userIdParam) : null;
-    console.log('[UsersConfigureComponent] tenantCode:', tenantCode, 'userId:', userId);
     if (!tenantCode) {
       this.errorProjects = 'Tenant non selezionato';
       return;
@@ -93,7 +100,6 @@ export class UsersConfigureComponent implements OnInit {
       next: (projects) => {
         this.projects = projects;
         this.loadingProjects = false;
-        // Carica i progetti associati solo se userId è disponibile
         if (userId) {
           this.loadingAssociated = true;
           this.tenantPointerApi.getTenantPointerByClientCode(tenantCode).subscribe({
@@ -133,6 +139,10 @@ export class UsersConfigureComponent implements OnInit {
         this.loadingAssociated = false;
       }
     });
+  }
+
+  ngOnInit(): void {
+    this.refreshConfigurationData();
   }
 
 
