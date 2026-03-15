@@ -7,7 +7,7 @@
     "prestart": "npm run i18n:sync",
     "prebuild": "npm run i18n:sync",
     "pretest": "npm run i18n:sync",
-    "start": "ng serve --port 4201",
+    "start": "ng serve --port 4200",
     "build": "ng build",
     "test": "ng test"
   },

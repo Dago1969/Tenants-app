@@ -23,8 +23,11 @@
       <ng-container *ngIf="loadingProjects">Caricamento...</ng-container>
       
       <ul *ngIf="!loadingProjects && projects.length > 0" style="margin:0; padding-left:18px; color:#395f31;">
-        <li *ngFor="let p of projects" style="margin-bottom: 4px;">
-          {{ p.descrizione }} <span style="color:#6d9853; font-size:0.95em;">({{ p.code }})</span>
+        <li *ngFor="let p of projects" style="margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <span>
+            {{ p.descrizione }} <span style="color:#6d9853; font-size:0.95em;">({{ p.code }})</span>
+          </span>
+          <button *ngIf="!isProjectAssociated(p.id)" (click)="associateProject(p.id)" style="padding:2px 10px; font-size:0.9em; background:#4d78c2; color:#fff; border:none; border-radius:2px; cursor:pointer; min-width: 70px; text-align: right;">Associa</button>
         </li>
       </ul>
       

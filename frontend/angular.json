@@ -21,7 +21,8 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "buildTarget": "tenants-app-frontend:build"
+            "buildTarget": "tenants-app-frontend:build",
+            "proxyConfig": "proxy.conf.json"
           }
         },
         "test": {

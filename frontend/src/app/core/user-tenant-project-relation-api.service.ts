@@ -24,4 +24,12 @@ export class UserTenantProjectRelationApiService {
   getRelationsByUserAndTenant(userId: number, tenant: string): Observable<UserTenantProjectRelationDto[]> {
     return this.http.get<UserTenantProjectRelationDto[]>(`${this.baseUrl}/user-tenant-project-relations?userId=${userId}&tenant=${encodeURIComponent(tenant)}`);
   }
+  /**
+   * Inserisce una nuova relazione user-tenant-project.
+   */
+  addRelation(dto: Omit<UserTenantProjectRelationDto, 'id' | 'projectCode'>): Observable<UserTenantProjectRelationDto> {
+    // L'endpoint corretto è /api/user-tenant-project, quindi rimuovo "/tenants" se presente in baseUrl
+    let url = this.baseUrl.replace(/\/tenants$/, '') + '/user-tenant-project';
+    return this.http.post<UserTenantProjectRelationDto>(url, dto);
+  }
 }

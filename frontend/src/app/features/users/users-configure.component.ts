@@ -1,8 +1,10 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/auth.service';
 import { ProjectApiService, ProjectDto } from '../../core/project-api.service';
+import { UserTenantProjectRelationApiService } from '../../core/user-tenant-project-relation-api.service';
+import { TenantPointerApiService } from '../../core/tenant-pointer-api.service';
 import { CrudField, CrudFolder, CrudPageComponent } from '../../shared/crud-page.component';
 
 /**
@@ -27,8 +29,53 @@ export class UsersConfigureComponent implements OnInit {
   constructor(
     private readonly authService: AuthService,
     private readonly projectApi: ProjectApiService,
-    private readonly route: ActivatedRoute
+    private readonly userTenantProjectRelationApi: UserTenantProjectRelationApiService,
+    private readonly tenantPointerApi: TenantPointerApiService,
+    private readonly route: ActivatedRoute,
+    private readonly router: Router
   ) {}
+  isProjectAssociated(projectId: number): boolean {
+    return this.associatedProjects.some(p => p.id === projectId);
+  }
+
+  associateProject(projectId: number): void {
+    const tenantCode = this.authService.getSelectedClient();
+    const userIdParam = this.route.snapshot.paramMap.get('id');
+    const userId = userIdParam ? Number(userIdParam) : null;
+    if (!userId || !tenantCode) {
+      console.warn('[associateProject] userId o tenantCode mancante', { userId, tenantCode });
+      return;
+    }
+    // Recupera il tenantId numerico dal backend
+    this.tenantPointerApi.getTenantPointerByClientCode(tenantCode).subscribe({
+      next: (tenantPointer) => {
+        if (!tenantPointer || !tenantPointer.id) {
+          console.error('[associateProject] tenantPointer non trovato per tenantCode', tenantCode);
+          return;
+        }
+        const relation = {
+          userId,
+          tenantId: tenantPointer.id,
+          projectId,
+          superuser: false
+        };
+        console.log('[associateProject] DTO inviato:', relation);
+        this.userTenantProjectRelationApi.addRelation(relation).subscribe({
+          next: (res) => {
+            console.log('[associateProject] Successo:', res);
+            // Dopo associazione, redirect alla pagina di gestione utente per aggiornare tutto
+            this.router.navigate(['/users/manage', userId]);
+          },
+          error: (err) => {
+            console.error('[associateProject] Errore:', err);
+          }
+        });
+      },
+      error: (err) => {
+        console.error('[associateProject] Errore recupero tenantPointer:', err);
+      }
+    });
+  }
 
 
   ngOnInit(): void {
@@ -49,15 +96,28 @@ export class UsersConfigureComponent implements OnInit {
         // Carica i progetti associati solo se userId è disponibile
         if (userId) {
           this.loadingAssociated = true;
-          this.projectApi.getAssociatedProjectsByUser(userId).subscribe({
-            next: (relations) => {
-              this.associatedProjects = relations
-                .map(rel => projects.find(p => p.id === rel.projectId))
-                .filter((p): p is ProjectDto => !!p);
-              this.loadingAssociated = false;
+          this.tenantPointerApi.getTenantPointerByClientCode(tenantCode).subscribe({
+            next: (tenantPointer) => {
+              if (!tenantPointer || !tenantPointer.id) {
+                this.errorAssociated = 'Tenant non trovato';
+                this.loadingAssociated = false;
+                return;
+              }
+              this.projectApi.getAssociatedProjectsByUser(userId, tenantPointer.id).subscribe({
+                next: (relations) => {
+                  this.associatedProjects = relations
+                    .map(rel => projects.find(p => p.id === rel.projectId))
+                    .filter((p): p is ProjectDto => !!p);
+                  this.loadingAssociated = false;
+                },
+                error: (err) => {
+                  this.errorAssociated = 'Errore nel caricamento progetti associati';
+                  this.loadingAssociated = false;
+                }
+              });
             },
             error: (err) => {
-              this.errorAssociated = 'Errore nel caricamento progetti associati';
+              this.errorAssociated = 'Errore nel recupero tenant';
               this.loadingAssociated = false;
             }
           });

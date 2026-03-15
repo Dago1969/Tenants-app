@@ -1,4 +1,7 @@
+
 package com.qtm.tenants.project.service;
+
+import com.qtm.commonlib.dto.UserTenantProjectRelationDto;
 
 import com.qtm.commonlib.dto.ProjectDto;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,6 +27,28 @@ import static org.springframework.http.HttpStatus.BAD_GATEWAY;
 @Service
 @Slf4j
 public class DashboardProjectClient {
+        /**
+         * Proxy GET per inoltrare la richiesta di relazioni user-tenant-progetto a QTMDashboard.
+         */
+        public java.util.List<UserTenantProjectRelationDto> proxyGetUserTenantProjectRelationByUserAndTenant(Long userId, Long tenantId) {
+            log.info("[DashboardProjectClient] Proxy GET user-tenant-project by userId={} tenantId={}", userId, tenantId);
+            return execute(() -> restClient.get()
+                .uri("/user-tenant-project/user/{userId}/tenant/{tenantId}", userId, tenantId)
+                .headers(this::applyForwardedHeaders)
+                .retrieve()
+                .body(new org.springframework.core.ParameterizedTypeReference<java.util.List<UserTenantProjectRelationDto>>() {}));
+        }
+    /**
+     * Inoltra la POST di UserTenantProjectRelationDto a QTMDashboard.
+     */
+    public UserTenantProjectRelationDto proxyAddUserTenantProjectRelation(UserTenantProjectRelationDto dto) {
+        log.info("[DashboardProjectClient] Proxy POST user-tenant-project: {}", dto);
+        return execute(() -> restClient.post().uri("/user-tenant-project")
+            .headers(this::applyForwardedHeaders)
+            .body(dto)
+            .retrieve()
+            .body(UserTenantProjectRelationDto.class));
+    }
 
     private static final ParameterizedTypeReference<List<ProjectDto>> PROJECT_LIST_TYPE = new ParameterizedTypeReference<>() {
     };

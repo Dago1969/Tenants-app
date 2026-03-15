@@ -1,3 +1,6 @@
+# Logging
+- Non usare mai System.out.println o System.err.println per loggare nei progetti Java: usa sempre un logger (es. SLF4J, Lombok @Slf4j, LoggerFactory, ecc.)
+
 #QTM CUSTOM INSTRUCTIONS
 Quando l’utente chiede "compila tutto" devi SEMPRE:
 - Quando devi compilare o buildare una componente frontend, esegui sempre il comando dalla directory `frontend` del progetto.
