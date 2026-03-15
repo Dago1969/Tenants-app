@@ -1,4 +1,5 @@
 
+
 package com.qtm.tenants.project.service;
 
 import com.qtm.commonlib.dto.UserTenantProjectRelationDto;
@@ -185,5 +186,17 @@ public class DashboardProjectClient {
     @FunctionalInterface
     private interface RestVoidCall {
         void execute();
+    }
+
+    /**
+     * Proxy DELETE per inoltrare la richiesta di eliminazione relazione user-tenant-project a QTMDashboard.
+     */
+    public void proxyDeleteUserTenantProjectRelation(Long userId, Long tenantId, Long projectId) {
+        log.info("[DashboardProjectClient] Proxy DELETE user-tenant-project: userId={}, tenantId={}, projectId={}", userId, tenantId, projectId);
+        executeVoid(() -> restClient.delete()
+            .uri("/user-tenant-project/{userId}/{tenantId}/{projectId}", userId, tenantId, projectId)
+            .headers(this::applyForwardedHeaders)
+            .retrieve()
+            .toBodilessEntity());
     }
 }

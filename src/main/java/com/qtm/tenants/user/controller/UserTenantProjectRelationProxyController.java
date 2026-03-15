@@ -1,3 +1,4 @@
+
 package com.qtm.tenants.user.controller;
 
 import com.qtm.commonlib.dto.UserTenantProjectRelationDto;
@@ -44,5 +45,18 @@ public class UserTenantProjectRelationProxyController {
         log.info("[TENAPP] Proxy GET /api/user-tenant-project/user/{}/tenant/{}", userId, tenantId);
         java.util.List<UserTenantProjectRelationDto> result = dashboardProjectClient.proxyGetUserTenantProjectRelationByUserAndTenant(userId, tenantId);
         return ResponseEntity.ok(result);
+    }
+    
+    /**
+     * Proxy DELETE per inoltrare la richiesta di eliminazione relazione user-tenant-project a QTMDashboard.
+     */
+    @org.springframework.web.bind.annotation.DeleteMapping("/delete/{userId}/{tenantId}/{projectId}")
+    public ResponseEntity<Void> proxyDeleteRelation(
+            @org.springframework.web.bind.annotation.PathVariable Long userId,
+            @org.springframework.web.bind.annotation.PathVariable Long tenantId,
+            @org.springframework.web.bind.annotation.PathVariable Long projectId) {
+        log.info("[TENAPP] Proxy DELETE /api/user-tenant-project/delete/{}/{}/{}", userId, tenantId, projectId);
+        dashboardProjectClient.proxyDeleteUserTenantProjectRelation(userId, tenantId, projectId);
+        return ResponseEntity.noContent().build();
     }
 }

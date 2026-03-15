@@ -19,6 +19,54 @@ import { CrudField, CrudFolder, CrudPageComponent } from '../../shared/crud-page
   styleUrls: ['./users-configure.component.css']
 })
 export class UsersConfigureComponent implements OnInit {
+
+  labelDisassociate: string = ((): string => {
+    const lang = (navigator.language || 'it').toLowerCase();
+    if (lang.startsWith('en')) return 'Disassociate';
+    return 'Disassocia';
+  })();
+
+    /**
+     * Disassocia un progetto dall'utente (update ottimistico + refresh sincrono)
+     */
+    disassociateProject(projectId: number): void {
+      const tenantCode = this.authService.getSelectedClient();
+      const userIdParam = this.route.snapshot.paramMap.get('id');
+      const userId = userIdParam ? Number(userIdParam) : null;
+      if (!userId || !tenantCode) {
+        console.warn('[disassociateProject] userId o tenantCode mancante', { userId, tenantCode });
+        return;
+      }
+      // Aggiornamento ottimistico: rimuovi subito il progetto dagli associati e rimettilo tra i disponibili solo se non già presente
+      const removedProject = this.associatedProjects.find(p => p.id === projectId);
+      if (removedProject) {
+        this.associatedProjects = this.associatedProjects.filter(p => p.id !== projectId);
+        if (!this.projects.some(p => p.id === projectId)) {
+          this.projects = [...this.projects, removedProject];
+        }
+      }
+      // Chiamata backend per rimuovere l'associazione tramite proxy TENAPP
+      this.tenantPointerApi.getTenantPointerByClientCode(tenantCode).subscribe({
+        next: (tenantPointer) => {
+          if (!tenantPointer || !tenantPointer.id) {
+            console.error('[disassociateProject] tenantPointer non trovato per tenantCode', tenantCode);
+            return;
+          }
+          this.userTenantProjectRelationApi.removeRelation(userId, tenantPointer.id, projectId).subscribe({
+            next: () => {
+              // Riallinea le liste dal backend
+              this.refreshConfigurationData();
+            },
+            error: (err) => {
+              console.error('[disassociateProject] Errore:', err);
+            }
+          });
+        },
+        error: (err) => {
+          console.error('[disassociateProject] Errore recupero tenantPointer:', err);
+        }
+      });
+    }
   projects: ProjectDto[] = [];
   associatedProjects: ProjectDto[] = [];
   loadingProjects = false;

@@ -14,6 +14,14 @@ export interface UserTenantProjectRelationDto {
 
 @Injectable({ providedIn: 'root' })
 export class UserTenantProjectRelationApiService {
+  /**
+   * Rimuove una relazione user-tenant-project tramite proxy TENAPP (come la POST, passando da baseUrl).
+   */
+  removeRelation(userId: number, tenantId: number, projectId: number): Observable<void> {
+    // L'endpoint corretto è baseUrl senza /tenants + /user-tenant-project/delete/{userId}/{tenantId}/{projectId}
+    const url = this.baseUrl.replace(/\/tenants$/, '') + `/user-tenant-project/delete/${userId}/${tenantId}/${projectId}`;
+    return this.http.delete<void>(url);
+  }
   private readonly baseUrl = environment.apiBaseUrl;
 
   constructor(private http: HttpClient) {}

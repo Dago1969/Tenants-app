@@ -41,8 +41,13 @@
       <ng-container *ngIf="loadingAssociated">Caricamento...</ng-container>
       <div *ngIf="errorAssociated" style="color:#c00;">{{ errorAssociated }}</div>
       <ul *ngIf="!loadingAssociated && associatedProjects.length > 0" style="margin:0; padding-left:18px; color:#395f31;">
-        <li *ngFor="let p of associatedProjects" style="margin-bottom: 4px;">
-          {{ p.descrizione }} <span style="color:#6d9853; font-size:0.95em;">({{ p.code }})</span>
+        <li *ngFor="let p of associatedProjects" style="margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <span>
+            {{ p.descrizione }} <span style="color:#6d9853; font-size:0.95em;">({{ p.code }})</span>
+          </span>
+          <button (click)="disassociateProject(p.id)" style="padding:2px 10px; font-size:0.9em; background:#c24d4d; color:#fff; border:none; border-radius:2px; cursor:pointer; min-width: 90px; text-align: right;">
+            {{ labelDisassociate }}
+          </button>
         </li>
       </ul>
       <div *ngIf="!loadingAssociated && associatedProjects.length === 0" style="color:#aaa;">Nessun progetto associato</div>
