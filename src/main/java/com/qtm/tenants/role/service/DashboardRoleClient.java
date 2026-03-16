@@ -95,14 +95,14 @@ public class DashboardRoleClient {
 
     public List<UserTenantRoleRelationDto> proxyGetUserTenantRoleRelationByUserAndTenant(Long userId, Long tenantId) {
         return execute(() -> restClient.get()
-                .uri("/user-tenant-roles/user/{userId}/tenant/{tenantId}", userId, tenantId)
+            .uri("/user-tenant-role/user/{userId}/tenant/{tenantId}", userId, tenantId)
                 .headers(this::applyForwardedHeaders)
                 .retrieve()
                 .body(USER_TENANT_ROLE_RELATION_LIST_TYPE));
     }
 
     public UserTenantRoleRelationDto proxyAddUserTenantRoleRelation(UserTenantRoleRelationDto dto) {
-        return execute(() -> restClient.post().uri("/user-tenant-roles")
+        return execute(() -> restClient.post().uri("/user-tenant-role")
                 .headers(this::applyForwardedHeaders)
                 .body(dto)
                 .retrieve()
@@ -111,7 +111,7 @@ public class DashboardRoleClient {
 
     public void proxyDeleteUserTenantRoleRelation(Long id) {
         executeVoid(() -> restClient.delete()
-                .uri("/user-tenant-roles/{id}", id)
+            .uri("/user-tenant-role/{id}", id)
                 .headers(this::applyForwardedHeaders)
                 .retrieve()
                 .toBodilessEntity());

@@ -30,7 +30,7 @@ export class ProjectApiService {
    * Restituisce i progetti associati a uno user tramite la tabella user_tenant_project.
    */
   getAssociatedProjectsByUser(userId: number, tenantId: number): Observable<{ projectId: number; projectCode: string }[]> {
-    // Forza il path assoluto corretto per evitare /tenants
-    return this.http.get<{ projectId: number; projectCode: string }[]>(`/api/user-tenant-project/user/${userId}/tenant/${tenantId}`);
+    const url = this.baseUrl.replace(/\/tenants$/, '') + `/user-tenant-project/user/${userId}/tenant/${tenantId}`;
+    return this.http.get<{ projectId: number; projectCode: string }[]>(url);
   }
 }
