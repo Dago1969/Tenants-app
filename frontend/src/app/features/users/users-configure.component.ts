@@ -3,9 +3,14 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/auth.service';
 import { ProjectApiService, ProjectDto } from '../../core/project-api.service';
+import { RoleApiService, RoleDto } from '../../core/role-api.service';
 import { UserTenantProjectRelationApiService } from '../../core/user-tenant-project-relation-api.service';
+import { UserTenantRoleRelationApiService, UserTenantRoleRelationDto } from '../../core/user-tenant-role-relation-api.service';
 import { TenantPointerApiService } from '../../core/tenant-pointer-api.service';
 import { CrudField, CrudFolder, CrudPageComponent } from '../../shared/crud-page.component';
+import { MessageKey, t } from '../../i18n/messages';
+
+type AssociatedRoleDto = RoleDto & { relationId: number };
 
 /**
  * Pagina di configurazione utenti tenant (duplicato da edit).
@@ -20,11 +25,8 @@ import { CrudField, CrudFolder, CrudPageComponent } from '../../shared/crud-page
 })
 export class UsersConfigureComponent implements OnInit {
 
-  labelDisassociate: string = ((): string => {
-    const lang = (navigator.language || 'it').toLowerCase();
-    if (lang.startsWith('en')) return 'Disassociate';
-    return 'Disassocia';
-  })();
+  readonly labelAssociate = t('users.configure.actions.associate');
+  readonly labelDisassociate = t('users.configure.actions.disassociate');
 
     /**
      * Disassocia un progetto dall'utente (update ottimistico + refresh sincrono)
@@ -73,17 +75,34 @@ export class UsersConfigureComponent implements OnInit {
   loadingAssociated = false;
   errorProjects = '';
   errorAssociated = '';
+  roles: RoleDto[] = [];
+  associatedRoles: AssociatedRoleDto[] = [];
+  loadingRoles = false;
+  loadingAssociatedRoles = false;
+  errorRoles = '';
+  errorAssociatedRoles = '';
 
   constructor(
     private readonly authService: AuthService,
     private readonly projectApi: ProjectApiService,
+    private readonly roleApi: RoleApiService,
     private readonly userTenantProjectRelationApi: UserTenantProjectRelationApiService,
+    private readonly userTenantRoleRelationApi: UserTenantRoleRelationApiService,
     private readonly tenantPointerApi: TenantPointerApiService,
     private readonly route: ActivatedRoute,
     private readonly router: Router
   ) {}
+
+  translate(key: MessageKey): string {
+    return t(key);
+  }
+
   isProjectAssociated(projectId: number): boolean {
     return this.associatedProjects.some(p => p.id === projectId);
+  }
+
+  isRoleAssociated(roleId: string): boolean {
+    return this.associatedRoles.some(role => role.id === roleId);
   }
 
   associateProject(projectId: number): void {
@@ -133,17 +152,80 @@ export class UsersConfigureComponent implements OnInit {
     });
   }
 
+  associateRole(roleId: string): void {
+    const tenantCode = this.authService.getSelectedClient();
+    const userIdParam = this.route.snapshot.paramMap.get('id');
+    const userId = userIdParam ? Number(userIdParam) : null;
+    if (!userId || !tenantCode) {
+      console.warn('[associateRole] userId o tenantCode mancante', { userId, tenantCode });
+      return;
+    }
+
+    const selectedRole = this.roles.find(role => role.id === roleId);
+    if (selectedRole && !this.isRoleAssociated(roleId)) {
+      this.associatedRoles = [...this.associatedRoles, { ...selectedRole, relationId: 0 }];
+    }
+    this.roles = this.roles.filter(role => role.id !== roleId);
+
+    this.tenantPointerApi.getTenantPointerByClientCode(tenantCode).subscribe({
+      next: (tenantPointer) => {
+        if (!tenantPointer || !tenantPointer.id) {
+          console.error('[associateRole] tenantPointer non trovato per tenantCode', tenantCode);
+          return;
+        }
+        this.userTenantRoleRelationApi.addRelation({
+          userId,
+          tenantId: tenantPointer.id,
+          roleId
+        }).subscribe({
+          next: () => this.refreshRolesData(),
+          error: (err) => {
+            console.error('[associateRole] Errore:', err);
+          }
+        });
+      },
+      error: (err) => {
+        console.error('[associateRole] Errore recupero tenantPointer:', err);
+      }
+    });
+  }
+
+  disassociateRole(relationId: number, roleId: string): void {
+    const removedRole = this.associatedRoles.find(role => role.relationId === relationId);
+    if (removedRole) {
+      this.associatedRoles = this.associatedRoles.filter(role => role.relationId !== relationId);
+      if (!this.roles.some(role => role.id === roleId)) {
+        const { relationId: removedRelationId, ...availableRole } = removedRole;
+        this.roles = [...this.roles, availableRole];
+      }
+    }
+
+    this.userTenantRoleRelationApi.deleteRelation(relationId).subscribe({
+      next: () => this.refreshRolesData(),
+      error: (err) => {
+        console.error('[disassociateRole] Errore:', err);
+      }
+    });
+  }
+
 
 
   refreshConfigurationData(): void {
+    this.refreshProjectsData();
+    this.refreshRolesData();
+  }
+
+  private refreshProjectsData(): void {
     const tenantCode = this.authService.getSelectedClient();
     const userIdParam = this.route.snapshot.paramMap.get('id');
     const userId = userIdParam ? Number(userIdParam) : null;
     if (!tenantCode) {
-      this.errorProjects = 'Tenant non selezionato';
+      this.errorProjects = this.translate('users.configure.errors.tenantNotSelected');
       return;
     }
     this.loadingProjects = true;
+    this.errorProjects = '';
+    this.errorAssociated = '';
     this.projectApi.getProjectsByTenant(tenantCode).subscribe({
       next: (projects) => {
         this.projects = projects;
@@ -153,7 +235,7 @@ export class UsersConfigureComponent implements OnInit {
           this.tenantPointerApi.getTenantPointerByClientCode(tenantCode).subscribe({
             next: (tenantPointer) => {
               if (!tenantPointer || !tenantPointer.id) {
-                this.errorAssociated = 'Tenant non trovato';
+                this.errorAssociated = this.translate('users.configure.errors.tenantNotFound');
                 this.loadingAssociated = false;
                 return;
               }
@@ -165,28 +247,97 @@ export class UsersConfigureComponent implements OnInit {
                   this.loadingAssociated = false;
                 },
                 error: (err) => {
-                  this.errorAssociated = 'Errore nel caricamento progetti associati';
+                  this.errorAssociated = this.translate('users.configure.projects.errors.loadAssociated');
                   this.loadingAssociated = false;
                 }
               });
             },
             error: (err) => {
-              this.errorAssociated = 'Errore nel recupero tenant';
+              this.errorAssociated = this.translate('users.configure.errors.loadTenant');
               this.loadingAssociated = false;
             }
           });
         } else {
-          this.errorAssociated = 'Utente non identificato';
+          this.errorAssociated = this.translate('users.configure.errors.userNotIdentified');
           this.associatedProjects = [];
           this.loadingAssociated = false;
         }
       },
       error: (err) => {
-        this.errorProjects = 'Errore nel caricamento progetti';
+        this.errorProjects = this.translate('users.configure.projects.errors.loadAvailable');
         this.loadingProjects = false;
         this.loadingAssociated = false;
       }
     });
+  }
+
+  private refreshRolesData(): void {
+    const tenantCode = this.authService.getSelectedClient();
+    const userIdParam = this.route.snapshot.paramMap.get('id');
+    const userId = userIdParam ? Number(userIdParam) : null;
+    if (!tenantCode) {
+      this.errorRoles = this.translate('users.configure.errors.tenantNotSelected');
+      return;
+    }
+    this.loadingRoles = true;
+    this.errorRoles = '';
+    this.errorAssociatedRoles = '';
+    this.roleApi.getRoles().subscribe({
+      next: (roles) => {
+        this.roles = roles;
+        this.loadingRoles = false;
+        if (userId) {
+          this.loadingAssociatedRoles = true;
+          this.tenantPointerApi.getTenantPointerByClientCode(tenantCode).subscribe({
+            next: (tenantPointer) => {
+              if (!tenantPointer || !tenantPointer.id) {
+                this.errorAssociatedRoles = this.translate('users.configure.errors.tenantNotFound');
+                this.loadingAssociatedRoles = false;
+                return;
+              }
+              this.userTenantRoleRelationApi.getRelationsByUserAndTenant(userId, tenantPointer.id).subscribe({
+                next: (relations) => {
+                  this.associatedRoles = this.mapAssociatedRoles(relations, roles);
+                  this.loadingAssociatedRoles = false;
+                },
+                error: () => {
+                  this.errorAssociatedRoles = this.translate('users.configure.roles.errors.loadAssociated');
+                  this.loadingAssociatedRoles = false;
+                }
+              });
+            },
+            error: () => {
+              this.errorAssociatedRoles = this.translate('users.configure.errors.loadTenant');
+              this.loadingAssociatedRoles = false;
+            }
+          });
+        } else {
+          this.errorAssociatedRoles = this.translate('users.configure.errors.userNotIdentified');
+          this.associatedRoles = [];
+          this.loadingAssociatedRoles = false;
+        }
+      },
+      error: () => {
+        this.errorRoles = this.translate('users.configure.roles.errors.loadAvailable');
+        this.loadingRoles = false;
+        this.loadingAssociatedRoles = false;
+      }
+    });
+  }
+
+  private mapAssociatedRoles(relations: UserTenantRoleRelationDto[], roles: RoleDto[]): AssociatedRoleDto[] {
+    return relations
+      .map(relation => {
+        const role = roles.find(currentRole => currentRole.id === relation.roleId);
+        if (!role || relation.id == null) {
+          return null;
+        }
+        return {
+          ...role,
+          relationId: relation.id
+        };
+      })
+      .filter((role): role is AssociatedRoleDto => role !== null);
   }
 
   ngOnInit(): void {
