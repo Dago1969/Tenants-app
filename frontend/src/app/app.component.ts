@@ -34,10 +34,13 @@ interface MenuItem {
   styleUrl: './app.component.css'
 })
 export class AppComponent implements OnDestroy {
+      // --- Helper functions (solo una versione, in fondo alla classe) ---
+      // (Le versioni duplicate verranno rimosse in fondo al file)
     username: string | null = null;
     preferredUsername: string | null = null;
   selectedRole = '';
   selectedClient = '';
+  selectedProject: string | null = null;
   hiddenModuleCodes = new Set<string>();
   managementMenuOpen = true;
   registryMenuOpen = true;
@@ -50,6 +53,12 @@ export class AppComponent implements OnDestroy {
   ) {
     if (typeof document !== 'undefined') {
       document.title = t('app.title');
+    }
+    // Prima leggo dalla query string, se non c'è recupero da sessionStorage
+    // Prima leggo dalla query string, se non c'è recupero da sessionStorage
+    this.selectedProject = this.getProjectFromQueryString();
+    if (!this.selectedProject) {
+      this.selectedProject = this.getProjectFromSession();
     }
     this.storeTokenFromQueryString();
     this.selectedRole = this.authService.getSelectedRole();
@@ -162,31 +171,53 @@ export class AppComponent implements OnDestroy {
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
   }
-
+  // --- Helper functions: solo una versione ---
   private storeTokenFromQueryString(): void {
+    if (typeof window === 'undefined') return;
     const url = new URL(window.location.href);
     const token = url.searchParams.get('token');
     const role = url.searchParams.get('role');
     const client = url.searchParams.get('client');
-
+    const project = url.searchParams.get('project');
+    if (project !== null && project.trim() !== '') {
+      // Log progetto in console JS
+      console.log('[TENANTS-APP][frontend] Progetto ricevuto dalla query string:', project);
+      this.selectedProject = project;
+      sessionStorage.setItem('selectedProject', project);
+      url.searchParams.delete('project');
+    } else {
+      this.selectedProject = null;
+      sessionStorage.removeItem('selectedProject');
+      if (project !== null) {
+        url.searchParams.delete('project');
+      }
+    }
     if (token) {
       this.authService.setToken(token);
       url.searchParams.delete('token');
     }
-
     if (role) {
       this.authService.setSelectedRole(role);
       url.searchParams.delete('role');
     }
-
     if (client) {
       this.authService.setSelectedClient(client);
       url.searchParams.delete('client');
     }
-
-    if (token || role || client) {
+    if (token || role || client || project !== null) {
       window.history.replaceState({}, document.title, url.toString());
     }
+  }
+
+  private getProjectFromSession(): string | null {
+    if (typeof window === 'undefined') return null;
+    return sessionStorage.getItem('selectedProject');
+  }
+
+  private getProjectFromQueryString(): string | null {
+    if (typeof window === 'undefined') return null;
+    const url = new URL(window.location.href);
+    return url.searchParams.get('project');
   }
 
   private loadModuleVisibility(): void {
@@ -194,7 +225,6 @@ export class AppComponent implements OnDestroy {
       this.hiddenModuleCodes.clear();
       return;
     }
-
     this.http
       .get<AuthorizationRoleMatrixDto>(`${environment.apiBaseUrl}/authorizations/roles/${this.selectedRole}`)
       .subscribe({
