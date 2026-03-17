@@ -117,6 +117,14 @@ public class DashboardRoleClient {
                 .toBodilessEntity());
     }
 
+    public void proxyDeleteUserTenantRoleRelation(Long userId, Long tenantId, String roleId) {
+        executeVoid(() -> restClient.delete()
+                .uri("/user-tenant-role/user/{userId}/tenant/{tenantId}/role/{roleId}", userId, tenantId, roleId)
+                .headers(this::applyForwardedHeaders)
+                .retrieve()
+                .toBodilessEntity());
+    }
+
     private void applyForwardedHeaders(HttpHeaders headers) {
         HttpServletRequest currentRequest = resolveCurrentRequest();
         if (currentRequest == null) {

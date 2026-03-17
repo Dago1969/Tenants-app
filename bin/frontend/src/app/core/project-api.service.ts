@@ -1,0 +1,36 @@
+import { Injectable } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
+
+export interface ProjectDto {
+  id: number;
+  code: string;
+  descrizione: string;
+  clientCode: string;
+  tenantId: number;
+  dataInizio?: string;
+  dataFine?: string;
+  enabled?: boolean;
+}
+
+@Injectable({ providedIn: 'root' })
+export class ProjectApiService {
+  private readonly baseUrl = environment.apiBaseUrl;
+
+  constructor(private http: HttpClient) {}
+
+  /**
+   * Restituisce tutti i progetti attivi per il tenant corrente.
+   */
+  getProjectsByTenant(tenant: string): Observable<ProjectDto[]> {
+    return this.http.get<ProjectDto[]>(`${this.baseUrl}/projects?tenant=${encodeURIComponent(tenant)}`);
+  }
+  /**
+   * Restituisce i progetti associati a uno user tramite la tabella user_tenant_project.
+   */
+  getAssociatedProjectsByUser(userId: number, tenantId: number): Observable<{ projectId: number; projectCode: string }[]> {
+    const url = this.baseUrl.replace(/\/tenants$/, '') + `/user-tenant-project/user/${userId}/tenant/${tenantId}`;
+    return this.http.get<{ projectId: number; projectCode: string }[]>(url);
+  }
+}

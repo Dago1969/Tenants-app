@@ -1,0 +1,148 @@
+<section class="authz-shell">
+  <div class="authz-card">
+    <header class="authz-header">
+      <div>
+        <h2>{{ translate('authorizations.title') }}</h2>
+      </div>
+
+      <div class="authz-toolbar">
+        <label class="authz-filter" for="roleSelect">
+          <span>{{ translate('authorizations.role.label') }}</span>
+          <select id="roleSelect" [(ngModel)]="selectedRoleId" (change)="onRoleChange()" [disabled]="loading || saving">
+            <option *ngFor="let role of roles" [ngValue]="role.id">{{ role.id }} - {{ role.description }}</option>
+          </select>
+        </label>
+
+        <button class="authz-btn" type="button" (click)="save()" [disabled]="!selectedRoleId || loading || saving">
+          {{ translate('authorizations.actions.save') }}
+        </button>
+      </div>
+    </header>
+
+    <p class="authz-status authz-status-error" *ngIf="errorMessage">{{ errorMessage }}</p>
+    <p class="authz-status authz-status-success" *ngIf="successMessage">{{ successMessage }}</p>
+    <p class="authz-status" *ngIf="loading">{{ translate('authorizations.loading') }}</p>
+
+    <div class="authz-modules" *ngIf="!loading && modules.length > 0">
+      <section class="authz-module-card" *ngFor="let module of modules">
+        <div class="authz-module-header">
+          <button
+            class="authz-module-toggle"
+            type="button"
+            (click)="toggleModule(module.moduleCode)"
+            [attr.aria-expanded]="isModuleExpanded(module.moduleCode)"
+          >
+            <span class="authz-module-title-wrap">
+              <p class="authz-module-code">{{ module.moduleCode }}</p>
+              <h3>{{ translateModuleLabel(module) }}</h3>
+            </span>
+            <span class="authz-module-chevron" [class.authz-module-chevron-open]="isModuleExpanded(module.moduleCode)">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M7 10l5 5 5-5"></path>
+              </svg>
+            </span>
+          </button>
+
+          <label class="authz-filter authz-scope-filter">
+            <span>{{ translate('authorizations.module.scope') }}</span>
+            <div class="authz-scope-control">
+              <span
+                class="authz-state-icon"
+                [ngClass]="getScopeIconClass(module.moduleAuthorization)"
+                [title]="getScopeLabel(module.moduleAuthorization)"
+                [attr.aria-label]="getScopeLabel(module.moduleAuthorization)"
+              >{{ getScopeIcon(module.moduleAuthorization) }}</span>
+              <select [(ngModel)]="module.moduleAuthorization" [disabled]="saving">
+                <option *ngFor="let option of moduleScopeOptions" [ngValue]="option.value">{{ translate(option.labelKey) }}</option>
+              </select>
+            </div>
+          </label>
+        </div>
+
+        <div *ngIf="isModuleExpanded(module.moduleCode)">
+        <div class="authz-section authz-section-fields" *ngIf="hasFieldRows(module)">
+          <div class="authz-section-header" style="display: flex; align-items: center; gap: 16px;">
+            <h4 style="margin-bottom: 0;">{{ translate('authorizations.fields.title') }}</h4>
+            <select [(ngModel)]="fieldBulkRule[module.moduleCode]" [disabled]="saving || module.moduleAuthorization === 'deny'">
+              <option [ngValue]="undefined">{{ translate('authorizations.fields.bulkSelectPlaceholder') }}</option>
+              <option *ngFor="let option of fieldScopeOptions" [ngValue]="option.value">{{ translate(option.labelKey) }}</option>
+            </select>
+            <button class="authz-btn" type="button" (click)="applyRuleToAllFields(module)" [disabled]="!fieldBulkRule[module.moduleCode] || saving || module.moduleAuthorization === 'deny'">
+              {{ translate('authorizations.fields.bulkApply') }}
+            </button>
+          </div>
+
+          <div class="authz-grid authz-grid-head">
+            <span>{{ translate('authorizations.field.name') }}</span>
+            <span>{{ translate('authorizations.state') }}</span>
+            <span>{{ translate('authorizations.field.scope') }}</span>
+          </div>
+
+          <div class="authz-grid" *ngFor="let field of module.fields">
+            <span>{{ translateFieldLabel(module, field.fieldName) }}</span>
+            <span
+              class="authz-state-icon"
+              [ngClass]="getScopeIconClass(field.authorization)"
+              [title]="getScopeLabel(field.authorization)"
+              [attr.aria-label]="getScopeLabel(field.authorization)"
+            >{{ getScopeIcon(field.authorization) }}</span>
+            <select [(ngModel)]="field.authorization" [disabled]="saving || module.moduleAuthorization === 'deny'">
+              <option *ngFor="let option of fieldScopeOptions" [ngValue]="option.value">{{ translate(option.labelKey) }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="authz-section authz-section-functions" *ngIf="getCommonFunctions(module).length > 0">
+          <div class="authz-section-header">
+            <h4>{{ translate('authorizations.functions.commonTitle') }}</h4>
+          </div>
+
+          <div class="authz-grid authz-grid-head">
+            <span>{{ translate('authorizations.functions.name') }}</span>
+            <span>{{ translate('authorizations.state') }}</span>
+            <span>{{ translate('authorizations.functions.scope') }}</span>
+          </div>
+
+          <div class="authz-grid" *ngFor="let functionItem of getCommonFunctions(module)">
+            <span>{{ functionItem.functionCode }} - {{ functionItem.functionName }}</span>
+            <span
+              class="authz-state-icon"
+              [ngClass]="getScopeIconClass(functionItem.authorization)"
+              [title]="getScopeLabel(functionItem.authorization)"
+              [attr.aria-label]="getScopeLabel(functionItem.authorization)"
+            >{{ getScopeIcon(functionItem.authorization) }}</span>
+            <select [(ngModel)]="functionItem.authorization" [disabled]="saving || module.moduleAuthorization === 'deny'">
+              <option *ngFor="let option of functionScopeOptions" [ngValue]="option.value">{{ translate(option.labelKey) }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="authz-section authz-section-custom-functions" *ngIf="getCustomFunctions(module).length > 0">
+          <div class="authz-section-header">
+            <h4>{{ translate('authorizations.functions.customTitle') }}</h4>
+          </div>
+
+          <div class="authz-grid authz-grid-head">
+            <span>{{ translate('authorizations.functions.name') }}</span>
+            <span>{{ translate('authorizations.state') }}</span>
+            <span>{{ translate('authorizations.functions.scope') }}</span>
+          </div>
+
+          <div class="authz-grid" *ngFor="let functionItem of getCustomFunctions(module)">
+            <span>{{ functionItem.functionCode }} - {{ functionItem.functionName }}</span>
+            <span
+              class="authz-state-icon"
+              [ngClass]="getScopeIconClass(functionItem.authorization)"
+              [title]="getScopeLabel(functionItem.authorization)"
+              [attr.aria-label]="getScopeLabel(functionItem.authorization)"
+            >{{ getScopeIcon(functionItem.authorization) }}</span>
+            <select [(ngModel)]="functionItem.authorization" [disabled]="saving || module.moduleAuthorization === 'deny'">
+              <option *ngFor="let option of functionScopeOptions" [ngValue]="option.value">{{ translate(option.labelKey) }}</option>
+            </select>
+          </div>
+        </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</section>

@@ -10,7 +10,7 @@ import { TenantPointerApiService } from '../../core/tenant-pointer-api.service';
 import { CrudField, CrudFolder, CrudPageComponent } from '../../shared/crud-page.component';
 import { MessageKey, t } from '../../i18n/messages';
 
-type AssociatedRoleDto = RoleDto & { relationUserId: number; relationTenantId: number; relationRoleId: string };
+type AssociatedRoleDto = RoleDto & { relationId: number };
 
 /**
  * Pagina di configurazione utenti tenant (duplicato da edit).
@@ -161,25 +161,18 @@ export class UsersConfigureComponent implements OnInit {
       return;
     }
 
+    const selectedRole = this.roles.find(role => role.id === roleId);
+    if (selectedRole && !this.isRoleAssociated(roleId)) {
+      this.associatedRoles = [...this.associatedRoles, { ...selectedRole, relationId: 0 }];
+    }
+    this.roles = this.roles.filter(role => role.id !== roleId);
+
     this.tenantPointerApi.getTenantPointerByClientCode(tenantCode).subscribe({
       next: (tenantPointer) => {
         if (!tenantPointer || !tenantPointer.id) {
           console.error('[associateRole] tenantPointer non trovato per tenantCode', tenantCode);
           return;
         }
-        const selectedRole = this.roles.find(role => role.id === roleId);
-        if (selectedRole && !this.isRoleAssociated(roleId)) {
-          this.associatedRoles = [
-            ...this.associatedRoles,
-            {
-              ...selectedRole,
-              relationUserId: userId,
-              relationTenantId: tenantPointer.id,
-              relationRoleId: roleId
-            }
-          ];
-        }
-        this.roles = this.roles.filter(role => role.id !== roleId);
         this.userTenantRoleRelationApi.addRelation({
           userId,
           tenantId: tenantPointer.id,
@@ -197,17 +190,17 @@ export class UsersConfigureComponent implements OnInit {
     });
   }
 
-  disassociateRole(userId: number, tenantId: number, roleId: string): void {
-    const removedRole = this.associatedRoles.find(role => role.relationUserId === userId && role.relationTenantId === tenantId && role.relationRoleId === roleId);
+  disassociateRole(relationId: number, roleId: string): void {
+    const removedRole = this.associatedRoles.find(role => role.relationId === relationId);
     if (removedRole) {
-      this.associatedRoles = this.associatedRoles.filter(role => !(role.relationUserId === userId && role.relationTenantId === tenantId && role.relationRoleId === roleId));
+      this.associatedRoles = this.associatedRoles.filter(role => role.relationId !== relationId);
       if (!this.roles.some(role => role.id === roleId)) {
-        const { relationUserId, relationTenantId, relationRoleId, ...availableRole } = removedRole;
+        const { relationId: removedRelationId, ...availableRole } = removedRole;
         this.roles = [...this.roles, availableRole];
       }
     }
 
-    this.userTenantRoleRelationApi.deleteRelation(userId, tenantId, roleId).subscribe({
+    this.userTenantRoleRelationApi.deleteRelation(relationId).subscribe({
       next: () => this.refreshRolesData(),
       error: (err) => {
         console.error('[disassociateRole] Errore:', err);
@@ -289,7 +282,7 @@ export class UsersConfigureComponent implements OnInit {
     this.loadingRoles = true;
     this.errorRoles = '';
     this.errorAssociatedRoles = '';
-    this.roleApi.getProxyRoles().subscribe({
+    this.roleApi.getRoles().subscribe({
       next: (roles) => {
         this.roles = roles;
         this.loadingRoles = false;
@@ -336,14 +329,12 @@ export class UsersConfigureComponent implements OnInit {
     return relations
       .map(relation => {
         const role = roles.find(currentRole => currentRole.id === relation.roleId);
-        if (!role) {
+        if (!role || relation.id == null) {
           return null;
         }
         return {
           ...role,
-          relationUserId: relation.userId,
-          relationTenantId: relation.tenantId,
-          relationRoleId: relation.roleId
+          relationId: relation.id
         };
       })
       .filter((role): role is AssociatedRoleDto => role !== null);
