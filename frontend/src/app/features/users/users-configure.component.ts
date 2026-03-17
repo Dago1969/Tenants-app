@@ -282,7 +282,7 @@ export class UsersConfigureComponent implements OnInit {
     this.loadingRoles = true;
     this.errorRoles = '';
     this.errorAssociatedRoles = '';
-    this.roleApi.getRoles().subscribe({
+    this.roleApi.getProxyRoles().subscribe({
       next: (roles) => {
         this.roles = roles;
         this.loadingRoles = false;

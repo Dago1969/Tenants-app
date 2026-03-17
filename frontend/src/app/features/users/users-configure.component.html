@@ -70,7 +70,7 @@
         <ul *ngIf="!loadingRoles && roles.length > 0" style="margin:0; padding-left:18px; color:#395f31;">
           <li *ngFor="let role of roles" style="margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
             <span>
-              {{ role.description || role.name }} <span style="color:#6d9853; font-size:0.95em;">({{ role.id }})</span>
+              <b>{{ role.id }}</b> <span style="color:#6d9853; font-size:0.95em;">({{ role.description || role.name }})</span>
             </span>
             <button *ngIf="!isRoleAssociated(role.id)" (click)="associateRole(role.id)" style="padding:2px 10px; font-size:0.9em; background:#4d78c2; color:#fff; border:none; border-radius:2px; cursor:pointer; min-width: 70px; text-align: right;">{{ labelAssociate }}</button>
           </li>
@@ -87,7 +87,7 @@
         <ul *ngIf="!loadingAssociatedRoles && associatedRoles.length > 0" style="margin:0; padding-left:18px; color:#395f31;">
           <li *ngFor="let role of associatedRoles" style="margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
             <span>
-              {{ role.description || role.name }} <span style="color:#6d9853; font-size:0.95em;">({{ role.id }})</span>
+              <b>{{ role.id }}</b> <span style="color:#6d9853; font-size:0.95em;">({{ role.description || role.name }})</span>
             </span>
             <button (click)="disassociateRole(role.relationId, role.id)" style="padding:2px 10px; font-size:0.9em; background:#c24d4d; color:#fff; border:none; border-radius:2px; cursor:pointer; min-width: 90px; text-align: right;">
               {{ labelDisassociate }}
