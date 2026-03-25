@@ -58,7 +58,7 @@ export class AppComponent implements OnDestroy {
     // Prima leggo dalla query string, se non c'è recupero da sessionStorage
     this.selectedProject = this.getProjectFromQueryString();
     if (!this.selectedProject) {
-      this.selectedProject = this.getProjectFromSession();
+      this.selectedProject = this.authService.getSelectedProject() || null;
     }
     this.storeTokenFromQueryString();
     this.selectedRole = this.authService.getSelectedRole();
@@ -183,14 +183,12 @@ export class AppComponent implements OnDestroy {
       // Log progetto in console JS
       console.log('[TENANTS-APP][frontend] Progetto ricevuto dalla query string:', project);
       this.selectedProject = project;
-      sessionStorage.setItem('selectedProject', project);
+      this.authService.setSelectedProject(project);
       url.searchParams.delete('project');
-    } else {
+    } else if (project !== null) {
       this.selectedProject = null;
-      sessionStorage.removeItem('selectedProject');
-      if (project !== null) {
-        url.searchParams.delete('project');
-      }
+      this.authService.setSelectedProject('');
+      url.searchParams.delete('project');
     }
     if (token) {
       this.authService.setToken(token);
@@ -207,11 +205,6 @@ export class AppComponent implements OnDestroy {
     if (token || role || client || project !== null) {
       window.history.replaceState({}, document.title, url.toString());
     }
-  }
-
-  private getProjectFromSession(): string | null {
-    if (typeof window === 'undefined') return null;
-    return sessionStorage.getItem('selectedProject');
   }
 
   private getProjectFromQueryString(): string | null {

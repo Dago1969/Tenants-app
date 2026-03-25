@@ -20,8 +20,11 @@ public class ProjectLoggingFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
         String project = request.getParameter("project");
+        if (project == null || project.isBlank()) {
+            project = request.getHeader("X-Selected-Project");
+        }
         log.debug("[ProjectLoggingFilter] Filtro eseguito per {} {}", request.getMethod(), request.getRequestURI());
-        if (project != null) {
+        if (project != null && !project.isBlank()) {
             log.info("[ProjectLoggingFilter] Parametro 'project' ricevuto: {}", project);
         } else {
             log.info("[ProjectLoggingFilter] Nessun parametro 'project' presente nella richiesta");

@@ -8,9 +8,10 @@
       </span>
       <span *ngIf="preferredUsername" class="user-preferred-username" style="font-size:0.95em;color:#e0e8f8;margin-left:28px;">{{ preferredUsername }}</span>
     </div>
-    <p class="selection-info" *ngIf="selectedClient || selectedRole">
+    <p class="selection-info" *ngIf="selectedClient || selectedRole || selectedProject">
       <strong>{{ translate('common.client') }}:</strong> {{ selectedClient || translate('common.notAvailable') }}<br />
-      <strong>{{ translate('common.role') }}:</strong> {{ selectedRole || translate('common.notAvailable') }}
+      <strong>{{ translate('common.role') }}:</strong> {{ selectedRole || translate('common.notAvailable') }}<br />
+      <strong>{{ translate('common.project') }}:</strong> {{ selectedProject && selectedProject.trim() ? selectedProject : translate('common.all') }}
     </p>
     <nav>
       <a *ngFor="let item of visibleMenuItems" [routerLink]="item.route" routerLinkActive="active">{{ translate(item.labelKey) }}</a>
@@ -67,7 +68,7 @@
 
   <main class="content">
     <div style="display:flex;justify-content:flex-end;align-items:center;margin-bottom:16px;">
-      <a [routerLink]="['/dashboard']" style="background:#111827;color:#fff;padding:8px 18px;border-radius:8px;text-decoration:none;font-weight:500;box-shadow:0 2px 8px #0001;">&larr; {{ translate('app.backToDashboard') }}</a>
+      <a href="http://localhost:4200/dashboard" style="background:#111827;color:#fff;padding:8px 18px;border-radius:8px;text-decoration:none;font-weight:500;box-shadow:0 2px 8px #0001;">&larr; {{ translate('app.backToDashboard') }}</a>
     </div>
     <router-outlet></router-outlet>
   </main>

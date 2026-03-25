@@ -4,7 +4,6 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export interface UserTenantRoleRelationDto {
-  id: number;
   userId: number;
   tenantId: number;
   roleId: string;
@@ -21,13 +20,13 @@ export class UserTenantRoleRelationApiService {
     return this.http.get<UserTenantRoleRelationDto[]>(url);
   }
 
-  addRelation(dto: Omit<UserTenantRoleRelationDto, 'id'>): Observable<UserTenantRoleRelationDto> {
+  addRelation(dto: UserTenantRoleRelationDto): Observable<UserTenantRoleRelationDto> {
     const url = this.baseUrl.replace(/\/tenants$/, '') + '/user-tenant-role';
     return this.http.post<UserTenantRoleRelationDto>(url, dto);
   }
 
-  deleteRelation(id: number): Observable<void> {
-    const url = this.baseUrl.replace(/\/tenants$/, '') + `/user-tenant-role/${id}`;
+  deleteRelation(userId: number, tenantId: number, roleId: string): Observable<void> {
+    const url = this.baseUrl.replace(/\/tenants$/, '') + `/user-tenant-role/user/${userId}/tenant/${tenantId}/role/${roleId}`;
     return this.http.delete<void>(url);
   }
 }

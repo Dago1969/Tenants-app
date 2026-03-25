@@ -13,10 +13,15 @@ export interface RoleDto {
 @Injectable({ providedIn: 'root' })
 export class RoleApiService {
   private readonly baseUrl = environment.apiBaseUrl;
+  private readonly proxyBaseUrl = this.baseUrl.replace(/\/tenants$/, '');
 
   constructor(private http: HttpClient) {}
 
   getRoles(): Observable<RoleDto[]> {
     return this.http.get<RoleDto[]>(`${this.baseUrl}/roles`);
+  }
+
+  getProxyRoles(): Observable<RoleDto[]> {
+    return this.http.get<RoleDto[]>(`${this.proxyBaseUrl}/user-tenant-role/roles`);
   }
 }

@@ -1,6 +1,6 @@
-package com.qtm.tenants.user.client;
+package com.qtm.tenants.user.service;
 
-import com.qtm.commonlib.dto.UserDto;
+import com.qtm.commonlib.dto.UserRoleProjectDto;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,84 +19,45 @@ import java.util.List;
 import static org.springframework.http.HttpStatus.BAD_GATEWAY;
 
 /**
- * Client REST verso QTMDashboard per la persistenza centralizzata degli utenti.
+ * Client REST verso QTMDB per l'associazione utente-tenant-ruolo-progetto.
  */
 @Service
 @Slf4j
-public class UserRemoteClient {
+public class DashboardUserRoleProjectClient {
 
-    private static final ParameterizedTypeReference<List<UserDto>> USER_LIST_TYPE = new ParameterizedTypeReference<>() {
+    private static final ParameterizedTypeReference<List<UserRoleProjectDto>> USER_ROLE_PROJECT_LIST_TYPE = new ParameterizedTypeReference<>() {
     };
-    private static final String SERVICE_UNAVAILABLE_MESSAGE = "Servizio utenti QTMDashboard non disponibile";
+    private static final String SERVICE_UNAVAILABLE_MESSAGE = "Servizio user-role-project QTMDB non disponibile";
 
     private final RestClient restClient;
 
-    public UserRemoteClient(
+    public DashboardUserRoleProjectClient(
             RestClient.Builder restClientBuilder,
             @Value("${qtm.dashboard.api-base-url}") String dashboardApiBaseUrl
     ) {
-        this.restClient = restClientBuilder
-                .baseUrl(dashboardApiBaseUrl)
-                .build();
+        this.restClient = restClientBuilder.baseUrl(dashboardApiBaseUrl).build();
     }
 
-    public UserDto create(UserDto userDto) {
-        log.debug("[UserRemoteClient] create user username={}", userDto.getUsername());
-        return execute(() -> restClient.post().uri("/users")
-                .headers(this::applyForwardedHeaders)
-                .body(userDto)
-                .retrieve()
-                .body(UserDto.class));
-    }
-
-    public List<UserDto> findAll() {
-        log.debug("[UserRemoteClient] findAll users");
-        return execute(() -> restClient.get().uri("/users")
-                .headers(this::applyForwardedHeaders)
-                .retrieve()
-                .body(USER_LIST_TYPE));
-    }
-
-        public List<UserDto> search(String username, String email, String roleId, Long structureId, Boolean enabled) {
-        log.debug("[UserRemoteClient] search users username={}, email={}, roleId={}, structureId={}, enabled={}",
-            username,
-            email,
-            roleId,
-            structureId,
-            enabled);
+    public List<UserRoleProjectDto> findByUserAndTenant(Long userId, Long tenantId) {
         return execute(() -> restClient.get()
-                .uri(uriBuilder -> uriBuilder.path("/users/search")
-                        .queryParamIfPresent("username", java.util.Optional.ofNullable(username))
-                .queryParamIfPresent("email", java.util.Optional.ofNullable(email))
-                        .queryParamIfPresent("roleId", java.util.Optional.ofNullable(roleId))
-                        .queryParamIfPresent("structureId", java.util.Optional.ofNullable(structureId))
-                        .queryParamIfPresent("enabled", java.util.Optional.ofNullable(enabled))
-                        .build())
+                .uri("/user-role-project/user/{userId}/tenant/{tenantId}", userId, tenantId)
                 .headers(this::applyForwardedHeaders)
                 .retrieve()
-                .body(USER_LIST_TYPE));
+                .body(USER_ROLE_PROJECT_LIST_TYPE));
     }
 
-    public UserDto findById(Long id) {
-        log.debug("[UserRemoteClient] find user by id={}", id);
-        return execute(() -> restClient.get().uri("/users/{id}", id)
+    public UserRoleProjectDto create(UserRoleProjectDto dto) {
+        return execute(() -> restClient.post()
+                .uri("/user-role-project")
                 .headers(this::applyForwardedHeaders)
+                .body(dto)
                 .retrieve()
-                .body(UserDto.class));
+                .body(UserRoleProjectDto.class));
     }
 
-    public UserDto update(Long id, UserDto userDto) {
-        log.debug("[UserRemoteClient] update user id={}, username={}", id, userDto.getUsername());
-        return execute(() -> restClient.put().uri("/users/{id}", id)
-                .headers(this::applyForwardedHeaders)
-                .body(userDto)
-                .retrieve()
-                .body(UserDto.class));
-    }
-
-    public void delete(Long id) {
-        log.debug("[UserRemoteClient] delete user id={}", id);
-        executeVoid(() -> restClient.delete().uri("/users/{id}", id)
+    public void delete(Long userId, Long tenantId, String roleId, String projectId) {
+        executeVoid(() -> restClient.delete()
+                .uri("/user-role-project/user/{userId}/tenant/{tenantId}/role/{roleId}/project/{projectId}", userId, tenantId, roleId, projectId)
                 .headers(this::applyForwardedHeaders)
                 .retrieve()
                 .toBodilessEntity());
@@ -130,10 +91,10 @@ public class UserRemoteClient {
         try {
             return call.execute();
         } catch (RestClientResponseException exception) {
-            log.error("[UserRemoteClient] downstream error status={}, body={}", exception.getStatusCode(), exception.getResponseBodyAsString());
+            log.error("[DashboardUserRoleProjectClient] downstream error status={} body={}", exception.getStatusCode(), exception.getResponseBodyAsString(), exception);
             throw new ResponseStatusException(exception.getStatusCode(), buildDownstreamMessage(exception), exception);
         } catch (RestClientException exception) {
-            log.error("[UserRemoteClient] downstream unavailable", exception);
+            log.error("[DashboardUserRoleProjectClient] downstream unavailable", exception);
             throw new ResponseStatusException(BAD_GATEWAY, SERVICE_UNAVAILABLE_MESSAGE, exception);
         }
     }
@@ -142,10 +103,10 @@ public class UserRemoteClient {
         try {
             call.execute();
         } catch (RestClientResponseException exception) {
-            log.error("[UserRemoteClient] downstream void error status={}, body={}", exception.getStatusCode(), exception.getResponseBodyAsString());
+            log.error("[DashboardUserRoleProjectClient] downstream void error status={} body={}", exception.getStatusCode(), exception.getResponseBodyAsString(), exception);
             throw new ResponseStatusException(exception.getStatusCode(), buildDownstreamMessage(exception), exception);
         } catch (RestClientException exception) {
-            log.error("[UserRemoteClient] downstream unavailable on void call", exception);
+            log.error("[DashboardUserRoleProjectClient] downstream unavailable on void call", exception);
             throw new ResponseStatusException(BAD_GATEWAY, SERVICE_UNAVAILABLE_MESSAGE, exception);
         }
     }
@@ -153,7 +114,7 @@ public class UserRemoteClient {
     private String buildDownstreamMessage(RestClientResponseException exception) {
         String responseBody = exception.getResponseBodyAsString();
         if (responseBody == null || responseBody.isBlank()) {
-            return "Errore restituito da QTMDashboard durante la gestione utenti";
+            return "Errore restituito da QTMDB durante la gestione user-role-project";
         }
         return responseBody;
     }

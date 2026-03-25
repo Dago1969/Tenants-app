@@ -1,16 +1,17 @@
 import { Component, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/auth.service';
 import { ProjectApiService, ProjectDto } from '../../core/project-api.service';
 import { RoleApiService, RoleDto } from '../../core/role-api.service';
 import { UserTenantProjectRelationApiService } from '../../core/user-tenant-project-relation-api.service';
-import { UserTenantRoleRelationApiService, UserTenantRoleRelationDto } from '../../core/user-tenant-role-relation-api.service';
+import { UserRoleProfileApiService, UserRoleProfileDto } from '../../core/user-role-profile-api.service';
 import { TenantPointerApiService } from '../../core/tenant-pointer-api.service';
 import { CrudField, CrudFolder, CrudPageComponent } from '../../shared/crud-page.component';
 import { MessageKey, t } from '../../i18n/messages';
 
-type AssociatedRoleDto = RoleDto & { relationId: number };
+type UserRoleProfileView = UserRoleProfileDto & { roleName: string; roleDescription: string };
 
 /**
  * Pagina di configurazione utenti tenant (duplicato da edit).
@@ -19,7 +20,7 @@ type AssociatedRoleDto = RoleDto & { relationId: number };
 @Component({
   selector: 'app-users-configure',
   standalone: true,
-  imports: [CrudPageComponent, CommonModule],
+  imports: [CrudPageComponent, CommonModule, FormsModule],
   templateUrl: './users-configure.component.html',
   styleUrls: ['./users-configure.component.css']
 })
@@ -76,18 +77,21 @@ export class UsersConfigureComponent implements OnInit {
   errorProjects = '';
   errorAssociated = '';
   roles: RoleDto[] = [];
-  associatedRoles: AssociatedRoleDto[] = [];
+  userRoleProfiles: UserRoleProfileView[] = [];
   loadingRoles = false;
   loadingAssociatedRoles = false;
   errorRoles = '';
   errorAssociatedRoles = '';
+  selectedTenantId: number | null = null;
+  selectedRoleId = '';
+  profileId = '';
 
   constructor(
     private readonly authService: AuthService,
     private readonly projectApi: ProjectApiService,
     private readonly roleApi: RoleApiService,
     private readonly userTenantProjectRelationApi: UserTenantProjectRelationApiService,
-    private readonly userTenantRoleRelationApi: UserTenantRoleRelationApiService,
+    private readonly userRoleProfileApi: UserRoleProfileApiService,
     private readonly tenantPointerApi: TenantPointerApiService,
     private readonly route: ActivatedRoute,
     private readonly router: Router
@@ -101,8 +105,8 @@ export class UsersConfigureComponent implements OnInit {
     return this.associatedProjects.some(p => p.id === projectId);
   }
 
-  isRoleAssociated(roleId: string): boolean {
-    return this.associatedRoles.some(role => role.id === roleId);
+  canAssociateRoleProfile(): boolean {
+    return !!this.selectedRoleId && this.profileId.trim().length > 0 && this.selectedTenantId !== null;
   }
 
   associateProject(projectId: number): void {
@@ -152,58 +156,42 @@ export class UsersConfigureComponent implements OnInit {
     });
   }
 
-  associateRole(roleId: string): void {
-    const tenantCode = this.authService.getSelectedClient();
+  associateRoleProfile(): void {
     const userIdParam = this.route.snapshot.paramMap.get('id');
     const userId = userIdParam ? Number(userIdParam) : null;
-    if (!userId || !tenantCode) {
-      console.warn('[associateRole] userId o tenantCode mancante', { userId, tenantCode });
+    const normalizedProfileId = this.profileId.trim();
+    if (!userId || !this.selectedTenantId || !this.selectedRoleId || !normalizedProfileId) {
+      console.warn('[associateRoleProfile] Dati mancanti', { userId, tenantId: this.selectedTenantId, roleId: this.selectedRoleId, profileId: normalizedProfileId });
       return;
     }
 
-    const selectedRole = this.roles.find(role => role.id === roleId);
-    if (selectedRole && !this.isRoleAssociated(roleId)) {
-      this.associatedRoles = [...this.associatedRoles, { ...selectedRole, relationId: 0 }];
+    if (this.userRoleProfiles.some(relation => relation.tenantId === this.selectedTenantId
+      && relation.roleId === this.selectedRoleId
+      && relation.profileId.toLowerCase() === normalizedProfileId.toLowerCase())) {
+      return;
     }
-    this.roles = this.roles.filter(role => role.id !== roleId);
 
-    this.tenantPointerApi.getTenantPointerByClientCode(tenantCode).subscribe({
-      next: (tenantPointer) => {
-        if (!tenantPointer || !tenantPointer.id) {
-          console.error('[associateRole] tenantPointer non trovato per tenantCode', tenantCode);
-          return;
-        }
-        this.userTenantRoleRelationApi.addRelation({
-          userId,
-          tenantId: tenantPointer.id,
-          roleId
-        }).subscribe({
-          next: () => this.refreshRolesData(),
-          error: (err) => {
-            console.error('[associateRole] Errore:', err);
-          }
-        });
+    this.userRoleProfileApi.addRelation({
+      userId,
+      tenantId: this.selectedTenantId,
+      roleId: this.selectedRoleId,
+      profileId: normalizedProfileId
+    }).subscribe({
+      next: () => {
+        this.profileId = '';
+        this.refreshRolesData();
       },
       error: (err) => {
-        console.error('[associateRole] Errore recupero tenantPointer:', err);
+        console.error('[associateRoleProfile] Errore:', err);
       }
     });
   }
 
-  disassociateRole(relationId: number, roleId: string): void {
-    const removedRole = this.associatedRoles.find(role => role.relationId === relationId);
-    if (removedRole) {
-      this.associatedRoles = this.associatedRoles.filter(role => role.relationId !== relationId);
-      if (!this.roles.some(role => role.id === roleId)) {
-        const { relationId: removedRelationId, ...availableRole } = removedRole;
-        this.roles = [...this.roles, availableRole];
-      }
-    }
-
-    this.userTenantRoleRelationApi.deleteRelation(relationId).subscribe({
+  disassociateRoleProfile(userId: number, tenantId: number, roleId: string, profileId: string): void {
+    this.userRoleProfileApi.deleteRelation(userId, tenantId, roleId, profileId).subscribe({
       next: () => this.refreshRolesData(),
       error: (err) => {
-        console.error('[disassociateRole] Errore:', err);
+        console.error('[disassociateRoleProfile] Errore:', err);
       }
     });
   }
@@ -282,7 +270,7 @@ export class UsersConfigureComponent implements OnInit {
     this.loadingRoles = true;
     this.errorRoles = '';
     this.errorAssociatedRoles = '';
-    this.roleApi.getRoles().subscribe({
+    this.roleApi.getProxyRoles().subscribe({
       next: (roles) => {
         this.roles = roles;
         this.loadingRoles = false;
@@ -295,9 +283,10 @@ export class UsersConfigureComponent implements OnInit {
                 this.loadingAssociatedRoles = false;
                 return;
               }
-              this.userTenantRoleRelationApi.getRelationsByUserAndTenant(userId, tenantPointer.id).subscribe({
+              this.selectedTenantId = tenantPointer.id;
+              this.userRoleProfileApi.getRelationsByUserAndTenant(userId, tenantPointer.id).subscribe({
                 next: (relations) => {
-                  this.associatedRoles = this.mapAssociatedRoles(relations, roles);
+                  this.userRoleProfiles = this.mapUserRoleProfiles(relations, roles);
                   this.loadingAssociatedRoles = false;
                 },
                 error: () => {
@@ -307,13 +296,15 @@ export class UsersConfigureComponent implements OnInit {
               });
             },
             error: () => {
+              this.selectedTenantId = null;
               this.errorAssociatedRoles = this.translate('users.configure.errors.loadTenant');
               this.loadingAssociatedRoles = false;
             }
           });
         } else {
           this.errorAssociatedRoles = this.translate('users.configure.errors.userNotIdentified');
-          this.associatedRoles = [];
+          this.userRoleProfiles = [];
+          this.selectedTenantId = null;
           this.loadingAssociatedRoles = false;
         }
       },
@@ -325,19 +316,17 @@ export class UsersConfigureComponent implements OnInit {
     });
   }
 
-  private mapAssociatedRoles(relations: UserTenantRoleRelationDto[], roles: RoleDto[]): AssociatedRoleDto[] {
+  private mapUserRoleProfiles(relations: UserRoleProfileDto[], roles: RoleDto[]): UserRoleProfileView[] {
     return relations
       .map(relation => {
         const role = roles.find(currentRole => currentRole.id === relation.roleId);
-        if (!role || relation.id == null) {
-          return null;
-        }
         return {
-          ...role,
-          relationId: relation.id
+          ...relation,
+          roleName: role?.name ?? relation.roleId,
+          roleDescription: role?.description ?? ''
         };
       })
-      .filter((role): role is AssociatedRoleDto => role !== null);
+      .sort((left, right) => left.roleId.localeCompare(right.roleId) || left.profileId.localeCompare(right.profileId));
   }
 
   ngOnInit(): void {
