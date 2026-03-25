@@ -58,45 +58,56 @@
 </div>
   <div class="subcard" style="position: relative; margin-bottom: 28px; padding: 25px 22px 18px 22px; border: 1px solid #d5dfcf; border-radius: 10px; background: #f7faf5;">
     <span style="position: absolute; top: -12px; left: 20px; background: #f7faf5; padding: 0 10px; color: #395f31; font-weight: bold; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">
-      {{ translate('users.configure.roles.cardTitle') }}
+      Associazioni ruolo progetto
     </span>
-    <div style="display: flex; gap: 40px; align-items: flex-start;">
-      <div style="flex: 1;">
-        <h3 style="margin-top:0; color:#395f31; font-size:1.1rem; font-weight:600; border-bottom: 1px solid #d5dfcf; padding-bottom: 8px; margin-bottom: 12px;">
-          {{ translate('users.configure.roles.availableTitle') }}
-        </h3>
-        <ng-container *ngIf="loadingRoles">{{ translate('users.configure.loading') }}</ng-container>
-        <div *ngIf="errorRoles" style="color:#c00;">{{ errorRoles }}</div>
-        <ul *ngIf="!loadingRoles && roles.length > 0" style="margin:0; padding-left:18px; color:#395f31;">
-          <li *ngFor="let role of roles" style="margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-            <span>
-              {{ role.description || role.name }} <span style="color:#6d9853; font-size:0.95em;">({{ role.id }})</span>
-            </span>
-            <button *ngIf="!isRoleAssociated(role.id)" (click)="associateRole(role.id)" style="padding:2px 10px; font-size:0.9em; background:#4d78c2; color:#fff; border:none; border-radius:2px; cursor:pointer; min-width: 70px; text-align: right;">{{ labelAssociate }}</button>
-          </li>
-        </ul>
-        <div *ngIf="!loadingRoles && roles.length === 0" style="color:#aaa;">{{ translate('users.configure.roles.emptyAvailable') }}</div>
+    <div class="role-profile-form">
+      <div class="role-profile-field">
+        <label>Tenant</label>
+        <input type="text" [value]="selectedTenantId ?? ''" readonly>
       </div>
-
-      <div style="flex: 1;">
-        <h3 style="margin-top:0; color:#395f31; font-size:1.1rem; font-weight:600; border-bottom: 1px solid #d5dfcf; padding-bottom: 8px; margin-bottom: 12px;">
-          {{ translate('users.configure.roles.associatedTitle') }}
-        </h3>
-        <ng-container *ngIf="loadingAssociatedRoles">{{ translate('users.configure.loading') }}</ng-container>
-        <div *ngIf="errorAssociatedRoles" style="color:#c00;">{{ errorAssociatedRoles }}</div>
-        <ul *ngIf="!loadingAssociatedRoles && associatedRoles.length > 0" style="margin:0; padding-left:18px; color:#395f31;">
-          <li *ngFor="let role of associatedRoles" style="margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; gap: 8px;">
-            <span>
-              {{ role.description || role.name }} <span style="color:#6d9853; font-size:0.95em;">({{ role.id }})</span>
-            </span>
-            <button (click)="disassociateRole(role.relationId, role.id)" style="padding:2px 10px; font-size:0.9em; background:#c24d4d; color:#fff; border:none; border-radius:2px; cursor:pointer; min-width: 90px; text-align: right;">
-              {{ labelDisassociate }}
-            </button>
-          </li>
-        </ul>
-        <div *ngIf="!loadingAssociatedRoles && associatedRoles.length === 0" style="color:#aaa;">{{ translate('users.configure.roles.emptyAssociated') }}</div>
+      <div class="role-profile-field">
+        <label>{{ translate('common.role') }}</label>
+        <select [(ngModel)]="selectedRoleId">
+          <option value="">Seleziona ruolo</option>
+          <option *ngFor="let role of roles" [value]="role.id">{{ role.id }} - {{ role.description || role.name }}</option>
+        </select>
+      </div>
+      <div class="role-profile-field">
+        <label>Progetto</label>
+        <input type="text" [value]="selectedProject" disabled>
+      </div>
+      <div class="role-profile-actions">
+        <button type="button" (click)="associateRoleProject()" [disabled]="!canAssociateRoleProject()">{{ labelAssociate }}</button>
       </div>
     </div>
+    <ng-container *ngIf="loadingRoles || loadingAssociatedRoles">{{ translate('users.configure.loading') }}</ng-container>
+    <div *ngIf="errorRoles" style="color:#c00;">{{ errorRoles }}</div>
+    <div *ngIf="errorAssociatedRoles" style="color:#c00;">{{ errorAssociatedRoles }}</div>
+    <div class="role-profile-table-wrapper" *ngIf="!loadingAssociatedRoles && userRoleProjects.length > 0">
+      <table class="role-profile-table">
+        <thead>
+          <tr>
+            <th>Tenant</th>
+            <th>{{ translate('common.role') }}</th>
+            <th>Progetto</th>
+            <th>{{ translate('search.actions') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let relation of userRoleProjects">
+            <td>{{ relation.tenantId }}</td>
+            <td>{{ relation.roleId }} <span class="role-profile-muted" *ngIf="relation.roleDescription">({{ relation.roleDescription }})</span></td>
+            <td>{{ relation.projectId }}</td>
+            <td>
+              <button type="button" class="role-profile-delete" (click)="disassociateRoleProject(relation.userId, relation.tenantId, relation.roleId, relation.projectId)">
+                {{ labelDisassociate }}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div *ngIf="!loadingAssociatedRoles && userRoleProjects.length === 0" style="color:#aaa;">Nessuna associazione presente</div>
   </div>
   <div class="crud-actions" style="display: flex; justify-content: flex-end; margin-top: 32px;">
     <button 

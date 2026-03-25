@@ -38,6 +38,7 @@ export class AppComponent implements OnDestroy {
     preferredUsername: string | null = null;
   selectedRole = '';
   selectedClient = '';
+  selectedProject: string | null = null;
   hiddenModuleCodes = new Set<string>();
   managementMenuOpen = true;
   registryMenuOpen = true;
@@ -50,6 +51,10 @@ export class AppComponent implements OnDestroy {
   ) {
     if (typeof document !== 'undefined') {
       document.title = t('app.title');
+    }
+    this.selectedProject = this.getProjectFromQueryString();
+    if (!this.selectedProject) {
+      this.selectedProject = this.authService.getSelectedProject() || null;
     }
     this.storeTokenFromQueryString();
     this.selectedRole = this.authService.getSelectedRole();
@@ -168,6 +173,17 @@ export class AppComponent implements OnDestroy {
     const token = url.searchParams.get('token');
     const role = url.searchParams.get('role');
     const client = url.searchParams.get('client');
+    const project = url.searchParams.get('project');
+
+    if (project !== null && project.trim() !== '') {
+      this.selectedProject = project;
+      this.authService.setSelectedProject(project);
+      url.searchParams.delete('project');
+    } else if (project !== null) {
+      this.selectedProject = null;
+      this.authService.setSelectedProject('');
+      url.searchParams.delete('project');
+    }
 
     if (token) {
       this.authService.setToken(token);
@@ -184,9 +200,14 @@ export class AppComponent implements OnDestroy {
       url.searchParams.delete('client');
     }
 
-    if (token || role || client) {
+    if (token || role || client || project !== null) {
       window.history.replaceState({}, document.title, url.toString());
     }
+  }
+
+  private getProjectFromQueryString(): string | null {
+    const url = new URL(window.location.href);
+    return url.searchParams.get('project');
   }
 
   private loadModuleVisibility(): void {

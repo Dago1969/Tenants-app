@@ -1,1 +1,91 @@
-/* Stili duplicati da users-crud.component.css (aggiungi qui se necessario) */
+/* Stili minimi per la sezione ruolo-progetto. */
+
+.role-profile-form {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 16px;
+	align-items: end;
+	margin-bottom: 20px;
+}
+
+.role-profile-field {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.role-profile-field label {
+	color: #395f31;
+	font-size: 0.9rem;
+	font-weight: 600;
+}
+
+.role-profile-field input,
+.role-profile-field select {
+	min-height: 38px;
+	padding: 8px 10px;
+	border: 1px solid #c7d5c0;
+	border-radius: 4px;
+	background: #fff;
+}
+
+.role-profile-actions {
+	display: flex;
+	justify-content: flex-end;
+}
+
+.role-profile-actions button,
+.role-profile-delete {
+	padding: 8px 12px;
+	border: none;
+	border-radius: 4px;
+	color: #fff;
+	cursor: pointer;
+}
+
+.role-profile-actions button {
+	background: #4d78c2;
+}
+
+.role-profile-actions button:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+.role-profile-table-wrapper {
+	overflow-x: auto;
+}
+
+.role-profile-table {
+	width: 100%;
+	border-collapse: collapse;
+}
+
+.role-profile-table th,
+.role-profile-table td {
+	padding: 10px 8px;
+	border-bottom: 1px solid #d5dfcf;
+	text-align: left;
+}
+
+.role-profile-table th {
+	color: #395f31;
+}
+
+.role-profile-muted {
+	color: #6d9853;
+}
+
+.role-profile-delete {
+	background: #c24d4d;
+}
+
+@media (max-width: 900px) {
+	.role-profile-form {
+		grid-template-columns: 1fr;
+	}
+
+	.role-profile-actions {
+		justify-content: flex-start;
+	}
+}
