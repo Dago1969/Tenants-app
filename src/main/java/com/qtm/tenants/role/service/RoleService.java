@@ -1,5 +1,6 @@
 package com.qtm.tenants.role.service;
 
+import com.qtm.commonlib.dto.UserDto;
 import com.qtm.tenants.authorization.AuthorizationManagementService;
 import com.qtm.tenants.authorization.FieldAuthorizationRepository;
 import com.qtm.tenants.authorization.ModuleRoleAuthorizationRepository;
@@ -10,8 +11,7 @@ import com.qtm.tenants.role.dto.RoleDto;
 import com.qtm.tenants.role.entity.RoleEntity;
 import com.qtm.tenants.role.mapper.RoleMapper;
 import com.qtm.tenants.role.repository.RoleRepository;
-import com.qtm.tenants.user.entity.UserEntity;
-import com.qtm.tenants.user.repository.UserRepository;
+import com.qtm.tenants.user.service.UserRemoteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,7 +35,7 @@ public class RoleService {
     private final ModuleRoleAuthorizationRepository moduleRoleAuthorizationRepository;
     private final FieldAuthorizationRepository fieldAuthorizationRepository;
     private final FunctionModuleRoleAuthorizationRepository functionModuleRoleAuthorizationRepository;
-    private final UserRepository userRepository;
+    private final UserRemoteService userRemoteService;
 
     @Transactional
     public RoleDto create(RoleDto roleDto) {
@@ -65,7 +65,7 @@ public class RoleService {
     @Transactional(readOnly = true)
     public RoleDeleteCheckDto getDeleteCheck(String id) {
         RoleEntity role = findEntityById(id);
-        List<RoleDeleteLinkedUserDto> linkedUsers = userRepository.findAllByRoleId(id).stream()
+        List<RoleDeleteLinkedUserDto> linkedUsers = userRemoteService.search(null, null, id, null, null).stream()
                 .map(user -> new RoleDeleteLinkedUserDto(user.getId(), user.getUsername()))
                 .toList();
         List<RoleDto> replacementRoles = roleRepository.findAll().stream()
@@ -78,7 +78,7 @@ public class RoleService {
     @Transactional
     public void delete(String id, String replacementRoleId) {
         RoleEntity role = findEntityById(id);
-        List<UserEntity> linkedUsers = userRepository.findAllByRoleId(id);
+        List<UserDto> linkedUsers = userRemoteService.search(null, null, id, null, null);
         if (!linkedUsers.isEmpty()) {
             if (replacementRoleId == null || replacementRoleId.isBlank()) {
                 throw new ResponseStatusException(BAD_REQUEST, "Esistono utenti collegati al ruolo da cancellare");
@@ -86,9 +86,11 @@ public class RoleService {
             if (id.equalsIgnoreCase(replacementRoleId)) {
                 throw new ResponseStatusException(BAD_REQUEST, "Il nuovo ruolo deve essere diverso dal ruolo da cancellare");
             }
-            RoleEntity replacementRole = findEntityById(replacementRoleId);
-            linkedUsers.forEach(user -> user.setRole(replacementRole));
-            userRepository.saveAll(linkedUsers);
+            findEntityById(replacementRoleId);
+            linkedUsers.forEach(user -> {
+                user.setRoleId(replacementRoleId);
+                userRemoteService.update(user.getId(), user);
+            });
         }
 
         functionModuleRoleAuthorizationRepository.deleteAllByRoleId(id);

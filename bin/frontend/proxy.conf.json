@@ -1,0 +1,14 @@
+{
+  "/api/tenants": {
+    "target": "http://localhost:8086",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  },
+  "/api/user-tenant-project": {
+    "target": "http://localhost:8087",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  }
+}

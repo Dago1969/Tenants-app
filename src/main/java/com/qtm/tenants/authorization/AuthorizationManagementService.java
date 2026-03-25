@@ -1,5 +1,7 @@
 package com.qtm.tenants.authorization;
 
+import com.qtm.commonlib.dto.ProjectDto;
+import com.qtm.commonlib.dto.UserDto;
 import com.qtm.tenants.authorization.dto.AuthorizationFieldDto;
 import com.qtm.tenants.authorization.dto.AuthorizationFunctionDto;
 import com.qtm.tenants.authorization.dto.AuthorizationModuleDto;
@@ -18,7 +20,6 @@ import com.qtm.tenants.patient.entity.PatientEntity;
 import com.qtm.tenants.role.entity.RoleEntity;
 import com.qtm.tenants.role.repository.RoleRepository;
 import com.qtm.tenants.structure.entity.StructureEntity;
-import com.qtm.tenants.user.entity.UserEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,35 +44,56 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 @RequiredArgsConstructor
 public class AuthorizationManagementService {
 
+    private static final List<String> DEFAULT_COMMON_FUNCTION_CODES = List.of(
+            ControllerFunctionAuthorizationService.CREATE_FUNCTION_CODE,
+            ControllerFunctionAuthorizationService.READ_FUNCTION_CODE,
+            ControllerFunctionAuthorizationService.SEARCH_FUNCTION_CODE,
+            ControllerFunctionAuthorizationService.UPDATE_FUNCTION_CODE,
+            ControllerFunctionAuthorizationService.DELETE_FUNCTION_CODE
+    );
+
+    private static final List<String> TENANT_FIELDS = List.of(
+            "clientCode",
+            "clientName",
+            "tenantAppUrl",
+            "enabled"
+    );
+
     private static final Map<String, ModuleDefinition> MODULE_DEFINITIONS = List.of(
             new ModuleDefinition(
                     "USER",
                     "Utenti",
                     "user",
-                    resolveEntityFields(UserEntity.class, Set.of("id"), Map.of("role", "roleId"))
+                    resolveEntityFields(UserDto.class, Set.of("id", "password", "clientId"), Map.of()),
+                    List.of()
             ),
             new ModuleDefinition(
                     "PATIENT",
                     "Pazienti",
                     "patient",
-                    resolveEntityFields(PatientEntity.class, Set.of("id"), Map.of())
+                    resolveEntityFields(PatientEntity.class, Set.of("id"), Map.of()),
+                    List.of()
             ),
             new ModuleDefinition(
                     "DOCTOR",
                     "Dottori",
                     "doctor",
-                    resolveEntityFields(DoctorEntity.class, Set.of("id"), Map.of())
+                    resolveEntityFields(DoctorEntity.class, Set.of("id"), Map.of()),
+                    List.of()
             ),
             new ModuleDefinition(
                     "NURSE",
                     "Infermieri",
                     "nurse",
-                    resolveEntityFields(NurseEntity.class, Set.of("id"), Map.of())
+                    resolveEntityFields(NurseEntity.class, Set.of("id"), Map.of()),
+                    List.of()
             ),
-            new ModuleDefinition("ROLE", "Ruoli", "role", resolveEntityFields(RoleEntity.class, Set.of(), Map.of())),
-            new ModuleDefinition("MODULE", "Moduli", "module", resolveEntityFields(ModuleEntity.class, Set.of(), Map.of())),
-            new ModuleDefinition("FUNCTION", "Funzioni", "function", resolveEntityFields(FunctionEntity.class, Set.of(), Map.of())),
-            new ModuleDefinition("STRUCTURE", "Strutture", "structure", resolveEntityFields(StructureEntity.class, Set.of("id"), Map.of()))
+            new ModuleDefinition("ROLE", "Ruoli", "role", resolveEntityFields(RoleEntity.class, Set.of(), Map.of()), List.of()),
+            new ModuleDefinition("MODULE", "Moduli", "module", resolveEntityFields(ModuleEntity.class, Set.of(), Map.of()), List.of()),
+            new ModuleDefinition("FUNCTION", "Funzioni", "function", resolveEntityFields(FunctionEntity.class, Set.of(), Map.of()), List.of()),
+            new ModuleDefinition("STRUCTURE", "Strutture", "structure", resolveEntityFields(StructureEntity.class, Set.of("id"), Map.of()), List.of()),
+            new ModuleDefinition("PROJECT", "Progetti", "project", resolveEntityFields(ProjectDto.class, Set.of("id"), Map.of()), DEFAULT_COMMON_FUNCTION_CODES),
+            new ModuleDefinition("TENANT", "Tenants", "tenant", TENANT_FIELDS, DEFAULT_COMMON_FUNCTION_CODES)
     ).stream().collect(Collectors.toMap(ModuleDefinition::code, definition -> definition, (left, right) -> right, LinkedHashMap::new));
 
     private final RoleRepository roleRepository;
@@ -184,7 +206,7 @@ public class AuthorizationManagementService {
             Map<String, FunctionEntity> functionsByCode,
             List<AuthorizationFunctionDto> requestedFunctions
     ) {
-        Set<String> supportedFunctionCodes = controllerFunctionAuthorizationService.getSupportedFunctionCodes(definition.code())
+        Set<String> supportedFunctionCodes = resolveSupportedFunctionCodes(definition)
                 .stream()
                 .collect(Collectors.toSet());
         List<AuthorizationFunctionDto> safeRequestedFunctions = requestedFunctions == null ? List.of() : requestedFunctions;
@@ -264,7 +286,7 @@ public class AuthorizationManagementService {
                         )))
                 .orElseGet(LinkedHashMap::new);
 
-        List<AuthorizationFunctionDto> functions = controllerFunctionAuthorizationService.getSupportedFunctionCodes(definition.code()).stream()
+        List<AuthorizationFunctionDto> functions = resolveSupportedFunctionCodes(definition).stream()
                 .map(functionsByCode::get)
                 .filter(java.util.Objects::nonNull)
                 .map(function -> new AuthorizationFunctionDto(
@@ -398,12 +420,37 @@ public class AuthorizationManagementService {
                 definition.fields().stream()
                         .map(field -> new AuthorizationFieldDto(field, AuthorizationScope.HIDE_FIELD.getCode()))
                         .toList(),
-                controllerFunctionAuthorizationService.getSupportedFunctionCodes(definition.code()).stream()
+                                resolveSupportedFunctionCodes(definition).stream()
                         .map(functionCode -> new AuthorizationFunctionDto(functionCode, functionCode, AuthorizationScope.DENY.getCode(), controllerFunctionAuthorizationService.isCommonFunctionCode(functionCode)))
                         .toList()
         );
     }
 
-    private record ModuleDefinition(String code, String name, String entityName, List<String> fields) {
+        private List<String> resolveSupportedFunctionCodes(ModuleDefinition definition) {
+                List<String> supportedFunctionCodes = getSupportedFunctionCodesSafely(definition.code());
+                if (!supportedFunctionCodes.isEmpty()) {
+                        return supportedFunctionCodes;
+                }
+                return definition.defaultFunctionCodes();
+        }
+
+        private List<String> getSupportedFunctionCodesSafely(String moduleCode) {
+                try {
+                        return controllerFunctionAuthorizationService.getSupportedFunctionCodes(moduleCode);
+                } catch (ResponseStatusException exception) {
+                        if (exception.getStatusCode().value() == NOT_FOUND.value()) {
+                                return List.of();
+                        }
+                        throw exception;
+                }
+        }
+
+        private record ModuleDefinition(
+                        String code,
+                        String name,
+                        String entityName,
+                        List<String> fields,
+                        List<String> defaultFunctionCodes
+        ) {
     }
 }
