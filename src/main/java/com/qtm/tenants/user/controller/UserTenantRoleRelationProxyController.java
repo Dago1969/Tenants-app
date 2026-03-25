@@ -1,4 +1,6 @@
+
 package com.qtm.tenants.user.controller;
+import com.qtm.commonlib.dto.RoleDto;
 
 import com.qtm.commonlib.dto.UserTenantRoleRelationDto;
 import com.qtm.tenants.role.service.DashboardRoleClient;
@@ -23,6 +25,21 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class UserTenantRoleRelationProxyController {
+    @GetMapping("/roles")
+    public ResponseEntity<List<RoleDto>> proxyGetRoles() {
+        log.info("[TENAPP] Proxy GET /api/user-tenant-role/roles");
+        return ResponseEntity.ok(dashboardRoleClient.findAll());
+    }
+    @DeleteMapping("/user/{userId}/tenant/{tenantId}/role/{roleId}")
+    public ResponseEntity<Void> proxyDeleteByUserTenantRole(
+            @PathVariable Long userId,
+            @PathVariable Long tenantId,
+            @PathVariable String roleId
+    ) {
+        log.info("[TENAPP] Proxy DELETE /api/user-tenant-role/user/{}/tenant/{}/role/{}", userId, tenantId, roleId);
+        dashboardRoleClient.proxyDeleteUserTenantRoleRelation(userId, tenantId, roleId);
+        return ResponseEntity.noContent().build();
+    }
 
     private final DashboardRoleClient dashboardRoleClient;
 

@@ -1,3 +1,4 @@
+// ...existing code...
 package com.qtm.tenants.role.service;
 
 import com.qtm.commonlib.dto.RoleDeleteCheckDto;
@@ -27,6 +28,13 @@ import static org.springframework.http.HttpStatus.BAD_GATEWAY;
 @Service
 @Slf4j
 public class DashboardRoleClient {
+    public void proxyDeleteUserTenantRoleRelation(Long userId, Long tenantId, String roleId) {
+        executeVoid(() -> restClient.delete()
+                .uri("/user-tenant-role/user/{userId}/tenant/{tenantId}/role/{roleId}", userId, tenantId, roleId)
+                .headers(this::applyForwardedHeaders)
+                .retrieve()
+                .toBodilessEntity());
+    }
 
     private static final ParameterizedTypeReference<List<RoleDto>> ROLE_LIST_TYPE = new ParameterizedTypeReference<>() {
     };
@@ -126,12 +134,13 @@ public class DashboardRoleClient {
         copyHeader(currentRequest, headers, HttpHeaders.AUTHORIZATION);
         copyHeader(currentRequest, headers, "X-Selected-Role");
         copyHeader(currentRequest, headers, "X-Selected-Client");
+        copyHeader(currentRequest, headers, "X-Selected-Project");
     }
 
     private void copyHeader(HttpServletRequest request, HttpHeaders headers, String headerName) {
         String value = request.getHeader(headerName);
         if (value != null && !value.isBlank()) {
-            headers.set(headerName, value);
+            headers.set(headerName, value.trim());
         }
     }
 

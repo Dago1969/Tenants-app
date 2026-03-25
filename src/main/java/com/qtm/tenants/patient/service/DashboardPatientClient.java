@@ -84,6 +84,7 @@ public class DashboardPatientClient {
         copyHeader(currentRequest, headers, HttpHeaders.AUTHORIZATION);
         copyHeader(currentRequest, headers, "X-Selected-Role");
         copyHeader(currentRequest, headers, "X-Selected-Client");
+        copyHeader(currentRequest, headers, "X-Selected-Project");
     }
 
     private void copyHeader(HttpServletRequest request, HttpHeaders headers, String headerName) {
