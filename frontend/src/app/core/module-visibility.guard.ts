@@ -15,7 +15,11 @@ export function moduleVisibilityGuard(moduleCode: string): CanActivateFn {
     const router = inject(Router);
     const http = inject(HttpClient);
     const selectedRole = authService.getSelectedRole();
+    console.log('[ModuleVisibilityGuard] canActivate - selectedRole:', selectedRole, 'moduleCode:', moduleCode);
     if (!selectedRole) {
+      return router.createUrlTree(['/forbidden']);
+    }
+    if (typeof selectedRole === 'undefined' || selectedRole === null || selectedRole === '') {
       return router.createUrlTree(['/forbidden']);
     }
     try {

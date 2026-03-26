@@ -140,6 +140,13 @@ export class AuthorizationsManagementComponent implements OnInit {
     this.successMessage = '';
 
     this.http
+    console.log('[AuthorizationsManagementComponent] save - selectedRoleId:', this.selectedRoleId, 'modules:', this.modules);
+    if (!this.selectedRoleId) {
+      this.errorMessage = 'Nessun ruolo selezionato.';
+      this.saving = false;
+      return;
+    }
+    this.http
       .put<AuthorizationRoleMatrixDto>(
         `${environment.apiBaseUrl}/authorizations/roles/${this.selectedRoleId}`,
         { modules: this.modules }
@@ -292,6 +299,13 @@ export class AuthorizationsManagementComponent implements OnInit {
     this.errorMessage = '';
     this.successMessage = '';
 
+    this.http
+    console.log('[AuthorizationsManagementComponent] loadMatrix - selectedRoleId:', this.selectedRoleId);
+    if (!this.selectedRoleId) {
+      this.errorMessage = 'Nessun ruolo selezionato.';
+      this.loading = false;
+      return;
+    }
     this.http
       .get<AuthorizationRoleMatrixDto>(`${environment.apiBaseUrl}/authorizations/roles/${this.selectedRoleId}`)
       .subscribe({

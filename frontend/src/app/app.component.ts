@@ -211,11 +211,16 @@ export class AppComponent implements OnDestroy {
   }
 
   private loadModuleVisibility(): void {
+    console.log('[AppComponent] loadModuleVisibility - selectedRole:', this.selectedRole);
     if (!this.selectedRole) {
       this.hiddenModuleCodes.clear();
       return;
     }
-
+    // Evita chiamata con selectedRole non valido
+    if (typeof this.selectedRole === 'undefined' || this.selectedRole === null || this.selectedRole === '') {
+      this.hiddenModuleCodes.clear();
+      return;
+    }
     this.http
       .get<AuthorizationRoleMatrixDto>(`${environment.apiBaseUrl}/authorizations/roles/${this.selectedRole}`)
       .subscribe({

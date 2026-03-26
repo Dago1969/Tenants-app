@@ -112,11 +112,16 @@ export class DashboardComponent implements OnInit {
   }
 
   private loadModuleVisibility(): void {
+    console.log('[DashboardComponent] loadModuleVisibility - selectedRole:', this.selectedRole);
     if (!this.selectedRole) {
       this.hiddenModuleCodes.clear();
       return;
     }
-
+    // Evita chiamata con selectedRole non valido
+    if (typeof this.selectedRole === 'undefined' || this.selectedRole === null || this.selectedRole === '') {
+      this.hiddenModuleCodes.clear();
+      return;
+    }
     this.http
       .get<AuthorizationRoleMatrixDto>(`${environment.apiBaseUrl}/authorizations/roles/${this.selectedRole}`)
       .subscribe({

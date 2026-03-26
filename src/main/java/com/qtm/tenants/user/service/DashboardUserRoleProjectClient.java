@@ -1,6 +1,6 @@
 package com.qtm.tenants.user.service;
 
-import com.qtm.commonlib.dto.UserRoleProjectDto;
+import com.qtm.commonlib.dto.UserRoleTenantProjectDto;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,6 +15,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Objects;
 
 import static org.springframework.http.HttpStatus.BAD_GATEWAY;
 
@@ -25,7 +26,7 @@ import static org.springframework.http.HttpStatus.BAD_GATEWAY;
 @Slf4j
 public class DashboardUserRoleProjectClient {
 
-    private static final ParameterizedTypeReference<List<UserRoleProjectDto>> USER_ROLE_PROJECT_LIST_TYPE = new ParameterizedTypeReference<>() {
+    private static final ParameterizedTypeReference<List<UserRoleTenantProjectDto>> USER_ROLE_PROJECT_LIST_TYPE = new ParameterizedTypeReference<>() {
     };
     private static final String SERVICE_UNAVAILABLE_MESSAGE = "Servizio user-role-project QTMDB non disponibile";
 
@@ -35,29 +36,38 @@ public class DashboardUserRoleProjectClient {
             RestClient.Builder restClientBuilder,
             @Value("${qtm.dashboard.api-base-url}") String dashboardApiBaseUrl
     ) {
-        this.restClient = restClientBuilder.baseUrl(dashboardApiBaseUrl).build();
+        this.restClient = restClientBuilder.baseUrl(Objects.requireNonNull(dashboardApiBaseUrl, "dashboardApiBaseUrl is required")).build();
     }
 
-    public List<UserRoleProjectDto> findByUserAndTenant(Long userId, Long tenantId) {
+    public List<UserRoleTenantProjectDto> findByUserAndTenant(Long userId, Long tenantId) {
         return execute(() -> restClient.get()
-                .uri("/user-role-project/user/{userId}/tenant/{tenantId}", userId, tenantId)
+            .uri("/user-role-tenant-project/user/{userId}/tenant/{tenantId}", userId, tenantId)
                 .headers(this::applyForwardedHeaders)
                 .retrieve()
-                .body(USER_ROLE_PROJECT_LIST_TYPE));
+                .body(Objects.requireNonNull(USER_ROLE_PROJECT_LIST_TYPE, "USER_ROLE_PROJECT_LIST_TYPE is required")));
     }
 
-    public UserRoleProjectDto create(UserRoleProjectDto dto) {
+    public UserRoleTenantProjectDto create(UserRoleTenantProjectDto dto) {
         return execute(() -> restClient.post()
-                .uri("/user-role-project")
+            .uri("/user-role-tenant-project")
                 .headers(this::applyForwardedHeaders)
-                .body(dto)
+                .body(Objects.requireNonNull(dto, "dto is required"))
                 .retrieve()
-                .body(UserRoleProjectDto.class));
+                .body(UserRoleTenantProjectDto.class));
+    }
+
+
+    public List<UserRoleTenantProjectDto> findByUserTenantAndRole(Long userId, Long tenantId, String roleId) {
+        return execute(() -> restClient.get()
+            .uri("/user-role-tenant-project/user/{userId}/tenant/{tenantId}/role/{roleId}", userId, tenantId, roleId)
+            .headers(this::applyForwardedHeaders)
+            .retrieve()
+            .body(Objects.requireNonNull(USER_ROLE_PROJECT_LIST_TYPE, "USER_ROLE_PROJECT_LIST_TYPE is required")));
     }
 
     public void delete(Long userId, Long tenantId, String roleId, String projectId) {
         executeVoid(() -> restClient.delete()
-                .uri("/user-role-project/user/{userId}/tenant/{tenantId}/role/{roleId}/project/{projectId}", userId, tenantId, roleId, projectId)
+            .uri("/user-role-tenant-project/user/{userId}/tenant/{tenantId}/role/{roleId}/project/{projectId}", userId, tenantId, roleId, projectId)
                 .headers(this::applyForwardedHeaders)
                 .retrieve()
                 .toBodilessEntity());
@@ -78,7 +88,7 @@ public class DashboardUserRoleProjectClient {
     private void copyHeader(HttpServletRequest request, HttpHeaders headers, String headerName) {
         String value = request.getHeader(headerName);
         if (value != null && !value.isBlank()) {
-            headers.set(headerName, value.trim());
+            headers.set(Objects.requireNonNull(headerName, "headerName is required"), Objects.requireNonNull(value.trim(), "header value is required"));
         }
     }
 

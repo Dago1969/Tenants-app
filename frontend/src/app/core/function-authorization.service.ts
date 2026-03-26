@@ -80,6 +80,10 @@ export class FunctionAuthorizationService {
   }
 
   private async loadAuthorizations(roleId: string): Promise<void> {
+    console.log('[FunctionAuthorizationService] loadAuthorizations - roleId:', roleId);
+    if (!roleId) {
+      throw new Error('roleId is undefined or empty');
+    }
     const [matrix, functionAuthorizations] = await Promise.all([
       firstValueFrom(this.http.get<AuthorizationRoleMatrixDto>(`${environment.apiBaseUrl}/authorizations/roles/${roleId}`)),
       firstValueFrom(this.http.get<FunctionAuthorizationDto[]>(`${environment.apiBaseUrl}/authorization-functions/role/${roleId}`))

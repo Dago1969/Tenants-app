@@ -57,17 +57,45 @@ public class UserController {
                         @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole,
                         @AuthenticationPrincipal Jwt jwt
         ) {
-                if (jwt != null) {
-                        String preferredUsername = jwt.getClaimAsString("preferred_username");
-                        String username = jwt.getClaimAsString("username");
-                        String sub = jwt.getSubject();
-                        log.info("[TENANTS-APP] JWT subject: {}", sub);
-                        log.info("[TENANTS-APP] JWT preferred_username: {}", preferredUsername);
-                        log.info("[TENANTS-APP] JWT username: {}", username);
-                        log.info("[TENANTS-APP] JWT claims: {}", jwt.getClaims());
-                } else {
-                        log.warn("[TENANTS-APP] Nessun principal JWT disponibile");
-                }
+                                if (jwt != null) {
+                                        String preferredUsername = jwt.getClaimAsString("preferred_username");
+                                        String username = jwt.getClaimAsString("username");
+                                        String sub = jwt.getSubject();
+                                        log.info("[TENANTS-APP] JWT subject: {}", sub);
+                                        log.info("[TENANTS-APP] JWT preferred_username: {}", preferredUsername);
+                                        log.info("[TENANTS-APP] JWT username: {}", username);
+                                        log.info("[TENANTS-APP] JWT claims: {}", jwt.getClaims());
+
+                                        // Estrazione tenantId e roleId da resource_access
+                                        Object resourceAccessObj = jwt.getClaim("resource_access");
+                                        if (resourceAccessObj instanceof java.util.Map<?, ?> resourceAccess) {
+                                                // Prendi il primo tenant disponibile
+                                                String tenantId = null;
+                                                String roleId = null;
+                                                for (Object key : resourceAccess.keySet()) {
+                                                        if (key instanceof String tenantKey) {
+                                                                tenantId = tenantKey;
+                                                                Object tenantObj = resourceAccess.get(tenantKey);
+                                                                if (tenantObj instanceof java.util.Map<?, ?> tenantMap) {
+                                                                        Object rolesObj = tenantMap.get("roles");
+                                                                        if (rolesObj instanceof java.util.List<?> rolesList && !rolesList.isEmpty()) {
+                                                                                Object firstRole = rolesList.get(0);
+                                                                                if (firstRole != null) {
+                                                                                        roleId = firstRole.toString();
+                                                                                }
+                                                                        }
+                                                                }
+                                                                break; // Prendi solo il primo tenant
+                                                        }
+                                                }
+                                                log.info("[TENANTS-APP] Calcolato tenantId: {}", tenantId);
+                                                log.info("[TENANTS-APP] Calcolato roleId: {}", roleId);
+                                        } else {
+                                                log.warn("[TENANTS-APP] resource_access non trovato o non valido nel JWT");
+                                        }
+                                } else {
+                                        log.warn("[TENANTS-APP] Nessun principal JWT disponibile");
+                                }
                 controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
                 return ResponseEntity.ok(userRemoteService.findAll());
         }
