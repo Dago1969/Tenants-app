@@ -7,7 +7,7 @@ export interface UserRoleProjectDto {
   userId: number;
   tenantId: number;
   roleId: string;
-  projectId: string;
+  projectId: number;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -24,7 +24,7 @@ export class UserRoleProjectApiService {
     return this.http.post<UserRoleProjectDto>(`${this.baseUrl}/user-role-project`, dto);
   }
 
-  deleteRelation(userId: number, tenantId: number, roleId: string, projectId: string): Observable<void> {
+  deleteRelation(userId: number, tenantId: number, roleId: string, projectId: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/user-role-project/user/${userId}/tenant/${tenantId}/role/${encodeURIComponent(roleId)}/project/${encodeURIComponent(projectId)}`);
   }
 }

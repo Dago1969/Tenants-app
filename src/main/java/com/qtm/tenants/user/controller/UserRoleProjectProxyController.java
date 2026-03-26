@@ -44,7 +44,7 @@ public class UserRoleProjectProxyController {
     public ResponseEntity<Void> delete(@PathVariable Long userId,
                                        @PathVariable Long tenantId,
                                        @PathVariable String roleId,
-                                       @PathVariable String projectId) {
+                                       @PathVariable Long projectId) {
         log.info("[TENAPP] Proxy DELETE /api/user-role-project/user/{}/tenant/{}/role/{}/project/{}", userId, tenantId, roleId, projectId);
         dashboardUserRoleProjectClient.delete(userId, tenantId, roleId, projectId);
         return ResponseEntity.noContent().build();

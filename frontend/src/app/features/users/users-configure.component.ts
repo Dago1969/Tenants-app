@@ -1,3 +1,4 @@
+// ...existing code...
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -86,6 +87,22 @@ export class UsersConfigureComponent implements OnInit {
   selectedRoleId = '';
   selectedProject = '';
 
+  /** Mappa tenantId -> tenantCode */
+  tenantIdToCode: { [id: number]: string } = {};
+
+  /** Restituisce il codice del tenant dato l'id, oppure l'id se non trovato */
+  getTenantCodeById(tenantId: number): string {
+    return this.tenantIdToCode[tenantId] || String(tenantId);
+  }
+
+  /**
+   * Restituisce il codice del progetto dato l'id, oppure l'id se non trovato
+   */
+  getProjectCodeById(projectId: number): string {
+    const project = [...this.projects, ...this.associatedProjects].find(p => p.id === projectId);
+    return project ? project.code : String(projectId);
+  }
+
   constructor(
     private readonly authService: AuthService,
     private readonly projectApi: ProjectApiService,
@@ -106,7 +123,7 @@ export class UsersConfigureComponent implements OnInit {
   }
 
   canAssociateRoleProject(): boolean {
-    return !!this.selectedRoleId && this.selectedProject.trim().length > 0 && this.selectedTenantId !== null;
+    return !!this.selectedRoleId && this.resolveSelectedProjectId() !== null && this.selectedTenantId !== null;
   }
 
   associateProject(projectId: number): void {
@@ -159,15 +176,21 @@ export class UsersConfigureComponent implements OnInit {
   associateRoleProject(): void {
     const userIdParam = this.route.snapshot.paramMap.get('id');
     const userId = userIdParam ? Number(userIdParam) : null;
-    const normalizedProjectId = this.selectedProject.trim();
-    if (!userId || !this.selectedTenantId || !this.selectedRoleId || !normalizedProjectId) {
-      console.warn('[associateRoleProject] Dati mancanti', { userId, tenantId: this.selectedTenantId, roleId: this.selectedRoleId, projectId: normalizedProjectId });
+    const projectId = this.resolveSelectedProjectId();
+    if (!userId || !this.selectedTenantId || !this.selectedRoleId || projectId === null) {
+      console.warn('[associateRoleProject] Dati mancanti', {
+        userId,
+        tenantId: this.selectedTenantId,
+        roleId: this.selectedRoleId,
+        selectedProject: this.selectedProject,
+        projectId
+      });
       return;
     }
 
     if (this.userRoleProjects.some(relation => relation.tenantId === this.selectedTenantId
       && relation.roleId === this.selectedRoleId
-      && relation.projectId.toLowerCase() === normalizedProjectId.toLowerCase())) {
+      && relation.projectId === projectId)) {
       return;
     }
 
@@ -175,7 +198,7 @@ export class UsersConfigureComponent implements OnInit {
       userId,
       tenantId: this.selectedTenantId,
       roleId: this.selectedRoleId,
-      projectId: normalizedProjectId
+      projectId
     }).subscribe({
       next: () => {
         this.refreshRolesData();
@@ -186,7 +209,7 @@ export class UsersConfigureComponent implements OnInit {
     });
   }
 
-  disassociateRoleProject(userId: number, tenantId: number, roleId: string, projectId: string): void {
+  disassociateRoleProject(userId: number, tenantId: number, roleId: string, projectId: number): void {
     this.userRoleProjectApi.deleteRelation(userId, tenantId, roleId, projectId).subscribe({
       next: () => this.refreshRolesData(),
       error: (err) => {
@@ -282,6 +305,8 @@ export class UsersConfigureComponent implements OnInit {
                 this.loadingAssociatedRoles = false;
                 return;
               }
+              // Aggiorna la mappa tenantId -> tenantCode
+              this.tenantIdToCode[tenantPointer.id] = tenantPointer.clientCode;
               this.selectedTenantId = tenantPointer.id;
               this.userRoleProjectApi.getRelationsByUserAndTenant(userId, tenantPointer.id).subscribe({
                 next: (relations) => {
@@ -325,12 +350,34 @@ export class UsersConfigureComponent implements OnInit {
           roleDescription: role?.description ?? ''
         };
       })
-      .sort((left, right) => left.roleId.localeCompare(right.roleId) || left.projectId.localeCompare(right.projectId));
+      .sort((left, right) => left.roleId.localeCompare(right.roleId) || left.projectId - right.projectId);
   }
 
   ngOnInit(): void {
     this.selectedProject = this.authService.getSelectedProject().trim();
     this.refreshConfigurationData();
+  }
+
+  private resolveSelectedProjectId(): number | null {
+    const normalizedSelectedProject = this.selectedProject.trim();
+    if (!normalizedSelectedProject) {
+      return null;
+    }
+
+    const project = [...this.projects, ...this.associatedProjects].find(currentProject =>
+      String(currentProject.id) === normalizedSelectedProject
+      || currentProject.code.trim().toLowerCase() === normalizedSelectedProject.toLowerCase());
+
+    if (project) {
+      return project.id;
+    }
+
+    const directProjectId = Number(normalizedSelectedProject);
+    if (Number.isInteger(directProjectId)) {
+      return directProjectId;
+    }
+
+    return null;
   }
 
 

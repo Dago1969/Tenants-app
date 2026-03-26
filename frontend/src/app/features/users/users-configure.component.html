@@ -87,7 +87,8 @@
       <table class="role-profile-table">
         <thead>
           <tr>
-            <th>{{ translate('users.field.tenantId') }}</th>
+            <!--th>{{ translate('users.field.tenantId') }}</th-->
+            <th>Tenant</th>
             <th>{{ translate('users.field.roleId') }}</th>
             <th>Progetto</th>
             <th>{{ translate('search.actions') }}</th>
@@ -95,9 +96,12 @@
         </thead>
         <tbody>
           <tr *ngFor="let relation of userRoleProjects">
-            <td>{{ relation.tenantId }}</td>
+            <!--td>{{ relation.tenantId }}</td-->
+            <td>{{ getTenantCodeById(relation.tenantId) }}</td>
             <td>{{ relation.roleId }} <span class="role-profile-muted" *ngIf="relation.roleDescription">({{ relation.roleDescription }})</span></td>
-            <td>{{ relation.projectId }}</td>
+            <td>
+              {{ getProjectCodeById(relation.projectId) }}
+            </td>
             <td>
               <button type="button" class="role-profile-delete" (click)="disassociateRoleProject(relation.userId, relation.tenantId, relation.roleId, relation.projectId)">
                 {{ labelDisassociate }}
