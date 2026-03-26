@@ -2,7 +2,6 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/auth.service';
 import { ProjectApiService, ProjectDto } from '../../core/project-api.service';
-import { UserTenantProjectRelationApiService } from '../../core/user-tenant-project-relation-api.service';
 import { ActivatedRoute } from '@angular/router';
 import { UserApiService, UserDto } from '../../core/user-api.service';
 import { t } from '../../i18n/messages';
@@ -71,7 +70,6 @@ export class UsersManageComponent implements OnInit {
   constructor(
     private readonly authService: AuthService,
     private readonly projectApi: ProjectApiService,
-    private readonly userTenantProjectRelationApi: UserTenantProjectRelationApiService,
     private readonly userApi: UserApiService,
     private readonly route: ActivatedRoute
   ) {}
@@ -96,10 +94,8 @@ export class UsersManageComponent implements OnInit {
       this.allProjects = projects;
     });
 
-    this.userTenantProjectRelationApi.getRelationsByUserAndTenant(userId, clientCode).subscribe((relations) => {
-      const projectIds = new Set(relations.map(r => r.projectId));
-      this.authorizedProjects = this.allProjects.filter(p => projectIds.has(p.id));
-    });
+    // TODO: recuperare progetti associati tramite user-role-project-api.service (aggiornare la logica qui)
+    // this.userRoleProjectApi.getRelationsByUserAndTenant(...)
   }
 
   goBack() {

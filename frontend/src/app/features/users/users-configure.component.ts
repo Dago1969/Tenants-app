@@ -1,14 +1,14 @@
 // ...existing code...
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/auth.service';
 import { ProjectApiService, ProjectDto } from '../../core/project-api.service';
 import { RoleApiService, RoleDto } from '../../core/role-api.service';
-import { UserTenantProjectRelationApiService } from '../../core/user-tenant-project-relation-api.service';
 import { UserRoleProjectApiService, UserRoleProjectDto } from '../../core/user-role-project-api.service';
 import { TenantPointerApiService } from '../../core/tenant-pointer-api.service';
+import { UserTenantProjectApiService } from '../../core/user-tenant-project-api.service';
 import { CrudField, CrudFolder, CrudPageComponent } from '../../shared/crud-page.component';
 import { MessageKey, t } from '../../i18n/messages';
 
@@ -30,47 +30,47 @@ export class UsersConfigureComponent implements OnInit {
   readonly labelAssociate = t('users.configure.actions.associate');
   readonly labelDisassociate = t('users.configure.actions.disassociate');
 
-    /**
-     * Disassocia un progetto dall'utente (update ottimistico + refresh sincrono)
-     */
-    disassociateProject(projectId: number): void {
-      const tenantCode = this.authService.getSelectedClient();
-      const userIdParam = this.route.snapshot.paramMap.get('id');
-      const userId = userIdParam ? Number(userIdParam) : null;
-      if (!userId || !tenantCode) {
-        console.warn('[disassociateProject] userId o tenantCode mancante', { userId, tenantCode });
-        return;
-      }
-      // Aggiornamento ottimistico: rimuovi subito il progetto dagli associati e rimettilo tra i disponibili solo se non già presente
-      const removedProject = this.associatedProjects.find(p => p.id === projectId);
-      if (removedProject) {
-        this.associatedProjects = this.associatedProjects.filter(p => p.id !== projectId);
-        if (!this.projects.some(p => p.id === projectId)) {
-          this.projects = [...this.projects, removedProject];
-        }
-      }
-      // Chiamata backend per rimuovere l'associazione tramite proxy TENAPP
-      this.tenantPointerApi.getTenantPointerByClientCode(tenantCode).subscribe({
-        next: (tenantPointer) => {
-          if (!tenantPointer || !tenantPointer.id) {
-            console.error('[disassociateProject] tenantPointer non trovato per tenantCode', tenantCode);
-            return;
-          }
-          this.userTenantProjectRelationApi.removeRelation(userId, tenantPointer.id, projectId).subscribe({
-            next: () => {
-              // Riallinea le liste dal backend
-              this.refreshConfigurationData();
-            },
-            error: (err) => {
-              console.error('[disassociateProject] Errore:', err);
-            }
-          });
-        },
-        error: (err) => {
-          console.error('[disassociateProject] Errore recupero tenantPointer:', err);
-        }
-      });
+  /**
+   * Disassocia un progetto dall'utente (update ottimistico + refresh sincrono)
+   */
+  disassociateProject(projectId: number): void {
+    const tenantCode = this.authService.getSelectedClient();
+    const userIdParam = this.route.snapshot.paramMap.get('id');
+    const userId = userIdParam ? Number(userIdParam) : null;
+    if (!userId || !tenantCode) {
+      console.warn('[disassociateProject] userId o tenantCode mancante', { userId, tenantCode });
+      return;
     }
+
+    const removedProject = this.associatedProjects.find(p => p.id === projectId);
+    if (removedProject) {
+      this.associatedProjects = this.associatedProjects.filter(p => p.id !== projectId);
+      if (!this.projects.some(p => p.id === projectId)) {
+        this.projects = [...this.projects, removedProject];
+      }
+    }
+
+    this.tenantPointerApi.getTenantPointerByClientCode(tenantCode).subscribe({
+      next: (tenantPointer) => {
+        if (!tenantPointer?.id) {
+          console.error('[disassociateProject] tenantPointer non trovato per tenantCode', tenantCode);
+          return;
+        }
+        this.userTenantProjectApi.deleteRelation(userId, tenantPointer.id, projectId).subscribe({
+          next: () => this.refreshProjectsData(),
+          error: (err) => {
+            console.error('[disassociateProject] Errore rimozione relazione user-tenant-project:', err);
+            this.errorAssociated = this.translate('users.configure.projects.errors.loadAssociated');
+            this.refreshProjectsData();
+          }
+        });
+      },
+      error: (err) => {
+        console.error('[disassociateProject] Errore recupero tenantPointer:', err);
+        this.errorAssociated = this.translate('users.configure.errors.loadTenant');
+      }
+    });
+  }
   projects: ProjectDto[] = [];
   associatedProjects: ProjectDto[] = [];
   loadingProjects = false;
@@ -87,14 +87,6 @@ export class UsersConfigureComponent implements OnInit {
   selectedRoleId = '';
   selectedProject = '';
 
-  /** Mappa tenantId -> tenantCode */
-  tenantIdToCode: { [id: number]: string } = {};
-
-  /** Restituisce il codice del tenant dato l'id, oppure l'id se non trovato */
-  getTenantCodeById(tenantId: number): string {
-    return this.tenantIdToCode[tenantId] || String(tenantId);
-  }
-
   /**
    * Restituisce il codice del progetto dato l'id, oppure l'id se non trovato
    */
@@ -107,11 +99,10 @@ export class UsersConfigureComponent implements OnInit {
     private readonly authService: AuthService,
     private readonly projectApi: ProjectApiService,
     private readonly roleApi: RoleApiService,
-    private readonly userTenantProjectRelationApi: UserTenantProjectRelationApiService,
     private readonly userRoleProjectApi: UserRoleProjectApiService,
     private readonly tenantPointerApi: TenantPointerApiService,
-    private readonly route: ActivatedRoute,
-    private readonly router: Router
+    private readonly userTenantProjectApi: UserTenantProjectApiService,
+    private readonly route: ActivatedRoute
   ) {}
 
   translate(key: MessageKey): string {
@@ -142,7 +133,7 @@ export class UsersConfigureComponent implements OnInit {
     // Rimuovi subito dagli attivi
     this.projects = this.projects.filter(p => p.id !== projectId);
 
-    // Poi chiama il backend normalmente e riallinea le liste al ritorno (sincrono)
+    // Poi chiama il backend e riallinea le liste al ritorno (sincrono)
     this.tenantPointerApi.getTenantPointerByClientCode(tenantCode).subscribe({
       next: (tenantPointer) => {
         if (!tenantPointer || !tenantPointer.id) {
@@ -156,19 +147,18 @@ export class UsersConfigureComponent implements OnInit {
           superuser: false
         };
         console.log('[associateProject] DTO inviato:', relation);
-        this.userTenantProjectRelationApi.addRelation(relation).subscribe({
-          next: (res) => {
-            console.log('[associateProject] Successo:', res);
-            // Riallinea le liste dal backend
-            this.refreshConfigurationData();
-          },
+        this.userTenantProjectApi.addRelation(relation).subscribe({
+          next: () => this.refreshProjectsData(),
           error: (err) => {
-            console.error('[associateProject] Errore:', err);
+            console.error('[associateProject] Errore salvataggio relazione user-tenant-project:', err);
+            this.errorAssociated = this.translate('users.configure.projects.errors.loadAssociated');
+            this.refreshProjectsData();
           }
         });
       },
       error: (err) => {
         console.error('[associateProject] Errore recupero tenantPointer:', err);
+        this.errorAssociated = this.translate('users.configure.errors.loadTenant');
       }
     });
   }
@@ -249,14 +239,21 @@ export class UsersConfigureComponent implements OnInit {
                 this.loadingAssociated = false;
                 return;
               }
-              this.projectApi.getAssociatedProjectsByUser(userId, tenantPointer.id).subscribe({
+              this.userTenantProjectApi.getRelationsByUserAndTenant(userId, tenantPointer.id).subscribe({
                 next: (relations) => {
-                  this.associatedProjects = relations
-                    .map(rel => projects.find(p => p.id === rel.projectId))
+                  const uniqueProjectIds = new Set(
+                    relations
+                      .map(relation => relation.projectId)
+                      .filter((projectId): projectId is number => typeof projectId === 'number')
+                  );
+
+                  this.associatedProjects = [...uniqueProjectIds]
+                    .map(projectId => projects.find(p => p.id === projectId))
                     .filter((p): p is ProjectDto => !!p);
+
                   this.loadingAssociated = false;
                 },
-                error: (err) => {
+                error: () => {
                   this.errorAssociated = this.translate('users.configure.projects.errors.loadAssociated');
                   this.loadingAssociated = false;
                 }
@@ -305,8 +302,6 @@ export class UsersConfigureComponent implements OnInit {
                 this.loadingAssociatedRoles = false;
                 return;
               }
-              // Aggiorna la mappa tenantId -> tenantCode
-              this.tenantIdToCode[tenantPointer.id] = tenantPointer.clientCode;
               this.selectedTenantId = tenantPointer.id;
               this.userRoleProjectApi.getRelationsByUserAndTenant(userId, tenantPointer.id).subscribe({
                 next: (relations) => {
@@ -356,6 +351,14 @@ export class UsersConfigureComponent implements OnInit {
   ngOnInit(): void {
     this.selectedProject = this.authService.getSelectedProject().trim();
     this.refreshConfigurationData();
+  }
+
+  getTenantCodeById(tenantId: number): string {
+    const selectedTenantCode = this.authService.getSelectedClient().trim();
+    if (this.selectedTenantId !== null && tenantId === this.selectedTenantId && selectedTenantCode) {
+      return selectedTenantCode;
+    }
+    return String(tenantId);
   }
 
   private resolveSelectedProjectId(): number | null {
