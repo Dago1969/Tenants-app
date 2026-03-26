@@ -55,7 +55,7 @@ public class DashboardUserRoleProjectClient {
                 .body(UserRoleProjectDto.class));
     }
 
-    public void delete(Long userId, Long tenantId, String roleId, String projectId) {
+    public void delete(Long userId, Long tenantId, String roleId, Long projectId) {
         executeVoid(() -> restClient.delete()
                 .uri("/user-role-project/user/{userId}/tenant/{tenantId}/role/{roleId}/project/{projectId}", userId, tenantId, roleId, projectId)
                 .headers(this::applyForwardedHeaders)
