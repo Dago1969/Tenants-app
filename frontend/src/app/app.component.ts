@@ -1,3 +1,5 @@
+
+
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Component, OnDestroy } from '@angular/core';
@@ -34,10 +36,60 @@ interface MenuItem {
   styleUrl: './app.component.css'
 })
 export class AppComponent implements OnDestroy {
-      // --- Helper functions (solo una versione, in fondo alla classe) ---
-      // (Le versioni duplicate verranno rimosse in fondo al file)
-    username: string | null = null;
-    preferredUsername: string | null = null;
+  // --- Gestione messaggi globali come in QTMDB ---
+  message = '';
+  errorMessage = '';
+  isMessageFading = false;
+  isErrorFading = false;
+  private messageFadeTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private messageClearTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private errorFadeTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private errorClearTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  showSuccessMessage(message: string) {
+    this.clearMessageTimers();
+    this.message = message;
+    this.isMessageFading = false;
+    if (!message) return;
+    this.messageFadeTimeoutId = setTimeout(() => {
+      this.isMessageFading = true;
+    }, 19000);
+    this.messageClearTimeoutId = setTimeout(() => {
+      this.message = '';
+      this.isMessageFading = false;
+    }, 20000);
+  }
+
+  showErrorMessage(message: string) {
+    this.clearErrorTimers();
+    this.errorMessage = message;
+    this.isErrorFading = false;
+    if (!message) return;
+    this.errorFadeTimeoutId = setTimeout(() => {
+      this.isErrorFading = true;
+    }, 19000);
+    this.errorClearTimeoutId = setTimeout(() => {
+      this.errorMessage = '';
+      this.isErrorFading = false;
+    }, 20000);
+  }
+
+  private clearMessageTimers() {
+    if (this.messageFadeTimeoutId) clearTimeout(this.messageFadeTimeoutId);
+    if (this.messageClearTimeoutId) clearTimeout(this.messageClearTimeoutId);
+    this.messageFadeTimeoutId = null;
+    this.messageClearTimeoutId = null;
+  }
+  private clearErrorTimers() {
+    if (this.errorFadeTimeoutId) clearTimeout(this.errorFadeTimeoutId);
+    if (this.errorClearTimeoutId) clearTimeout(this.errorClearTimeoutId);
+    this.errorFadeTimeoutId = null;
+    this.errorClearTimeoutId = null;
+  }
+
+  // --- Helper functions (solo una versione, in fondo alla classe) ---
+  username: string | null = null;
+  preferredUsername: string | null = null;
   selectedRole = '';
   selectedClient = '';
   selectedProject: string | null = null;
@@ -54,7 +106,6 @@ export class AppComponent implements OnDestroy {
     if (typeof document !== 'undefined') {
       document.title = t('app.title');
     }
-    // Prima leggo dalla query string, se non c'è recupero da sessionStorage
     // Prima leggo dalla query string, se non c'è recupero da sessionStorage
     this.selectedProject = this.getProjectFromQueryString();
     if (!this.selectedProject) {
@@ -164,7 +215,7 @@ export class AppComponent implements OnDestroy {
     this.registryMenuOpen = !this.registryMenuOpen;
   }
 
-  translate(key: MessageKey): string {
+  t(key: MessageKey): string {
     return t(key);
   }
 

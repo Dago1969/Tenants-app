@@ -1,24 +1,30 @@
+  <div *ngIf="message" class="feedback-banner feedback-banner-success" [class.feedback-banner-fade-out]="isMessageFading">
+    <strong>Messaggio:</strong> {{ message }}
+  </div>
+  <div *ngIf="errorMessage" class="feedback-banner feedback-banner-error" [class.feedback-banner-fade-out]="isErrorFading">
+    <strong>Errore:</strong> {{ errorMessage }}
+  </div>
 <div class="layout">
   <aside class="sidebar">
-    <h1>{{ translate('app.title') }}</h1>
+    <h1>{{ t('app.title') }}</h1>
     <div *ngIf="username" class="user-info-bar" style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;margin-bottom:18px;margin-left:18px;">
       <span style="display:flex;align-items:center;gap:8px;">
-        <span class="user-icon" [attr.aria-label]="translate('app.loggedUserAriaLabel')" style="font-size:1.2em;">👤</span>
+        <span class="user-icon" [attr.aria-label]="t('app.loggedUserAriaLabel')" style="font-size:1.2em;">👤</span>
         <span class="user-label" style="font-size:1em;">{{ username }}</span>
       </span>
       <span *ngIf="preferredUsername" class="user-preferred-username" style="font-size:0.95em;color:#e0e8f8;margin-left:28px;">{{ preferredUsername }}</span>
     </div>
     <p class="selection-info" *ngIf="selectedClient || selectedRole || selectedProject">
-      <strong>{{ translate('common.client') }}:</strong> {{ selectedClient || translate('common.notAvailable') }}<br />
-      <strong>{{ translate('common.role') }}:</strong> {{ selectedRole || translate('common.notAvailable') }}<br />
-      <strong>{{ translate('common.project') }}:</strong> {{ selectedProject && selectedProject.trim() ? selectedProject : translate('common.all') }}
+      <strong>{{ t('common.client') }}:</strong> {{ selectedClient || t('common.notAvailable') }}<br />
+      <strong>{{ t('common.role') }}:</strong> {{ selectedRole || t('common.notAvailable') }}<br />
+      <strong>{{ t('common.project') }}:</strong> {{ selectedProject && selectedProject.trim() ? selectedProject : t('common.all') }}
     </p>
     <nav>
-      <a *ngFor="let item of visibleMenuItems" [routerLink]="item.route" routerLinkActive="active">{{ translate(item.labelKey) }}</a>
+      <a *ngFor="let item of visibleMenuItems" [routerLink]="item.route" routerLinkActive="active">{{ t(item.labelKey) }}</a>
 
       <div class="nav-group" *ngIf="isManagementMenuVisible">
         <button class="nav-group-toggle" type="button" (click)="toggleManagementMenu()">
-          <span>{{ translate('menu.management') }}</span>
+          <span>{{ t('menu.management') }}</span>
           <span class="nav-group-chevron" [class.nav-group-chevron-open]="managementMenuOpen">v</span>
         </button>
 
@@ -28,13 +34,13 @@
             [routerLink]="item.route"
             routerLinkActive="active"
             class="nav-group-link"
-          >{{ translate(item.labelKey) }}</a>
+          >{{ t(item.labelKey) }}</a>
         </div>
       </div>
 
       <div class="nav-group" *ngIf="isRegistryMenuVisible">
         <button class="nav-group-toggle" type="button" (click)="toggleRegistryMenu()">
-          <span>{{ translate('menu.registry') }}</span>
+          <span>{{ t('menu.registry') }}</span>
           <span class="nav-group-chevron" [class.nav-group-chevron-open]="registryMenuOpen">v</span>
         </button>
 
@@ -44,13 +50,13 @@
             [routerLink]="item.route"
             routerLinkActive="active"
             class="nav-group-link"
-          >{{ translate(item.labelKey) }}</a>
+          >{{ t(item.labelKey) }}</a>
         </div>
       </div>
 
       <div class="nav-group" *ngIf="isStructureMenuVisible">
         <button class="nav-group-toggle" type="button" (click)="toggleStructuresMenu()">
-          <span>{{ translate('menu.structures') }}</span>
+          <span>{{ t('menu.structures') }}</span>
           <span class="nav-group-chevron" [class.nav-group-chevron-open]="structuresMenuOpen">v</span>
         </button>
 
@@ -60,7 +66,7 @@
             [routerLink]="item.route"
             routerLinkActive="active"
             class="nav-group-link"
-          >{{ translate(item.labelKey) }}</a>
+          >{{ t(item.labelKey) }}</a>
         </div>
       </div>
     </nav>
@@ -68,7 +74,7 @@
 
   <main class="content">
     <div style="display:flex;justify-content:flex-end;align-items:center;margin-bottom:16px;">
-      <a href="http://localhost:4200/dashboard" style="background:#111827;color:#fff;padding:8px 18px;border-radius:8px;text-decoration:none;font-weight:500;box-shadow:0 2px 8px #0001;">&larr; {{ translate('app.backToDashboard') }}</a>
+      <a href="http://localhost:4200/dashboard" style="background:#111827;color:#fff;padding:8px 18px;border-radius:8px;text-decoration:none;font-weight:500;box-shadow:0 2px 8px #0001;">&larr; {{ t('app.backToDashboard') }}</a>
     </div>
     <router-outlet></router-outlet>
   </main>

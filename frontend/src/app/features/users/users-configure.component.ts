@@ -26,6 +26,12 @@ type UserRoleProjectView = UserRoleProjectDto & { roleName: string; roleDescript
   styleUrls: ['./users-configure.component.css']
 })
 export class UsersConfigureComponent implements OnInit {
+  // ...existing code...
+
+
+  /**
+   * Estrae il messaggio di errore dal backend (detail/message), anche da oggetti annidati.
+   */
 
   readonly labelAssociate = t('users.configure.actions.associate');
   readonly labelDisassociate = t('users.configure.actions.disassociate');
@@ -192,11 +198,44 @@ export class UsersConfigureComponent implements OnInit {
     }).subscribe({
       next: () => {
         this.refreshRolesData();
+        this.errorAssociatedRoles = '';
       },
       error: (err) => {
         console.error('[associateRoleProject] Errore:', err);
+        this.errorAssociatedRoles = this.extractErrorDetail(err) || this.translate('users.configure.projects.errors.loadAssociated');
       }
     });
+  }
+
+  /**
+   * Estrae il messaggio di errore dal backend (detail/message), anche da oggetti annidati.
+   */
+  private extractErrorDetail(error: any): string {
+    const payload = error?.error;
+    if (typeof payload === 'string') {
+      try {
+        const parsed = JSON.parse(payload);
+        if (parsed && typeof parsed === 'object') {
+          if (typeof parsed.detail === 'string') return parsed.detail;
+          if (typeof parsed.message === 'string') return parsed.message;
+        }
+      } catch {
+        return payload;
+      }
+      return payload;
+    }
+    if (payload && typeof payload === 'object') {
+      if (typeof payload.detail === 'string') return payload.detail;
+      if (typeof payload.message === 'string') return payload.message;
+      for (const key of Object.keys(payload)) {
+        const val = payload[key];
+        if (val && typeof val === 'object') {
+          const nested = this.extractErrorDetail({ error: val });
+          if (nested) return nested;
+        }
+      }
+    }
+    return '';
   }
 
   disassociateRoleProject(userId: number, tenantId: number, roleId: string, projectId: number): void {

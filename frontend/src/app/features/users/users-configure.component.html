@@ -56,6 +56,9 @@
 
   </div>
 </div>
+  <div *ngIf="errorAssociatedRoles" style="margin-bottom: 18px; padding: 14px 22px; border-radius: 6px; background: #ffeaea; color: #c00; font-weight: 600; border: 1px solid #e0b4b4; font-size: 1.05em; text-align: left;">
+    {{ errorAssociatedRoles }}
+  </div>
   <div class="subcard" style="position: relative; margin-bottom: 28px; padding: 25px 22px 18px 22px; border: 1px solid #d5dfcf; border-radius: 10px; background: #f7faf5;">
     <span style="position: absolute; top: -12px; left: 20px; background: #f7faf5; padding: 0 10px; color: #395f31; font-weight: bold; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">
       Associazioni ruolo progetto
@@ -82,7 +85,7 @@
     </div>
     <ng-container *ngIf="loadingRoles || loadingAssociatedRoles">{{ translate('users.configure.loading') }}</ng-container>
     <div *ngIf="errorRoles" style="color:#c00;">{{ errorRoles }}</div>
-    <div *ngIf="errorAssociatedRoles" style="color:#c00;">{{ errorAssociatedRoles }}</div>
+    <!-- errore già visualizzato sopra la card -->
     <div class="role-profile-table-wrapper" *ngIf="!loadingAssociatedRoles && userRoleProjects.length > 0">
       <table class="role-profile-table">
         <thead>
