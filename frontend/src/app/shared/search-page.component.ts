@@ -40,7 +40,7 @@ interface DeleteCheckReplacementRole {
 
 interface DeleteCheckResponse {
   linkedUsers: DeleteCheckLinkedUser[];
-  replacementRoles: DeleteCheckReplacementRole[];
+  replacementRoles?: DeleteCheckReplacementRole[];
 }
 
 interface OperationLogEntry {
@@ -60,35 +60,45 @@ type DeleteDialogMode = 'confirm' | 'reassign';
   imports: [CommonModule, FormsModule],
   styleUrls: ['./search-page.component.css'],
   template: `
-    <div class="search-main">
-      <div class="search-table-container">
-        <h2 style="margin-bottom: 18px;">{{ translate(titleKey) }}</h2>
-        <div *ngIf="operationLogs.length > 0" class="search-log-panel">
-          <div
-            *ngFor="let log of operationLogs"
-            class="search-log-entry"
-            [class.search-log-entry-success]="log.type === 'success'"
-            [class.search-log-entry-error]="log.type === 'error'"
-          >
-            {{ log.message }}
-          </div>
+    <div class="search-main modern-search">
+      <div class="search-header">
+        <h2>{{ translate(titleKey) }}</h2>
+        <div class="search-header-actions">
+          <button class="search-header-btn" (click)="showFilters = !showFilters">
+            <span class="icon">☰</span> {{ translate('search.filters') }}
+          </button>
+          <button *ngIf="showCreateAction && canCreate" class="search-header-btn primary" type="button" (click)="openEdit('new')">
+            <span class="icon">＋</span> {{ translate('crud.actions.new') }}
+          </button>
         </div>
-        <form (ngSubmit)="search()" style="display:grid; grid-template-columns: repeat(3, minmax(180px, 1fr)); gap: 14px; margin-bottom: 18px;">
+      </div>
+
+      <div *ngIf="operationLogs.length > 0" class="search-log-panel">
+        <div
+          *ngFor="let log of operationLogs"
+          class="search-log-entry"
+          [class.search-log-entry-success]="log.type === 'success'"
+          [class.search-log-entry-error]="log.type === 'error'"
+        >
+          {{ log.message }}
+        </div>
+      </div>
+
+      <div *ngIf="showFilters" class="search-filters-panel">
+        <form (ngSubmit)="search()" class="search-filters-form">
           <ng-container *ngFor="let field of filters">
-            <label style="display:flex; flex-direction:column; gap:4px;">
+            <label class="search-filter-label">
               <span>{{ translate(field.labelKey) }}</span>
               <input
                 *ngIf="field.type !== 'boolean' && field.type !== 'select' && field.type !== 'autocomplete'"
                 [type]="field.type"
                 [(ngModel)]="filterModel[field.key]"
                 [name]="field.key"
-                style="border:1px solid #bfc9d9; border-radius:4px; padding:6px 8px; background:#f8fafc;"
               />
               <select
                 *ngIf="field.type === 'boolean'"
                 [(ngModel)]="filterModel[field.key]"
                 [name]="field.key"
-                style="border:1px solid #bfc9d9; border-radius:4px; padding:6px 8px; background:#f8fafc;"
               >
                 <option value="">{{ translate('search.option.all') }}</option>
                 <option value="true">{{ translate('search.boolean.true') }}</option>
@@ -98,7 +108,6 @@ type DeleteDialogMode = 'confirm' | 'reassign';
                 *ngIf="field.type === 'select'"
                 [(ngModel)]="filterModel[field.key]"
                 [name]="field.key"
-                style="border:1px solid #bfc9d9; border-radius:4px; padding:6px 8px; background:#f8fafc;"
               >
                 <option value=""></option>
                 <option *ngFor="let option of getFieldOptions(field)" [ngValue]="option.value">{{ option.label }}</option>
@@ -111,19 +120,53 @@ type DeleteDialogMode = 'confirm' | 'reassign';
                 [name]="field.key"
                 (input)="onAutocompleteInput(field, autocompleteValue.value)"
                 #autocompleteValue
-                style="border:1px solid #bfc9d9; border-radius:4px; padding:6px 8px; background:#f8fafc;"
               />
               <datalist *ngIf="field.type === 'autocomplete'" [id]="getAutocompleteListId(field)">
                 <option *ngFor="let option of getAutocompleteOptions(field)" [value]="option.value">{{ option.label }}</option>
               </datalist>
             </label>
           </ng-container>
-          <div style="display:flex; gap:8px; align-items:end;">
-            <button type="submit" style="background:#3866a3;color:#fff;padding:8px 18px;border-radius:8px;border:none;font-weight:500;">{{ translate('crud.actions.search') }}</button>
-            <button type="button" (click)="resetFilters()" style="background:#e5e7eb;color:#222;padding:8px 18px;border-radius:8px;border:none;font-weight:500;">{{ translate('crud.actions.reset') }}</button>
+          <div class="search-filters-actions">
+            <button type="submit" class="primary">{{ translate('crud.actions.search') }}</button>
+            <button type="button" (click)="resetFilters()">{{ translate('crud.actions.reset') }}</button>
           </div>
         </form>
-        <h3 style="margin-bottom: 12px;">{{ translate('search.results') }}</h3>
+      </div>
+
+      <div class="search-table-container modern-table">
+        <div class="table-search-bar-inside">
+          <ng-container *ngIf="showTableSearch; else showLens">
+            <div class="table-search-input-wrapper">
+              <span class="search-icon">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="9" cy="9" r="7" stroke="#7a869a" stroke-width="2"/>
+                  <line x1="14.4142" y1="14" x2="18" y2="17.5858" stroke="#7a869a" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </span>
+              <input
+                type="text"
+                [(ngModel)]="tableSearchText"
+                (input)="onTableSearch()"
+                [placeholder]="translate('table.search.placeholder')"
+                class="table-search-input"
+              />
+              <button class="close-btn" (click)="closeTableSearch()" title="{{ translate('table.search.close') }}">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <line x1="4" y1="4" x2="12" y2="12" stroke="#7a869a" stroke-width="2" stroke-linecap="round"/>
+                  <line x1="12" y1="4" x2="4" y2="12" stroke="#7a869a" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </button>
+            </div>
+          </ng-container>
+          <ng-template #showLens>
+            <button class="table-search-btn" (click)="openTableSearch()" title="{{ translate('table.search.open') }}">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="9" cy="9" r="7" stroke="#7a869a" stroke-width="2"/>
+                <line x1="14.4142" y1="14" x2="18" y2="17.5858" stroke="#7a869a" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </ng-template>
+        </div>
         <table class="search-table">
           <thead>
             <tr>
@@ -135,26 +178,38 @@ type DeleteDialogMode = 'confirm' | 'reassign';
           <tbody>
             <tr *ngFor="let row of results">
               <td>{{ getRowIdentifier(row) }}</td>
-              <td *ngFor="let column of resultColumns">{{ getDisplayValue(column, row[column.key]) }}</td>
+              <td *ngFor="let column of resultColumns">
+                <ng-container *ngIf="column.key === 'status'; else normalCell">
+                  <span class="status-badge" [ngClass]="'status-' + (row[column.key] || 'unknown')">
+                    {{ translate('status.' + (row[column.key] || 'unknown')) }}
+                  </span>
+                </ng-container>
+                <ng-template #normalCell>{{ getDisplayValue(column, row[column.key]) }}</ng-template>
+              </td>
               <td *ngIf="hasRowActions" class="actions">
                 <button *ngIf="showEditAction && canEdit" class="icon-btn" type="button" (click)="openEdit(getRowIdentifier(row))" [title]="translate('search.action.edit')">
-                  <span style="font-size:1.2rem;">✏️</span>
+                  <span class="icon">✏️</span>
                 </button>
                 <button *ngIf="showViewAction" class="icon-btn" type="button" (click)="openView(getRowIdentifier(row))" [title]="translate('search.action.view')">
-                  <span style="font-size:1.2rem;">👁️</span>
+                  <span class="icon">👁️</span>
                 </button>
                 <button *ngIf="showDeleteAction && canDelete" class="icon-btn" type="button" (click)="deleteRecord(getRowIdentifier(row))" [title]="translate('search.action.delete')">
-                  <span style="font-size:1.2rem;">🗑️</span>
+                  <span class="icon">🗑️</span>
                 </button>
                 <button *ngIf="showManageAction" class="icon-btn" type="button" (click)="openManage(getRowIdentifier(row))" [title]="translate('search.action.configure')">
-                  <span style="font-size:1.2rem;">⚙️</span>
+                  <span class="icon">⚙️</span>
                 </button>
               </td>
             </tr>
           </tbody>
         </table>
+
+        <div class="search-pagination" *ngIf="results.length > 0">
+          <span>{{ translate('pagination.page') }} 1 {{ translate('pagination.of') }} 1</span>
+          <button class="icon-btn" disabled><span class="icon">◀</span></button>
+          <button class="icon-btn" disabled><span class="icon">▶</span></button>
+        </div>
       </div>
-      <button *ngIf="showCreateAction && canCreate" class="search-new-btn" type="button" (click)="openEdit('new')">{{ translate('crud.actions.new') }}</button>
 
       <div *ngIf="deleteDialogOpen" class="search-dialog-backdrop" (click)="closeDeleteDialog()">
         <div class="search-dialog" role="dialog" aria-modal="true" aria-labelledby="search-delete-dialog-title" (click)="$event.stopPropagation()">
@@ -202,6 +257,9 @@ type DeleteDialogMode = 'confirm' | 'reassign';
   `
 })
 export class SearchPageComponent implements OnInit {
+  showFilters = true;
+  showTableSearch = false;
+  tableSearchText = '';
   @Input({ required: true }) titleKey!: MessageKey;
   @Input({ required: true }) endpoint!: string;
   @Input({ required: true }) filters!: SearchField[];
@@ -257,8 +315,18 @@ export class SearchPageComponent implements OnInit {
     }
   }
 
-  translate(key: MessageKey): string {
-    return t(key);
+  // (definizioni già presenti, duplicati rimossi)
+
+  // (duplicato rimosso)
+
+  // Permette anche string dinamiche per le chiavi di traduzione
+  translate(key: string): string {
+    try {
+      // Se la chiave esiste come MessageKey, usa t, altrimenti fallback
+      return t(key as MessageKey) || key;
+    } catch {
+      return key;
+    }
   }
 
   getFieldOptions(field: SearchField): SelectOption[] {
@@ -475,6 +543,37 @@ export class SearchPageComponent implements OnInit {
     this.deleteDialogReplacementRoles = [];
     this.deleteDialogReplacementRoleId = '';
     this.deleteDialogOpen = true;
+  }
+
+  // (duplicati rimossi)
+
+  filteredResults(): SearchResult[] {
+    if (!this.showTableSearch || !this.tableSearchText.trim()) {
+      return this.results;
+    }
+    const text = this.tableSearchText.trim().toLowerCase();
+    return this.results.filter(row =>
+      Object.values(row).some(val =>
+        val && String(val).toLowerCase().includes(text)
+      )
+    );
+  }
+
+  openTableSearch() {
+    this.showTableSearch = true;
+    setTimeout(() => {
+      const el = document.querySelector('.table-search-input') as HTMLInputElement;
+      if (el) el.focus();
+    }, 0);
+  }
+
+  closeTableSearch() {
+    this.showTableSearch = false;
+    this.tableSearchText = '';
+  }
+
+  onTableSearch() {
+    // trigger change detection
   }
 
   private openDeleteReassignmentDialog(
