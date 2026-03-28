@@ -50,7 +50,7 @@ interface OperationLogEntry {
 }
 
 type DeleteDialogMode = 'confirm' | 'reassign';
-
+ 
 /**
  * Pagina riusabile di ricerca con filtri base e visualizzazione risultati.
  */
