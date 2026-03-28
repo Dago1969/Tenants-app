@@ -57,6 +57,7 @@ interface GeographyOptionDto {
   styleUrl: './structure-catalog.component.css'
 })
 export class StructureCatalogComponent implements OnInit {
+  // costruttore vuoto rimosso
   structures: StructureDto[] = [];
   parentOptions: StructureParentOptionDto[] = [];
   regionOptions: GeographyOptionDto[] = [];
@@ -74,7 +75,9 @@ export class StructureCatalogComponent implements OnInit {
   constructor(
     private readonly http: HttpClient,
     private readonly route: ActivatedRoute
-  ) {}
+  ) {
+    console.log('[StructureCatalogComponent] COSTRUTTORE: istanza creata');
+  }
 
   ngOnInit(): void {
     const routeTitleKey = this.route.snapshot.data['titleKey'];

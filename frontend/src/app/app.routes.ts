@@ -95,6 +95,6 @@ export const appRoutes: Routes = [
   { path: 'nurses', component: NursesCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('NURSE')] },
   { path: 'not-authorized', component: NotAuthorizedComponent },
   { path: 'forbidden', component: ForbiddenComponent },
+  // { path: 'structures/asl/add', component: AslAddWizardComponent, canActivate: [authGuard, moduleVisibilityGuard('STRUCTURE')] },
   { path: '**', redirectTo: 'dashboard' },
-  { path: 'structures/asl/add', component: AslAddWizardComponent, canActivate: [authGuard, moduleVisibilityGuard('STRUCTURE')] }
 ];

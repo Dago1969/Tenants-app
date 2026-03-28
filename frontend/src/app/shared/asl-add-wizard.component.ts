@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { QtmStepModalComponent } from './qtm-step-modal.component';
@@ -69,7 +69,20 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
   `,
   styleUrls: ['./asl-add-wizard.component.css']
 })
-export class AslAddWizardComponent {
+export class AslAddWizardComponent implements OnInit {
+  @Output() close = new EventEmitter<void>();
+  constructor() {
+    console.log('[AslAddWizardComponent] COSTRUTTORE: istanza creata');
+  }
+
+  ngOnInit(): void {
+    console.log('[AslAddWizardComponent] ngOnInit: Wizard ASL aperto');
+    console.log('[AslAddWizardComponent] Stato iniziale:', {
+      step: this.step,
+      model: this.model
+    });
+  }
+
   step = 1;
   model: any = {};
   stepTitles = [
@@ -85,8 +98,30 @@ export class AslAddWizardComponent {
     'Controlla e conferma l’inserimento'
   ];
 
-  nextStep() { if (this.step < 4) this.step++; }
-  prevStep() { if (this.step > 1) this.step--; }
-  save() { /* TODO: chiamata API salvataggio */ this.onClose(); }
-  onClose() { /* TODO: chiudi la modale/naviga via router */ }
+  nextStep() {
+    console.log('[AslAddWizardComponent] nextStep: step attuale', this.step, 'model:', this.model);
+    if (this.step < 4) {
+      this.step++;
+      console.log('[AslAddWizardComponent] nextStep: step incrementato a', this.step);
+    }
+  }
+
+  prevStep() {
+    console.log('[AslAddWizardComponent] prevStep: step attuale', this.step);
+    if (this.step > 1) {
+      this.step--;
+      console.log('[AslAddWizardComponent] prevStep: step decrementato a', this.step);
+    }
+  }
+
+  save() {
+    console.log('[AslAddWizardComponent] save: dati da salvare', this.model);
+    // TODO: chiamata API salvataggio
+    this.onClose();
+  }
+
+  onClose() {
+    console.log('[AslAddWizardComponent] onClose: chiusura wizard richiesta');
+    this.close.emit();
+  }
 }
