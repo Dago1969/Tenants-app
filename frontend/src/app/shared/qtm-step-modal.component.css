@@ -1,3 +1,25 @@
+/* Stile per input Google Place Autocomplete Web Component */
+gmpx-place-autocomplete {
+  display: block;
+  width: 100%;
+  margin-bottom: 0.5em;
+}
+gmpx-place-autocomplete input {
+  width: 100% !important;
+  background: #eaf6ff;
+  border: 1.5px solid #d2e6fa;
+  border-radius: 16px;
+  padding: 12px 18px;
+  font-size: 1rem;
+  color: #1a3a5d;
+  margin-top: 4px;
+  box-sizing: border-box;
+  transition: border 0.2s;
+}
+gmpx-place-autocomplete input:focus {
+  border: 1.5px solid #1870e8;
+  outline: none;
+}
 /* QtmStepModal: stili base per popup wizard step-by-step */
 .qtm-modal-backdrop {
   position: fixed;

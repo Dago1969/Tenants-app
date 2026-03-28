@@ -1,4 +1,5 @@
-import { Component, OnInit, Output, EventEmitter } from '@angular/core';
+import { t } from '../i18n/messages';
+import { Component, OnInit, Output, EventEmitter, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { GeographyApiService, GeographicOptionDto } from '../core/geography-api.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -11,6 +12,7 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
   selector: 'add-wizard-component-asl',
   standalone: true,
   imports: [CommonModule, FormsModule, QtmStepModalComponent],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <qtm-step-modal
       [title]="'Inserimento Struttura ASL'"
@@ -26,6 +28,26 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
           <div class="form-row">
             <label>Denominazione*<input type="text" name="denom" [(ngModel)]="model.denom" required /></label>
             <label>Codice ASL*<input type="text" name="codice" [(ngModel)]="model.codice" required /></label>
+          </div>
+          <div class="form-row">
+            <label>{{ translate('structures.field.address') }}
+              <input type="text" name="address" [(ngModel)]="model.address" required autocomplete="off" />
+            </label>
+            <label>{{ translate('structures.field.cap') }}
+              <input type="text" name="cap" [(ngModel)]="model.cap" maxlength="10" autocomplete="off" />
+            </label>
+            <label>{{ translate('structures.field.phone') }}
+              <input type="text" name="phone" [(ngModel)]="model.phone" autocomplete="off" />
+            </label>
+          </div>
+          <div class="form-row">
+            <label>{{ translate('structures.field.googleAddress') }}
+              <gmpx-place-autocomplete
+                style="width:100%"
+                input-attr="{name: 'googleAddress', required: true, autocomplete: 'off'}"
+                (gmpxPlaceSelect)="onPlaceSelected($event)"
+              ></gmpx-place-autocomplete>
+            </label>
           </div>
           <div class="form-row">
             <label>Regione*
@@ -49,10 +71,26 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
           </div>
         </form>
         <form *ngSwitchCase="2" (ngSubmit)="nextStep()" #form2="ngForm">
-          <!-- Step 2: Dati amministrativi -->
+          <!-- Step 2: Contatti -->
+          <h4>{{ translate('structures.step.contacts') }}</h4>
           <div class="form-row">
-            <label>Codice fiscale*<input type="text" name="cf" [(ngModel)]="model.cf" required /></label>
-            <label>Partita IVA<input type="text" name="piva" [(ngModel)]="model.piva" /></label>
+            <label>{{ translate('structures.field.referentFirstName') }}*
+              <input type="text" name="referentFirstName" [(ngModel)]="model.referentFirstName" required />
+            </label>
+            <label>{{ translate('structures.field.referentLastName') }}*
+              <input type="text" name="referentLastName" [(ngModel)]="model.referentLastName" required />
+            </label>
+          </div>
+          <div class="form-row">
+            <label>{{ translate('structures.field.referentRole') }}
+              <input type="text" name="referentRole" [(ngModel)]="model.referentRole" />
+            </label>
+            <label>{{ translate('structures.field.referentPhone') }}
+              <input type="text" name="referentPhone" [(ngModel)]="model.referentPhone" />
+            </label>
+            <label>{{ translate('structures.field.referentEmail') }}
+              <input type="email" name="referentEmail" [(ngModel)]="model.referentEmail" />
+            </label>
           </div>
         </form>
         <form *ngSwitchCase="3" (ngSubmit)="nextStep()" #form3="ngForm">
@@ -87,6 +125,17 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
   styleUrls: ['./add-wizard.component.css']
 })
 export class AddWizardComponentAsl implements OnInit {
+  translate(key: string): string {
+    try {
+      return t(key as any) || key;
+    } catch {
+      return key;
+    }
+  }
+  // Google Place Autocomplete Web Component handler
+  onPlaceSelected(event: any) {
+    this.model.googleAddress = event?.place?.formattedAddress || '';
+  }
   @Output() close = new EventEmitter<void>();
   step = 1;
   model: any = {
@@ -104,16 +153,16 @@ export class AddWizardComponentAsl implements OnInit {
   loadingProvince = false;
   loadingComuni = false;
   stepTitles = [
-    'Dati anagrafici',
-    'Dati amministrativi',
-    'Contatti',
-    'Conferma'
+    this.translate('structures.step.generalData'),
+    this.translate('structures.step.administrativeData'),
+    this.translate('structures.step.contacts'),
+    this.translate('structures.step.confirm')
   ];
   stepDescriptions = [
-    'Inserisci i dati anagrafici della struttura',
-    'Compila i dati amministrativi richiesti',
-    'Aggiungi i contatti principali',
-    'Controlla e conferma l’inserimento'
+    this.translate('structures.step.generalData.desc'),
+    this.translate('structures.step.administrativeData.desc'),
+    this.translate('structures.step.contacts.desc'),
+    this.translate('structures.step.confirm.desc')
   ];
 
   constructor(private geoApi: GeographyApiService) {

@@ -1,11 +1,7 @@
 package com.qtm.tenants.structure.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import com.qtm.tenants.referent.entity.ReferentEntity;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -33,8 +29,20 @@ public class StructureEntity {
     @Column(name = "description")
     private String description;
 
+
     @Column(name = "address", nullable = false)
     private String address;
+
+    @Column(name = "cap")
+    private String cap;
+
+
+    /**
+     * Contatto referente associato alla struttura.
+     */
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "referent_id")
+    private ReferentEntity referent;
 
     @Column(name = "city_id")
     private Long cityId;

@@ -6,7 +6,9 @@ import com.qtm.tenants.structure.dto.StructureParentOptionDto;
 import com.qtm.tenants.structure.dto.StructureTypeDto;
 import com.qtm.tenants.structure.entity.StructureEntity;
 import com.qtm.tenants.structure.service.StructureTypeRegistry;
+import com.qtm.tenants.referent.mapper.ReferentMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -14,9 +16,11 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @RequiredArgsConstructor
-public class StructureMapper {
 
+public class StructureMapper {
     private final StructureTypeRegistry structureTypeRegistry;
+    @Autowired
+    private ReferentMapper referentMapper;
 
     public StructureDto toDto(StructureEntity entity, String parentStructureName) {
         StructureDto dto = new StructureDto();
@@ -29,6 +33,8 @@ public class StructureMapper {
         dto.setSelectionLabel(buildSelectionLabel(entity.getName(), structureType));
         dto.setDescription(entity.getDescription());
         dto.setAddress(entity.getAddress());
+        dto.setCap(entity.getCap());
+        dto.setReferent(referentMapper.toDto(entity.getReferent()));
         dto.setCityId(entity.getCityId());
         dto.setCity(entity.getCity());
         dto.setProvinceId(entity.getProvinceId());
@@ -67,6 +73,8 @@ public class StructureMapper {
         entity.setName(dto.getName());
         entity.setDescription(dto.getDescription());
         entity.setAddress(dto.getAddress());
+        entity.setCap(dto.getCap());
+        entity.setReferent(referentMapper.toEntity(dto.getReferent()));
         entity.setCityId(dto.getCityId());
         entity.setCity(dto.getCity());
         entity.setProvinceId(dto.getProvinceId());
