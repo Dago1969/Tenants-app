@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { GeographyApiService, GeographicOptionDto } from '../../core/geography-api.service';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -74,7 +75,8 @@ export class StructureCatalogComponent implements OnInit {
 
   constructor(
     private readonly http: HttpClient,
-    private readonly route: ActivatedRoute
+    private readonly route: ActivatedRoute,
+    private readonly geographyApi: GeographyApiService
   ) {
     console.log('[StructureCatalogComponent] COSTRUTTORE: istanza creata');
   }
@@ -283,7 +285,7 @@ export class StructureCatalogComponent implements OnInit {
   }
 
   private loadRegions(): void {
-    this.http.get<GeographyOptionDto[]>(`${environment.apiBaseUrl}/geography/regions`).subscribe({
+    this.geographyApi.getRegions().subscribe({
       next: (options) => {
         this.regionOptions = options ?? [];
       },
@@ -298,8 +300,7 @@ export class StructureCatalogComponent implements OnInit {
       this.provinceOptions = [];
       return;
     }
-
-    this.http.get<GeographyOptionDto[]>(`${environment.apiBaseUrl}/geography/provinces/by-region/${this.formModel.regionId}`).subscribe({
+    this.geographyApi.getProvincesByRegion(this.formModel.regionId).subscribe({
       next: (options) => {
         this.provinceOptions = options ?? [];
       },
@@ -314,8 +315,7 @@ export class StructureCatalogComponent implements OnInit {
       this.cityOptions = [];
       return;
     }
-
-    this.http.get<GeographyOptionDto[]>(`${environment.apiBaseUrl}/geography/cities/by-province/${this.formModel.provinceId}`).subscribe({
+    this.geographyApi.getCitiesByProvince(this.formModel.provinceId).subscribe({
       next: (options) => {
         this.cityOptions = options ?? [];
       },

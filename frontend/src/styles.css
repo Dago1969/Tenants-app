@@ -1,3 +1,17 @@
+select {
+  color: var(--Primary) !important;
+  font-family: "Work Sans", sans-serif;
+  font-weight: 600 !important;
+  font-size: 14px;
+  display: var(--input-display, flex);
+  height: var(--input-height, 36px);
+  padding: var(--input-padding, 6px 16px);
+  border-radius: var(--input-border-radius, 18px);
+  background: var(--input-background);
+  border: 1px solid var(--Color-shadow);
+  box-sizing: border-box;
+  outline: none;
+}
 * {
   box-sizing: border-box;
 }

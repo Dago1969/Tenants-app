@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
 import { t, MessageKey } from '../../i18n/messages';
 import { SearchField, SearchPageComponent } from '../../shared/search-page.component';
-import { AslAddWizardComponent } from '../../shared/asl-add-wizard.component';
+import { AddWizardComponentAsl } from '../../shared/add-wizard.component-asl';
 
 /**
  * Pagina di ricerca strutture per tipo, con collegamento al form di gestione dedicato.
@@ -11,11 +11,8 @@ import { AslAddWizardComponent } from '../../shared/asl-add-wizard.component';
 @Component({
   selector: 'app-structure-search',
   standalone: true,
-  imports: [CommonModule, SearchPageComponent, AslAddWizardComponent],
+  imports: [CommonModule, SearchPageComponent, AddWizardComponentAsl],
   template: `
-    <button class="btn btn-primary" style="margin-bottom: 1rem;" (click)="openAslWizard()">
-      <span class="icon">＋</span> {{ translate('crud.actions.new') }} ASL
-    </button>
     <app-search-page
       [titleKey]="titleKey"
       [endpoint]="endpoint"
@@ -28,8 +25,12 @@ import { AslAddWizardComponent } from '../../shared/asl-add-wizard.component';
       [autoSearch]="true"
       [showViewAction]="false"
       [showCreateAction]="false"
-    />
-    <asl-add-wizard *ngIf="showAslWizard" (close)="closeAslWizard()"></asl-add-wizard>
+    >
+      <button search-header-action class="btn btn-primary" style="margin-left: 0.5rem;" (click)="openAslWizard()">
+        <span class="icon">＋</span> {{ translate('crud.actions.new') }} ASL
+      </button>
+    </app-search-page>
+    <add-wizard-component-asl *ngIf="showAslWizard" (close)="closeAslWizard()"></add-wizard-component-asl>
   `
 })
 export class StructureSearchComponent implements OnInit, OnDestroy {

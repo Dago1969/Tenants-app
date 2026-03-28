@@ -67,6 +67,7 @@ type DeleteDialogMode = 'confirm' | 'reassign';
           <button class="btn btn-primary" (click)="showFilters = !showFilters">
             <span class="icon">☰</span> {{ translate('search.filters') }}
           </button>
+          <ng-content select="[search-header-action]"></ng-content>
           <button *ngIf="showCreateAction && canCreate" class="btn btn-primary" type="button" (click)="openEdit('new')">
             <span class="icon">＋</span> {{ translate('crud.actions.new') }}
           </button>
