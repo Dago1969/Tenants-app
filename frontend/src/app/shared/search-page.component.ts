@@ -473,7 +473,13 @@ export class SearchPageComponent implements OnInit {
 
   private openCrudPage(id: unknown, mode: 'view' | 'edit'): void {
     if (mode === 'edit' && id === 'new' && this.createRoute) {
-      void this.router.navigateByUrl(this.createRoute);
+      // Se la createRoute è una route assoluta (wizard), naviga direttamente
+      if (this.createRoute.startsWith('/')) {
+        void this.router.navigateByUrl(this.createRoute);
+        return;
+      }
+      // Altrimenti mantieni la logica esistente
+      void this.router.navigate([this.createRoute]);
       return;
     }
 
