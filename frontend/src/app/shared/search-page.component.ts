@@ -64,10 +64,10 @@ type DeleteDialogMode = 'confirm' | 'reassign';
       <div class="search-header">
         <h2>{{ translate(titleKey) }}</h2>
         <div class="search-header-actions">
-          <button class="search-header-btn" (click)="showFilters = !showFilters">
+          <button class="btn btn-primary" (click)="showFilters = !showFilters">
             <span class="icon">☰</span> {{ translate('search.filters') }}
           </button>
-          <button *ngIf="showCreateAction && canCreate" class="search-header-btn primary" type="button" (click)="openEdit('new')">
+          <button *ngIf="showCreateAction && canCreate" class="btn btn-primary" type="button" (click)="openEdit('new')">
             <span class="icon">＋</span> {{ translate('crud.actions.new') }}
           </button>
         </div>
@@ -85,9 +85,9 @@ type DeleteDialogMode = 'confirm' | 'reassign';
       </div>
 
       <div *ngIf="showFilters" class="search-filters-panel">
-        <form (ngSubmit)="search()" class="search-filters-form">
+        <form (ngSubmit)="search()" class="search-filters-form search-filters-form-inline">
           <ng-container *ngFor="let field of filters">
-            <label class="search-filter-label">
+            <label class="search-filter-label search-filter-label-inline">
               <span>{{ translate(field.labelKey) }}</span>
               <input
                 *ngIf="field.type !== 'boolean' && field.type !== 'select' && field.type !== 'autocomplete'"
@@ -126,9 +126,9 @@ type DeleteDialogMode = 'confirm' | 'reassign';
               </datalist>
             </label>
           </ng-container>
-          <div class="search-filters-actions">
-            <button type="submit" class="primary">{{ translate('crud.actions.search') }}</button>
-            <button type="button" (click)="resetFilters()">{{ translate('crud.actions.reset') }}</button>
+          <div class="search-filters-actions search-filters-actions-inline">
+            <button type="submit" class="btn btn-primary">{{ translate('crud.actions.search') }}</button>
+            <button type="button" class="btn btn-outline" (click)="resetFilters()">{{ translate('crud.actions.reset') }}</button>
           </div>
         </form>
       </div>
@@ -176,7 +176,7 @@ type DeleteDialogMode = 'confirm' | 'reassign';
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let row of results">
+            <tr *ngFor="let row of filteredResults()">
               <td>{{ getRowIdentifier(row) }}</td>
               <td *ngFor="let column of resultColumns">
                 <ng-container *ngIf="column.key === 'status'; else normalCell">

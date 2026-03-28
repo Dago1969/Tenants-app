@@ -138,24 +138,23 @@ input:-webkit-autofill:active {
   transition: background-color 5000s ease-in-out 0s;
 }
 
-/* --- Input Styles --- */
+/* 1. TESTO DIGITATO: Grassetto e Colore Primary */
 input[type="text"],
 input[type="email"],
 input[type="password"],
 .recover-input {
-  display: var(--input-display);
-  width: 100%;
-  height: var(--input-height);
-  padding: var(--input-padding);
-  box-sizing: border-box;
-  border-radius: var(--input-border-radius);
-  border: 1px solid var(--Color-shadow);
-  background: var(--input-background);
-  color: var(--Primary); /* Testo input colore Primary */
-  font-weight: 600; /* Testo in grassetto come richiesto */
-  font-family: var(--text-font-family);
+  color: var(--Primary) !important; /* Forza il colore blu */
+  font-family: "Work Sans", sans-serif;
+  font-weight: 600 !important;      /* Testo spesso quando scrivi */
   font-size: 14px;
-  margin-bottom: 12px;
+  /* Mantieni le tue proprietà di layout */
+  display: var(--input-display, flex);
+  height: var(--input-height, 36px);
+  padding: var(--input-padding, 6px 16px);
+  border-radius: var(--input-border-radius, 18px);
+  background: var(--input-background);
+  border: 1px solid var(--Color-shadow);
+  box-sizing: border-box;
   outline: none;
 }
 
@@ -183,14 +182,29 @@ input:-ms-input-placeholder { color: var(--Primary); font-weight: 400 !important
   transition: opacity 0.2s;
 }
 
-.btn-primary { color: #ffffff; }
-
-.btn-outline {
-  background: #fff;
-  color: var(--Primary);
-  border: 2px solid var(--Primary);
+/* Colore blu per Cerca (come da immagine) */
+.btn-primary {
+   height: 40px; /* Deve corrispondere all'altezza degli input */
+  padding: 0 24px;
+  border-radius: 18px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--Primary, #0E65FF);
+  color: #fff;
+  border: none;
 }
 
+/* Stile per Reset */
+.btn-outline {
+  background-color: #8fb4ff !important; /* Il colore azzurro dell'immagine */
+  background: white;
+  border: 2px solid #2563eb;
+  color: #2563eb;
+}
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
