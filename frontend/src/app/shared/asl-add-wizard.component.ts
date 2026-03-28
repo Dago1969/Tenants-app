@@ -71,18 +71,6 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
 })
 export class AslAddWizardComponent implements OnInit {
   @Output() close = new EventEmitter<void>();
-  constructor() {
-    console.log('[AslAddWizardComponent] COSTRUTTORE: istanza creata');
-  }
-
-  ngOnInit(): void {
-    console.log('[AslAddWizardComponent] ngOnInit: Wizard ASL aperto');
-    console.log('[AslAddWizardComponent] Stato iniziale:', {
-      step: this.step,
-      model: this.model
-    });
-  }
-
   step = 1;
   model: any = {};
   stepTitles = [
@@ -97,6 +85,15 @@ export class AslAddWizardComponent implements OnInit {
     'Aggiungi i contatti principali',
     'Controlla e conferma l’inserimento'
   ];
+
+  constructor() {
+    console.log('[AslAddWizardComponent] COSTRUTTORE: istanza creata');
+  }
+
+  ngOnInit(): void {
+    console.log('[AslAddWizardComponent] ngOnInit: Wizard ASL aperto');
+    console.log('[AslAddWizardComponent] ngOnInit: popup istanziato correttamente');
+  }
 
   nextStep() {
     console.log('[AslAddWizardComponent] nextStep: step attuale', this.step, 'model:', this.model);

@@ -1,4 +1,5 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
 import { t, MessageKey } from '../../i18n/messages';
 import { SearchField, SearchPageComponent } from '../../shared/search-page.component';
@@ -10,7 +11,7 @@ import { AslAddWizardComponent } from '../../shared/asl-add-wizard.component';
 @Component({
   selector: 'app-structure-search',
   standalone: true,
-  imports: [SearchPageComponent, AslAddWizardComponent],
+  imports: [CommonModule, SearchPageComponent, AslAddWizardComponent],
   template: `
     <button class="btn btn-primary" style="margin-bottom: 1rem;" (click)="openAslWizard()">
       <span class="icon">＋</span> {{ translate('crud.actions.new') }} ASL
@@ -21,12 +22,12 @@ import { AslAddWizardComponent } from '../../shared/asl-add-wizard.component';
       [filters]="filters"
       [resultColumns]="resultColumns"
       [fixedParams]="fixedParams"
-      [createRoute]="createRoute"
       [detailRouteBase]="detailRouteBase"
       [moduleCode]="moduleCode"
       [createFunctionCode]="createFunctionCode"
       [autoSearch]="true"
       [showViewAction]="false"
+      [showCreateAction]="false"
     />
     <asl-add-wizard *ngIf="showAslWizard" (close)="closeAslWizard()"></asl-add-wizard>
   `
@@ -58,7 +59,8 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly route: ActivatedRoute,
-    private readonly router: Router
+    private readonly router: Router,
+    private readonly cdr: ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -66,19 +68,15 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
     const structureType = String(this.route.snapshot.data['structureType'] ?? 'ASL');
     this.fixedParams = { structureType };
     if (structureType === 'ASL') {
-      this.createRoute = '/structures/asl/add';
+      this.createRoute = '';
       this.detailRouteBase = '/structures/asl/manage';
     } else {
       const manageRoute = String(this.route.snapshot.data['manageRoute'] ?? '/structures/asl/manage');
       this.createRoute = manageRoute;
       this.detailRouteBase = manageRoute;
     }
-    this.routeSub = this.router.events.subscribe(event => {
-      if (event instanceof NavigationEnd) {
-        this.showAslWizard = this.router.url.endsWith('/structures/asl/add');
-      }
-    });
-    this.showAslWizard = this.router.url.endsWith('/structures/asl/add');
+    // Nessuna gestione di route per il wizard
+    this.showAslWizard = false;
   }
 
   ngOnDestroy(): void {
@@ -88,11 +86,14 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
   }
 
   openAslWizard() {
-    this.router.navigate(['/structures/asl/add']);
+    console.log('[StructureSearchComponent] openAslWizard: click su Nuova ASL');
+    this.showAslWizard = true;
+    this.cdr.detectChanges();
   }
 
   closeAslWizard() {
-    this.router.navigate(['/structures/asl']);
+    console.log('[StructureSearchComponent] EVENT closeAslWizard: ricevuto evento close dal wizard');
+    this.showAslWizard = false;
   }
 
   translate(key: MessageKey): string {

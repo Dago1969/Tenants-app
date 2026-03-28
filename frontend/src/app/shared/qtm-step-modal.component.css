@@ -3,10 +3,11 @@
   position: fixed;
   inset: 0;
   background: rgba(30, 40, 80, 0.18);
-  z-index: 1000;
+  z-index: 9999 !important;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: none;
 }
 .qtm-modal {
   background: #fff;
@@ -20,6 +21,7 @@
   flex-direction: column;
   overflow: hidden;
   position: relative;
+  border: none;
 }
 .qtm-modal-header {
   background: #1870e8;
