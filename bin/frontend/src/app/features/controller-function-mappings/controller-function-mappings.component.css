@@ -1,0 +1,136 @@
+.mapping-shell {
+  padding: 24px;
+}
+
+.mapping-card {
+  background: #ffffff;
+  border: 1px solid #d9e2d0;
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: 0 12px 30px rgba(57, 82, 54, 0.08);
+}
+
+.mapping-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.mapping-header h2 {
+  margin: 0;
+}
+
+.mapping-header p {
+  margin: 8px 0 0;
+  color: #5f6b5c;
+}
+
+.mapping-status {
+  margin: 0 0 16px;
+}
+
+.mapping-status-error {
+  color: #9f1d1d;
+}
+
+.mapping-status-success {
+  color: #256d1b;
+}
+
+.mapping-modules {
+  display: grid;
+  gap: 16px;
+}
+
+.mapping-module-card {
+  border: 1px solid #d9e2d0;
+  border-radius: 16px;
+  padding: 20px;
+  background: linear-gradient(180deg, #fcfdf9 0%, #f5f8ef 100%);
+}
+
+.mapping-module-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.mapping-module-code {
+  margin: 0 0 6px;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  color: #6c7a68;
+}
+
+.mapping-module-header h3 {
+  margin: 0;
+}
+
+.mapping-section {
+  margin-top: 18px;
+}
+
+.mapping-section-header h4 {
+  margin: 0 0 10px;
+}
+
+.mapping-grid {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(220px, 320px);
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid #e3ead8;
+}
+
+.mapping-grid-head {
+  font-weight: 700;
+  color: #4f5c4c;
+}
+
+.mapping-grid select {
+  width: 100%;
+  min-height: 40px;
+  border-radius: 10px;
+  border: 1px solid #b9c9ad;
+  padding: 8px 10px;
+  background: #ffffff;
+}
+
+.mapping-btn {
+  border: 0;
+  border-radius: 999px;
+  background: #395236;
+  color: #ffffff;
+  padding: 10px 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.mapping-btn[disabled] {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.mapping-empty {
+  color: #6c7a68;
+}
+
+@media (max-width: 720px) {
+  .mapping-shell {
+    padding: 16px;
+  }
+
+  .mapping-module-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .mapping-grid {
+    grid-template-columns: 1fr;
+  }
+}

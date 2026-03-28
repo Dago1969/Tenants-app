@@ -95,14 +95,14 @@ public class DashboardRoleClient {
 
     public List<UserTenantRoleRelationDto> proxyGetUserTenantRoleRelationByUserAndTenant(Long userId, Long tenantId) {
         return execute(() -> restClient.get()
-                .uri("/user-tenant-roles/user/{userId}/tenant/{tenantId}", userId, tenantId)
+            .uri("/user-tenant-role/user/{userId}/tenant/{tenantId}", userId, tenantId)
                 .headers(this::applyForwardedHeaders)
                 .retrieve()
                 .body(USER_TENANT_ROLE_RELATION_LIST_TYPE));
     }
 
     public UserTenantRoleRelationDto proxyAddUserTenantRoleRelation(UserTenantRoleRelationDto dto) {
-        return execute(() -> restClient.post().uri("/user-tenant-roles")
+        return execute(() -> restClient.post().uri("/user-tenant-role")
                 .headers(this::applyForwardedHeaders)
                 .body(dto)
                 .retrieve()
@@ -111,7 +111,15 @@ public class DashboardRoleClient {
 
     public void proxyDeleteUserTenantRoleRelation(Long id) {
         executeVoid(() -> restClient.delete()
-                .uri("/user-tenant-roles/{id}", id)
+            .uri("/user-tenant-role/{id}", id)
+                .headers(this::applyForwardedHeaders)
+                .retrieve()
+                .toBodilessEntity());
+    }
+
+    public void proxyDeleteUserTenantRoleRelation(Long userId, Long tenantId, String roleId) {
+        executeVoid(() -> restClient.delete()
+                .uri("/user-tenant-role/user/{userId}/tenant/{tenantId}/role/{roleId}", userId, tenantId, roleId)
                 .headers(this::applyForwardedHeaders)
                 .retrieve()
                 .toBodilessEntity());
@@ -126,12 +134,13 @@ public class DashboardRoleClient {
         copyHeader(currentRequest, headers, HttpHeaders.AUTHORIZATION);
         copyHeader(currentRequest, headers, "X-Selected-Role");
         copyHeader(currentRequest, headers, "X-Selected-Client");
+        copyHeader(currentRequest, headers, "X-Selected-Project");
     }
 
     private void copyHeader(HttpServletRequest request, HttpHeaders headers, String headerName) {
         String value = request.getHeader(headerName);
         if (value != null && !value.isBlank()) {
-            headers.set(headerName, value);
+            headers.set(headerName, value.trim());
         }
     }
 

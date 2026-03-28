@@ -14,6 +14,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const token = authService.getToken();
   const selectedRole = authService.getSelectedRole();
   const selectedClient = authService.getSelectedClient();
+  const selectedProject = authService.getSelectedProject();
 
   if (!token && req.url.startsWith(environment.apiBaseUrl)) {
     window.location.href = QTMDASHBOARD_LOGIN_URL;
@@ -36,6 +37,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   }
   if (selectedClient) {
     headers['X-Selected-Client'] = selectedClient;
+  }
+  if (selectedProject) {
+    headers['X-Selected-Project'] = selectedProject;
   }
 
   if (Object.keys(headers).length === 0) {

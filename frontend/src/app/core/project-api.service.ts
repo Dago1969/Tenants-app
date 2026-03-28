@@ -27,10 +27,10 @@ export class ProjectApiService {
     return this.http.get<ProjectDto[]>(`${this.baseUrl}/projects?tenant=${encodeURIComponent(tenant)}`);
   }
   /**
-   * Restituisce i progetti associati a uno user tramite la tabella user_tenant_project.
+   * Restituisce i progetti associati a uno user tramite la tabella user_role_project.
    */
   getAssociatedProjectsByUser(userId: number, tenantId: number): Observable<{ projectId: number; projectCode: string }[]> {
-    // Forza il path assoluto corretto per evitare /tenants
-    return this.http.get<{ projectId: number; projectCode: string }[]>(`/api/user-tenant-project/user/${userId}/tenant/${tenantId}`);
+    const url = this.baseUrl.replace(/\/tenants$/, '') + `/user-role-project/user/${userId}/tenant/${tenantId}`;
+    return this.http.get<{ projectId: number; projectCode: string }[]>(url);
   }
 }

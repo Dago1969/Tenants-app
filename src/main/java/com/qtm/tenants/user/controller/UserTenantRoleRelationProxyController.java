@@ -1,5 +1,6 @@
 package com.qtm.tenants.user.controller;
 
+import com.qtm.commonlib.dto.RoleDto;
 import com.qtm.commonlib.dto.UserTenantRoleRelationDto;
 import com.qtm.tenants.role.service.DashboardRoleClient;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,12 @@ public class UserTenantRoleRelationProxyController {
 
     private final DashboardRoleClient dashboardRoleClient;
 
+    @GetMapping("/roles")
+    public ResponseEntity<List<RoleDto>> proxyGetRoles() {
+        log.info("[TENAPP] Proxy GET /api/user-tenant-role/roles");
+        return ResponseEntity.ok(dashboardRoleClient.findAll());
+    }
+
     @PostMapping
     public ResponseEntity<UserTenantRoleRelationDto> proxyAddRelation(@RequestBody UserTenantRoleRelationDto dto) {
         log.info("[TENAPP] Proxy POST /api/user-tenant-role userId={} tenantId={} roleId={}", dto.getUserId(), dto.getTenantId(), dto.getRoleId());
@@ -45,6 +52,17 @@ public class UserTenantRoleRelationProxyController {
     public ResponseEntity<Void> proxyDeleteRelation(@PathVariable Long id) {
         log.info("[TENAPP] Proxy DELETE /api/user-tenant-role/{}", id);
         dashboardRoleClient.proxyDeleteUserTenantRoleRelation(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/user/{userId}/tenant/{tenantId}/role/{roleId}")
+    public ResponseEntity<Void> proxyDeleteByUserTenantRole(
+            @PathVariable Long userId,
+            @PathVariable Long tenantId,
+            @PathVariable String roleId
+    ) {
+        log.info("[TENAPP] Proxy DELETE /api/user-tenant-role/user/{}/tenant/{}/role/{}", userId, tenantId, roleId);
+        dashboardRoleClient.proxyDeleteUserTenantRoleRelation(userId, tenantId, roleId);
         return ResponseEntity.noContent().build();
     }
 }

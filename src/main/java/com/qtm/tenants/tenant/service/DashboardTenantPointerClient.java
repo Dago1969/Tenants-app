@@ -55,17 +55,19 @@ public class DashboardTenantPointerClient {
         copyHeader(currentRequest, headers, HttpHeaders.AUTHORIZATION);
         copyHeader(currentRequest, headers, "X-Selected-Role");
         copyHeader(currentRequest, headers, "X-Selected-Client");
+        copyHeader(currentRequest, headers, "X-Selected-Project");
 
-        log.info("[DashboardTenantPointerClient] Forwarded headers authorizationPresent={} selectedRole={} selectedClient={}",
+        log.info("[DashboardTenantPointerClient] Forwarded headers authorizationPresent={} selectedRole={} selectedClient={} selectedProject={}",
                 headers.containsKey(HttpHeaders.AUTHORIZATION),
                 headers.getFirst("X-Selected-Role"),
-                headers.getFirst("X-Selected-Client"));
+            headers.getFirst("X-Selected-Client"),
+            headers.getFirst("X-Selected-Project"));
     }
 
     private void copyHeader(HttpServletRequest request, HttpHeaders headers, String headerName) {
         String value = request.getHeader(headerName);
         if (value != null && !value.isBlank()) {
-            headers.set(headerName, value);
+            headers.set(headerName, value.trim());
         }
     }
 

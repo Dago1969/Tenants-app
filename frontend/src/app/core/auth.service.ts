@@ -54,6 +54,7 @@ export class AuthService {
   private readonly tokenStorageKey = 'qtm_access_token';
   private readonly roleStorageKey = 'qtm_selected_role';
   private readonly clientStorageKey = 'qtm_selected_client';
+  private readonly projectStorageKey = 'qtm_selected_project';
   private readonly selectedRoleSubject = new BehaviorSubject<string>(localStorage.getItem(this.roleStorageKey) ?? '');
 
   getToken(): string | null {
@@ -96,11 +97,46 @@ export class AuthService {
     localStorage.setItem(this.clientStorageKey, client);
   }
 
+  setSelectedProject(project: string): void {
+    const normalizedProject = project.trim();
+    if (normalizedProject) {
+      localStorage.setItem(this.projectStorageKey, normalizedProject);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('selectedProject', normalizedProject);
+      }
+      return;
+    }
+
+    localStorage.removeItem(this.projectStorageKey);
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('selectedProject');
+    }
+  }
+
   getSelectedClient(): string {
     const value = localStorage.getItem(this.clientStorageKey) ?? '';
     // eslint-disable-next-line no-console
     console.log('[AuthService] getSelectedClient() ->', value);
     return value;
+  }
+
+  getSelectedProject(): string {
+    const localProject = localStorage.getItem(this.projectStorageKey) ?? '';
+    if (localProject.trim()) {
+      return localProject;
+    }
+
+    if (typeof window === 'undefined') {
+      return '';
+    }
+
+    const sessionProject = sessionStorage.getItem('selectedProject') ?? '';
+    if (sessionProject.trim()) {
+      localStorage.setItem(this.projectStorageKey, sessionProject.trim());
+      return sessionProject.trim();
+    }
+
+    return '';
   }
 
   private isTokenExpired(token: string): boolean {
