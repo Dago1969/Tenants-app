@@ -54,9 +54,15 @@ export class StructureSearchComponent implements OnInit {
   ngOnInit(): void {
     this.titleKey = (this.route.snapshot.data['titleKey'] ?? 'structures.title') as MessageKey;
     const structureType = String(this.route.snapshot.data['structureType'] ?? 'ASL');
-    const manageRoute = String(this.route.snapshot.data['manageRoute'] ?? '/structures/asl/manage');
+    // Per ASL, il pulsante Nuova Struttura deve puntare a /structures/asl/add
     this.fixedParams = { structureType };
-    this.createRoute = manageRoute;
-    this.detailRouteBase = manageRoute;
+    if (structureType === 'ASL') {
+      this.createRoute = '/structures/asl/add';
+      this.detailRouteBase = '/structures/asl/manage';
+    } else {
+      const manageRoute = String(this.route.snapshot.data['manageRoute'] ?? '/structures/asl/manage');
+      this.createRoute = manageRoute;
+      this.detailRouteBase = manageRoute;
+    }
   }
 }

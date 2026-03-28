@@ -29,6 +29,7 @@ import { StructureTypesSearchComponent } from './features/structure-types-search
 import { StructureTypesCrudComponent } from './features/structure-types-crud/structure-types-crud.component';
 import { OperationLogsSearchComponent } from './features/operation-logs-search/operation-logs-search.component';
 import { moduleVisibilityGuard } from './core/module-visibility.guard';
+import { AslAddWizardComponent } from './shared/asl-add-wizard.component';
 
 /**
  * Routing applicativo tenants con protezione JWT e pagine CRUD.
@@ -94,5 +95,6 @@ export const appRoutes: Routes = [
   { path: 'nurses', component: NursesCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('NURSE')] },
   { path: 'not-authorized', component: NotAuthorizedComponent },
   { path: 'forbidden', component: ForbiddenComponent },
-  { path: '**', redirectTo: 'dashboard' }
+  { path: '**', redirectTo: 'dashboard' },
+  { path: 'structures/asl/add', component: AslAddWizardComponent, canActivate: [authGuard, moduleVisibilityGuard('STRUCTURE')] }
 ];
