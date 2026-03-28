@@ -34,7 +34,15 @@ public class StructureMapper {
         dto.setDescription(entity.getDescription());
         dto.setAddress(entity.getAddress());
         dto.setCap(entity.getCap());
-        dto.setReferent(referentMapper.toDto(entity.getReferent()));
+        if (entity.getReferents() != null) {
+            java.util.List<com.qtm.tenants.referent.dto.ReferentDto> referentDtos = new java.util.ArrayList<>();
+            for (com.qtm.tenants.referent.entity.ReferentEntity ref : entity.getReferents()) {
+                referentDtos.add(referentMapper.toDto(ref));
+            }
+            dto.setReferents(referentDtos);
+        } else {
+            dto.setReferents(new java.util.ArrayList<>());
+        }
         dto.setCityId(entity.getCityId());
         dto.setCity(entity.getCity());
         dto.setProvinceId(entity.getProvinceId());
@@ -74,7 +82,15 @@ public class StructureMapper {
         entity.setDescription(dto.getDescription());
         entity.setAddress(dto.getAddress());
         entity.setCap(dto.getCap());
-        entity.setReferent(referentMapper.toEntity(dto.getReferent()));
+        if (dto.getReferents() != null) {
+            java.util.List<com.qtm.tenants.referent.entity.ReferentEntity> referentEntities = new java.util.ArrayList<>();
+            for (com.qtm.tenants.referent.dto.ReferentDto refDto : dto.getReferents()) {
+                referentEntities.add(referentMapper.toEntity(refDto));
+            }
+            entity.setReferents(referentEntities);
+        } else {
+            entity.setReferents(new java.util.ArrayList<>());
+        }
         entity.setCityId(dto.getCityId());
         entity.setCity(dto.getCity());
         entity.setProvinceId(dto.getProvinceId());

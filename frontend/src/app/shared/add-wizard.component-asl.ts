@@ -1,6 +1,7 @@
 import { t } from '../i18n/messages';
 import { Component, OnInit, Output, EventEmitter, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { GeographyApiService, GeographicOptionDto } from '../core/geography-api.service';
+import { ReferentApiService, ReferentDto } from '../core/referent-api.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { QtmStepModalComponent } from './qtm-step-modal.component';
@@ -71,25 +72,13 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
           </div>
         </form>
         <form *ngSwitchCase="2" (ngSubmit)="nextStep()" #form2="ngForm">
-          <!-- Step 2: Contatti -->
+          <!-- Step 2: Contatti - Selezione referenti -->
           <h4>{{ translate('structures.step.contacts') }}</h4>
           <div class="form-row">
-            <label>{{ translate('structures.field.referentFirstName') }}*
-              <input type="text" name="referentFirstName" [(ngModel)]="model.referentFirstName" required />
-            </label>
-            <label>{{ translate('structures.field.referentLastName') }}*
-              <input type="text" name="referentLastName" [(ngModel)]="model.referentLastName" required />
-            </label>
-          </div>
-          <div class="form-row">
-            <label>{{ translate('structures.field.referentRole') }}
-              <input type="text" name="referentRole" [(ngModel)]="model.referentRole" />
-            </label>
-            <label>{{ translate('structures.field.referentPhone') }}
-              <input type="text" name="referentPhone" [(ngModel)]="model.referentPhone" />
-            </label>
-            <label>{{ translate('structures.field.referentEmail') }}
-              <input type="email" name="referentEmail" [(ngModel)]="model.referentEmail" />
+            <label>{{ translate('structures.field.referents') }}
+              <select name="referents" [(ngModel)]="model.referents" multiple required style="min-width:300px; min-height: 80px;">
+                <option *ngFor="let ref of referentsList" [ngValue]="ref">{{ref.firstName}} {{ref.lastName}} ({{ref.role}})</option>
+              </select>
             </label>
           </div>
         </form>
@@ -144,7 +133,8 @@ export class AddWizardComponentAsl implements OnInit {
     provinciaId: '',
     provincia: '',
     comuneId: '',
-    comune: ''
+    comune: '',
+    referents: []
   };
   regioni: GeographicOptionDto[] = [];
   province: GeographicOptionDto[] = [];
@@ -165,13 +155,28 @@ export class AddWizardComponentAsl implements OnInit {
     this.translate('structures.step.confirm.desc')
   ];
 
-  constructor(private geoApi: GeographyApiService) {
+
+  referentsList: ReferentDto[] = [];
+
+  constructor(private geoApi: GeographyApiService, private referentApi: ReferentApiService) {
     console.log('[AddWizardComponentAsl] COSTRUTTORE: istanza creata');
   }
 
   ngOnInit(): void {
     console.log('[AddWizardComponentAsl] ngOnInit: Wizard ASL aperto');
     this.loadRegioni();
+    this.loadReferents();
+  }
+
+  loadReferents() {
+    this.referentApi.getAll().subscribe({
+      next: (data) => {
+        this.referentsList = data;
+      },
+      error: () => {
+        this.referentsList = [];
+      }
+    });
   }
 
   loadRegioni() {

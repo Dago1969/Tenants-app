@@ -38,11 +38,15 @@ public class StructureEntity {
 
 
     /**
-     * Contatto referente associato alla struttura.
+     * Lista di referenti associati alla struttura.
      */
-    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "referent_id")
-    private ReferentEntity referent;
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+        name = "structure_referents",
+        joinColumns = @JoinColumn(name = "structure_id"),
+        inverseJoinColumns = @JoinColumn(name = "referent_id")
+    )
+    private java.util.List<ReferentEntity> referents = new java.util.ArrayList<>();
 
     @Column(name = "city_id")
     private Long cityId;

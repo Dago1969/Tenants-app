@@ -37,7 +37,7 @@ public class StructureDto {
     private String parentStructureName;
 
     /**
-     * Contatto referente associato alla struttura.
+     * Lista di referenti associati alla struttura.
      */
-    private ReferentDto referent;
+    private java.util.List<ReferentDto> referents;
 }
