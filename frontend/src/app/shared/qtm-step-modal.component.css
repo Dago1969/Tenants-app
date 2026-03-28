@@ -1,0 +1,107 @@
+/* QtmStepModal: stili base per popup wizard step-by-step */
+.qtm-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(30, 40, 80, 0.18);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.qtm-modal {
+  background: #fff;
+  border-radius: 22px;
+  box-shadow: 0 8px 32px rgba(19, 31, 54, 0.18);
+  min-width: 480px;
+  max-width: 98vw;
+  width: 600px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+.qtm-modal-header {
+  background: #1870e8;
+  color: #fff;
+  padding: 22px 32px 16px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.qtm-modal-title {
+  font-size: 1.18rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.qtm-modal-close {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 2rem;
+  cursor: pointer;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+.qtm-modal-close:hover {
+  background: rgba(255,255,255,0.12);
+}
+.qtm-modal-stepper {
+  padding: 18px 32px 0 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.qtm-modal-step-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1870e8;
+}
+.qtm-modal-progress-bar {
+  background: #e3eaf7;
+  border-radius: 6px;
+  height: 6px;
+  width: 100%;
+  overflow: hidden;
+}
+.qtm-modal-progress {
+  background: linear-gradient(90deg, #1870e8 60%, #1ec6ff 100%);
+  height: 100%;
+  transition: width 0.3s;
+}
+.qtm-modal-content {
+  padding: 32px;
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+.qtm-modal-actions {
+  padding: 18px 32px 0 32px;
+  display: flex;
+  gap: 16px;
+  justify-content: flex-end;
+}
+.qtm-modal-description {
+  padding: 18px 32px 24px 32px;
+  color: #1870e8;
+  font-size: 1rem;
+  font-weight: 500;
+  text-align: left;
+}
+@media (max-width: 600px) {
+  .qtm-modal {
+    min-width: 0;
+    width: 98vw;
+    padding: 0;
+  }
+  .qtm-modal-header, .qtm-modal-stepper, .qtm-modal-content, .qtm-modal-actions, .qtm-modal-description {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+}
