@@ -164,6 +164,7 @@ input::-webkit-input-placeholder { color: var(--Primary); font-weight: 400 !impo
 input::-moz-placeholder { color: var(--Primary); font-weight: 400 !important;}
 input:-ms-input-placeholder { color: var(--Primary); font-weight: 400 !important; }
 
+
 /* --- Button Styles --- */
 .btn {
   display: var(--button-display);
@@ -177,36 +178,43 @@ input:-ms-input-placeholder { color: var(--Primary); font-weight: 400 !important
   background: var(--button-background);
   border: 0;
   cursor: pointer;
-  font-weight: 600;
   font-family: var(--text-font-family);
+  font-weight: 600;
   transition: opacity 0.2s;
 }
 
-/* Colore blu per Cerca (come da immagine) */
 .btn-primary {
-   height: 40px; /* Deve corrispondere all'altezza degli input */
-  padding: 0 24px;
-  border-radius: 18px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s;
   background: var(--Primary, #0E65FF);
   color: #fff;
+  font-weight: 600;
   border: none;
 }
 
-/* Stile per Reset */
-.btn-outline {
-  background-color: #8fb4ff !important; /* Il colore azzurro dell'immagine */
-  background: white;
-  border: 2px solid #2563eb;
-  color: #2563eb;
+/* Contenitore Icona (il cerchio bianco o l'icona pulita) */
+.btn-primary .icon {
+  display: flex;
+  align-items: center;
+  font-size: 1.2rem;
+  color: #fff;
+  justify-content: center;
+  font-size: 18px; /* Dimensione icona */
+  line-height: 1;
 }
-.btn:disabled {
+.btn-primary:disabled {
   opacity: 0.5;
+  font-weight: 400;
+  cursor: not-allowed;
+}
+
+.btn-outline {
+  background: #fff;
+  color: var(--Primary);
+  border: 2px solid var(--Primary);
+  font-weight: 600;
+}
+.btn-outline:disabled {
+  opacity: 0.5;
+  font-weight: 400;
   cursor: not-allowed;
 }
 
