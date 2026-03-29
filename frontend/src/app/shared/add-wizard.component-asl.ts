@@ -2,6 +2,8 @@ import { t } from '../i18n/messages';
 import { Component, OnInit, Output, EventEmitter, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { GeographyApiService, GeographicOptionDto } from '../core/geography-api.service';
 import { ReferentApiService, ReferentDto } from '../core/referent-api.service';
+import { PharmacyApiService, PharmacyDto } from '../core/pharmacy-api.service';
+import { StructureApiService, StructureDto } from '../core/structure-api.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { QtmStepModalComponent } from './qtm-step-modal.component';
@@ -19,32 +21,46 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
       [title]="translate('structures.wizard.title')"
       [step]="step"
       [totalSteps]="4"
-      [stepTitle]="stepTitles[step-1]"
-      [stepDescription]="stepDescriptions[step-1]"
+      [stepTitle]="translate(stepTitles[step-1])"
+      [stepDescription]="translate(stepDescriptions[step-1])"
       (close)="onClose()"
     >
-      <ng-container [ngSwitch]="step">
+      <div *ngIf="showSuccessPopup" class="success-popup">
+        <div class="success-popup-content">
+          <div class="success-icon">✔️</div>
+          <div class="success-message">
+            <b>{{ translate('structures.success.title') }}</b><br>
+            <span *ngFor="let line of translate('structures.success.body').split('\\n')">{{line}}<br></span>
+          </div>
+          <button class="btn btn-primary" (click)="onClose()">{{ translate('structures.success.close') }}</button>
+        </div>
+      </div>
+      <div *ngIf="errorMessage && !showSuccessPopup" class="error-message">{{errorMessage}}</div>
+      <ng-container *ngIf="!showSuccessPopup" [ngSwitch]="step">
         <form *ngSwitchCase="1" (ngSubmit)="nextStep()" #form1="ngForm">
           <!-- Step 1: Dati anagrafici -->
           <div class="form-row">
-            <label>{{ translate('structures.field.denom') }}<span class="required-asterisk">*</span><input type="text" name="denom" [(ngModel)]="model.denom" required /></label>
-            <label>{{ translate('structures.field.codice') }}<span class="required-asterisk">*</span><input type="text" name="codice" [(ngModel)]="model.codice" required /></label>
+            <label>{{ translate('structures.field.denom') }}<span class="required-asterisk">*</span><input type="text" name="name" [(ngModel)]="model.name" required /></label>
+            <label>{{ translate('structures.field.codice') }}<span class="required-asterisk">*</span><input type="text" name="code" [(ngModel)]="model.code" required /></label>
+            <label>{{ translate('structures.field.structureType') }}<span class="required-asterisk">*</span>
+              <div style="margin-top:8px;font-weight:600;color:#1890ff;">ASL</div>
+            </label>
           </div>
           <div class="form-row">
             <label>{{ translate('structures.field.regione') }}<span class="required-asterisk">*</span>
-              <select class="search-filter-select" name="regione" [(ngModel)]="model.regioneId" (change)="onRegioneChange()" required>
+              <select class="search-filter-select" name="regionId" [(ngModel)]="model.regionId" (change)="onRegioneChange()" required>
                 <option value="">{{ translate('structures.select') }}</option>
                 <option *ngFor="let regione of regioni" [value]="regione.id">{{regione.name}}</option>
               </select>
             </label>
             <label>{{ translate('structures.field.provincia') }}<span class="required-asterisk">*</span>
-              <select class="search-filter-select" name="provincia" [(ngModel)]="model.provinciaId" (change)="onProvinciaChange()" [disabled]="!province.length" required>
+              <select class="search-filter-select" name="provinceId" [(ngModel)]="model.provinceId" (change)="onProvinciaChange()" [disabled]="!province.length" required>
                 <option value="">{{ translate('structures.select') }}</option>
                 <option *ngFor="let provincia of province" [value]="provincia.id">{{provincia.name}}</option>
               </select>
             </label>
             <label>{{ translate('structures.field.comune') }}<span class="required-asterisk">*</span>
-              <select class="search-filter-select" name="comune" [(ngModel)]="model.comuneId" [disabled]="!comuni.length" required>
+              <select class="search-filter-select" name="cityId" [(ngModel)]="model.cityId" (change)="onComuneChange()" [disabled]="!comuni.length" required>
                 <option value="">{{ translate('structures.select') }}</option>
                 <option *ngFor="let comune of comuni" [value]="comune.id">{{comune.name}}</option>
               </select>
@@ -86,28 +102,75 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
           </div>
         </form>
         <form *ngSwitchCase="3" (ngSubmit)="nextStep()" #form3="ngForm">
-          <!-- Step 3: Contatti -->
+          <!-- Step 3: Dati specifici - Selezione farmacie ospedaliere attive (multi) -->
+          <h4>{{ translate('structures.step.specificData') }}</h4>
           <div class="form-row">
-            <label>Email*<input type="email" name="email" [(ngModel)]="model.email" required /></label>
-            <label>Telefono<input type="text" name="tel" [(ngModel)]="model.tel" /></label>
+            <label>{{ translate('structures.field.hospitalPharmacy') }}
+              <select name="hospitalPharmacy" [(ngModel)]="model.hospitalPharmacyIds" multiple required style="min-width:300px; min-height: 80px;">
+                <option *ngFor="let pharmacy of hospitalPharmaciesList" [ngValue]="pharmacy.id">{{pharmacy.name}} ({{pharmacy.city}})</option>
+              </select>
+            </label>
           </div>
         </form>
         <div *ngSwitchCase="4">
-          <!-- Step 4: Conferma -->
-          <h4>Riepilogo dati inseriti</h4>
-          <ul>
-            <li><b>Denominazione:</b> {{model.denom}}</li>
-            <li><b>Codice ASL:</b> {{model.codice}}</li>
-            <li><b>Regione:</b> {{model.regione}}</li>
-            <li><b>Città:</b> {{model.citta}}</li>
-            <li><b>Codice fiscale:</b> {{model.cf}}</li>
-            <li><b>Partita IVA:</b> {{model.piva}}</li>
-            <li><b>Email:</b> {{model.email}}</li>
-            <li><b>Telefono:</b> {{model.tel}}</li>
-          </ul>
+          <!-- Step 4: Conferma - Riepilogo struttura, layout label sopra, valore sotto, due colonne -->
+          <h4>{{ translate('structures.step.summary') }}</h4>
+          <div class="summary4-grid">
+            <div class="summary4-row">
+              <div class="summary4-col">
+                <div class="summary2-label">{{ translate('structures.field.denom') }}</div>
+                <div class="summary2-value">{{model.name}}</div>
+              </div>
+              <div class="summary4-col">
+                <div class="summary2-label">{{ translate('structures.field.aslReference') }}</div>
+                <div class="summary2-value">{{model.code}}</div>
+              </div>
+              <div class="summary4-col">
+                <div class="summary2-label">{{ translate('structures.field.phone') }}</div>
+                <div class="summary2-value">{{model.phone}}</div>
+              </div>
+              <div class="summary4-col">
+                <div class="summary2-label">{{ translate('structures.field.address') }}</div>
+                <div class="summary2-value">{{model.address}}</div>
+              </div>
+            </div>
+            <div class="summary4-row">
+              <div class="summary4-col">
+                <div class="summary2-label">{{ translate('structures.field.region') }}</div>
+                <div class="summary2-value">{{model.region || '-'}}</div>
+              </div>
+              <div class="summary4-col">
+                <div class="summary2-label">{{ translate('structures.field.province') }}</div>
+                <div class="summary2-value">{{model.province || '-'}}</div>
+              </div>
+              <div class="summary4-col">
+                <div class="summary2-label">{{ translate('structures.field.city') }}</div>
+                <div class="summary2-value">{{model.city || '-'}}</div>
+              </div>
+             
+            </div>
+            <div class="summary4-row">
+              <div class="summary4-col" style="grid-column: span 2;">
+                <div class="summary2-label">{{ translate('structures.field.referencePharmacies') }}</div>
+                <div class="summary2-value">
+                  <ng-container *ngFor="let pharmacy of hospitalPharmaciesList">
+                    <span *ngIf="model.hospitalPharmacyIds && model.hospitalPharmacyIds.includes(pharmacy.id)">{{pharmacy.name}} - {{pharmacy.city}}<br></span>
+                  </ng-container>
+                </div>
+              </div>
+              <div class="summary4-col" style="grid-column: span 2;">
+                <div class="summary2-label">{{ translate('structures.field.referenceContacts') }}</div>
+                <div class="summary2-value">
+                  <ng-container *ngFor="let ref of model.referents">
+                    <div>{{ref.firstName}} {{ref.lastName}}<span *ngIf="ref.role"> - {{ref.role}}</span></div>
+                  </ng-container>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </ng-container>
-      <div modal-actions>
+      <div modal-actions *ngIf="!showSuccessPopup">
         <button *ngIf="step>1" class="btn btn-outline" (click)="prevStep()" type="button">Indietro</button>
         <button *ngIf="step>1 && step<4" class="btn btn-primary" (click)="nextStep()" type="button">Avanti</button>
         <button *ngIf="step===4" class="btn btn-primary" (click)="save()" type="button">Conferma</button>
@@ -131,13 +194,20 @@ export class AddWizardComponentAsl implements OnInit {
   @Output() close = new EventEmitter<void>();
   step = 1;
   model: any = {
-    regioneId: '',
-    regione: '',
-    provinciaId: '',
-    provincia: '',
-    comuneId: '',
-    comune: '',
-    referents: []
+    name: '',
+    code: '',
+    regionId: '',
+    region: '',
+    provinceId: '',
+    province: '',
+    cityId: '',
+    city: '',
+    address: '',
+    cap: '',
+    phone: '',
+    referents: [],
+    hospitalPharmacyIds: [],
+    structureType: 'ASL'
   };
   regioni: GeographicOptionDto[] = [];
   province: GeographicOptionDto[] = [];
@@ -147,30 +217,48 @@ export class AddWizardComponentAsl implements OnInit {
   loadingComuni = false;
   stepTitles: string[] = [];
   stepDescriptions: string[] = [];
+  hospitalPharmaciesList: PharmacyDto[] = [];
 
 
   referentsList: ReferentDto[] = [];
 
-  constructor(private geoApi: GeographyApiService, private referentApi: ReferentApiService) {
+  constructor(
+    private geoApi: GeographyApiService,
+    private referentApi: ReferentApiService,
+    private pharmacyApi: PharmacyApiService,
+    private structureApi: StructureApiService
+  ) {
     console.log('[AddWizardComponentAsl] COSTRUTTORE: istanza creata');
   }
 
   ngOnInit(): void {
     console.log('[AddWizardComponentAsl] ngOnInit: Wizard ASL aperto');
     this.stepTitles = [
-      this.translate('structures.step.generalData'),
-      this.translate('structures.step.contacts'),
-      this.translate('structures.step.contacts'),
-      this.translate('structures.step.confirm')
+      'structures.step.generalData',
+      'structures.step.contacts',
+      'structures.step.specificData',
+      'structures.step.confirm'
     ];
     this.stepDescriptions = [
-      this.translate('structures.step.generalData.desc'),
-      this.translate('structures.step.contacts.desc'),
-      this.translate('structures.step.contacts.desc'),
-      this.translate('structures.step.confirm.desc')
+      'structures.step.generalData.desc',
+      'structures.step.contacts.desc',
+      'structures.step.specificData.desc',
+      'structures.step.confirm.desc'
     ];
     this.loadRegioni();
     this.loadReferents();
+    this.loadHospitalPharmacies();
+  }
+
+  loadHospitalPharmacies() {
+    this.pharmacyApi.getActiveHospitalPharmacies().subscribe({
+      next: (data) => {
+        this.hospitalPharmaciesList = data;
+      },
+      error: () => {
+        this.hospitalPharmaciesList = [];
+      }
+    });
   }
 
   loadReferents() {
@@ -199,16 +287,18 @@ export class AddWizardComponentAsl implements OnInit {
   }
 
   onRegioneChange() {
-    this.model.regione = this.findOptionName(this.regioni, this.model.regioneId);
-    this.model.provinciaId = '';
-    this.model.provincia = '';
-    this.model.comuneId = '';
-    this.model.comune = '';
+      console.log('[AddWizardComponentAsl] onRegioneChange: regionId selezionato:', this.model.regionId);
+      console.log('[AddWizardComponentAsl] CHIAMO getProvincesByRegion con:', this.model.regionId);
+    this.model.region = this.findOptionName(this.regioni, this.model.regionId);
+    this.model.provinceId = '';
+    this.model.province = '';
+    this.model.cityId = '';
+    this.model.city = '';
     this.province = [];
     this.comuni = [];
-    if (this.model.regioneId) {
+    if (this.model.regionId) {
       this.loadingProvince = true;
-      this.geoApi.getProvincesByRegion(this.model.regioneId).subscribe({
+      this.geoApi.getProvincesByRegion(this.model.regionId).subscribe({
         next: (data) => {
           this.province = data;
           this.loadingProvince = false;
@@ -222,13 +312,13 @@ export class AddWizardComponentAsl implements OnInit {
   }
 
   onProvinciaChange() {
-    this.model.provincia = this.findOptionName(this.province, this.model.provinciaId);
-    this.model.comuneId = '';
-    this.model.comune = '';
+    this.model.province = this.findOptionName(this.province, this.model.provinceId);
+    this.model.cityId = '';
+    this.model.city = '';
     this.comuni = [];
-    if (this.model.provinciaId) {
+    if (this.model.provinceId) {
       this.loadingComuni = true;
-      this.geoApi.getCitiesByProvince(this.model.provinciaId).subscribe({
+      this.geoApi.getCitiesByProvince(this.model.provinceId).subscribe({
         next: (data) => {
           this.comuni = data;
           this.loadingComuni = false;
@@ -242,7 +332,8 @@ export class AddWizardComponentAsl implements OnInit {
   }
 
   onComuneChange() {
-    this.model.comune = this.findOptionName(this.comuni, this.model.comuneId);
+    this.model.city = this.findOptionName(this.comuni, this.model.cityId);
+    console.log('[AddWizardComponentAsl] onComuneChange: cityId selezionato:', this.model.cityId, 'city:', this.model.city);
   }
 
   private findOptionName(options: GeographicOptionDto[], optionId?: number | string | null): string {
@@ -258,6 +349,9 @@ export class AddWizardComponentAsl implements OnInit {
     if (this.step < 4) {
       this.step++;
       console.log('[AddWizardComponentAsl] nextStep: step incrementato a', this.step);
+      if (this.step === 4) {
+        console.log('[AddWizardComponentAsl] MODEL ALLO STEP 4:', JSON.stringify(this.model));
+      }
     }
   }
 
@@ -269,10 +363,35 @@ export class AddWizardComponentAsl implements OnInit {
     }
   }
 
+  showSuccessPopup = false;
+  errorMessage = '';
+
   save() {
     console.log('[AddWizardComponentAsl] save: dati da salvare', this.model);
-    // TODO: chiamata API salvataggio
-    this.onClose();
+    console.log('[AddWizardComponentAsl] save: JSON.stringify(model):', JSON.stringify(this.model));
+    this.errorMessage = '';
+    const payload: StructureDto = {
+      name: this.model.name,
+      code: this.model.code,
+      regionId: this.model.regionId,
+      provinceId: this.model.provinceId,
+      cityId: this.model.cityId,
+      address: this.model.address,
+      cap: this.model.cap,
+      phone: this.model.phone,
+      referents: this.model.referents,
+      hospitalPharmacyIds: this.model.hospitalPharmacyIds,
+      structureType: 'ASL'
+    };
+    this.structureApi.createStructure(payload).subscribe({
+      next: () => {
+        this.showSuccessPopup = true;
+      },
+      error: (err) => {
+        this.errorMessage = 'Errore durante il salvataggio. Riprova o controlla i dati.';
+        console.error('[AddWizardComponentAsl] Errore salvataggio struttura', err);
+      }
+    });
   }
 
   onClose() {
