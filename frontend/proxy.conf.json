@@ -1,8 +1,8 @@
 {
-  "/api/tenants": {
-    "target": "http://localhost:8086",
+  "/api": {
+    "target": "http://localhost:8087",
     "secure": false,
     "changeOrigin": true,
     "logLevel": "debug"
-  },
+  }
 }

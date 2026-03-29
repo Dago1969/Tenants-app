@@ -24,13 +24,14 @@
         <h3>{{ translate(isEditMode() ? 'crud.actions.update' : 'crud.actions.create') }}</h3>
 
         <form class="structure-form" (ngSubmit)="save()">
+
           <label>
-            <span>{{ translate('structures.field.code') }}</span>
+            <span>{{ translate('structures.field.code') }}<span class="required-asterisk">*</span></span>
             <input [(ngModel)]="formModel.code" name="code" required />
           </label>
 
           <label>
-            <span>{{ translate('structures.field.name') }}</span>
+            <span>{{ translate('structures.field.name') }}<span class="required-asterisk">*</span></span>
             <input [(ngModel)]="formModel.name" name="name" required />
           </label>
 
@@ -40,7 +41,7 @@
           </label>
 
           <label>
-            <span>{{ translate('structures.field.address') }}</span>
+            <span>{{ translate('structures.field.address') }}<span class="required-asterisk">*</span></span>
             <input [(ngModel)]="formModel.address" name="address" required />
           </label>
 

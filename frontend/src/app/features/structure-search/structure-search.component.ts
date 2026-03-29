@@ -4,6 +4,8 @@ import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
 import { t, MessageKey } from '../../i18n/messages';
 import { SearchField, SearchPageComponent } from '../../shared/search-page.component';
 import { AddWizardComponentAsl } from '../../shared/add-wizard.component-asl';
+import { AuthService } from '../../core/auth.service';
+import { FunctionAuthorizationService } from '../../core/function-authorization.service';
 
 /**
  * Pagina di ricerca strutture per tipo, con collegamento al form di gestione dedicato.
@@ -26,7 +28,7 @@ import { AddWizardComponentAsl } from '../../shared/add-wizard.component-asl';
       [showViewAction]="false"
       [showCreateAction]="false"
     >
-      <button search-header-action class="btn btn-primary" style="margin-left: 0.5rem;" (click)="openAslWizard()">
+      <button search-header-action class="btn btn-primary" style="margin-left: 0.5rem;" (click)="openAslWizard()" *ngIf="showCreateAction && canCreate">
         <span class="icon">＋</span> {{ translate('crud.actions.new') }} ASL
       </button>
     </app-search-page>
@@ -34,6 +36,11 @@ import { AddWizardComponentAsl } from '../../shared/add-wizard.component-asl';
   `
 })
 export class StructureSearchComponent implements OnInit, OnDestroy {
+    /**
+     * Proprietà per la visibilità e permesso creazione ASL (default true, da adattare se serve logica custom)
+     */
+    showCreateAction = true;
+    canCreate = true;
   showAslWizard = false;
   private routeSub: any = null;
   titleKey = 'structures.title' as MessageKey;
@@ -61,7 +68,9 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
   constructor(
     private readonly route: ActivatedRoute,
     private readonly router: Router,
-    private readonly cdr: ChangeDetectorRef
+    private readonly cdr: ChangeDetectorRef,
+    private readonly authService: AuthService,
+    private readonly functionAuthorizationService: FunctionAuthorizationService
   ) {}
 
   ngOnInit(): void {
@@ -78,6 +87,28 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
     }
     // Nessuna gestione di route per il wizard
     this.showAslWizard = false;
+
+    // Logica permessi creazione ASL
+    this.loadActionPermissions();
+  }
+
+  private async loadActionPermissions(): Promise<void> {
+    if (!this.moduleCode) {
+      this.canCreate = true;
+      return;
+    }
+    this.canCreate = await this.resolveActionPermission(this.createFunctionCode);
+  }
+
+  private async resolveActionPermission(functionCode: string): Promise<boolean> {
+    if (!functionCode) {
+      return true;
+    }
+    try {
+      return await this.functionAuthorizationService.canUseFunction(this.moduleCode, functionCode);
+    } catch {
+      return false;
+    }
   }
 
   ngOnDestroy(): void {

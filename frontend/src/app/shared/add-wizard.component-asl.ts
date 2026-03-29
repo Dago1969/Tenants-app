@@ -16,7 +16,7 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <qtm-step-modal
-      [title]="'Inserimento Struttura ASL'"
+      [title]="translate('structures.wizard.title')"
       [step]="step"
       [totalSteps]="4"
       [stepTitle]="stepTitles[step-1]"
@@ -27,18 +27,38 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
         <form *ngSwitchCase="1" (ngSubmit)="nextStep()" #form1="ngForm">
           <!-- Step 1: Dati anagrafici -->
           <div class="form-row">
-            <label>Denominazione*<input type="text" name="denom" [(ngModel)]="model.denom" required /></label>
-            <label>Codice ASL*<input type="text" name="codice" [(ngModel)]="model.codice" required /></label>
+            <label>{{ translate('structures.field.denom') }}<span class="required-asterisk">*</span><input type="text" name="denom" [(ngModel)]="model.denom" required /></label>
+            <label>{{ translate('structures.field.codice') }}<span class="required-asterisk">*</span><input type="text" name="codice" [(ngModel)]="model.codice" required /></label>
           </div>
           <div class="form-row">
-            <label>{{ translate('structures.field.address') }}
+            <label>{{ translate('structures.field.regione') }}<span class="required-asterisk">*</span>
+              <select class="search-filter-select" name="regione" [(ngModel)]="model.regioneId" (change)="onRegioneChange()" required>
+                <option value="">{{ translate('structures.select') }}</option>
+                <option *ngFor="let regione of regioni" [value]="regione.id">{{regione.name}}</option>
+              </select>
+            </label>
+            <label>{{ translate('structures.field.provincia') }}<span class="required-asterisk">*</span>
+              <select class="search-filter-select" name="provincia" [(ngModel)]="model.provinciaId" (change)="onProvinciaChange()" [disabled]="!province.length" required>
+                <option value="">{{ translate('structures.select') }}</option>
+                <option *ngFor="let provincia of province" [value]="provincia.id">{{provincia.name}}</option>
+              </select>
+            </label>
+            <label>{{ translate('structures.field.comune') }}<span class="required-asterisk">*</span>
+              <select class="search-filter-select" name="comune" [(ngModel)]="model.comuneId" [disabled]="!comuni.length" required>
+                <option value="">{{ translate('structures.select') }}</option>
+                <option *ngFor="let comune of comuni" [value]="comune.id">{{comune.name}}</option>
+              </select>
+            </label>
+          </div>
+          <div class="form-row">
+            <label>{{ translate('structures.field.address') }}<span class="required-asterisk">*</span>
               <input type="text" name="address" [(ngModel)]="model.address" required autocomplete="off" />
             </label>
-            <label>{{ translate('structures.field.cap') }}
-              <input type="text" name="cap" [(ngModel)]="model.cap" maxlength="10" autocomplete="off" />
+            <label>{{ translate('structures.field.cap') }}<span class="required-asterisk">*</span>
+              <input type="text" name="cap" [(ngModel)]="model.cap" maxlength="10" required autocomplete="off" />
             </label>
-            <label>{{ translate('structures.field.phone') }}
-              <input type="text" name="phone" [(ngModel)]="model.phone" autocomplete="off" />
+            <label>{{ translate('structures.field.phone') }}<span class="required-asterisk">*</span>
+              <input type="text" name="phone" [(ngModel)]="model.phone" required autocomplete="off" />
             </label>
           </div>
           <div class="form-row">
@@ -50,25 +70,8 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
               ></gmpx-place-autocomplete>
             </label>
           </div>
-          <div class="form-row">
-            <label>Regione*
-              <select class="search-filter-select" name="regione" [(ngModel)]="model.regioneId" (change)="onRegioneChange()" required>
-                <option value="">Seleziona...</option>
-                <option *ngFor="let regione of regioni" [value]="regione.id">{{regione.name}}</option>
-              </select>
-            </label>
-            <label>Provincia*
-              <select class="search-filter-select" name="provincia" [(ngModel)]="model.provinciaId" (change)="onProvinciaChange()" [disabled]="!province.length" required>
-                <option value="">Seleziona...</option>
-                <option *ngFor="let provincia of province" [value]="provincia.id">{{provincia.name}}</option>
-              </select>
-            </label>
-            <label>Comune*
-              <select class="search-filter-select" name="comune" [(ngModel)]="model.comuneId" [disabled]="!comuni.length" required>
-                <option value="">Seleziona...</option>
-                <option *ngFor="let comune of comuni" [value]="comune.id">{{comune.name}}</option>
-              </select>
-            </label>
+          <div class="form-row" style="justify-content: flex-end;">
+            <button class="btn btn-primary" type="submit" [disabled]="!form1.valid">Avanti</button>
           </div>
         </form>
         <form *ngSwitchCase="2" (ngSubmit)="nextStep()" #form2="ngForm">
@@ -106,7 +109,7 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
       </ng-container>
       <div modal-actions>
         <button *ngIf="step>1" class="btn btn-outline" (click)="prevStep()" type="button">Indietro</button>
-        <button *ngIf="step<4" class="btn btn-primary" (click)="nextStep()" type="button">Avanti</button>
+        <button *ngIf="step>1 && step<4" class="btn btn-primary" (click)="nextStep()" type="button">Avanti</button>
         <button *ngIf="step===4" class="btn btn-primary" (click)="save()" type="button">Conferma</button>
       </div>
     </qtm-step-modal>
@@ -142,18 +145,8 @@ export class AddWizardComponentAsl implements OnInit {
   loadingRegioni = false;
   loadingProvince = false;
   loadingComuni = false;
-  stepTitles = [
-    this.translate('structures.step.generalData'),
-    this.translate('structures.step.administrativeData'),
-    this.translate('structures.step.contacts'),
-    this.translate('structures.step.confirm')
-  ];
-  stepDescriptions = [
-    this.translate('structures.step.generalData.desc'),
-    this.translate('structures.step.administrativeData.desc'),
-    this.translate('structures.step.contacts.desc'),
-    this.translate('structures.step.confirm.desc')
-  ];
+  stepTitles: string[] = [];
+  stepDescriptions: string[] = [];
 
 
   referentsList: ReferentDto[] = [];
@@ -164,6 +157,18 @@ export class AddWizardComponentAsl implements OnInit {
 
   ngOnInit(): void {
     console.log('[AddWizardComponentAsl] ngOnInit: Wizard ASL aperto');
+    this.stepTitles = [
+      this.translate('structures.step.generalData'),
+      this.translate('structures.step.contacts'),
+      this.translate('structures.step.contacts'),
+      this.translate('structures.step.confirm')
+    ];
+    this.stepDescriptions = [
+      this.translate('structures.step.generalData.desc'),
+      this.translate('structures.step.contacts.desc'),
+      this.translate('structures.step.contacts.desc'),
+      this.translate('structures.step.confirm.desc')
+    ];
     this.loadRegioni();
     this.loadReferents();
   }

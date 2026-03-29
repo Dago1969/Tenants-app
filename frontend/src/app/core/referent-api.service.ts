@@ -1,6 +1,8 @@
+
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 export interface ReferentDto {
   id: number;
@@ -16,6 +18,6 @@ export class ReferentApiService {
   constructor(private http: HttpClient) {}
 
   getAll(): Observable<ReferentDto[]> {
-    return this.http.get<ReferentDto[]>('/api/tenants/referents');
+    return this.http.get<ReferentDto[]>(`${environment.apiBaseUrl}/referents`);
   }
 }
