@@ -24,12 +24,6 @@
   margin-bottom: 24px;
 }
 
-.authz-header h2 {
-  margin: 0;
-  color: #395f31;
-  font-size: 1.75rem;
-  font-weight: 700;
-}
 
 .authz-toolbar {
   display: flex;

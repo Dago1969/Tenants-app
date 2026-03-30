@@ -74,8 +74,6 @@ button {
   --text-color: var(--Primary);
   --text-font-family: "Work Sans", Arial, Helvetica, sans-serif;
 
-  /* TXT a livello root */
-  --TXT: #454F78;
 }
 /* Header tabelle */
 th {
@@ -108,6 +106,16 @@ body {
   color: var(--text-color);
 }
 
+h2{
+  color: var(--TXT, #454F78);
+font-family: "Work Sans";
+font-size: 24px;
+font-style: normal;
+font-weight: 600;
+line-height: normal;
+letter-spacing: -1.2px;
+}
+
 .container {
   max-width: 980px;
   margin: 0 auto;
@@ -122,7 +130,7 @@ body {
 }
 
 /* --- Typography --- */
-.text, label, p, span, h1, h2, h3, h4, h5, h6 {
+.text, label, p, span, h1,  h3, h4, h5, h6 {
   color: var(--text-color);
   font-family: var(--text-font-family);
   font-size: 14px; /* Default leggibile */
@@ -255,3 +263,8 @@ input:-ms-input-placeholder { color: var(--Primary); font-weight: 400 !important
   justify-content: center;
   margin-top: 15px;
 }
+
+.main-header {
+  background: linear-gradient(0deg, rgba(251, 251, 251, 0.80) 0%, rgba(251, 251, 251, 0.80) 100%), var(--Grad-element, #E3F7FF);
+}
+

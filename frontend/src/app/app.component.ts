@@ -6,6 +6,7 @@ import { AuthService } from './core/auth.service';
 import { MessageKey, t } from './i18n/messages';
 import { environment } from '../environments/environment';
 import { Subscription } from 'rxjs';
+import { HeaderComponent } from './shared/header.component';
 
 interface AuthorizationModuleDto {
   moduleCode: string;
@@ -29,7 +30,7 @@ interface MenuItem {
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, HeaderComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
