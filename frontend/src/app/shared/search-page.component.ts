@@ -49,6 +49,8 @@ interface OperationLogEntry {
   message: string;
 }
 
+
+
 type DeleteDialogMode = 'confirm' | 'reassign';
  
 /**
@@ -298,6 +300,7 @@ export class SearchPageComponent implements OnInit {
   deleteDialogReplacementRoles: SelectOption[] = [];
   deleteDialogReplacementRoleId = '';
   operationLogs: OperationLogEntry[] = [];
+  private operationLogTimeouts: { [key: string]: any } = {};
 
   constructor(
     private readonly http: HttpClient,
@@ -682,14 +685,23 @@ export class SearchPageComponent implements OnInit {
   }
 
   private pushOperationLog(type: 'success' | 'error', message: MessageKey | string): void {
-    this.operationLogs = [
-      {
-        id: Date.now() + this.operationLogs.length,
-        type,
-        message: this.resolveMessage(message)
-      },
-      ...this.operationLogs
-    ].slice(0, 5);
+    const entry: OperationLogEntry = {
+      id: Date.now() + this.operationLogs.length,
+      type,
+      message: this.resolveMessage(message)
+    };
+    this.operationLogs = [entry, ...this.operationLogs].slice(0, 5);
+
+    // Cancella eventuale timeout precedente per questo id
+    if (this.operationLogTimeouts[entry.id]) {
+      clearTimeout(this.operationLogTimeouts[entry.id]);
+    }
+    // Imposta timeout per rimozione automatica
+    const timeoutMs = type === 'error' ? 20000 : 10000;
+    this.operationLogTimeouts[entry.id] = setTimeout(() => {
+      this.operationLogs = this.operationLogs.filter((log) => log.id !== entry.id);
+      delete this.operationLogTimeouts[entry.id];
+    }, timeoutMs);
   }
 
   private buildErrorMessage(messageKey: MessageKey, error: unknown): string {

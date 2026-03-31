@@ -5,8 +5,10 @@ import com.qtm.tenants.structure.dto.StructureDto;
 import com.qtm.tenants.structure.dto.StructureParentOptionDto;
 import com.qtm.tenants.structure.dto.StructureTypeDto;
 import com.qtm.tenants.structure.entity.StructureEntity;
+import com.qtm.tenants.structure.repository.StructureRepository;
 import com.qtm.tenants.structure.service.StructureTypeRegistry;
 import com.qtm.tenants.referent.mapper.ReferentMapper;
+import com.qtm.tenants.referent.repository.ReferentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -21,6 +23,11 @@ public class StructureMapper {
     private final StructureTypeRegistry structureTypeRegistry;
     @Autowired
     private ReferentMapper referentMapper;
+    @Autowired
+    private ReferentRepository referentRepository;
+    @Autowired
+    private StructureRepository structureRepository;
+
 
     public StructureDto toDto(StructureEntity entity, String parentStructureName) {
         StructureDto dto = new StructureDto();
@@ -58,6 +65,16 @@ public class StructureMapper {
         dto.setStructureTypeDisplayOrder(structureType == null ? null : structureType.getDisplayOrder());
         dto.setParentStructureId(entity.getParentStructureId());
         dto.setParentStructureName(parentStructureName);
+        // Mappatura farmacie collegate
+        if (entity.getPharmacies() != null) {
+            java.util.List<StructureDto> pharmacyDtos = new java.util.ArrayList<>();
+            for (StructureEntity pharmacy : entity.getPharmacies()) {
+                pharmacyDtos.add(toDto(pharmacy, null));
+            }
+            dto.setPharmacies(pharmacyDtos);
+        } else {
+            dto.setPharmacies(new java.util.ArrayList<>());
+        }
         return dto;
     }
 
@@ -82,15 +99,21 @@ public class StructureMapper {
         entity.setDescription(dto.getDescription());
         entity.setAddress(dto.getAddress());
         entity.setCap(dto.getCap());
+        // Gestione referenti
         if (dto.getReferents() != null) {
             java.util.List<com.qtm.tenants.referent.entity.ReferentEntity> referentEntities = new java.util.ArrayList<>();
             for (com.qtm.tenants.referent.dto.ReferentDto refDto : dto.getReferents()) {
-                referentEntities.add(referentMapper.toEntity(refDto));
+                if (refDto.getId() != null) {
+                    referentRepository.findById(refDto.getId()).ifPresent(referentEntities::add);
+                } else {
+                    referentEntities.add(referentMapper.toEntity(refDto));
+                }
             }
             entity.setReferents(referentEntities);
         } else {
             entity.setReferents(new java.util.ArrayList<>());
         }
+        // (Rimosso: gestione singola farmacia, ora gestito come lista pharmacies)
         entity.setCityId(dto.getCityId());
         entity.setCity(dto.getCity());
         entity.setProvinceId(dto.getProvinceId());
@@ -102,6 +125,20 @@ public class StructureMapper {
         entity.setActive(dto.isActive());
         entity.setParentStructureId(dto.getParentStructureId());
         entity.setStructureType(structureTypeRegistry.getRequiredByCode(dto.getStructureType()).getCode());
+        // Gestione lista farmacie collegate
+        if (dto.getPharmacies() != null) {
+            java.util.List<StructureEntity> pharmacyEntities = new java.util.ArrayList<>();
+            for (StructureDto pharmacyDto : dto.getPharmacies()) {
+                if (pharmacyDto.getId() != null) {
+                    structureRepository.findById(pharmacyDto.getId()).ifPresent(pharmacyEntities::add);
+                } else {
+                    pharmacyEntities.add(toEntity(pharmacyDto));
+                }
+            }
+            entity.setPharmacies(pharmacyEntities);
+        } else {
+            entity.setPharmacies(new java.util.ArrayList<>());
+        }
     }
 
     public StructureTypeDto toTypeDto(StructureType type) {

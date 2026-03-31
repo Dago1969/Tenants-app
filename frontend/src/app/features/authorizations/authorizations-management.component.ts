@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/auth.service';
 import { MessageKey, hasMessageKey, t } from '../../i18n/messages';
 import { environment } from '../../../environments/environment';
+import { NotificationService } from '../../shared/notification.service';
 
 type ModuleAuthorizationCode = 'allow' | 'deny';
 type FieldAuthorizationCode = 'full-edit' | 'read-only' | 'hide-field';
@@ -92,8 +93,7 @@ export class AuthorizationsManagementComponent implements OnInit {
   expandedModuleCodes = new Set<string>();
   loading = false;
   saving = false;
-  errorMessage = '';
-  successMessage = '';
+
 
   readonly moduleScopeOptions: { value: ModuleAuthorizationCode; labelKey: MessageKey }[] = [
     { value: 'allow', labelKey: 'authorizations.scope.allow' },
@@ -113,7 +113,8 @@ export class AuthorizationsManagementComponent implements OnInit {
 
   constructor(
     private readonly http: HttpClient,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
+    readonly notificationService: NotificationService
   ) {}
 
   ngOnInit(): void {
@@ -136,9 +137,6 @@ export class AuthorizationsManagementComponent implements OnInit {
     }
 
     this.saving = true;
-    this.errorMessage = '';
-    this.successMessage = '';
-
     this.http
       .put<AuthorizationRoleMatrixDto>(
         `${environment.apiBaseUrl}/authorizations/roles/${this.selectedRoleId}`,
@@ -148,11 +146,11 @@ export class AuthorizationsManagementComponent implements OnInit {
         next: (matrix: AuthorizationRoleMatrixDto) => {
           this.modules = this.sortModules(matrix.modules ?? []);
           this.syncExpandedModules();
-          this.successMessage = this.translate('authorizations.success.save');
+          this.notificationService.showSuccess(this.translate('authorizations.success.save'));
           this.saving = false;
         },
         error: () => {
-          this.errorMessage = this.translate('authorizations.error.save');
+          this.notificationService.showError(this.translate('authorizations.error.save'));
           this.saving = false;
         }
       });
@@ -253,8 +251,6 @@ export class AuthorizationsManagementComponent implements OnInit {
 
   private loadRoles(): void {
     this.loading = true;
-    this.errorMessage = '';
-
     this.http.get<RoleDto[]>(`${environment.apiBaseUrl}/roles`).subscribe({
       next: (roles: RoleDto[]) => {
         this.roles = [...(roles ?? [])].sort((left, right) => left.id.localeCompare(right.id));
@@ -276,7 +272,7 @@ export class AuthorizationsManagementComponent implements OnInit {
         this.roles = [];
         this.modules = [];
         this.loading = false;
-        this.errorMessage = this.translate('authorizations.error.loadRoles');
+        this.notificationService.showError(this.translate('authorizations.error.loadRoles'));
       }
     });
   }
@@ -289,9 +285,6 @@ export class AuthorizationsManagementComponent implements OnInit {
     }
 
     this.loading = true;
-    this.errorMessage = '';
-    this.successMessage = '';
-
     this.http
       .get<AuthorizationRoleMatrixDto>(`${environment.apiBaseUrl}/authorizations/roles/${this.selectedRoleId}`)
       .subscribe({
@@ -303,7 +296,7 @@ export class AuthorizationsManagementComponent implements OnInit {
         error: () => {
           this.modules = [];
           this.loading = false;
-          this.errorMessage = this.translate('authorizations.error.loadMatrix');
+          this.notificationService.showError(this.translate('authorizations.error.loadMatrix'));
         }
       });
   }

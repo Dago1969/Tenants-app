@@ -1,0 +1,29 @@
+<div class="hospital-search">
+  <h2>{{ translate('hospital.search.title') }}</h2>
+  <form (ngSubmit)="search()" class="search-form">
+    <input type="text" [(ngModel)]="filters.code" name="code" placeholder="{{ translate('hospital.field.code') }}" />
+    <input type="text" [(ngModel)]="filters.name" name="name" placeholder="{{ translate('hospital.field.name') }}" />
+    <input type="text" [(ngModel)]="filters.city" name="city" placeholder="{{ translate('hospital.field.city') }}" />
+    <button type="submit">{{ translate('hospital.search.button') }}</button>
+  </form>
+  <div *ngIf="loading">{{ translate('hospital.search.loading') }}</div>
+  <table *ngIf="!loading && hospitals.length">
+    <thead>
+      <tr>
+        <th>{{ translate('hospital.field.code') }}</th>
+        <th>{{ translate('hospital.field.name') }}</th>
+        <th>{{ translate('hospital.field.city') }}</th>
+        <th>{{ translate('hospital.field.region') }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let h of hospitals">
+        <td>{{ h.code }}</td>
+        <td>{{ h.name }}</td>
+        <td>{{ h.city }}</td>
+        <td>{{ h.region }}</td>
+      </tr>
+    </tbody>
+  </table>
+  <div *ngIf="!loading && !hospitals.length">{{ translate('hospital.search.noResults') }}</div>
+</div>

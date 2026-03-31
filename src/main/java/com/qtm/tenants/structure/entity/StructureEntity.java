@@ -80,4 +80,15 @@ public class StructureEntity {
 
     @Column(name = "parent_structure_id")
     private Long parentStructureId;
+
+    /**
+     * Lista di farmacie collegate (altre strutture di tipo farmacia)
+     */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "structure_pharmacies",
+        joinColumns = @JoinColumn(name = "structure_id"),
+        inverseJoinColumns = @JoinColumn(name = "pharmacy_id")
+    )
+    private java.util.List<StructureEntity> pharmacies = new java.util.ArrayList<>();
 }
