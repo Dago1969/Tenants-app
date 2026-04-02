@@ -7,6 +7,7 @@ import com.qtm.tenants.structure.dto.StructureTypeDto;
 import com.qtm.tenants.structure.service.StructureService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,6 +24,11 @@ import java.util.List;
 /**
  * Controller REST CRUD strutture.
  */
+/**
+ * Controller REST CRUD strutture.
+ * La chiamata GET /api/tenants/structures invoca il metodo findAll con tutti i parametri, incluso active.
+ */
+@Slf4j
 @RestController
 @RequestMapping("/api/tenants/structures")
 @RequiredArgsConstructor
@@ -46,17 +52,27 @@ public class StructureController {
         return ResponseEntity.ok(structureService.create(structureDto));
     }
 
+    /**
+     * Ricerca strutture filtrando per structureType, parentStructureId, code, name, city, active.
+     * Viene invocato da GET /api/tenants/structures.
+     */
     @GetMapping
-    public ResponseEntity<List<StructureDto>> findAll(
+        public ResponseEntity<List<StructureDto>> findAll(
             @RequestParam(required = false) String structureType,
             @RequestParam(required = false) Long parentStructureId,
-                        @RequestParam(required = false) String code,
-                        @RequestParam(required = false) String name,
-                        @RequestParam(required = false) String city,
+            @RequestParam(required = false) String code,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) Boolean active,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
+        log.info("[StructureController] GET /structures params: structureType={}, parentStructureId={}, code={}, name={}, city={}, active={}, selectedRole={}",
+                structureType, parentStructureId, code, name, city, active, selectedRole);
+        // Loggo i tipi struttura disponibili per debug e prevenzione errori code
+        List<StructureTypeDto> types = structureService.findSupportedTypes();
+        log.info("[StructureController] Tipi struttura disponibili: {}", types.stream().map(StructureTypeDto::getCode).toList());
         controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
-                return ResponseEntity.ok(structureService.findAll(structureType, parentStructureId, code, name, city));
+        return ResponseEntity.ok(structureService.findAll(structureType, parentStructureId, code, name, city, active));
     }
 
     @GetMapping("/types")

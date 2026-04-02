@@ -46,7 +46,9 @@ gmpx-place-autocomplete input:focus {
   border: none;
 }
 .qtm-modal-header {
-  background: #8dbaf8;
+  background-image: url('/assets/texture.png');
+  background: linear-gradient(80deg, rgba(36,145,247,0.7) 0%, rgba(30,198,255,0.5) 60%, rgba(43,227,123,0.4) 100%); 
+  /*url('./../assets/texture.png');*/
   color: #fff;
   padding: 22px 32px 16px 32px;
   display: flex;
@@ -54,6 +56,11 @@ gmpx-place-autocomplete input:focus {
   justify-content: space-between;
   font-size: 1.25rem;
   font-weight: 700;
+  border-top-left-radius: 22px;
+  border-top-right-radius: 22px;
+  box-shadow: 0 2px 8px rgba(36, 145, 247, 0.08);
+  position: relative;
+  overflow: hidden;
 }
 .qtm-modal-title {
   font-size: 1.18rem;

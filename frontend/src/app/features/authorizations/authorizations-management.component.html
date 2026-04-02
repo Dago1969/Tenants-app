@@ -19,8 +19,17 @@
       </div>
     </header>
 
-    <p class="authz-status authz-status-error" *ngIf="errorMessage">{{ errorMessage }}</p>
-    <p class="authz-status authz-status-success" *ngIf="successMessage">{{ successMessage }}</p>
+    <ng-container *ngIf="notificationService.notification$ | async as notif">
+      <p
+        class="authz-status"
+        [ngClass]="{
+          'authz-status-success': notif.type === 'success',
+          'authz-status-error': notif.type === 'error'
+        }"
+      >
+        {{ notif.message }}
+      </p>
+    </ng-container>
     <p class="authz-status" *ngIf="loading">{{ translate('authorizations.loading') }}</p>
 
     <div class="authz-modules" *ngIf="!loading && modules.length > 0">

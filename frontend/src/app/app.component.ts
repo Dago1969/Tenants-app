@@ -115,6 +115,7 @@ export class AppComponent implements OnDestroy {
 
   structureMenuItems: MenuItem[] = [
     { labelKey: 'menu.structure.aslSearch', route: '/structures/asl', moduleCode: 'STRUCTURE' },
+    { labelKey: 'menu.hospital.search', route: '/hospitals-search' },
     { labelKey: 'menu.structure.hospitalSearch', route: '/structures/hospitals', moduleCode: 'STRUCTURE' },
     { labelKey: 'menu.structure.hospitalPharmacySearch', route: '/structures/hospital-pharmacies', moduleCode: 'STRUCTURE' },
     { labelKey: 'menu.structure.retailPharmacySearch', route: '/structures/retail-pharmacies', moduleCode: 'STRUCTURE' },

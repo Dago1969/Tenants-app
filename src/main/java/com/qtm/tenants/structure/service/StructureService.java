@@ -46,7 +46,7 @@ public class StructureService {
 
     @Transactional(readOnly = true)
     public List<StructureDto> findAll(String structureTypeCode, Long parentStructureId) {
-        return findAll(structureTypeCode, parentStructureId, null, null, null);
+        return findAll(structureTypeCode, parentStructureId, null, null, null, null);
     }
 
     @Transactional(readOnly = true)
@@ -55,15 +55,17 @@ public class StructureService {
             Long parentStructureId,
             String code,
             String name,
-            String city
+            String city,
+            Boolean active
     ) {
         List<StructureEntity> entities = resolveEntities(structureTypeCode, parentStructureId).stream()
-                .filter(entity -> matchesFilter(entity.getCode(), code))
-                .filter(entity -> matchesFilter(entity.getName(), name))
-                .filter(entity -> matchesFilter(entity.getCity(), city))
-                .toList();
+            .filter(entity -> matchesFilter(entity.getCode(), code))
+            .filter(entity -> matchesFilter(entity.getName(), name))
+            .filter(entity -> matchesFilter(entity.getCity(), city))
+            .filter(entity -> active == null || Boolean.TRUE.equals(entity.getActive()) == active)
+            .toList();
         return toDtos(entities);
-    }
+        }
 
     @Transactional(readOnly = true)
     public StructureDto findById(Long id) {

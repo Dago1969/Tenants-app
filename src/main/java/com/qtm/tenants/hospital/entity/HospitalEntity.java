@@ -1,4 +1,4 @@
-package com.qtm.tenants.structure.entity;
+package com.qtm.tenants.hospital.entity;
 
 import jakarta.persistence.*;
 import com.qtm.tenants.referent.entity.ReferentEntity;
@@ -7,14 +7,14 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * Entity struttura tenant generalizzata per ASL, ospedali, farmacie, magazzini e altri nodi organizzativi.
+ * Entity ospedale dedicata, duplicata da StructureEntity ma con tabella separata "hospitals".
  */
 @Entity
-@Table(name = "structures")
+@Table(name = "hospitals")
 @Getter
 @Setter
 @NoArgsConstructor
-public class StructureEntity {
+public class HospitalEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,21 +29,16 @@ public class StructureEntity {
     @Column(name = "description")
     private String description;
 
-
     @Column(name = "address", nullable = false)
     private String address;
 
     @Column(name = "cap")
     private String cap;
 
-
-    /**
-     * Lista di referenti associati alla struttura.
-     */
     @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
-        name = "structure_referents",
-        joinColumns = @JoinColumn(name = "structure_id"),
+        name = "hospital_referents",
+        joinColumns = @JoinColumn(name = "hospital_id"),
         inverseJoinColumns = @JoinColumn(name = "referent_id")
     )
     private java.util.List<ReferentEntity> referents = new java.util.ArrayList<>();
@@ -75,20 +70,17 @@ public class StructureEntity {
     @Column(name = "active")
     private Boolean active = true;
 
-    @Column(name = "structure_type")
-    private String structureType;
-
-    @Column(name = "parent_structure_id")
-    private Long parentStructureId;
+    @Column(name = "parent_hospital_id")
+    private Long parentHospitalId;
 
     /**
-     * Lista di farmacie collegate (altre strutture di tipo farmacia)
+     * Lista di ospedali collegati (esempio: filiali, reparti, ecc.)
      */
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
-        name = "structure_pharmacies",
-        joinColumns = @JoinColumn(name = "structure_id"),
-        inverseJoinColumns = @JoinColumn(name = "pharmacy_id")
+        name = "hospital_links",
+        joinColumns = @JoinColumn(name = "hospital_id"),
+        inverseJoinColumns = @JoinColumn(name = "linked_hospital_id")
     )
-    private java.util.List<StructureEntity> pharmacies = new java.util.ArrayList<>();
+    private java.util.List<HospitalEntity> linkedHospitals = new java.util.ArrayList<>();
 }

@@ -1,3 +1,10 @@
+/* Titoli globali */
+h1, h2, h3, h4, h5, h6 {
+  color: #1f2937;
+  font-family: Arial, sans-serif;
+  font-weight: 700;
+  margin-top: 0;
+}
 * {
   box-sizing: border-box;
 }

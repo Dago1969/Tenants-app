@@ -7,6 +7,7 @@ import { StructureApiService, StructureDto } from '../core/structure-api.service
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { QtmStepModalComponent } from './qtm-step-modal.component';
+import { NotificationService } from './notification.service';
 
 /**
  * Wizard inserimento ASL in 4 step
@@ -25,18 +26,18 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
       [stepDescription]="translate(stepDescriptions[step-1])"
       (close)="onClose()"
     >
-      <div *ngIf="showSuccessPopup" class="success-popup">
-        <div class="success-popup-content">
-          <div class="success-icon">✔️</div>
-          <div class="success-message">
-            <b>{{ translate('structures.success.title') }}</b><br>
-            <span *ngFor="let line of translate('structures.success.body').split('\\n')">{{line}}<br></span>
-          </div>
-          <button class="btn btn-primary" (click)="onClose()">{{ translate('structures.success.close') }}</button>
-        </div>
-      </div>
-      <div *ngIf="errorMessage && !showSuccessPopup" class="error-message">{{errorMessage}}</div>
-      <ng-container *ngIf="!showSuccessPopup" [ngSwitch]="step">
+      <ng-container *ngIf="notificationService.notification$ | async as notif">
+        <p
+          class="success-message"
+          [ngClass]="{
+            'success-message': notif.type === 'success',
+            'error-message': notif.type === 'error'
+          }"
+        >
+          {{ notif.message }}
+        </p>
+      </ng-container>
+      <ng-container [ngSwitch]="step">
         <form *ngSwitchCase="1" (ngSubmit)="nextStep()" #form1="ngForm">
           <!-- Step 1: Dati anagrafici -->
           <div class="form-row">
@@ -226,7 +227,8 @@ export class AddWizardComponentAsl implements OnInit {
     private geoApi: GeographyApiService,
     private referentApi: ReferentApiService,
     private pharmacyApi: PharmacyApiService,
-    private structureApi: StructureApiService
+    private structureApi: StructureApiService,
+    public readonly notificationService: NotificationService
   ) {
     console.log('[AddWizardComponentAsl] COSTRUTTORE: istanza creata');
   }
@@ -369,7 +371,6 @@ export class AddWizardComponentAsl implements OnInit {
   save() {
     console.log('[AddWizardComponentAsl] save: dati da salvare', this.model);
     console.log('[AddWizardComponentAsl] save: JSON.stringify(model):', JSON.stringify(this.model));
-    this.errorMessage = '';
     const payload: StructureDto = {
       name: this.model.name,
       code: this.model.code,
@@ -385,11 +386,12 @@ export class AddWizardComponentAsl implements OnInit {
     };
     this.structureApi.createStructure(payload).subscribe({
       next: () => {
-        this.showSuccessPopup = true;
+        this.notificationService.showSuccess(this.translate('structures.success.title'));
+        this.close.emit();
       },
       error: (err) => {
-        this.errorMessage = 'Errore durante il salvataggio. Riprova o controlla i dati.';
         console.error('[AddWizardComponentAsl] Errore salvataggio struttura', err);
+        this.notificationService.showError(this.translate('structures.error.save'));
       }
     });
   }

@@ -21,6 +21,18 @@ public class ReferentMapper {
         return dto;
     }
 
+    /**
+     * Converte una lista di ReferentEntity in una lista di ReferentDto.
+     */
+    public java.util.List<ReferentDto> toDtoList(java.util.List<ReferentEntity> entities) {
+        if (entities == null) return new java.util.ArrayList<>();
+        java.util.List<ReferentDto> dtos = new java.util.ArrayList<>();
+        for (ReferentEntity entity : entities) {
+            dtos.add(toDto(entity));
+        }
+        return dtos;
+    }
+
     public ReferentEntity toEntity(ReferentDto dto) {
         if (dto == null) return null;
         ReferentEntity entity = new ReferentEntity();

@@ -1,3 +1,9 @@
+main.content {
+  background-image: url('./assets/bckgrnd.svg') !important;
+  background-repeat: no-repeat !important;
+  background-size: cover !important;
+  background-attachment: fixed !important;
+}
 /* Asterisco rosso per campi obbligatori */
 .required-asterisk {
   color: #d32f2f;
@@ -22,11 +28,15 @@ select {
   box-sizing: border-box;
 }
 
-html,
-body {
+
+html, body {
   margin: 0;
   font-family: Arial, sans-serif;
   background: #f6f7fb;
+  background-image: url('./assets/bckgrnd.svg');
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
 }
 
 .card {
@@ -104,6 +114,7 @@ body {
   font-family: var(--text-font-family);
   background: #f5f7fb;
   color: var(--text-color);
+  /* Sfondo svg già impostato su html, body */
 }
 
 h2{
@@ -130,10 +141,16 @@ letter-spacing: -1.2px;
 }
 
 /* --- Typography --- */
-.text, label, p, span, h1,  h3, h4, h5, h6 {
+.text, p, span, h1,  h3, h4, h5, h6 {
   color: var(--text-color);
   font-family: var(--text-font-family);
   font-size: 14px; /* Default leggibile */
+  font-weight: 400;
+}
+label {
+  color: var(--TXT, #454F78);
+  font-family: var(--text-font-family);
+  font-size: 14px;
   font-weight: 400;
 }
 

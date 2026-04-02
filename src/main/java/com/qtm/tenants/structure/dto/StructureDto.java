@@ -40,4 +40,9 @@ public class StructureDto {
      * Lista di referenti associati alla struttura.
      */
     private java.util.List<ReferentDto> referents;
+
+    /**
+     * Lista di farmacie collegate (altre strutture di tipo farmacia)
+     */
+    private java.util.List<StructureDto> pharmacies;
 }
