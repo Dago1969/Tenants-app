@@ -28,6 +28,7 @@ export interface StructureDto {
   parentStructureName?: string;
   referents: any[];
   hospitalPharmacyIds?: (number | string)[];
+  pharmacies?: Array<{ id?: number }>;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -38,5 +39,13 @@ export class StructureApiService {
 
   createStructure(structure: StructureDto): Observable<any> {
     return this.http.post<any>(this.baseUrl, structure);
+  }
+
+  getStructure(id: number | string): Observable<StructureDto> {
+    return this.http.get<StructureDto>(`${this.baseUrl}/${id}`);
+  }
+
+  updateStructure(id: number | string, structure: StructureDto): Observable<StructureDto> {
+    return this.http.put<StructureDto>(`${this.baseUrl}/${id}`, structure);
   }
 }

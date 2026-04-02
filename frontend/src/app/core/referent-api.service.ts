@@ -15,6 +15,12 @@ export interface ReferentDto {
 
 @Injectable({ providedIn: 'root' })
 export class ReferentApiService {
+    /**
+     * Crea un nuovo referente
+     */
+    create(dto: Partial<ReferentDto>) {
+      return this.http.post<ReferentDto>(`${environment.apiBaseUrl}/referents`, dto);
+    }
   constructor(private http: HttpClient) {}
 
   getAll(): Observable<ReferentDto[]> {

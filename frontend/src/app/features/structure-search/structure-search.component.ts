@@ -1,10 +1,9 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { t, MessageKey } from '../../i18n/messages';
 import { SearchField, SearchPageComponent } from '../../shared/search-page.component';
 import { AddWizardComponentAsl } from '../../shared/add-wizard.component-asl';
-import { AuthService } from '../../core/auth.service';
 import { FunctionAuthorizationService } from '../../core/function-authorization.service';
 
 /**
@@ -27,21 +26,31 @@ import { FunctionAuthorizationService } from '../../core/function-authorization.
       [autoSearch]="true"
       [showViewAction]="false"
       [showCreateAction]="false"
+      [interceptEditAction]="interceptEditAction"
+      (editAction)="openAslWizard($event)"
     >
       <button search-header-action class="btn btn-primary" style="margin-left: 0.5rem;" (click)="openAslWizard()" *ngIf="showCreateAction && canCreate">
         <span class="icon">＋</span> {{ translate('crud.actions.new') }} ASL
       </button>
     </app-search-page>
-    <add-wizard-component-asl *ngIf="showAslWizard" (close)="closeAslWizard()"></add-wizard-component-asl>
+    <add-wizard-component-asl
+      *ngIf="showAslWizard"
+      [structureId]="selectedAslStructureId"
+      (close)="closeAslWizard()"
+    ></add-wizard-component-asl>
   `
 })
 export class StructureSearchComponent implements OnInit, OnDestroy {
-    /**
-     * Proprietà per la visibilità e permesso creazione ASL (default true, da adattare se serve logica custom)
-     */
-    showCreateAction = true;
-    canCreate = true;
+  @ViewChild(SearchPageComponent) private searchPage?: SearchPageComponent;
+
+  /**
+   * Proprietà per la visibilità e permesso creazione ASL (default true, da adattare se serve logica custom)
+   */
+  showCreateAction = true;
+  canCreate = true;
   showAslWizard = false;
+  selectedAslStructureId: number | null = null;
+  interceptEditAction = false;
   private routeSub: any = null;
   titleKey = 'structures.title' as MessageKey;
   endpoint = 'structures';
@@ -67,9 +76,7 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly route: ActivatedRoute,
-    private readonly router: Router,
     private readonly cdr: ChangeDetectorRef,
-    private readonly authService: AuthService,
     private readonly functionAuthorizationService: FunctionAuthorizationService
   ) {}
 
@@ -80,10 +87,12 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
     if (structureType === 'ASL') {
       this.createRoute = '';
       this.detailRouteBase = '/structures/asl/manage';
+      this.interceptEditAction = true;
     } else {
       const manageRoute = String(this.route.snapshot.data['manageRoute'] ?? '/structures/asl/manage');
       this.createRoute = manageRoute;
       this.detailRouteBase = manageRoute;
+      this.interceptEditAction = false;
     }
     // Nessuna gestione di route per il wizard
     this.showAslWizard = false;
@@ -117,15 +126,29 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
     }
   }
 
-  openAslWizard() {
-    console.log('[StructureSearchComponent] openAslWizard: click su Nuova ASL');
+  openAslWizard(structureId?: string | number) {
+    this.selectedAslStructureId = this.normalizeStructureId(structureId);
     this.showAslWizard = true;
     this.cdr.detectChanges();
   }
 
   closeAslWizard() {
-    console.log('[StructureSearchComponent] EVENT closeAslWizard: ricevuto evento close dal wizard');
+    this.selectedAslStructureId = null;
     this.showAslWizard = false;
+    this.searchPage?.search(false);
+  }
+
+  private normalizeStructureId(structureId?: string | number): number | null {
+    if (typeof structureId === 'number' && !Number.isNaN(structureId)) {
+      return structureId;
+    }
+
+    if (typeof structureId === 'string' && structureId.trim().length > 0) {
+      const parsedId = Number(structureId);
+      return Number.isNaN(parsedId) ? null : parsedId;
+    }
+
+    return null;
   }
 
   translate(key: MessageKey): string {

@@ -19,6 +19,17 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/tenants/referents")
 @RequiredArgsConstructor
 public class ReferentController {
+        /**
+         * Crea un nuovo referente struttura.
+         * @param dto ReferentDto in input
+         * @return ReferentDto creato
+         */
+        @org.springframework.web.bind.annotation.PostMapping
+        public ResponseEntity<ReferentDto> create(@org.springframework.web.bind.annotation.RequestBody ReferentDto dto) {
+            var entity = referentMapper.toEntity(dto);
+            var saved = referentService.save(entity);
+            return ResponseEntity.ok(referentMapper.toDto(saved));
+        }
     private final ReferentService referentService;
     private final ReferentMapper referentMapper;
 

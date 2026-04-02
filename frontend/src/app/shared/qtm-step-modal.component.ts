@@ -15,11 +15,18 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
     <div class="qtm-modal-backdrop">
       <div class="qtm-modal">
         <div class="qtm-modal-header">
-          <span class="qtm-modal-title">{{ title }}</span>
-          <button class="qtm-modal-close" (click)="close.emit()" aria-label="Chiudi">&times;</button>
+          <div class="qtm-modal-header-top">
+            <span class="qtm-modal-title">{{ title }}</span>
+            <button class="qtm-modal-close" (click)="close.emit()" aria-label="Chiudi">
+              <span class="qtm-modal-close-circle" aria-hidden="true">
+                <span class="qtm-modal-close-icon"></span>
+              </span>
+            </button>
+          </div>
         </div>
         <div class="qtm-modal-stepper">
           <span class="qtm-modal-step-title">Step {{ step }} / {{ totalSteps }}: {{ stepTitle }}</span>
+          <span class="qtm-modal-step-description">{{ stepDescription }}</span>
           <div class="qtm-modal-progress-bar">
             <div class="qtm-modal-progress" [style.width.%]="progressPercent"></div>
           </div>
@@ -29,9 +36,6 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
         </div>
         <div class="qtm-modal-actions">
           <ng-content select="[modal-actions]"></ng-content>
-        </div>
-        <div class="qtm-modal-description">
-          {{ stepDescription }}
         </div>
       </div>
     </div>

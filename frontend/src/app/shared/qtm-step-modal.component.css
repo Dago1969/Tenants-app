@@ -46,64 +46,134 @@ gmpx-place-autocomplete input:focus {
   border: none;
 }
 .qtm-modal-header {
-  background-image: url('/assets/texture.png');
-  background: linear-gradient(80deg, rgba(36,145,247,0.7) 0%, rgba(30,198,255,0.5) 60%, rgba(43,227,123,0.4) 100%); 
-  /*url('./../assets/texture.png');*/
-  color: #fff;
-  padding: 22px 32px 16px 32px;
+  background:
+    linear-gradient(115deg, rgba(0, 99, 247, 0.98) 0%, rgba(0, 161, 255, 0.95) 34%, rgba(0, 191, 182, 0.94) 68%, rgba(15, 206, 73, 0.96) 100%),
+    url('/assets/texture.png');
+  background-size: 100% 100%, 460px;
+  background-repeat: no-repeat, repeat;
+  background-position: center, center;
+  background-blend-mode: multiply;
+  color: #fff !important;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.22);
+  padding: 24px 32px 18px 32px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 1.25rem;
-  font-weight: 700;
+  flex-direction: column;
   border-top-left-radius: 22px;
   border-top-right-radius: 22px;
-  box-shadow: 0 2px 8px rgba(36, 145, 247, 0.08);
+  box-shadow: 0 12px 28px rgba(8, 76, 172, 0.18);
   position: relative;
   overflow: hidden;
 }
+.qtm-modal-header-top {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+}
 .qtm-modal-title {
-  font-size: 1.18rem;
+  color: #fff;
+  font-size: 1.28rem;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.3px;
 }
 .qtm-modal-close {
-  background: none;
+  background: transparent;
   border: none;
   color: #fff;
-  font-size: 2rem;
   cursor: pointer;
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s;
+  transition: transform 0.2s;
+  position: relative;
+  z-index: 1;
+}
+.qtm-modal-close-circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.12);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 14px rgba(7, 48, 110, 0.18);
+  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+}
+.qtm-modal-close-icon {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  display: inline-block;
+}
+.qtm-modal-close-icon::before,
+.qtm-modal-close-icon::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 10px;
+  height: 1.7px;
+  border-radius: 999px;
+  background: #fff;
+  transform-origin: center;
+}
+.qtm-modal-close-icon::before {
+  transform: translateY(-50%) rotate(45deg);
+}
+.qtm-modal-close-icon::after {
+  transform: translateY(-50%) rotate(-45deg);
 }
 .qtm-modal-close:hover {
-  background: rgba(255,255,255,0.12);
+  transform: translateY(-1px);
+}
+.qtm-modal-close:hover .qtm-modal-close-circle {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: #fff;
+  transform: scale(1.04);
 }
 .qtm-modal-stepper {
-  padding: 18px 32px 0 32px;
+  padding: 20px 32px 0 32px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  position: relative;
+  z-index: 1;
 }
 .qtm-modal-step-title {
+  color: #36557f;
   font-size: 1rem;
-  font-weight: 600;
-  color: #1870e8;
+  font-weight: 700;
+  text-align: center;
+}
+.qtm-modal-step-description {
+  color: #5f7596;
+  font-size: 0.98rem;
+  font-weight: 500;
+  text-align: center;
+  max-width: 70ch;
 }
 .qtm-modal-progress-bar {
   background: #e3eaf7;
-  border-radius: 6px;
+  border-radius: 999px;
   height: 6px;
   width: 100%;
   overflow: hidden;
+  position: relative;
+  z-index: 1;
+  margin-top: 10px;
 }
 .qtm-modal-progress {
-  background: linear-gradient(90deg, #1870e8 60%, #1ec6ff 100%);
+  background: linear-gradient(90deg, #1870e8 0%, #1ec6ff 100%);
   height: 100%;
   transition: width 0.3s;
 }
@@ -118,21 +188,31 @@ gmpx-place-autocomplete input:focus {
   gap: 16px;
   justify-content: flex-end;
 }
-.qtm-modal-description {
-  padding: 18px 32px 24px 32px;
-  color: #1870e8;
-  font-size: 1rem;
-  font-weight: 500;
-  text-align: left;
-}
 @media (max-width: 600px) {
   .qtm-modal {
     min-width: 0;
     width: 98vw;
     padding: 0;
   }
-  .qtm-modal-header, .qtm-modal-stepper, .qtm-modal-content, .qtm-modal-actions, .qtm-modal-description {
+  .qtm-modal-header, .qtm-modal-content, .qtm-modal-actions {
     padding-left: 12px;
     padding-right: 12px;
+  }
+  .qtm-modal-header {
+    padding-top: 18px;
+    padding-bottom: 16px;
+  }
+  .qtm-modal-title {
+    font-size: 1.08rem;
+  }
+  .qtm-modal-stepper {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .qtm-modal-step-title {
+    font-size: 1.02rem;
+  }
+  .qtm-modal-step-description {
+    font-size: 0.92rem;
   }
 }

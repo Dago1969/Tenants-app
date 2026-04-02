@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../core/auth.service';
@@ -283,6 +283,8 @@ export class SearchPageComponent implements OnInit {
   @Input() showDeleteAction = true;
   @Input() showManageAction = false;
   @Input() deleteCheckEndpoint = '';
+  @Input() interceptEditAction = false;
+  @Output() editAction = new EventEmitter<string>();
 
   filterModel: Record<string, string> = {};
   results: SearchResult[] = [];
@@ -442,9 +444,15 @@ export class SearchPageComponent implements OnInit {
   }
 
   openEdit(id: unknown): void {
-    console.log('[SearchPageComponent] openEdit called with id:', id);
     if ((id === 'new' && !this.canCreate) || (id !== 'new' && !this.canEdit)) {
-      console.log('[SearchPageComponent] openEdit: permission denied for id', id);
+      return;
+    }
+
+    if (this.interceptEditAction && id !== 'new') {
+      const normalizedId = this.normalizeId(id);
+      if (normalizedId !== null) {
+        this.editAction.emit(normalizedId);
+      }
       return;
     }
 
@@ -478,17 +486,13 @@ export class SearchPageComponent implements OnInit {
   }
 
   private openCrudPage(id: unknown, mode: 'view' | 'edit'): void {
-
-    console.log('[SearchPageComponent] openCrudPage called with id:', id, 'mode:', mode, 'createRoute:', this.createRoute, 'detailRouteBase:', this.detailRouteBase);
     if (mode === 'edit' && id === 'new' && this.createRoute) {
       // Se la createRoute è una route assoluta (wizard), naviga direttamente
       if (this.createRoute.startsWith('/')) {
-        console.log('[SearchPageComponent] openCrudPage: navigating by URL to', this.createRoute);
         void this.router.navigateByUrl(this.createRoute);
         return;
       }
       // Altrimenti mantieni la logica esistente
-      console.log('[SearchPageComponent] openCrudPage: navigating to', this.createRoute);
       void this.router.navigate([this.createRoute]);
       return;
     }
@@ -496,19 +500,16 @@ export class SearchPageComponent implements OnInit {
 
     const normalizedId = this.normalizeId(id);
     if (normalizedId === null) {
-      console.log('[SearchPageComponent] openCrudPage: invalid id', id);
       return;
     }
 
 
     if (this.detailRouteBase) {
       const detailUrl = `${this.detailRouteBase}/${normalizedId}`;
-      console.log('[SearchPageComponent] openCrudPage: navigating to detail', detailUrl, 'mode:', mode);
       void this.router.navigateByUrl(mode === 'view' ? `${detailUrl}?mode=view` : detailUrl);
       return;
     }
 
-    console.log('[SearchPageComponent] openCrudPage: navigating to base endpoint', `/${this.getBaseEndpoint()}`, 'id:', normalizedId, 'mode:', mode);
     void this.router.navigate([`/${this.getBaseEndpoint()}`], {
       queryParams: {
         id: normalizedId,
