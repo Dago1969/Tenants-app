@@ -113,7 +113,7 @@ type DeleteDialogMode = 'confirm' | 'reassign';
                 [name]="field.key"
               >
                 <option value=""></option>
-                <option *ngFor="let option of getFieldOptions(field)" [ngValue]="option.value">{{ option.label }}</option>
+                <option *ngFor="let option of getFieldOptions(field)" [ngValue]="option.value">{{ translate(option.label) }}</option>
               </select>
               <input
                 *ngIf="field.type === 'autocomplete'"
@@ -182,9 +182,9 @@ type DeleteDialogMode = 'confirm' | 'reassign';
             <tr *ngFor="let row of filteredResults()">
               <td>{{ getRowIdentifier(row) }}</td>
               <td *ngFor="let column of resultColumns">
-                <ng-container *ngIf="column.key === 'status'; else normalCell">
-                  <span class="status-badge" [ngClass]="'status-' + (row[column.key] || 'unknown')">
-                    {{ translate('status.' + (row[column.key] || 'unknown')) }}
+                <ng-container *ngIf="isStatusLikeColumn(column.key); else normalCell">
+                  <span class="status-badge" [ngClass]="getStatusBadgeClass(column.key, row[column.key])">
+                    {{ translate(getStatusLabelKey(column.key, row[column.key])) }}
                   </span>
                 </ng-container>
                 <ng-template #normalCell>{{ getDisplayValue(column, row[column.key]) }}</ng-template>
@@ -354,6 +354,30 @@ export class SearchPageComponent implements OnInit {
 
     const normalizedValue = String(value);
     return field.displayValueMap?.[normalizedValue] ?? normalizedValue;
+  }
+
+  isStatusLikeColumn(columnKey: string): boolean {
+    return columnKey === 'status' || columnKey === 'active';
+  }
+
+  getStatusBadgeClass(columnKey: string, value: unknown): string {
+    return `status-${this.getNormalizedStatusValue(columnKey, value)}`;
+  }
+
+  getStatusLabelKey(columnKey: string, value: unknown): string {
+    return `status.${this.getNormalizedStatusValue(columnKey, value)}`;
+  }
+
+  private getNormalizedStatusValue(columnKey: string, value: unknown): string {
+    if (columnKey === 'active') {
+      return value === true || value === 'true' ? 'attivo' : 'inattivo';
+    }
+
+    if (value === undefined || value === null || value === '') {
+      return 'unknown';
+    }
+
+    return String(value);
   }
 
   getRowIdentifier(row: SearchResult): string | number | null {

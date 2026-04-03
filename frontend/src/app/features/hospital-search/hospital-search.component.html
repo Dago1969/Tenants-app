@@ -14,6 +14,7 @@
         <th>{{ translate('hospital.field.name') }}</th>
         <th>{{ translate('hospital.field.city') }}</th>
         <th>{{ translate('hospital.field.region') }}</th>
+        <th>{{ translate('hospital.field.status') }}</th>
       </tr>
     </thead>
     <tbody>
@@ -22,6 +23,16 @@
         <td>{{ h.name }}</td>
         <td>{{ h.city }}</td>
         <td>{{ h.region }}</td>
+        <td>
+          <span class="status-badge" [ngClass]="{
+            'status-active': h.status === 'active',
+            'status-pending': h.status === 'pending',
+            'status-inactive': h.status === 'inactive',
+            'status-unknown': !h.status
+          }">
+            {{ translate('status.' + (h.status || 'unknown')) }}
+          </span>
+        </td>
       </tr>
     </tbody>
   </table>

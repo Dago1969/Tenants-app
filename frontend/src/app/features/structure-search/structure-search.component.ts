@@ -70,7 +70,16 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
   filters: SearchField[] = [
     { key: 'code', labelKey: 'structures.field.code', type: 'text' },
     { key: 'name', labelKey: 'structures.field.name', type: 'text' },
-    { key: 'city', labelKey: 'structures.field.city', type: 'text' }
+    { key: 'city', labelKey: 'structures.field.city', type: 'text' },
+    {
+      key: 'active',
+      labelKey: 'search.column.status',
+      type: 'select',
+      options: [
+        { value: 'true', label: 'status.attivo' },
+        { value: 'false', label: 'status.inattivo' }
+      ]
+    }
   ];
 
   resultColumns: SearchField[] = [
@@ -78,6 +87,7 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
     { key: 'name', labelKey: 'structures.field.name', type: 'text' },
     { key: 'city', labelKey: 'structures.field.city', type: 'text' },
     { key: 'region', labelKey: 'structures.field.region', type: 'text' },
+    { key: 'active', labelKey: 'search.column.status', type: 'text' },
     { key: 'parentStructureName', labelKey: 'structures.field.parentStructureId', type: 'text' }
   ];
 
