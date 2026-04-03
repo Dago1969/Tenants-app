@@ -19,6 +19,7 @@ export interface StructureDto {
   region?: string;
   phone: string;
   email?: string;
+  serviceCalendarHours?: string;
   active?: boolean;
   structureType?: string;
   structureTypeDescription?: string;
@@ -45,6 +46,14 @@ export class StructureApiService {
     }
 
     return this.http.get<StructureDto[]>(this.baseUrl, { params });
+  }
+
+  getParentOptions(structureType: string): Observable<Array<{ id: number; code: string; name: string; structureType: string; structureTypeDescription?: string }>> {
+    const params = new HttpParams().set('structureType', structureType);
+    return this.http.get<Array<{ id: number; code: string; name: string; structureType: string; structureTypeDescription?: string }>>(
+      `${this.baseUrl}/parent-options`,
+      { params }
+    );
   }
 
   createStructure(structure: StructureDto): Observable<any> {

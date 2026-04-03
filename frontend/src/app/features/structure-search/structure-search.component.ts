@@ -5,6 +5,7 @@ import { t, MessageKey } from '../../i18n/messages';
 import { SearchField, SearchPageComponent } from '../../shared/search-page.component';
 import { AddWizardComponentAsl } from '../../shared/add-wizard.component-asl';
 import { AddWizardComponentHospital } from '../../shared/add-wizard.component-hospital';
+import { AddWizardComponentPharmacy } from '../../shared/add-wizard.component-pharmacy';
 import { FunctionAuthorizationService } from '../../core/function-authorization.service';
 
 /**
@@ -13,7 +14,7 @@ import { FunctionAuthorizationService } from '../../core/function-authorization.
 @Component({
   selector: 'app-structure-search',
   standalone: true,
-  imports: [CommonModule, SearchPageComponent, AddWizardComponentAsl, AddWizardComponentHospital],
+  imports: [CommonModule, SearchPageComponent, AddWizardComponentAsl, AddWizardComponentHospital, AddWizardComponentPharmacy],
   template: `
     <app-search-page
       [titleKey]="titleKey"
@@ -44,6 +45,12 @@ import { FunctionAuthorizationService } from '../../core/function-authorization.
       [structureId]="selectedStructureId"
       (close)="closeStructureWizard()"
     ></add-wizard-component-hospital>
+    <add-wizard-component-pharmacy
+      *ngIf="showStructureWizard && (popupStructureType === 'HOSPITAL_PHARMACY' || popupStructureType === 'RETAIL_PHARMACY')"
+      [structureId]="selectedStructureId"
+      [structureType]="popupStructureType === 'HOSPITAL_PHARMACY' ? 'HOSPITAL_PHARMACY' : 'RETAIL_PHARMACY'"
+      (close)="closeStructureWizard()"
+    ></add-wizard-component-pharmacy>
   `
 })
 export class StructureSearchComponent implements OnInit, OnDestroy {
@@ -103,9 +110,9 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
     this.moduleCode = String(this.route.snapshot.data['moduleCode'] ?? 'STRUCTURE');
     this.popupStructureType = structureType;
     this.fixedParams = { structureType };
-    if (structureType === 'ASL' || structureType === 'STRUCTURE_HOSPITAL') {
+    if (structureType === 'ASL' || structureType === 'STRUCTURE_HOSPITAL' || structureType === 'HOSPITAL_PHARMACY' || structureType === 'RETAIL_PHARMACY') {
       this.createRoute = '';
-      this.detailRouteBase = structureType === 'ASL' ? '/structures/asl/manage' : '/structures/hospitals/manage';
+      this.detailRouteBase = this.resolveDetailRouteBase(structureType);
       this.interceptEditAction = true;
     } else {
       const manageRoute = String(this.route.snapshot.data['manageRoute'] ?? '/structures/asl/manage');
@@ -157,9 +164,31 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
   }
 
   getStructureTypeLabelKey(): MessageKey {
-    return this.popupStructureType === 'STRUCTURE_HOSPITAL'
-      ? 'structures.type.structure_hospital.label'
-      : 'structures.type.asl.label';
+    switch (this.popupStructureType) {
+      case 'STRUCTURE_HOSPITAL':
+        return 'structures.type.hospital.label';
+      case 'HOSPITAL_PHARMACY':
+        return 'structures.type.hospitalPharmacy.label';
+      case 'RETAIL_PHARMACY':
+        return 'structures.type.retailPharmacy.label';
+      default:
+        return 'structures.type.asl.label';
+    }
+  }
+
+  private resolveDetailRouteBase(structureType: string): string {
+    switch (structureType) {
+      case 'ASL':
+        return '/structures/asl/manage';
+      case 'STRUCTURE_HOSPITAL':
+        return '/structures/hospitals/manage';
+      case 'HOSPITAL_PHARMACY':
+        return '/structures/hospital-pharmacies/manage';
+      case 'RETAIL_PHARMACY':
+        return '/structures/retail-pharmacies/manage';
+      default:
+        return '/structures/asl/manage';
+    }
   }
 
   private normalizeStructureId(structureId?: string | number): number | null {

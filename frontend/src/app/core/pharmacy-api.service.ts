@@ -8,6 +8,7 @@ export interface PharmacyDto {
   code: string;
   name: string;
   description?: string;
+  serviceCalendarHours?: string;
   address: string;
   city: string;
   active: boolean;

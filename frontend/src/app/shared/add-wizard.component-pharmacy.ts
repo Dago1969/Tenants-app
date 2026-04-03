@@ -1,25 +1,40 @@
 import { CommonModule } from '@angular/common';
-import { Component, CUSTOM_ELEMENTS_SCHEMA, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { GeographyApiService, GeographicOptionDto } from '../core/geography-api.service';
-import { PharmacyApiService, PharmacyDto } from '../core/pharmacy-api.service';
 import { ReferentApiService, ReferentDto } from '../core/referent-api.service';
 import { StructureApiService, StructureDto } from '../core/structure-api.service';
 import { t } from '../i18n/messages';
 import { NotificationService } from './notification.service';
 import { QtmStepModalComponent } from './qtm-step-modal.component';
 
+type PharmacyStructureType = 'HOSPITAL_PHARMACY' | 'RETAIL_PHARMACY';
+
+interface PharmacyOpeningSlot {
+  dayOfWeek: string;
+  openingTime: string;
+  closingTime: string;
+}
+
+interface ParentStructureOption {
+  id: number;
+  code: string;
+  name: string;
+  selectionLabel?: string;
+  structureType: string;
+  structureTypeDescription?: string;
+}
+
 /**
- * Wizard popup per inserimento e modifica di strutture ospedaliere.
+ * Wizard popup per inserimento e modifica di farmacie ospedaliere e retail.
  */
 @Component({
-  selector: 'add-wizard-component-hospital',
+  selector: 'add-wizard-component-pharmacy',
   standalone: true,
   imports: [CommonModule, FormsModule, QtmStepModalComponent],
-  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <qtm-step-modal
-      [title]="translate('structures.wizard.hospital.title')"
+      [title]="translate(getWizardTitleKey())"
       [step]="step"
       [totalSteps]="4"
       [stepTitle]="translate(stepTitles[step - 1])"
@@ -44,18 +59,18 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
             <label>{{ translate('structures.field.denom') }}<span class="required-asterisk">*</span><input type="text" name="name" [(ngModel)]="model.name" required /></label>
             <label>{{ translate('structures.field.code') }}<span class="required-asterisk">*</span><input type="text" name="code" [(ngModel)]="model.code" required /></label>
             <label>{{ translate('structures.field.structureType') }}<span class="required-asterisk">*</span>
-              <div style="margin-top:8px;font-weight:600;color:#1890ff;">{{ translate('structures.type.structure_hospital.label') }}</div>
+              <div style="margin-top:8px;font-weight:600;color:#1890ff;">{{ translate(getStructureTypeLabelKey()) }}</div>
             </label>
           </div>
 
           <div class="form-row">
-            <label>{{ translate('structures.field.parentAsl') }}<span class="required-asterisk">*</span>
-              <select class="search-filter-select" name="parentStructureId" [(ngModel)]="model.parentStructureId" (ngModelChange)="onParentAslChange()" required>
+            <label>{{ translate(getParentLabelKey()) }}<span class="required-asterisk">*</span>
+              <select class="search-filter-select" name="parentStructureId" [(ngModel)]="model.parentStructureId" (ngModelChange)="onParentStructureChange()" required>
                 <option [ngValue]="null">{{ translate('structures.select') }}</option>
-                <option *ngFor="let asl of aslStructures" [ngValue]="asl.id">{{ asl.selectionLabel || asl.name }}</option>
+                <option *ngFor="let parent of parentStructures" [ngValue]="parent.id">{{ parent.selectionLabel || parent.name }}</option>
               </select>
             </label>
-            </div>
+          </div>
 
           <div class="form-row">
             <label>{{ translate('structures.field.regione') }}<span class="required-asterisk">*</span>
@@ -70,14 +85,13 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
                 <option *ngFor="let provincia of province" [value]="provincia.id">{{ provincia.name }}</option>
               </select>
             </label>
-         
             <label>{{ translate('structures.field.comune') }}<span class="required-asterisk">*</span>
               <select class="search-filter-select" name="cityId" [(ngModel)]="model.cityId" (change)="onComuneChange()" [disabled]="!comuni.length" required>
                 <option value="">{{ translate('structures.select') }}</option>
                 <option *ngFor="let comune of comuni" [value]="comune.id">{{ comune.name }}</option>
               </select>
             </label>
-             </div>
+          </div>
 
           <div class="form-row">
             <label>{{ translate('structures.field.address') }}<span class="required-asterisk">*</span>
@@ -86,19 +100,8 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
             <label>{{ translate('structures.field.cap') }}<span class="required-asterisk">*</span>
               <input type="text" name="cap" [(ngModel)]="model.cap" maxlength="10" required autocomplete="off" />
             </label>
-          
             <label>{{ translate('structures.field.phone') }}<span class="required-asterisk">*</span>
               <input type="text" name="phone" [(ngModel)]="model.phone" required autocomplete="off" />
-            </label>
-            </div>
-
-          <div class="form-row">
-            <label>{{ translate('structures.field.googleAddress') }}
-              <gmpx-place-autocomplete
-                style="width:100%"
-                input-attr="{name: 'googleAddress', required: true, autocomplete: 'off'}"
-                (gmpxPlaceSelect)="onPlaceSelected($event)"
-              ></gmpx-place-autocomplete>
             </label>
           </div>
 
@@ -131,26 +134,30 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
         </form>
 
         <div *ngSwitchCase="3">
-          <h4>{{ translate('structures.step.specificData') }}</h4>
-          <div class="pharmacy-selection-list">
-            <label class="pharmacy-card" *ngFor="let pharmacy of pharmaciesList">
-              <div class="pharmacy-card-header">
-                <input
-                  type="checkbox"
-                  [checked]="isPharmacySelected(pharmacy.id)"
-                  (change)="togglePharmacySelection(pharmacy.id, $any($event.target).checked)"
-                />
-                <div class="pharmacy-card-main">
-                  <div class="pharmacy-card-title">{{ pharmacy.name }}</div>
-                  <div class="pharmacy-card-meta">
-                    {{ pharmacy.city || '-' }}
-                    <span class="pharmacy-card-badge">{{ translatePharmacyType(pharmacy.structureType) }}</span>
-                  </div>
-                </div>
-              </div>
-              <div class="pharmacy-card-detail-label">{{ translate('structures.field.serviceCalendarHours') }}</div>
-              <div class="pharmacy-card-detail">{{ pharmacy.serviceCalendarHours || pharmacy.description || '-' }}</div>
+          <h4>{{ translate('structures.field.openingCalendar') }}</h4>
+          <div *ngFor="let slot of openingSchedule; let slotIndex = index" class="form-row" style="align-items: flex-end; gap: 1rem; margin-bottom: 0.75rem;">
+            <label style="flex: 1;">{{ translate('structures.field.dayOfWeek') }}<span class="required-asterisk">*</span>
+              <select class="search-filter-select" [(ngModel)]="slot.dayOfWeek" [ngModelOptions]="{ standalone: true }">
+                <option value="">{{ translate('structures.select') }}</option>
+                <option *ngFor="let weekday of weekdays" [value]="weekday.code">{{ translate(weekday.labelKey) }}</option>
+              </select>
             </label>
+            <label style="flex: 1;">{{ translate('structures.field.openingTime') }}<span class="required-asterisk">*</span>
+              <input type="time" [(ngModel)]="slot.openingTime" [ngModelOptions]="{ standalone: true }" />
+            </label>
+            <label style="flex: 1;">{{ translate('structures.field.closingTime') }}<span class="required-asterisk">*</span>
+              <input type="time" [(ngModel)]="slot.closingTime" [ngModelOptions]="{ standalone: true }" />
+            </label>
+            <button type="button" class="btn btn-outline" (click)="removeScheduleSlot(slotIndex)" [disabled]="openingSchedule.length === 1">{{ translate('structures.actions.removeScheduleRow') }}</button>
+          </div>
+
+          <div class="form-row" style="justify-content: space-between; align-items: flex-start; gap: 1rem; margin-top: 1rem;">
+            <button type="button" class="btn btn-secondary" (click)="addScheduleSlot()">{{ translate('structures.actions.addScheduleRow') }}</button>
+            <div style="flex: 1; border: 1px solid #d9d9d9; border-radius: 8px; padding: 0.85rem 1rem; background: #fafafa;">
+              <div style="font-weight: 600; margin-bottom: 0.5rem;">{{ translate('structures.field.schedulePreview') }}</div>
+              <div *ngFor="let line of getSchedulePreviewLines()">{{ line }}</div>
+              <div *ngIf="getSchedulePreviewLines().length === 0">-</div>
+            </div>
           </div>
         </div>
 
@@ -167,7 +174,7 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
                 <div class="summary2-value">{{ model.code }}</div>
               </div>
               <div class="summary4-col">
-                <div class="summary2-label">{{ translate('structures.field.parentAsl') }}</div>
+                <div class="summary2-label">{{ translate(getParentLabelKey()) }}</div>
                 <div class="summary2-value">{{ model.parentStructureName || '-' }}</div>
               </div>
               <div class="summary4-col">
@@ -197,22 +204,17 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
 
             <div class="summary4-row">
               <div class="summary4-col" style="grid-column: span 2;">
-                <div class="summary2-label">{{ translate('structures.field.referencePharmacies') }}</div>
-                <div class="summary2-value">
-                  <div *ngFor="let pharmacy of selectedPharmacies()" class="summary-pharmacy-row">
-                    <strong>{{ pharmacy.name }}</strong>
-                    <span> - {{ translatePharmacyType(pharmacy.structureType) }}</span>
-                    <span *ngIf="pharmacy.city"> - {{ pharmacy.city }}</span>
-                    <div>{{ pharmacy.serviceCalendarHours || pharmacy.description || '-' }}</div>
-                  </div>
-                </div>
-              </div>
-              <div class="summary4-col" style="grid-column: span 2;">
                 <div class="summary2-label">{{ translate('structures.field.referenceContacts') }}</div>
                 <div class="summary2-value">
                   <ng-container *ngFor="let ref of model.referents">
                     <div>{{ ref.firstName }} {{ ref.lastName }}<span *ngIf="ref.role"> - {{ ref.role }}</span></div>
                   </ng-container>
+                </div>
+              </div>
+              <div class="summary4-col" style="grid-column: span 2;">
+                <div class="summary2-label">{{ translate('structures.field.serviceCalendarHours') }}</div>
+                <div class="summary2-value">
+                  <div *ngFor="let line of getSchedulePreviewLines()">{{ line }}</div>
                 </div>
               </div>
             </div>
@@ -229,15 +231,14 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
   `,
   styleUrls: ['./add-wizard.component.css']
 })
-export class AddWizardComponentHospital implements OnInit {
+export class AddWizardComponentPharmacy implements OnInit {
   @Input() structureId: number | null = null;
+  @Input() structureType: PharmacyStructureType = 'HOSPITAL_PHARMACY';
   @Output() close = new EventEmitter<void>();
 
   showAddReferent = false;
   newReferent: Partial<ReferentDto> = { firstName: '', lastName: '', role: '', email: '', phone: '' };
-
   step = 1;
-  errorMessage = '';
   regioni: GeographicOptionDto[] = [];
   province: GeographicOptionDto[] = [];
   comuni: GeographicOptionDto[] = [];
@@ -246,8 +247,18 @@ export class AddWizardComponentHospital implements OnInit {
   stepTitles: string[] = [];
   stepDescriptions: string[] = [];
   referentsList: ReferentDto[] = [];
-  aslStructures: StructureDto[] = [];
-  pharmaciesList: PharmacyDto[] = [];
+  parentStructures: ParentStructureOption[] = [];
+  openingSchedule: PharmacyOpeningSlot[] = [this.createEmptyScheduleSlot()];
+
+  readonly weekdays = [
+    { code: 'MONDAY', labelKey: 'structures.schedule.day.monday' },
+    { code: 'TUESDAY', labelKey: 'structures.schedule.day.tuesday' },
+    { code: 'WEDNESDAY', labelKey: 'structures.schedule.day.wednesday' },
+    { code: 'THURSDAY', labelKey: 'structures.schedule.day.thursday' },
+    { code: 'FRIDAY', labelKey: 'structures.schedule.day.friday' },
+    { code: 'SATURDAY', labelKey: 'structures.schedule.day.saturday' },
+    { code: 'SUNDAY', labelKey: 'structures.schedule.day.sunday' }
+  ] as const;
 
   model: {
     id: number | null;
@@ -262,15 +273,11 @@ export class AddWizardComponentHospital implements OnInit {
     address: string;
     cap: string;
     phone: string;
-    description: string;
     email: string;
     active: boolean;
     parentStructureId: number | null;
     parentStructureName: string;
     referents: ReferentDto[];
-    pharmacyIds: number[];
-    structureType: string;
-    googleAddress: string;
   } = {
     id: null,
     name: '',
@@ -284,21 +291,16 @@ export class AddWizardComponentHospital implements OnInit {
     address: '',
     cap: '',
     phone: '',
-    description: '',
     email: '',
     active: true,
     parentStructureId: null,
     parentStructureName: '',
-    referents: [],
-    pharmacyIds: [],
-    structureType: 'STRUCTURE_HOSPITAL',
-    googleAddress: ''
+    referents: []
   };
 
   constructor(
     private readonly geoApi: GeographyApiService,
     private readonly referentApi: ReferentApiService,
-    private readonly pharmacyApi: PharmacyApiService,
     private readonly structureApi: StructureApiService,
     public readonly notificationService: NotificationService
   ) {}
@@ -313,14 +315,13 @@ export class AddWizardComponentHospital implements OnInit {
     this.stepDescriptions = [
       'structures.step.generalData.desc',
       'structures.step.contacts.desc',
-      'structures.step.specificData.hospital.desc',
+      'structures.step.specificData.pharmacy.desc',
       'structures.step.confirm.desc'
     ];
 
     this.loadRegioni();
     this.loadReferents();
-    this.loadAslStructures();
-    this.loadSelectablePharmacies();
+    this.loadParentStructures();
     this.loadStructureForEdit();
   }
 
@@ -340,6 +341,24 @@ export class AddWizardComponentHospital implements OnInit {
     return (left?.id ?? null) === (right?.id ?? null);
   };
 
+  getWizardTitleKey(): string {
+    return this.structureType === 'HOSPITAL_PHARMACY'
+      ? 'structures.wizard.hospitalPharmacy.title'
+      : 'structures.wizard.retailPharmacy.title';
+  }
+
+  getStructureTypeLabelKey(): string {
+    return this.structureType === 'HOSPITAL_PHARMACY'
+      ? 'structures.type.hospitalPharmacy.label'
+      : 'structures.type.retailPharmacy.label';
+  }
+
+  getParentLabelKey(): string {
+    return this.structureType === 'HOSPITAL_PHARMACY'
+      ? 'structures.field.parentHospital'
+      : 'structures.field.parentAsl';
+  }
+
   addReferent(): void {
     if (!this.newReferent.firstName || !this.newReferent.lastName || !this.newReferent.email || !this.newReferent.phone) {
       return;
@@ -348,7 +367,7 @@ export class AddWizardComponentHospital implements OnInit {
     this.referentApi.create(this.newReferent as ReferentDto).subscribe({
       next: (created) => {
         this.referentsList = [...this.referentsList, created];
-        this.model.referents = [...(this.model.referents || []), created];
+        this.model.referents = [...this.model.referents, created];
         this.newReferent = { firstName: '', lastName: '', role: '', email: '', phone: '' };
         this.showAddReferent = false;
       },
@@ -356,11 +375,6 @@ export class AddWizardComponentHospital implements OnInit {
         this.notificationService.showError(this.translate('referent.actions.addError'));
       }
     });
-  }
-
-  onPlaceSelected(event: Event): void {
-    const placeEvent = event as Event & { place?: { formattedAddress?: string } };
-    this.model.googleAddress = placeEvent.place?.formattedAddress || '';
   }
 
   onRegioneChange(): void {
@@ -392,11 +406,29 @@ export class AddWizardComponentHospital implements OnInit {
     this.model.city = this.findOptionName(this.comuni, this.model.cityId);
   }
 
-  onParentAslChange(): void {
-    this.model.parentStructureName = this.findStructureName(this.aslStructures, this.model.parentStructureId);
+  onParentStructureChange(): void {
+    this.model.parentStructureName = this.findStructureName(this.parentStructures, this.model.parentStructureId);
+  }
+
+  addScheduleSlot(): void {
+    this.openingSchedule = [...this.openingSchedule, this.createEmptyScheduleSlot()];
+  }
+
+  removeScheduleSlot(slotIndex: number): void {
+    if (this.openingSchedule.length === 1) {
+      this.openingSchedule = [this.createEmptyScheduleSlot()];
+      return;
+    }
+
+    this.openingSchedule = this.openingSchedule.filter((_, index) => index !== slotIndex);
   }
 
   nextStep(): void {
+    if (this.step === 3 && !this.hasValidSchedule()) {
+      this.notificationService.showError(this.translate('structures.message.scheduleRequired'));
+      return;
+    }
+
     if (this.step < 4) {
       this.step++;
     }
@@ -409,6 +441,11 @@ export class AddWizardComponentHospital implements OnInit {
   }
 
   save(): void {
+    if (!this.hasValidSchedule()) {
+      this.notificationService.showError(this.translate('structures.message.scheduleRequired'));
+      return;
+    }
+
     const payload: StructureDto = {
       id: this.model.id ?? undefined,
       name: this.model.name,
@@ -422,14 +459,13 @@ export class AddWizardComponentHospital implements OnInit {
       address: this.model.address,
       cap: this.model.cap,
       phone: this.model.phone,
-      description: this.model.description,
       email: this.model.email,
+      serviceCalendarHours: this.stringifySchedule(),
       active: this.model.active,
       parentStructureId: this.model.parentStructureId ?? undefined,
       parentStructureName: this.model.parentStructureName,
       referents: this.model.referents,
-      pharmacies: this.toSelectedPharmacies(),
-      structureType: 'STRUCTURE_HOSPITAL'
+      structureType: this.structureType
     };
 
     const request = this.isEditMode() && this.structureId !== null
@@ -455,53 +491,20 @@ export class AddWizardComponentHospital implements OnInit {
     this.close.emit();
   }
 
-  translatePharmacyType(structureType?: string): string {
-    switch (structureType) {
-      case 'HOSPITAL_PHARMACY':
-        return this.translate('structures.type.hospitalPharmacy.label');
-      case 'RETAIL_PHARMACY':
-        return this.translate('structures.type.retailPharmacy.label');
-      default:
-        return structureType || '-';
-    }
-  }
-
-  isPharmacySelected(pharmacyId: number): boolean {
-    return this.model.pharmacyIds.includes(pharmacyId);
-  }
-
-  togglePharmacySelection(pharmacyId: number, checked: boolean): void {
-    if (checked) {
-      this.model.pharmacyIds = [...new Set([...this.model.pharmacyIds, pharmacyId])];
-      return;
-    }
-
-    this.model.pharmacyIds = this.model.pharmacyIds.filter((selectedId) => selectedId !== pharmacyId);
-  }
-
-  selectedPharmacies(): PharmacyDto[] {
-    return this.pharmaciesList.filter((pharmacy) => this.model.pharmacyIds.includes(pharmacy.id));
-  }
-
-  private loadSelectablePharmacies(): void {
-    this.pharmacyApi.getSelectablePharmacies().subscribe({
-      next: (data) => {
-        this.pharmaciesList = data;
-      },
-      error: () => {
-        this.pharmaciesList = [];
-      }
+  getSchedulePreviewLines(): string[] {
+    return this.validScheduleSlots().map((slot) => {
+      return `${this.translate(this.getWeekdayLabelKey(slot.dayOfWeek))}: ${slot.openingTime} - ${slot.closingTime}`;
     });
   }
 
-  private loadAslStructures(): void {
-    this.structureApi.getStructuresByType('ASL', true).subscribe({
+  private loadParentStructures(): void {
+    this.structureApi.getParentOptions(this.structureType).subscribe({
       next: (data) => {
-        this.aslStructures = data;
-        this.onParentAslChange();
+        this.parentStructures = data;
+        this.onParentStructureChange();
       },
       error: () => {
-        this.aslStructures = [];
+        this.parentStructures = [];
       }
     });
   }
@@ -553,23 +556,19 @@ export class AddWizardComponentHospital implements OnInit {
           address: structure.address ?? '',
           cap: structure.cap ?? '',
           phone: structure.phone ?? '',
-          description: structure.description ?? '',
           email: structure.email ?? '',
           active: structure.active ?? true,
           parentStructureId: structure.parentStructureId ?? null,
           parentStructureName: structure.parentStructureName ?? '',
-          referents: this.mapReferentsById(structure.referents ?? []),
-          pharmacyIds: (structure.pharmacies ?? [])
-            .map((pharmacy) => pharmacy.id)
-            .filter((pharmacyId): pharmacyId is number => typeof pharmacyId === 'number'),
-          structureType: structure.structureType ?? 'STRUCTURE_HOSPITAL'
+          referents: this.mapReferentsById(structure.referents ?? [])
         };
+        this.openingSchedule = this.parseSchedule(structure.serviceCalendarHours);
 
         if (this.model.regionId) {
           this.loadProvinceOptions(this.model.regionId, this.model.provinceId, this.model.cityId);
         }
 
-        this.onParentAslChange();
+        this.onParentStructureChange();
       },
       error: () => {
         this.notificationService.showError(this.translate('crud.error.load'));
@@ -617,6 +616,61 @@ export class AddWizardComponentHospital implements OnInit {
     });
   }
 
+  private hasValidSchedule(): boolean {
+    return this.validScheduleSlots().length > 0;
+  }
+
+  private validScheduleSlots(): PharmacyOpeningSlot[] {
+    return this.openingSchedule.filter((slot) => {
+      return Boolean(slot.dayOfWeek && slot.openingTime && slot.closingTime);
+    });
+  }
+
+  private stringifySchedule(): string {
+    return JSON.stringify(this.validScheduleSlots());
+  }
+
+  private parseSchedule(serializedSchedule?: string): PharmacyOpeningSlot[] {
+    if (!serializedSchedule || serializedSchedule.trim().length === 0) {
+      return [this.createEmptyScheduleSlot()];
+    }
+
+    try {
+      const parsed = JSON.parse(serializedSchedule);
+      if (!Array.isArray(parsed)) {
+        return [this.createEmptyScheduleSlot()];
+      }
+
+      const slots = parsed
+        .filter((slot): slot is PharmacyOpeningSlot => {
+          return typeof slot?.dayOfWeek === 'string'
+            && typeof slot?.openingTime === 'string'
+            && typeof slot?.closingTime === 'string';
+        })
+        .map((slot) => ({
+          dayOfWeek: slot.dayOfWeek,
+          openingTime: slot.openingTime,
+          closingTime: slot.closingTime
+        }));
+
+      return slots.length > 0 ? slots : [this.createEmptyScheduleSlot()];
+    } catch {
+      return [this.createEmptyScheduleSlot()];
+    }
+  }
+
+  private createEmptyScheduleSlot(): PharmacyOpeningSlot {
+    return {
+      dayOfWeek: '',
+      openingTime: '',
+      closingTime: ''
+    };
+  }
+
+  private getWeekdayLabelKey(dayOfWeek: string): string {
+    return this.weekdays.find((weekday) => weekday.code === dayOfWeek)?.labelKey ?? dayOfWeek;
+  }
+
   private findOptionName(options: GeographicOptionDto[], optionId?: number | string | null): string {
     if (typeof optionId !== 'number' && typeof optionId !== 'string') {
       return '';
@@ -626,7 +680,7 @@ export class AddWizardComponentHospital implements OnInit {
     return options.find((option) => option.id === idNum)?.name ?? '';
   }
 
-  private findStructureName(options: StructureDto[], structureId: number | null): string {
+  private findStructureName(options: ParentStructureOption[], structureId: number | null): string {
     if (structureId === null) {
       return '';
     }
@@ -643,10 +697,6 @@ export class AddWizardComponentHospital implements OnInit {
     return referents.map((referent) => {
       return this.referentsList.find((candidate) => candidate.id === referent.id) ?? referent;
     });
-  }
-
-  private toSelectedPharmacies(): Array<{ id?: number }> {
-    return this.model.pharmacyIds.map((pharmacyId) => ({ id: pharmacyId }));
   }
 
   private toSelectValue(optionId?: number | string | null): string {

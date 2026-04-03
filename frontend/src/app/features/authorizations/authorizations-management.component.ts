@@ -48,10 +48,13 @@ const MODULE_TITLE_KEYS: Record<string, MessageKey> = {
   PATIENT: 'menu.patients',
   DOCTOR: 'menu.doctors',
   NURSE: 'menu.nurses',
+  HOSPITAL: 'menu.structure.hospitalSearch',
   ROLE: 'menu.roles',
   MODULE: 'menu.modules',
   FUNCTION: 'menu.functions',
   STRUCTURE: 'menu.structures',
+  'STRUCTURE-FARMACY-O': 'menu.structure.hospitalPharmacySearch',
+  'STRUCTURE-FARMACY-R': 'menu.structure.retailPharmacySearch',
   PROJECT: 'menu.projects',
   TENANT: 'menu.tenants'
 };
@@ -61,15 +64,18 @@ const MODULE_MESSAGE_PREFIXES: Record<string, string> = {
   PATIENT: 'patients',
   DOCTOR: 'doctors',
   NURSE: 'nurses',
+  HOSPITAL: 'structures',
   ROLE: 'roles',
   MODULE: 'modules',
   FUNCTION: 'functions',
   STRUCTURE: 'structures',
+  'STRUCTURE-FARMACY-O': 'structures',
+  'STRUCTURE-FARMACY-R': 'structures',
   PROJECT: 'projects',
   TENANT: 'tenants'
 };
 
-const MODULE_DISPLAY_ORDER = ['USER', 'PATIENT', 'DOCTOR', 'NURSE', 'ROLE', 'MODULE', 'FUNCTION', 'STRUCTURE', 'PROJECT', 'TENANT'];
+const MODULE_DISPLAY_ORDER = ['USER', 'PATIENT', 'DOCTOR', 'NURSE', 'HOSPITAL', 'STRUCTURE', 'STRUCTURE-FARMACY-O', 'STRUCTURE-FARMACY-R', 'ROLE', 'MODULE', 'FUNCTION', 'PROJECT', 'TENANT'];
 
 @Component({
   selector: 'app-authorizations-management',
