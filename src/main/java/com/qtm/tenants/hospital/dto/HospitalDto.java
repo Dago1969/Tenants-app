@@ -28,7 +28,7 @@ public class HospitalDto {
     private String region;
     private String phone;
     private String email;
-    private boolean active;
+    private Integer status;
     private Long parentHospitalId;
     private String parentHospitalName;
     private List<ReferentDto> referents;

@@ -67,8 +67,8 @@ public class HospitalEntity {
     @Column(name = "email")
     private String email;
 
-    @Column(name = "active")
-    private Boolean active = true;
+    @Column(name = "status", nullable = false)
+    private Integer status = 1;
 
     @Column(name = "parent_hospital_id")
     private Long parentHospitalId;

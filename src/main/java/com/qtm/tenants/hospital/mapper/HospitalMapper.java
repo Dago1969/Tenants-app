@@ -39,7 +39,7 @@ public class HospitalMapper {
         dto.setRegion(entity.getRegion());
         dto.setPhone(entity.getPhone());
         dto.setEmail(entity.getEmail());
-        dto.setActive(Boolean.TRUE.equals(entity.getActive()));
+        dto.setStatus(entity.getStatus());
         dto.setParentHospitalId(entity.getParentHospitalId());
         dto.setParentHospitalName(parentHospitalName);
         // linkedHospitals mapping semplificato
@@ -63,7 +63,7 @@ public class HospitalMapper {
         entity.setRegion(dto.getRegion());
         entity.setPhone(dto.getPhone());
         entity.setEmail(dto.getEmail());
-        entity.setActive(dto.isActive());
+        entity.setStatus(dto.getStatus() == null ? 1 : dto.getStatus());
         entity.setParentHospitalId(dto.getParentHospitalId());
         // referents mapping semplificato
         entity.setReferents(new ArrayList<>());

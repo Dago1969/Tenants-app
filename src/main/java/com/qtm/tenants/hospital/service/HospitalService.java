@@ -19,6 +19,10 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 @Service
 @RequiredArgsConstructor
 public class HospitalService {
+    private static final int STATUS_DISABLED = 0;
+    private static final int STATUS_ACTIVE = 1;
+    private static final int STATUS_TO_ACTIVATE = 2;
+
     private final HospitalRepository hospitalRepository;
     private final HospitalMapper hospitalMapper;
 
@@ -27,15 +31,25 @@ public class HospitalService {
         if (hospitalRepository.existsByCode(hospitalDto.getCode())) {
             throw new ResponseStatusException(BAD_REQUEST, "Codice già esistente");
         }
+        validateStatus(hospitalDto.getStatus());
         HospitalEntity entity = hospitalMapper.toEntity(hospitalDto);
         HospitalEntity saved = hospitalRepository.save(entity);
         return hospitalMapper.toDto(saved, null);
     }
 
     @Transactional(readOnly = true)
-    public List<HospitalDto> findAll() {
-        List<HospitalEntity> entities = hospitalRepository.findAllByActiveTrueOrderByNameAsc();
-        return entities.stream().map(e -> hospitalMapper.toDto(e, null)).toList();
+    public List<HospitalDto> findAll(String code, String name, String city, String region, Integer status) {
+        Integer resolvedStatus = status == null ? STATUS_ACTIVE : status;
+        validateStatus(resolvedStatus);
+
+        List<HospitalEntity> entities = hospitalRepository.findAllByStatusOrderByNameAsc(resolvedStatus).stream()
+                .filter(entity -> matchesFilter(entity.getCode(), code))
+                .filter(entity -> matchesFilter(entity.getName(), name))
+                .filter(entity -> matchesFilter(entity.getCity(), city))
+                .filter(entity -> matchesFilter(entity.getRegion(), region))
+                .toList();
+
+        return entities.stream().map(entity -> hospitalMapper.toDto(entity, null)).toList();
     }
 
     @Transactional(readOnly = true)
@@ -47,5 +61,23 @@ public class HospitalService {
     @Transactional
     public void delete(@org.springframework.lang.NonNull Long id) {
         hospitalRepository.deleteById(id);
+    }
+
+    private boolean matchesFilter(String value, String filter) {
+        if (filter == null || filter.isBlank()) {
+            return true;
+        }
+
+        return value != null && value.toLowerCase().contains(filter.trim().toLowerCase());
+    }
+
+    private void validateStatus(Integer status) {
+        if (status == null) {
+            return;
+        }
+
+        if (status != STATUS_DISABLED && status != STATUS_ACTIVE && status != STATUS_TO_ACTIVATE) {
+            throw new ResponseStatusException(BAD_REQUEST, "Status ospedale non valido");
+        }
     }
 }

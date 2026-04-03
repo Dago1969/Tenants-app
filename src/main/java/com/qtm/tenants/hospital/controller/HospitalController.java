@@ -22,8 +22,14 @@ public class HospitalController {
     }
 
     @GetMapping
-    public ResponseEntity<List<HospitalDto>> findAll() {
-        return ResponseEntity.ok(hospitalService.findAll());
+    public ResponseEntity<List<HospitalDto>> findAll(
+            @RequestParam(required = false) String code,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) String region,
+            @RequestParam(required = false) Integer status
+    ) {
+        return ResponseEntity.ok(hospitalService.findAll(code, name, city, region, status));
     }
 
     @GetMapping("/{id}")
