@@ -52,9 +52,14 @@ const MODULE_TITLE_KEYS: Record<string, MessageKey> = {
   ROLE: 'menu.roles',
   MODULE: 'menu.modules',
   FUNCTION: 'menu.functions',
+  'STRUCTURE-ASL': 'menu.structure.aslSearch',
   STRUCTURE: 'menu.structures',
   'STRUCTURE-FARMACY-O': 'menu.structure.hospitalPharmacySearch',
   'STRUCTURE-FARMACY-R': 'menu.structure.retailPharmacySearch',
+  STRUCTURE_LOGISTICS_WAREHOUSE: 'menu.structure.logisticsWarehouseSearch',
+  STRUCTURE_MATERIAL_WAREHOUSE: 'menu.structure.materialWarehouseSearch',
+  STRUCTURE_PHARMA_COMPANY: 'menu.structure.pharmaCompanySearch',
+  STRUCTURE_SPECIALIST_CLINIC: 'menu.structure.specialistClinicSearch',
   PROJECT: 'menu.projects',
   TENANT: 'menu.tenants'
 };
@@ -68,14 +73,19 @@ const MODULE_MESSAGE_PREFIXES: Record<string, string> = {
   ROLE: 'roles',
   MODULE: 'modules',
   FUNCTION: 'functions',
+  'STRUCTURE-ASL': 'structures',
   STRUCTURE: 'structures',
   'STRUCTURE-FARMACY-O': 'structures',
   'STRUCTURE-FARMACY-R': 'structures',
+  STRUCTURE_LOGISTICS_WAREHOUSE: 'structures',
+  STRUCTURE_MATERIAL_WAREHOUSE: 'structures',
+  STRUCTURE_PHARMA_COMPANY: 'structures',
+  STRUCTURE_SPECIALIST_CLINIC: 'structures',
   PROJECT: 'projects',
   TENANT: 'tenants'
 };
 
-const MODULE_DISPLAY_ORDER = ['USER', 'PATIENT', 'DOCTOR', 'NURSE', 'HOSPITAL', 'STRUCTURE', 'STRUCTURE-FARMACY-O', 'STRUCTURE-FARMACY-R', 'ROLE', 'MODULE', 'FUNCTION', 'PROJECT', 'TENANT'];
+const MODULE_DISPLAY_ORDER = ['USER', 'PATIENT', 'DOCTOR', 'NURSE', 'STRUCTURE-ASL', 'HOSPITAL', 'STRUCTURE', 'STRUCTURE-FARMACY-O', 'STRUCTURE-FARMACY-R', 'STRUCTURE_LOGISTICS_WAREHOUSE', 'STRUCTURE_MATERIAL_WAREHOUSE', 'STRUCTURE_PHARMA_COMPANY', 'STRUCTURE_SPECIALIST_CLINIC', 'ROLE', 'MODULE', 'FUNCTION', 'PROJECT', 'TENANT'];
 
 @Component({
   selector: 'app-authorizations-management',

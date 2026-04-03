@@ -90,6 +90,13 @@ public class AuthorizationManagementService {
             ),
             // --- INIZIO AGGIUNTA BLOCCO HOSPITAL ---
             new ModuleDefinition(
+                    "STRUCTURE-ASL",
+                    "ASL",
+                    "structure",
+                    resolveEntityFields(StructureEntity.class, Set.of("id"), Map.of()),
+                    List.of()
+            ),
+            new ModuleDefinition(
                     "HOSPITAL",
                     "Ospedali",
                     "hospital",
@@ -110,6 +117,34 @@ public class AuthorizationManagementService {
             new ModuleDefinition(
                     "STRUCTURE-FARMACY-R",
                     "Farmacie Retail",
+                    "structure",
+                    resolveEntityFields(StructureEntity.class, Set.of("id"), Map.of()),
+                    List.of()
+            ),
+            new ModuleDefinition(
+                    "STRUCTURE_LOGISTICS_WAREHOUSE",
+                    "Magazzini Logistica",
+                    "structure",
+                    resolveEntityFields(StructureEntity.class, Set.of("id"), Map.of()),
+                    List.of()
+            ),
+            new ModuleDefinition(
+                    "STRUCTURE_MATERIAL_WAREHOUSE",
+                    "Magazzini Materiale",
+                    "structure",
+                    resolveEntityFields(StructureEntity.class, Set.of("id"), Map.of()),
+                    List.of()
+            ),
+            new ModuleDefinition(
+                    "STRUCTURE_PHARMA_COMPANY",
+                    "Aziende Farmaceutiche",
+                    "structure",
+                    resolveEntityFields(StructureEntity.class, Set.of("id"), Map.of()),
+                    List.of()
+            ),
+            new ModuleDefinition(
+                    "STRUCTURE_SPECIALIST_CLINIC",
+                    "Cliniche e Ambulatori Specialistici",
                     "structure",
                     resolveEntityFields(StructureEntity.class, Set.of("id"), Map.of()),
                     List.of()

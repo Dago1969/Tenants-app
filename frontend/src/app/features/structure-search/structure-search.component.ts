@@ -8,6 +8,16 @@ import { AddWizardComponentHospital } from '../../shared/add-wizard.component-ho
 import { AddWizardComponentPharmacy } from '../../shared/add-wizard.component-pharmacy';
 import { FunctionAuthorizationService } from '../../core/function-authorization.service';
 
+type PopupStructureType =
+  | 'ASL'
+  | 'STRUCTURE_HOSPITAL'
+  | 'HOSPITAL_PHARMACY'
+  | 'RETAIL_PHARMACY'
+  | 'LOGISTICS_WAREHOUSE'
+  | 'MATERIAL_WAREHOUSE'
+  | 'PHARMA_COMPANY'
+  | 'SPECIALIST_CLINIC';
+
 /**
  * Pagina di ricerca strutture per tipo, con collegamento al form di gestione dedicato.
  */
@@ -46,9 +56,9 @@ import { FunctionAuthorizationService } from '../../core/function-authorization.
       (close)="closeStructureWizard()"
     ></add-wizard-component-hospital>
     <add-wizard-component-pharmacy
-      *ngIf="showStructureWizard && (popupStructureType === 'HOSPITAL_PHARMACY' || popupStructureType === 'RETAIL_PHARMACY')"
+      *ngIf="showStructureWizard && isManagedStructurePopup()"
       [structureId]="selectedStructureId"
-      [structureType]="popupStructureType === 'HOSPITAL_PHARMACY' ? 'HOSPITAL_PHARMACY' : 'RETAIL_PHARMACY'"
+      [structureType]="getManagedPopupStructureType()"
       (close)="closeStructureWizard()"
     ></add-wizard-component-pharmacy>
   `
@@ -63,7 +73,7 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
   canCreate = true;
   showStructureWizard = false;
   selectedStructureId: number | null = null;
-  popupStructureType = 'ASL';
+  popupStructureType: PopupStructureType = 'ASL';
   interceptEditAction = false;
   private routeSub: any = null;
   titleKey = 'structures.title' as MessageKey;
@@ -108,9 +118,9 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
     this.titleKey = (this.route.snapshot.data['titleKey'] ?? 'structures.title') as MessageKey;
     const structureType = String(this.route.snapshot.data['structureType'] ?? 'ASL');
     this.moduleCode = String(this.route.snapshot.data['moduleCode'] ?? 'STRUCTURE');
-    this.popupStructureType = structureType;
+    this.popupStructureType = structureType as PopupStructureType;
     this.fixedParams = { structureType };
-    if (structureType === 'ASL' || structureType === 'STRUCTURE_HOSPITAL' || structureType === 'HOSPITAL_PHARMACY' || structureType === 'RETAIL_PHARMACY') {
+    if (this.isPopupWizardStructureType(structureType)) {
       this.createRoute = '';
       this.detailRouteBase = this.resolveDetailRouteBase(structureType);
       this.interceptEditAction = true;
@@ -163,6 +173,24 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
     this.searchPage?.search(false);
   }
 
+  isManagedStructurePopup(): boolean {
+    return this.isPopupWizardStructureType(this.popupStructureType) && this.popupStructureType !== 'ASL' && this.popupStructureType !== 'STRUCTURE_HOSPITAL';
+  }
+
+  getManagedPopupStructureType(): 'HOSPITAL_PHARMACY' | 'RETAIL_PHARMACY' | 'LOGISTICS_WAREHOUSE' | 'MATERIAL_WAREHOUSE' | 'PHARMA_COMPANY' | 'SPECIALIST_CLINIC' {
+    switch (this.popupStructureType) {
+      case 'HOSPITAL_PHARMACY':
+      case 'RETAIL_PHARMACY':
+      case 'LOGISTICS_WAREHOUSE':
+      case 'MATERIAL_WAREHOUSE':
+      case 'PHARMA_COMPANY':
+      case 'SPECIALIST_CLINIC':
+        return this.popupStructureType;
+      default:
+        return 'HOSPITAL_PHARMACY';
+    }
+  }
+
   getStructureTypeLabelKey(): MessageKey {
     switch (this.popupStructureType) {
       case 'STRUCTURE_HOSPITAL':
@@ -171,6 +199,14 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
         return 'structures.type.hospitalPharmacy.label';
       case 'RETAIL_PHARMACY':
         return 'structures.type.retailPharmacy.label';
+      case 'LOGISTICS_WAREHOUSE':
+        return 'structures.type.logisticsWarehouse.label';
+      case 'MATERIAL_WAREHOUSE':
+        return 'structures.type.materialWarehouse.label';
+      case 'PHARMA_COMPANY':
+        return 'structures.type.pharmaCompany.label';
+      case 'SPECIALIST_CLINIC':
+        return 'structures.type.specialistClinic.label';
       default:
         return 'structures.type.asl.label';
     }
@@ -186,9 +222,30 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
         return '/structures/hospital-pharmacies/manage';
       case 'RETAIL_PHARMACY':
         return '/structures/retail-pharmacies/manage';
+      case 'LOGISTICS_WAREHOUSE':
+        return '/structures/logistics-warehouses/manage';
+      case 'MATERIAL_WAREHOUSE':
+        return '/structures/material-warehouses/manage';
+      case 'PHARMA_COMPANY':
+        return '/structures/pharma-companies/manage';
+      case 'SPECIALIST_CLINIC':
+        return '/structures/specialist-clinics/manage';
       default:
         return '/structures/asl/manage';
     }
+  }
+
+  private isPopupWizardStructureType(structureType: string): boolean {
+    return [
+      'ASL',
+      'STRUCTURE_HOSPITAL',
+      'HOSPITAL_PHARMACY',
+      'RETAIL_PHARMACY',
+      'LOGISTICS_WAREHOUSE',
+      'MATERIAL_WAREHOUSE',
+      'PHARMA_COMPANY',
+      'SPECIALIST_CLINIC'
+    ].includes(structureType);
   }
 
   private normalizeStructureId(structureId?: string | number): number | null {

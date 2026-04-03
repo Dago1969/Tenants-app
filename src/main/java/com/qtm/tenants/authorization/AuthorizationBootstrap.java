@@ -29,24 +29,39 @@ public class AuthorizationBootstrap implements CommandLineRunner {
     private static final String MODULE_DOCTOR = "DOCTOR";
     private static final String MODULE_NURSE = "NURSE";
     private static final String MODULE_FUNCTION = "FUNCTION";
-        private static final String MODULE_HOSPITAL_PHARMACY = "STRUCTURE-FARMACY-O";
-        private static final String MODULE_RETAIL_PHARMACY = "STRUCTURE-FARMACY-R";
-        private static final Map<String, String> MODULE_NAMES = Map.of(
+    private static final String MODULE_ASL = "STRUCTURE-ASL";
+    private static final String MODULE_HOSPITAL_PHARMACY = "STRUCTURE-FARMACY-O";
+    private static final String MODULE_RETAIL_PHARMACY = "STRUCTURE-FARMACY-R";
+    private static final String MODULE_LOGISTICS_WAREHOUSE = "STRUCTURE_LOGISTICS_WAREHOUSE";
+    private static final String MODULE_MATERIAL_WAREHOUSE = "STRUCTURE_MATERIAL_WAREHOUSE";
+    private static final String MODULE_PHARMA_COMPANY = "STRUCTURE_PHARMA_COMPANY";
+    private static final String MODULE_SPECIALIST_CLINIC = "STRUCTURE_SPECIALIST_CLINIC";
+    private static final Map<String, String> MODULE_NAMES = Map.of(
+            MODULE_ASL, "ASL",
             MODULE_HOSPITAL_PHARMACY, "Farmacie Ospedaliere",
-            MODULE_RETAIL_PHARMACY, "Farmacie Retail"
-        );
-        private static final List<String> MODULE_CODES = List.of(
+            MODULE_RETAIL_PHARMACY, "Farmacie Retail",
+            MODULE_LOGISTICS_WAREHOUSE, "Magazzini Logistica",
+            MODULE_MATERIAL_WAREHOUSE, "Magazzini Materiale",
+            MODULE_PHARMA_COMPANY, "Aziende Farmaceutiche",
+            MODULE_SPECIALIST_CLINIC, "Cliniche e Ambulatori Specialistici"
+    );
+    private static final List<String> MODULE_CODES = List.of(
             "USER",
             "STRUCTURE",
+            MODULE_ASL,
             MODULE_HOSPITAL_PHARMACY,
             MODULE_RETAIL_PHARMACY,
+            MODULE_LOGISTICS_WAREHOUSE,
+            MODULE_MATERIAL_WAREHOUSE,
+            MODULE_PHARMA_COMPANY,
+            MODULE_SPECIALIST_CLINIC,
             "ROLE",
             "MODULE",
             MODULE_FUNCTION,
             MODULE_PATIENT,
             MODULE_DOCTOR,
             MODULE_NURSE
-        );
+    );
     private static final String ENTITY_PATIENT = "patient";
     private static final String ENTITY_DOCTOR = "doctor";
     private static final String ENTITY_NURSE = "nurse";

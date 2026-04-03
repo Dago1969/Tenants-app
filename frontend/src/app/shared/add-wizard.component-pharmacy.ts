@@ -8,7 +8,13 @@ import { t } from '../i18n/messages';
 import { NotificationService } from './notification.service';
 import { QtmStepModalComponent } from './qtm-step-modal.component';
 
-type PharmacyStructureType = 'HOSPITAL_PHARMACY' | 'RETAIL_PHARMACY';
+type ManagedStructureType =
+  | 'HOSPITAL_PHARMACY'
+  | 'RETAIL_PHARMACY'
+  | 'LOGISTICS_WAREHOUSE'
+  | 'MATERIAL_WAREHOUSE'
+  | 'PHARMA_COMPANY'
+  | 'SPECIALIST_CLINIC';
 
 interface PharmacyOpeningSlot {
   dayOfWeek: string;
@@ -26,7 +32,7 @@ interface ParentStructureOption {
 }
 
 /**
- * Wizard popup per inserimento e modifica di farmacie ospedaliere e retail.
+ * Wizard popup per inserimento e modifica delle strutture gestite con catena step-based.
  */
 @Component({
   selector: 'add-wizard-component-pharmacy',
@@ -63,7 +69,7 @@ interface ParentStructureOption {
             </label>
           </div>
 
-          <div class="form-row">
+          <div class="form-row" *ngIf="hasParentStructure()">
             <label>{{ translate(getParentLabelKey()) }}<span class="required-asterisk">*</span>
               <select class="search-filter-select" name="parentStructureId" [(ngModel)]="model.parentStructureId" (ngModelChange)="onParentStructureChange()" required>
                 <option [ngValue]="null">{{ translate('structures.select') }}</option>
@@ -134,6 +140,7 @@ interface ParentStructureOption {
         </form>
 
         <div *ngSwitchCase="3">
+          <ng-container *ngIf="isScheduleManagedStructure(); else genericSpecificDataStep">
           <h4>{{ translate('structures.field.openingCalendar') }}</h4>
           <div *ngFor="let slot of openingSchedule; let slotIndex = index" class="form-row" style="align-items: flex-end; gap: 1rem; margin-bottom: 0.75rem;">
             <label style="flex: 1;">{{ translate('structures.field.dayOfWeek') }}<span class="required-asterisk">*</span>
@@ -159,6 +166,21 @@ interface ParentStructureOption {
               <div *ngIf="getSchedulePreviewLines().length === 0">-</div>
             </div>
           </div>
+          </ng-container>
+          <ng-template #genericSpecificDataStep>
+            <h4>{{ translate('structures.step.specificData') }}</h4>
+            <div class="form-row">
+              <label style="flex: 1;">{{ translate('structures.field.description') }}
+                <textarea name="description" [(ngModel)]="model.description" rows="5" style="width: 100%; resize: vertical;"></textarea>
+              </label>
+            </div>
+            <div class="form-row">
+              <label style="display:flex; align-items:center; gap:0.5rem;">
+                <input type="checkbox" name="active" [(ngModel)]="model.active" />
+                <span>{{ translate('structures.field.active') }}</span>
+              </label>
+            </div>
+          </ng-template>
         </div>
 
         <div *ngSwitchCase="4">
@@ -174,8 +196,8 @@ interface ParentStructureOption {
                 <div class="summary2-value">{{ model.code }}</div>
               </div>
               <div class="summary4-col">
-                <div class="summary2-label">{{ translate(getParentLabelKey()) }}</div>
-                <div class="summary2-value">{{ model.parentStructureName || '-' }}</div>
+                <div class="summary2-label">{{ translate(hasParentStructure() ? getParentLabelKey() : 'structures.field.email') }}</div>
+                <div class="summary2-value">{{ hasParentStructure() ? (model.parentStructureName || '-') : (model.email || '-') }}</div>
               </div>
               <div class="summary4-col">
                 <div class="summary2-label">{{ translate('structures.field.phone') }}</div>
@@ -212,9 +234,15 @@ interface ParentStructureOption {
                 </div>
               </div>
               <div class="summary4-col" style="grid-column: span 2;">
-                <div class="summary2-label">{{ translate('structures.field.serviceCalendarHours') }}</div>
+                <div class="summary2-label">{{ translate(isScheduleManagedStructure() ? 'structures.field.serviceCalendarHours' : 'structures.field.description') }}</div>
                 <div class="summary2-value">
-                  <div *ngFor="let line of getSchedulePreviewLines()">{{ line }}</div>
+                  <ng-container *ngIf="isScheduleManagedStructure(); else genericSummaryValue">
+                    <div *ngFor="let line of getSchedulePreviewLines()">{{ line }}</div>
+                  </ng-container>
+                  <ng-template #genericSummaryValue>
+                    <div>{{ model.description || '-' }}</div>
+                    <div style="margin-top: 0.5rem; font-weight: 600;">{{ translate('structures.field.active') }}: {{ translate(getActiveStatusLabelKey()) }}</div>
+                  </ng-template>
                 </div>
               </div>
             </div>
@@ -233,7 +261,7 @@ interface ParentStructureOption {
 })
 export class AddWizardComponentPharmacy implements OnInit {
   @Input() structureId: number | null = null;
-  @Input() structureType: PharmacyStructureType = 'HOSPITAL_PHARMACY';
+  @Input() structureType: ManagedStructureType = 'HOSPITAL_PHARMACY';
   @Output() close = new EventEmitter<void>();
 
   showAddReferent = false;
@@ -260,10 +288,37 @@ export class AddWizardComponentPharmacy implements OnInit {
     { code: 'SUNDAY', labelKey: 'structures.schedule.day.sunday' }
   ] as const;
 
+  readonly parentLabelKeys: Partial<Record<ManagedStructureType, string>> = {
+    HOSPITAL_PHARMACY: 'structures.field.parentHospital',
+    RETAIL_PHARMACY: 'structures.field.parentAsl',
+    LOGISTICS_WAREHOUSE: 'structures.field.parentAsl',
+    MATERIAL_WAREHOUSE: 'structures.field.parentAsl',
+    SPECIALIST_CLINIC: 'structures.field.parentAsl'
+  };
+
+  readonly typeLabelKeys: Record<ManagedStructureType, string> = {
+    HOSPITAL_PHARMACY: 'structures.type.hospitalPharmacy.label',
+    RETAIL_PHARMACY: 'structures.type.retailPharmacy.label',
+    LOGISTICS_WAREHOUSE: 'structures.type.logisticsWarehouse.label',
+    MATERIAL_WAREHOUSE: 'structures.type.materialWarehouse.label',
+    PHARMA_COMPANY: 'structures.type.pharmaCompany.label',
+    SPECIALIST_CLINIC: 'structures.type.specialistClinic.label'
+  };
+
+  readonly wizardTitleKeys: Record<ManagedStructureType, string> = {
+    HOSPITAL_PHARMACY: 'structures.wizard.hospitalPharmacy.title',
+    RETAIL_PHARMACY: 'structures.wizard.retailPharmacy.title',
+    LOGISTICS_WAREHOUSE: 'structures.wizard.logisticsWarehouse.title',
+    MATERIAL_WAREHOUSE: 'structures.wizard.materialWarehouse.title',
+    PHARMA_COMPANY: 'structures.wizard.pharmaCompany.title',
+    SPECIALIST_CLINIC: 'structures.wizard.specialistClinic.title'
+  };
+
   model: {
     id: number | null;
     name: string;
     code: string;
+    description: string;
     regionId: string;
     region: string;
     provinceId: string;
@@ -282,6 +337,7 @@ export class AddWizardComponentPharmacy implements OnInit {
     id: null,
     name: '',
     code: '',
+    description: '',
     regionId: '',
     region: '',
     provinceId: '',
@@ -315,7 +371,7 @@ export class AddWizardComponentPharmacy implements OnInit {
     this.stepDescriptions = [
       'structures.step.generalData.desc',
       'structures.step.contacts.desc',
-      'structures.step.specificData.pharmacy.desc',
+      this.isScheduleManagedStructure() ? 'structures.step.specificData.pharmacy.desc' : 'structures.step.specificData.structure.desc',
       'structures.step.confirm.desc'
     ];
 
@@ -342,21 +398,27 @@ export class AddWizardComponentPharmacy implements OnInit {
   };
 
   getWizardTitleKey(): string {
-    return this.structureType === 'HOSPITAL_PHARMACY'
-      ? 'structures.wizard.hospitalPharmacy.title'
-      : 'structures.wizard.retailPharmacy.title';
+    return this.wizardTitleKeys[this.structureType];
   }
 
   getStructureTypeLabelKey(): string {
-    return this.structureType === 'HOSPITAL_PHARMACY'
-      ? 'structures.type.hospitalPharmacy.label'
-      : 'structures.type.retailPharmacy.label';
+    return this.typeLabelKeys[this.structureType];
   }
 
   getParentLabelKey(): string {
-    return this.structureType === 'HOSPITAL_PHARMACY'
-      ? 'structures.field.parentHospital'
-      : 'structures.field.parentAsl';
+    return this.parentLabelKeys[this.structureType] ?? 'structures.field.parentStructureId';
+  }
+
+  hasParentStructure(): boolean {
+    return Boolean(this.parentLabelKeys[this.structureType]);
+  }
+
+  isScheduleManagedStructure(): boolean {
+    return this.structureType === 'HOSPITAL_PHARMACY' || this.structureType === 'RETAIL_PHARMACY';
+  }
+
+  getActiveStatusLabelKey(): string {
+    return this.model.active ? 'status.attivo' : 'status.inattivo';
   }
 
   addReferent(): void {
@@ -424,7 +486,7 @@ export class AddWizardComponentPharmacy implements OnInit {
   }
 
   nextStep(): void {
-    if (this.step === 3 && !this.hasValidSchedule()) {
+    if (this.step === 3 && this.isScheduleManagedStructure() && !this.hasValidSchedule()) {
       this.notificationService.showError(this.translate('structures.message.scheduleRequired'));
       return;
     }
@@ -441,7 +503,7 @@ export class AddWizardComponentPharmacy implements OnInit {
   }
 
   save(): void {
-    if (!this.hasValidSchedule()) {
+    if (this.isScheduleManagedStructure() && !this.hasValidSchedule()) {
       this.notificationService.showError(this.translate('structures.message.scheduleRequired'));
       return;
     }
@@ -450,6 +512,7 @@ export class AddWizardComponentPharmacy implements OnInit {
       id: this.model.id ?? undefined,
       name: this.model.name,
       code: this.model.code,
+      description: this.model.description,
       regionId: this.model.regionId,
       region: this.model.region,
       provinceId: this.model.provinceId,
@@ -460,10 +523,10 @@ export class AddWizardComponentPharmacy implements OnInit {
       cap: this.model.cap,
       phone: this.model.phone,
       email: this.model.email,
-      serviceCalendarHours: this.stringifySchedule(),
+      serviceCalendarHours: this.isScheduleManagedStructure() ? this.stringifySchedule() : undefined,
       active: this.model.active,
-      parentStructureId: this.model.parentStructureId ?? undefined,
-      parentStructureName: this.model.parentStructureName,
+      parentStructureId: this.hasParentStructure() ? (this.model.parentStructureId ?? undefined) : undefined,
+      parentStructureName: this.hasParentStructure() ? this.model.parentStructureName : undefined,
       referents: this.model.referents,
       structureType: this.structureType
     };
@@ -498,6 +561,11 @@ export class AddWizardComponentPharmacy implements OnInit {
   }
 
   private loadParentStructures(): void {
+    if (!this.hasParentStructure()) {
+      this.parentStructures = [];
+      return;
+    }
+
     this.structureApi.getParentOptions(this.structureType).subscribe({
       next: (data) => {
         this.parentStructures = data;
@@ -547,6 +615,7 @@ export class AddWizardComponentPharmacy implements OnInit {
           id: structure.id ?? null,
           name: structure.name ?? '',
           code: structure.code ?? '',
+          description: structure.description ?? '',
           regionId: this.toSelectValue(structure.regionId),
           region: structure.region ?? '',
           provinceId: this.toSelectValue(structure.provinceId),
@@ -558,17 +627,21 @@ export class AddWizardComponentPharmacy implements OnInit {
           phone: structure.phone ?? '',
           email: structure.email ?? '',
           active: structure.active ?? true,
-          parentStructureId: structure.parentStructureId ?? null,
-          parentStructureName: structure.parentStructureName ?? '',
+          parentStructureId: this.hasParentStructure() ? (structure.parentStructureId ?? null) : null,
+          parentStructureName: this.hasParentStructure() ? (structure.parentStructureName ?? '') : '',
           referents: this.mapReferentsById(structure.referents ?? [])
         };
-        this.openingSchedule = this.parseSchedule(structure.serviceCalendarHours);
+        this.openingSchedule = this.isScheduleManagedStructure()
+          ? this.parseSchedule(structure.serviceCalendarHours)
+          : [this.createEmptyScheduleSlot()];
 
         if (this.model.regionId) {
           this.loadProvinceOptions(this.model.regionId, this.model.provinceId, this.model.cityId);
         }
 
-        this.onParentStructureChange();
+        if (this.hasParentStructure()) {
+          this.onParentStructureChange();
+        }
       },
       error: () => {
         this.notificationService.showError(this.translate('crud.error.load'));

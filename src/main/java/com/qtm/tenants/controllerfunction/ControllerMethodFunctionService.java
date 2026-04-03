@@ -72,18 +72,23 @@ public class ControllerMethodFunctionService {
             APPROVE_FUNCTION_CODE
     );
 
-        private static final Map<String, Class<?>> MODULE_CONTROLLERS = Map.of(
-            "USER", UserController.class,
-            "PATIENT", PatientController.class,
-            "DOCTOR", DoctorController.class,
-            "NURSE", NurseController.class,
-            "ROLE", RoleController.class,
-            "MODULE", ModuleController.class,
-            "FUNCTION", FunctionController.class,
-            "STRUCTURE-FARMACY-O", StructureController.class,
-            "STRUCTURE-FARMACY-R", StructureController.class,
-            "STRUCTURE", StructureController.class
-    );
+            private static final Map<String, Class<?>> MODULE_CONTROLLERS = Map.ofEntries(
+                Map.entry("USER", UserController.class),
+                Map.entry("PATIENT", PatientController.class),
+                Map.entry("DOCTOR", DoctorController.class),
+                Map.entry("NURSE", NurseController.class),
+                Map.entry("ROLE", RoleController.class),
+                Map.entry("MODULE", ModuleController.class),
+                Map.entry("FUNCTION", FunctionController.class),
+                Map.entry("STRUCTURE-ASL", StructureController.class),
+                Map.entry("STRUCTURE-FARMACY-O", StructureController.class),
+                Map.entry("STRUCTURE-FARMACY-R", StructureController.class),
+                Map.entry("STRUCTURE_LOGISTICS_WAREHOUSE", StructureController.class),
+                Map.entry("STRUCTURE_MATERIAL_WAREHOUSE", StructureController.class),
+                Map.entry("STRUCTURE_PHARMA_COMPANY", StructureController.class),
+                Map.entry("STRUCTURE_SPECIALIST_CLINIC", StructureController.class),
+                Map.entry("STRUCTURE", StructureController.class)
+            );
 
     private static final Map<String, String> DEFAULT_METHOD_FUNCTION_CODES = buildDefaultMethodFunctionCodes();
 
