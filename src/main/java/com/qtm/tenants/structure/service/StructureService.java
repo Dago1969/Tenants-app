@@ -72,6 +72,11 @@ public class StructureService {
         return toDto(findEntityById(id));
     }
 
+    @Transactional(readOnly = true)
+    public String findStructureTypeCode(Long id) {
+        return findEntityById(id).getStructureType();
+    }
+
     @Transactional
     public StructureDto update(Long id, StructureDto structureDto) {
         StructureEntity current = findEntityById(id);

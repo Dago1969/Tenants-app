@@ -100,7 +100,20 @@ public class AuthorizationManagementService {
                     ),
                     DEFAULT_COMMON_FUNCTION_CODES
             ),
-            // --- FINE AGGIUNTA BLOCCO HOSPITAL ---
+            new ModuleDefinition(
+                    "STRUCTURE-FARMACY-O",
+                    "Farmacie Ospedaliere",
+                    "structure",
+                    resolveEntityFields(StructureEntity.class, Set.of("id"), Map.of()),
+                    List.of()
+            ),
+            new ModuleDefinition(
+                    "STRUCTURE-FARMACY-R",
+                    "Farmacie Retail",
+                    "structure",
+                    resolveEntityFields(StructureEntity.class, Set.of("id"), Map.of()),
+                    List.of()
+            ),
             new ModuleDefinition("ROLE", "Ruoli", "role", resolveEntityFields(RoleEntity.class, Set.of(), Map.of()), List.of()),
             new ModuleDefinition("MODULE", "Moduli", "module", resolveEntityFields(ModuleEntity.class, Set.of(), Map.of()), List.of()),
             new ModuleDefinition("FUNCTION", "Funzioni", "function", resolveEntityFields(FunctionEntity.class, Set.of(), Map.of()), List.of()),
@@ -369,12 +382,19 @@ public class AuthorizationManagementService {
 
     private ModuleEntity ensureModule(ModuleDefinition definition) {
         return moduleRepository.findById(definition.code())
-                .orElseGet(() -> {
-                    ModuleEntity module = new ModuleEntity();
-                    module.setCode(definition.code());
-                    module.setName(definition.name());
-                    return moduleRepository.save(module);
-                });
+                                .map(existing -> {
+                                        if (!definition.name().equals(existing.getName())) {
+                                                existing.setName(definition.name());
+                                                return moduleRepository.save(existing);
+                                        }
+                                        return existing;
+                                })
+                                .orElseGet(() -> {
+                                        ModuleEntity module = new ModuleEntity();
+                                        module.setCode(definition.code());
+                                        module.setName(definition.name());
+                                        return moduleRepository.save(module);
+                                });
     }
 
     private ModuleRoleAuthorizationEntity ensureModuleRoleAuthorization(

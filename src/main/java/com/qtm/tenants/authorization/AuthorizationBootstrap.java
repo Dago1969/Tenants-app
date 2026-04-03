@@ -29,7 +29,24 @@ public class AuthorizationBootstrap implements CommandLineRunner {
     private static final String MODULE_DOCTOR = "DOCTOR";
     private static final String MODULE_NURSE = "NURSE";
     private static final String MODULE_FUNCTION = "FUNCTION";
-    private static final List<String> MODULE_CODES = List.of("USER", "STRUCTURE", "ROLE", "MODULE", MODULE_FUNCTION, MODULE_PATIENT, MODULE_DOCTOR, MODULE_NURSE);
+        private static final String MODULE_HOSPITAL_PHARMACY = "STRUCTURE-FARMACY-O";
+        private static final String MODULE_RETAIL_PHARMACY = "STRUCTURE-FARMACY-R";
+        private static final Map<String, String> MODULE_NAMES = Map.of(
+            MODULE_HOSPITAL_PHARMACY, "Farmacie Ospedaliere",
+            MODULE_RETAIL_PHARMACY, "Farmacie Retail"
+        );
+        private static final List<String> MODULE_CODES = List.of(
+            "USER",
+            "STRUCTURE",
+            MODULE_HOSPITAL_PHARMACY,
+            MODULE_RETAIL_PHARMACY,
+            "ROLE",
+            "MODULE",
+            MODULE_FUNCTION,
+            MODULE_PATIENT,
+            MODULE_DOCTOR,
+            MODULE_NURSE
+        );
     private static final String ENTITY_PATIENT = "patient";
     private static final String ENTITY_DOCTOR = "doctor";
     private static final String ENTITY_NURSE = "nurse";
@@ -94,7 +111,7 @@ public class AuthorizationBootstrap implements CommandLineRunner {
                 .orElseGet(() -> {
                     ModuleEntity module = new ModuleEntity();
                     module.setCode(moduleCode);
-                    module.setName(moduleCode);
+                    module.setName(MODULE_NAMES.getOrDefault(moduleCode, moduleCode));
                     return moduleRepository.save(module);
                 });
     }

@@ -58,6 +58,7 @@ public class StructureMapper {
         dto.setRegion(entity.getRegion());
         dto.setPhone(entity.getPhone());
         dto.setEmail(entity.getEmail());
+        dto.setServiceCalendarHours(entity.getServiceCalendarHours());
         dto.setActive(Boolean.TRUE.equals(entity.getActive()));
         dto.setStructureType(structureType == null ? entity.getStructureType() : structureType.getCode());
         dto.setStructureTypeDescription(structureType == null ? null : structureType.getDescription());
@@ -122,6 +123,7 @@ public class StructureMapper {
         entity.setRegion(dto.getRegion());
         entity.setPhone(dto.getPhone());
         entity.setEmail(dto.getEmail());
+        entity.setServiceCalendarHours(dto.getServiceCalendarHours());
         entity.setActive(dto.isActive());
         entity.setParentStructureId(dto.getParentStructureId());
         entity.setStructureType(structureTypeRegistry.getRequiredByCode(dto.getStructureType()).getCode());

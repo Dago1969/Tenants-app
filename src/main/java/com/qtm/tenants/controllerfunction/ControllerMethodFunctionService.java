@@ -80,6 +80,8 @@ public class ControllerMethodFunctionService {
             "ROLE", RoleController.class,
             "MODULE", ModuleController.class,
             "FUNCTION", FunctionController.class,
+            "STRUCTURE-FARMACY-O", StructureController.class,
+            "STRUCTURE-FARMACY-R", StructureController.class,
             "STRUCTURE", StructureController.class
     );
 

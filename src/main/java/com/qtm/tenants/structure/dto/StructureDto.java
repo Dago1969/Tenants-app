@@ -28,6 +28,7 @@ public class StructureDto {
     private String region;
     private String phone;
     private String email;
+    private String serviceCalendarHours;
     private boolean active;
     private String structureType;
     private String structureTypeDescription;

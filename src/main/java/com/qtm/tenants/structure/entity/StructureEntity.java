@@ -72,6 +72,9 @@ public class StructureEntity {
     @Column(name = "email")
     private String email;
 
+    @Column(name = "service_calendar_hours")
+    private String serviceCalendarHours;
+
     @Column(name = "active")
     private Boolean active = true;
 
