@@ -344,9 +344,12 @@ export const messages = {
     "structures.type.asl.label": "ASL",
     "structures.type.asl.search.title": "Ricerca ASL",
     "structures.type.asl.title": "Gestione ASL",
-    "structures.type.hospital.label": "Struttura Ospedaliera",
-    "structures.type.hospital.search.title": "Ricerca Strutture Ospedaliere",
-    "structures.type.hospital.title": "Gestione Strutture Ospedaliere",
+    "structures.type.hospital.label": "Struttura Ospedaliera", // legacy
+    "structures.type.hospital.search.title": "Ricerca Strutture Ospedaliere", // legacy
+    "structures.type.hospital.title": "Gestione Strutture Ospedaliere", // legacy
+    "structures.type.structure_hospital.label": "Structure - Hospital",
+    "structures.type.structure_hospital.search.title": "Ricerca Structure - Hospital",
+    "structures.type.structure_hospital.title": "Gestione Structure - Hospital",
     "structures.type.hospitalPharmacy.label": "Farmacia Ospedaliera",
     "structures.type.hospitalPharmacy.search.title": "Ricerca Farmacie Ospedaliere",
     "structures.type.hospitalPharmacy.title": "Gestione Farmacie Ospedaliere",
@@ -791,9 +794,12 @@ export const messages = {
     "structures.type.asl.label": "Local Health Authority",
     "structures.type.asl.search.title": "Local Health Authority Search",
     "structures.type.asl.title": "Local Health Authority Management",
-    "structures.type.hospital.label": "Hospital",
-    "structures.type.hospital.search.title": "Hospital Search",
-    "structures.type.hospital.title": "Hospital Management",
+    "structures.type.hospital.label": "Hospital", // legacy
+    "structures.type.hospital.search.title": "Hospital Search", // legacy
+    "structures.type.hospital.title": "Hospital Management", // legacy
+    "structures.type.structure_hospital.label": "Structure - Hospital",
+    "structures.type.structure_hospital.search.title": "Structure - Hospital Search",
+    "structures.type.structure_hospital.title": "Structure - Hospital Management",
     "structures.type.hospitalPharmacy.label": "Hospital Pharmacy",
     "structures.type.hospitalPharmacy.search.title": "Hospital Pharmacy Search",
     "structures.type.hospitalPharmacy.title": "Hospital Pharmacy Management",

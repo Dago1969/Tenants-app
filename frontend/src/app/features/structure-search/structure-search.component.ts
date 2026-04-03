@@ -40,7 +40,7 @@ import { FunctionAuthorizationService } from '../../core/function-authorization.
       (close)="closeStructureWizard()"
     ></add-wizard-component-asl>
     <add-wizard-component-hospital
-      *ngIf="showStructureWizard && popupStructureType === 'HOSPITAL'"
+      *ngIf="showStructureWizard && popupStructureType === 'STRUCTURE_HOSPITAL'"
       [structureId]="selectedStructureId"
       (close)="closeStructureWizard()"
     ></add-wizard-component-hospital>
@@ -100,9 +100,10 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.titleKey = (this.route.snapshot.data['titleKey'] ?? 'structures.title') as MessageKey;
     const structureType = String(this.route.snapshot.data['structureType'] ?? 'ASL');
+    this.moduleCode = String(this.route.snapshot.data['moduleCode'] ?? 'STRUCTURE');
     this.popupStructureType = structureType;
     this.fixedParams = { structureType };
-    if (structureType === 'ASL' || structureType === 'HOSPITAL') {
+    if (structureType === 'ASL' || structureType === 'STRUCTURE_HOSPITAL') {
       this.createRoute = '';
       this.detailRouteBase = structureType === 'ASL' ? '/structures/asl/manage' : '/structures/hospitals/manage';
       this.interceptEditAction = true;
@@ -156,8 +157,8 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
   }
 
   getStructureTypeLabelKey(): MessageKey {
-    return this.popupStructureType === 'HOSPITAL'
-      ? 'structures.type.hospital.label'
+    return this.popupStructureType === 'STRUCTURE_HOSPITAL'
+      ? 'structures.type.structure_hospital.label'
       : 'structures.type.asl.label';
   }
 
