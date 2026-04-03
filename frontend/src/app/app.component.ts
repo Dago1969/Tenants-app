@@ -43,9 +43,9 @@ export class AppComponent implements OnDestroy {
   selectedClient = '';
   selectedProject: string | null = null;
   hiddenModuleCodes = new Set<string>();
-  managementMenuOpen = true;
-  registryMenuOpen = true;
-  structuresMenuOpen = true;
+  managementMenuOpen = false;
+  registryMenuOpen = false;
+  structuresMenuOpen = false;
   private readonly subscriptions = new Subscription();
 
   constructor(
@@ -115,7 +115,6 @@ export class AppComponent implements OnDestroy {
 
   structureMenuItems: MenuItem[] = [
     { labelKey: 'menu.structure.aslSearch', route: '/structures/asl', moduleCode: 'STRUCTURE' },
-    { labelKey: 'menu.hospital.search', route: '/hospitals-search' },
     { labelKey: 'menu.structure.hospitalSearch', route: '/structures/hospitals', moduleCode: 'STRUCTURE' },
     { labelKey: 'menu.structure.hospitalPharmacySearch', route: '/structures/hospital-pharmacies', moduleCode: 'STRUCTURE' },
     { labelKey: 'menu.structure.retailPharmacySearch', route: '/structures/retail-pharmacies', moduleCode: 'STRUCTURE' },

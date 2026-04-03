@@ -1,4 +1,3 @@
-import { HospitalSearchComponent } from './features/hospital-search/hospital-search.component';
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth.guard';
 import { UsersCrudComponent } from './features/users/users-crud.component';
@@ -30,13 +29,12 @@ import { StructureTypesSearchComponent } from './features/structure-types-search
 import { StructureTypesCrudComponent } from './features/structure-types-crud/structure-types-crud.component';
 import { OperationLogsSearchComponent } from './features/operation-logs-search/operation-logs-search.component';
 import { moduleVisibilityGuard } from './core/module-visibility.guard';
-import { AddWizardComponentAsl } from './shared/add-wizard.component-asl';
 
 /**
  * Routing applicativo tenants con protezione JWT e pagine CRUD.
  */
 export const appRoutes: Routes = [
-    { path: 'hospitals-search', component: HospitalSearchComponent, canActivate: [authGuard] },
+  { path: 'hospitals-search', pathMatch: 'full', redirectTo: 'structures/hospitals' },
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
   { path: 'users', component: UsersSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('USER')] },

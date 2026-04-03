@@ -4,6 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 import { t, MessageKey } from '../../i18n/messages';
 import { SearchField, SearchPageComponent } from '../../shared/search-page.component';
 import { AddWizardComponentAsl } from '../../shared/add-wizard.component-asl';
+import { AddWizardComponentHospital } from '../../shared/add-wizard.component-hospital';
 import { FunctionAuthorizationService } from '../../core/function-authorization.service';
 
 /**
@@ -12,7 +13,7 @@ import { FunctionAuthorizationService } from '../../core/function-authorization.
 @Component({
   selector: 'app-structure-search',
   standalone: true,
-  imports: [CommonModule, SearchPageComponent, AddWizardComponentAsl],
+  imports: [CommonModule, SearchPageComponent, AddWizardComponentAsl, AddWizardComponentHospital],
   template: `
     <app-search-page
       [titleKey]="titleKey"
@@ -27,17 +28,22 @@ import { FunctionAuthorizationService } from '../../core/function-authorization.
       [showViewAction]="false"
       [showCreateAction]="false"
       [interceptEditAction]="interceptEditAction"
-      (editAction)="openAslWizard($event)"
+      (editAction)="openStructureWizard($event)"
     >
-      <button search-header-action class="btn btn-primary" style="margin-left: 0.5rem;" (click)="openAslWizard()" *ngIf="showCreateAction && canCreate">
-        <span class="icon">＋</span> {{ translate('crud.actions.new') }} ASL
+      <button search-header-action class="btn btn-primary" style="margin-left: 0.5rem;" (click)="openStructureWizard()" *ngIf="showCreateAction && canCreate">
+        <span class="icon">＋</span> {{ translate('crud.actions.new') }} {{ translate(getStructureTypeLabelKey()) }}
       </button>
     </app-search-page>
     <add-wizard-component-asl
-      *ngIf="showAslWizard"
-      [structureId]="selectedAslStructureId"
-      (close)="closeAslWizard()"
+      *ngIf="showStructureWizard && popupStructureType === 'ASL'"
+      [structureId]="selectedStructureId"
+      (close)="closeStructureWizard()"
     ></add-wizard-component-asl>
+    <add-wizard-component-hospital
+      *ngIf="showStructureWizard && popupStructureType === 'HOSPITAL'"
+      [structureId]="selectedStructureId"
+      (close)="closeStructureWizard()"
+    ></add-wizard-component-hospital>
   `
 })
 export class StructureSearchComponent implements OnInit, OnDestroy {
@@ -48,8 +54,9 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
    */
   showCreateAction = true;
   canCreate = true;
-  showAslWizard = false;
-  selectedAslStructureId: number | null = null;
+  showStructureWizard = false;
+  selectedStructureId: number | null = null;
+  popupStructureType = 'ASL';
   interceptEditAction = false;
   private routeSub: any = null;
   titleKey = 'structures.title' as MessageKey;
@@ -83,10 +90,11 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.titleKey = (this.route.snapshot.data['titleKey'] ?? 'structures.title') as MessageKey;
     const structureType = String(this.route.snapshot.data['structureType'] ?? 'ASL');
+    this.popupStructureType = structureType;
     this.fixedParams = { structureType };
-    if (structureType === 'ASL') {
+    if (structureType === 'ASL' || structureType === 'HOSPITAL') {
       this.createRoute = '';
-      this.detailRouteBase = '/structures/asl/manage';
+      this.detailRouteBase = structureType === 'ASL' ? '/structures/asl/manage' : '/structures/hospitals/manage';
       this.interceptEditAction = true;
     } else {
       const manageRoute = String(this.route.snapshot.data['manageRoute'] ?? '/structures/asl/manage');
@@ -94,8 +102,7 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
       this.detailRouteBase = manageRoute;
       this.interceptEditAction = false;
     }
-    // Nessuna gestione di route per il wizard
-    this.showAslWizard = false;
+    this.showStructureWizard = false;
 
     // Logica permessi creazione ASL
     this.loadActionPermissions();
@@ -126,16 +133,22 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
     }
   }
 
-  openAslWizard(structureId?: string | number) {
-    this.selectedAslStructureId = this.normalizeStructureId(structureId);
-    this.showAslWizard = true;
+  openStructureWizard(structureId?: string | number) {
+    this.selectedStructureId = this.normalizeStructureId(structureId);
+    this.showStructureWizard = true;
     this.cdr.detectChanges();
   }
 
-  closeAslWizard() {
-    this.selectedAslStructureId = null;
-    this.showAslWizard = false;
+  closeStructureWizard() {
+    this.selectedStructureId = null;
+    this.showStructureWizard = false;
     this.searchPage?.search(false);
+  }
+
+  getStructureTypeLabelKey(): MessageKey {
+    return this.popupStructureType === 'HOSPITAL'
+      ? 'structures.type.hospital.label'
+      : 'structures.type.asl.label';
   }
 
   private normalizeStructureId(structureId?: string | number): number | null {

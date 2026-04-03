@@ -108,3 +108,65 @@ h4 {
   justify-content: flex-end;
   gap: 12px;
 }
+
+.pharmacy-selection-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.pharmacy-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+  border: 1px solid #d7e7fb;
+  border-radius: 18px;
+  background: #f8fbff;
+}
+
+.pharmacy-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.pharmacy-card-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pharmacy-card-title {
+  color: #175fcb;
+  font-weight: 700;
+}
+
+.pharmacy-card-meta {
+  color: #4b6488;
+  font-size: 0.94rem;
+}
+
+.pharmacy-card-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #dcecff;
+  color: #175fcb;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.pharmacy-card-detail-label {
+  color: #175fcb;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.pharmacy-card-detail,
+.summary-pharmacy-row {
+  color: #25364f;
+  font-size: 0.96rem;
+  word-break: break-word;
+}

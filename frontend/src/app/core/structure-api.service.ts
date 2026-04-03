@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
@@ -36,6 +36,16 @@ export class StructureApiService {
   private baseUrl = `${environment.apiBaseUrl}/structures`;
 
   constructor(private http: HttpClient) {}
+
+  getStructuresByType(structureType: string, active?: boolean): Observable<StructureDto[]> {
+    let params = new HttpParams().set('structureType', structureType);
+
+    if (typeof active === 'boolean') {
+      params = params.set('active', String(active));
+    }
+
+    return this.http.get<StructureDto[]>(this.baseUrl, { params });
+  }
 
   createStructure(structure: StructureDto): Observable<any> {
     return this.http.post<any>(this.baseUrl, structure);
