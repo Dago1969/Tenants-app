@@ -90,6 +90,7 @@ export const appRoutes: Routes = [
   { path: 'structures/vendors', component: StructureSearchComponent, canActivate: [authGuard, moduleVisibilityGuard(STRUCTURE_MODULE_CODES.GENERIC)], data: { structureType: 'VENDOR', titleKey: 'structures.type.vendor.search.title', manageRoute: '/structures/vendors/manage' } },
   { path: 'structures/vendors/manage', component: StructureCatalogComponent, canActivate: [authGuard, moduleVisibilityGuard(STRUCTURE_MODULE_CODES.GENERIC)], data: { structureType: 'VENDOR', titleKey: 'structures.type.vendor.title' } },
   { path: 'structures/vendors/manage/:id', component: StructureCatalogComponent, canActivate: [authGuard, moduleVisibilityGuard(STRUCTURE_MODULE_CODES.GENERIC)], data: { structureType: 'VENDOR', titleKey: 'structures.type.vendor.title' } },
+  { path: 'imports/structures', loadComponent: () => import('./features/structure-bulk-import/structure-bulk-import.component').then((m) => m.StructureBulkImportComponent), canActivate: [authGuard, moduleVisibilityGuard(STRUCTURE_MODULE_CODES.BULK_IMPORT)] },
   { path: 'patients', component: PatientsCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('PATIENT')] },
   { path: 'patients/search', component: PatientsSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('PATIENT')] },
   { path: 'doctors', component: DoctorsCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('DOCTOR')] },

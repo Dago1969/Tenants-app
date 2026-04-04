@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -79,10 +80,11 @@ public class AuthorizationBootstrap implements CommandLineRunner {
         for (RoleEntity role : roles) {
             boolean adminRole = isAdminRole(role.getId());
             for (String moduleCode : MODULE_CODES) {
+                AuthorizationScope defaultScope = resolveDefaultModuleScope(moduleCode, adminRole);
                 ModuleRoleAuthorizationEntity moduleRoleAuthorization = ensureModuleRoleAuthorization(
                         modulesByCode.get(moduleCode),
                         role,
-                        adminRole ? AuthorizationScope.FULL_EDIT : AuthorizationScope.READ_ONLY
+                        defaultScope
                 );
                 if (MODULE_PATIENT.equals(moduleCode)) {
                     ensurePatientFieldAuthorizations(moduleRoleAuthorization, adminRole);
@@ -97,8 +99,16 @@ public class AuthorizationBootstrap implements CommandLineRunner {
         }
     }
 
+    private AuthorizationScope resolveDefaultModuleScope(String moduleCode, boolean adminRole) {
+        if (StructureModuleCodes.BULK_IMPORT.equals(moduleCode)) {
+            return adminRole ? AuthorizationScope.FULL_EDIT : AuthorizationScope.DENY;
+        }
+
+        return adminRole ? AuthorizationScope.FULL_EDIT : AuthorizationScope.READ_ONLY;
+    }
+
     private ModuleEntity ensureModule(String moduleCode) {
-        return moduleRepository.findById(moduleCode)
+        return moduleRepository.findById(Objects.requireNonNull(moduleCode, "moduleCode"))
                 .orElseGet(() -> {
                     ModuleEntity module = new ModuleEntity();
                     module.setCode(moduleCode);

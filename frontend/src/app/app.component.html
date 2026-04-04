@@ -64,6 +64,25 @@
           >{{ translate(item.labelKey) }}</a>
         </div>
       </div>
+
+      <div class="nav-group" *ngIf="isBulkImportMenuVisible">
+        <button class="nav-group-toggle" type="button" (click)="toggleBulkImportMenu()">
+          <span class="nav-group-title">
+            <img class="nav-group-icon" src="assets/import.png" alt="" aria-hidden="true" />
+            <span>{{ translate('menu.bulkImport') }}</span>
+          </span>
+          <span class="nav-group-chevron" [class.nav-group-chevron-open]="bulkImportMenuOpen">v</span>
+        </button>
+
+        <div class="nav-group-children" *ngIf="bulkImportMenuOpen">
+          <a
+            *ngFor="let item of visibleBulkImportMenuItems"
+            [routerLink]="item.route"
+            routerLinkActive="active"
+            class="nav-group-link"
+          >{{ translate(item.labelKey) }}</a>
+        </div>
+      </div>
     </nav>
   </aside>
 

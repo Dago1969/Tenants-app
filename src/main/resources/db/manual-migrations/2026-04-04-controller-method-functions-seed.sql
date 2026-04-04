@@ -50,6 +50,7 @@ INSERT IGNORE INTO controller_method_functions (module_code, method_name, functi
   ('STRUCTURE', 'findParentOptions', 'FIND_PARENT_OPTIONS'),
   ('STRUCTURE', 'findTypes', 'FIND_TYPES'),
   ('STRUCTURE', 'update', 'UPDATE'),
+  ('STRUCTURE_IMPORT', 'create', 'CREATE'),
   ('STRUCTURE-ASL', 'create', 'CREATE'),
   ('STRUCTURE-ASL', 'delete', 'DELETE'),
   ('STRUCTURE-ASL', 'findAll', 'SEARCH'),

@@ -17,6 +17,7 @@ public final class StructureModuleCodes {
     public static final String MATERIAL_WAREHOUSE = "STRUCTURE_MATERIAL_WAREHOUSE";
     public static final String PHARMA_COMPANY = "STRUCTURE_PHARMA_COMPANY";
     public static final String SPECIALIST_CLINIC = "STRUCTURE_SPECIALIST_CLINIC";
+    public static final String BULK_IMPORT = "STRUCTURE_IMPORT";
 
     public static final List<String> AUTHORIZATION_MODULE_CODES = List.of(
             GENERIC,
@@ -27,7 +28,8 @@ public final class StructureModuleCodes {
             LOGISTICS_WAREHOUSE,
             MATERIAL_WAREHOUSE,
             PHARMA_COMPANY,
-            SPECIALIST_CLINIC
+                SPECIALIST_CLINIC,
+                BULK_IMPORT
     );
 
     private static final Map<String, String> MODULE_NAMES = Map.ofEntries(
@@ -39,7 +41,8 @@ public final class StructureModuleCodes {
             Map.entry(LOGISTICS_WAREHOUSE, "Magazzini Logistica"),
             Map.entry(MATERIAL_WAREHOUSE, "Magazzini Materiale"),
             Map.entry(PHARMA_COMPANY, "Aziende Farmaceutiche"),
-            Map.entry(SPECIALIST_CLINIC, "Cliniche e Ambulatori Specialistici")
+                Map.entry(SPECIALIST_CLINIC, "Cliniche e Ambulatori Specialistici"),
+                Map.entry(BULK_IMPORT, "Import massivo strutture")
     );
 
     private static final Map<String, String> STRUCTURE_TYPE_TO_MODULE_CODE = Map.ofEntries(

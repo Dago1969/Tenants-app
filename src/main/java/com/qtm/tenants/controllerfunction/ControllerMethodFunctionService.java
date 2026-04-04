@@ -11,6 +11,7 @@ import com.qtm.tenants.nurse.controller.NurseController;
 import com.qtm.tenants.patient.controller.PatientController;
 import com.qtm.tenants.role.controller.RoleController;
 import com.qtm.tenants.structure.StructureModuleCodes;
+import com.qtm.tenants.structure.controller.StructureBulkImportController;
 import com.qtm.tenants.structure.controller.StructureController;
 import com.qtm.tenants.user.controller.UserController;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -87,6 +89,7 @@ public class ControllerMethodFunctionService {
         controllers.put("MODULE", ModuleController.class);
         controllers.put("FUNCTION", FunctionController.class);
         StructureModuleCodes.AUTHORIZATION_MODULE_CODES.forEach(moduleCode -> controllers.put(moduleCode, StructureController.class));
+        controllers.put(StructureModuleCodes.BULK_IMPORT, StructureBulkImportController.class);
         return Map.copyOf(controllers);
     }
 
@@ -220,7 +223,7 @@ public class ControllerMethodFunctionService {
     }
 
     private String resolveModuleName(String moduleCode) {
-        return moduleRepository.findById(moduleCode)
+        return moduleRepository.findById(Objects.requireNonNull(moduleCode, "moduleCode"))
                 .map(ModuleEntity::getName)
                 .orElse(moduleCode);
     }
@@ -233,7 +236,7 @@ public class ControllerMethodFunctionService {
 
     private void ensureFunctionExists(String functionCode) {
         String normalizedFunctionCode = normalizeFunctionCode(functionCode);
-        functionRepository.findById(normalizedFunctionCode)
+        functionRepository.findById(Objects.requireNonNull(normalizedFunctionCode, "functionCode"))
                 .orElseGet(() -> {
                     FunctionEntity function = new FunctionEntity();
                     function.setCode(normalizedFunctionCode);

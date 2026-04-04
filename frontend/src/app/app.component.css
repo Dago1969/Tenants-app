@@ -78,6 +78,19 @@
   cursor: pointer;
 }
 
+.nav-group-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nav-group-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
 .nav-group-chevron {
   transform: rotate(-90deg);
   transition: transform 0.18s ease;

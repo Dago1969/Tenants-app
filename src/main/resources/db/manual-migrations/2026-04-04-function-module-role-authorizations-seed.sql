@@ -108,6 +108,10 @@ INSERT IGNORE INTO function_module_role_authorizations (function_code, module_co
   ('DELETE', 'STRUCTURE', 'SUPER_ADMIN', 'FULL_EDIT');
 
 INSERT IGNORE INTO function_module_role_authorizations (function_code, module_code, role_id, authorization) VALUES
+  ('CREATE', 'STRUCTURE_IMPORT', 'ADMIN', 'FULL_EDIT'),
+  ('CREATE', 'STRUCTURE_IMPORT', 'SUPER_ADMIN', 'FULL_EDIT');
+
+INSERT IGNORE INTO function_module_role_authorizations (function_code, module_code, role_id, authorization) VALUES
   ('CREATE', 'ASL', 'ADMIN', 'FULL_EDIT'),
   ('CREATE', 'ASL', 'SUPER_ADMIN', 'FULL_EDIT'),
   ('READ', 'ASL', 'ADMIN', 'FULL_EDIT'),

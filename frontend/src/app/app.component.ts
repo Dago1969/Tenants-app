@@ -47,6 +47,7 @@ export class AppComponent implements OnDestroy {
   managementMenuOpen = false;
   registryMenuOpen = false;
   structuresMenuOpen = false;
+  bulkImportMenuOpen = false;
   private readonly subscriptions = new Subscription();
 
   constructor(
@@ -126,6 +127,10 @@ export class AppComponent implements OnDestroy {
     { labelKey: 'menu.structure.vendorSearch', route: '/structures/vendors', moduleCode: STRUCTURE_MODULE_CODES.GENERIC }
   ];
 
+  bulkImportMenuItems: MenuItem[] = [
+    { labelKey: 'menu.structure.bulkImport', route: '/imports/structures', moduleCode: STRUCTURE_MODULE_CODES.BULK_IMPORT }
+  ];
+
   get visibleMenuItems(): MenuItem[] {
     return this.menuItems.filter((item) => !item.moduleCode || !this.hiddenModuleCodes.has(item.moduleCode));
   }
@@ -154,6 +159,14 @@ export class AppComponent implements OnDestroy {
     return this.visibleStructureMenuItems.length > 0;
   }
 
+  get visibleBulkImportMenuItems(): MenuItem[] {
+    return this.bulkImportMenuItems.filter((item) => !item.moduleCode || !this.hiddenModuleCodes.has(item.moduleCode));
+  }
+
+  get isBulkImportMenuVisible(): boolean {
+    return this.visibleBulkImportMenuItems.length > 0;
+  }
+
   toggleStructuresMenu(): void {
     this.structuresMenuOpen = !this.structuresMenuOpen;
   }
@@ -164,6 +177,10 @@ export class AppComponent implements OnDestroy {
 
   toggleRegistryMenu(): void {
     this.registryMenuOpen = !this.registryMenuOpen;
+  }
+
+  toggleBulkImportMenu(): void {
+    this.bulkImportMenuOpen = !this.bulkImportMenuOpen;
   }
 
   translate(key: MessageKey): string {

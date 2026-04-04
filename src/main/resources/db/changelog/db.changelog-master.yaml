@@ -57,6 +57,8 @@ databaseChangeLog:
   - changeSet:
       id: 2026-04-04-modules-seed
       author: copilot
+      validCheckSum:
+        - 9:00461edbcae3cf441f2ce0190ef16190
       preConditions:
         - onFail: MARK_RAN
         - onError: HALT
@@ -76,6 +78,7 @@ databaseChangeLog:
                 ('STRUCTURE_MATERIAL_WAREHOUSE', 'Magazzini Materiale'),
                 ('STRUCTURE_PHARMA_COMPANY', 'Aziende Farmaceutiche'),
                 ('STRUCTURE_SPECIALIST_CLINIC', 'Cliniche e Ambulatori Specialistici'),
+                ('STRUCTURE_IMPORT', 'Import massivo strutture'),
                 ('ROLE', 'ROLE'),
                 ('MODULE', 'MODULE'),
                 ('FUNCTION', 'FUNCTION'),
@@ -103,6 +106,8 @@ databaseChangeLog:
   - changeSet:
       id: 2026-04-04-function-module-role-authorizations-seed
       author: copilot
+      validCheckSum:
+        - 9:469eb96398501f76189df09c2b6c5a8c
       preConditions:
         - onFail: MARK_RAN
         - onError: HALT
@@ -118,6 +123,8 @@ databaseChangeLog:
   - changeSet:
       id: 2026-04-04-controller-method-functions-seed
       author: copilot
+      validCheckSum:
+        - 9:fadde1ece1a3ea0904162ad16b35791a
       preConditions:
         - onFail: MARK_RAN
         - onError: HALT
