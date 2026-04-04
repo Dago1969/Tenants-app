@@ -118,11 +118,11 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
     this.titleKey = (this.route.snapshot.data['titleKey'] ?? 'structures.title') as MessageKey;
     const structureType = String(this.route.snapshot.data['structureType'] ?? 'ASL');
     this.moduleCode = String(this.route.snapshot.data['moduleCode'] ?? STRUCTURE_MODULE_CODES.GENERIC);
-    this.popupStructureType = structureType as PopupStructureType;
+    this.popupStructureType = this.normalizePopupStructureType(structureType);
     this.fixedParams = { structureType };
-    if (this.isPopupWizardStructureType(structureType)) {
+    if (this.isPopupWizardStructureType(this.popupStructureType)) {
       this.createRoute = '';
-      this.detailRouteBase = this.resolveDetailRouteBase(structureType);
+      this.detailRouteBase = this.resolveDetailRouteBase(this.popupStructureType);
       this.interceptEditAction = true;
     } else {
       const manageRoute = String(this.route.snapshot.data['manageRoute'] ?? '/structures/asl/manage');
@@ -210,6 +210,14 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
       default:
         return 'structures.type.asl.label';
     }
+  }
+
+  private normalizePopupStructureType(structureType: string): PopupStructureType {
+    if (structureType === 'HOSPITAL') {
+      return 'STRUCTURE_HOSPITAL';
+    }
+
+    return this.isPopupWizardStructureType(structureType) ? (structureType as PopupStructureType) : 'ASL';
   }
 
   private resolveDetailRouteBase(structureType: string): string {

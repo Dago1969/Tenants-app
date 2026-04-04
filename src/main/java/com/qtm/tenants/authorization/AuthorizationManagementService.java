@@ -91,19 +91,8 @@ public class AuthorizationManagementService {
                     resolveEntityFields(NurseEntity.class, Set.of("id"), Map.of()),
                     List.of()
             ),
-            // --- INIZIO AGGIUNTA BLOCCO HOSPITAL ---
             structureModuleDefinition(StructureModuleCodes.ASL),
-            new ModuleDefinition(
-                    StructureModuleCodes.HOSPITAL,
-                    StructureModuleCodes.resolveModuleName(StructureModuleCodes.HOSPITAL),
-                    "hospital",
-                    resolveEntityFields(
-                        com.qtm.tenants.hospital.entity.HospitalEntity.class,
-                        Set.of("id", "referents", "linkedHospitals"),
-                        Map.of()
-                    ),
-                    DEFAULT_COMMON_FUNCTION_CODES
-            ),
+            structureModuleDefinition(StructureModuleCodes.HOSPITAL),
             structureModuleDefinition(StructureModuleCodes.HOSPITAL_PHARMACY),
             structureModuleDefinition(StructureModuleCodes.RETAIL_PHARMACY),
             structureModuleDefinition(StructureModuleCodes.LOGISTICS_WAREHOUSE),

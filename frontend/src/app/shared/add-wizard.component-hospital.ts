@@ -44,7 +44,7 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
             <label>{{ translate('structures.field.denom') }}<span class="required-asterisk">*</span><input type="text" name="name" [(ngModel)]="model.name" required /></label>
             <label>{{ translate('structures.field.code') }}<span class="required-asterisk">*</span><input type="text" name="code" [(ngModel)]="model.code" required /></label>
             <label>{{ translate('structures.field.structureType') }}<span class="required-asterisk">*</span>
-              <div style="margin-top:8px;font-weight:600;color:#1890ff;">{{ translate('structures.type.structure_hospital.label') }}</div>
+              <div style="margin-top:8px;font-weight:600;color:#1890ff;">{{ translate('structures.type.hospital.label') }}</div>
             </label>
           </div>
 
