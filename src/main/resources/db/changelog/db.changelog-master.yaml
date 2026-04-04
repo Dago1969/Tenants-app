@@ -1,0 +1,131 @@
+databaseChangeLog:
+  - changeSet:
+      id: 2026-04-04-module-code-schema-migration
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            columnExists:
+              tableName: module_role_authorizations
+              columnName: module_code
+      changes:
+        - sqlFile:
+            path: ../manual-migrations/2026-03-06-module-code-key.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: false
+
+  - changeSet:
+      id: 2026-04-04-structure-service-calendar-schema-migration
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            columnExists:
+              tableName: structures
+              columnName: service_calendar_hours
+      changes:
+        - sql:
+            sql: ALTER TABLE structures ADD COLUMN service_calendar_hours TEXT NULL
+
+  - changeSet:
+      id: 2026-04-04-structure-types-seed
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: structure_types
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              INSERT IGNORE INTO structure_types (code, description, function_description, parent_type_code, display_order) VALUES
+                ('ASL', 'Azienda Sanitaria Locale', 'Nodo capofila territoriale: raggruppa ospedali, farmacie e altre strutture, assicurando coerenza dei flussi e visibilita dati multi-tenant.', NULL, 10),
+                ('HOSPITAL', 'Struttura Ospedaliera', 'Centro clinico dove si prescrivono e si monitorano i Piani Terapeutici; fa capo a una o piu farmacie ospedaliere.', 'ASL', 20),
+                ('HOSPITAL_PHARMACY', 'Farmacia Ospedaliera', 'Hub logistico interno all''ospedale per preparazione e tracciabilita ordini.', 'HOSPITAL', 30),
+                ('RETAIL_PHARMACY', 'Farmacia Retail', 'Punto di ritiro di prossimita o ultimo-miglio delivery nei progetti territoriali.', 'ASL', 40),
+                ('LOGISTICS_WAREHOUSE', 'Magazzino Logistica', 'Deposito centrale esterno o interno che alimenta FO o FR; collegabile via API o WMS per stock real-time.', 'ASL', 50),
+                ('MATERIAL_WAREHOUSE', 'Magazzino Materiale', 'Distribuzione interna di gadget, volantini e materiale monouso o promozionale.', 'ASL', 60),
+                ('PHARMA_COMPANY', 'Azienda Farmaceutica', 'Ente promotore di progetti PSP, aderenza o delivery con interesse a KPI clinici, logistici e farmacovigilanza.', NULL, 70),
+                ('SPECIALIST_CLINIC', 'Clinica Ambulatorio Specialistica', 'Struttura extra-ospedaliera che utilizza gli stessi flussi PT dell''ospedale per progetti cronici o PSP.', 'ASL', 80),
+                ('VENDOR', 'Fornitore', 'Nodo organizzativo per aziende terze che forniscono beni o servizi essenziali alla delivery di un PSP, inclusi dispositivi, logistica, laboratori e personale infermieristico.', NULL, 90);
+
+  - changeSet:
+      id: 2026-04-04-modules-seed
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: modules
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              INSERT IGNORE INTO modules (code, name) VALUES
+                ('USER', 'USER'),               
+                ('STRUCTURE-ASL', 'ASL'),               
+                ('STRUCTURE-FARMACY-O', 'Farmacie Ospedaliere'),
+                ('STRUCTURE-FARMACY-R', 'Farmacie Retail'),
+                ('STRUCTURE_LOGISTICS_WAREHOUSE', 'Magazzini Logistica'),
+                ('STRUCTURE_MATERIAL_WAREHOUSE', 'Magazzini Materiale'),
+                ('STRUCTURE_PHARMA_COMPANY', 'Aziende Farmaceutiche'),
+                ('STRUCTURE_SPECIALIST_CLINIC', 'Cliniche e Ambulatori Specialistici'),
+                ('ROLE', 'ROLE'),
+                ('MODULE', 'MODULE'),
+                ('FUNCTION', 'FUNCTION'),
+                ('PATIENT', 'PATIENT'),
+                ('DOCTOR', 'DOCTOR'),
+                ('NURSE', 'NURSE');
+
+  - changeSet:
+      id: 2026-04-04-roles-seed
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: roles
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              INSERT IGNORE INTO roles (id, name, description) VALUES
+                ('ADMIN', 'ADMIN', 'Amministratore'),
+                ('SUPER_ADMIN', 'SUPER_ADMIN', 'Super Admin');
+
+  - changeSet:
+      id: 2026-04-04-function-module-role-authorizations-seed
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: function_module_role_authorizations
+      changes:
+        - sqlFile:
+            path: ../manual-migrations/2026-04-04-function-module-role-authorizations-seed.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: false
+
+  - changeSet:
+      id: 2026-04-04-controller-method-functions-seed
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: controller_method_functions
+      changes:
+        - sqlFile:
+            path: ../manual-migrations/2026-04-04-controller-method-functions-seed.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: false
