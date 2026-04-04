@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/auth.service';
+import { STRUCTURE_MODULE_CODES } from '../../core/structure-module-codes';
 import { MessageKey, hasMessageKey, t } from '../../i18n/messages';
 import { environment } from '../../../environments/environment';
 import { NotificationService } from '../../shared/notification.service';
@@ -48,18 +49,18 @@ const MODULE_TITLE_KEYS: Record<string, MessageKey> = {
   PATIENT: 'menu.patients',
   DOCTOR: 'menu.doctors',
   NURSE: 'menu.nurses',
-  HOSPITAL: 'menu.structure.hospitalSearch',
+  [STRUCTURE_MODULE_CODES.HOSPITAL]: 'menu.structure.hospitalSearch',
   ROLE: 'menu.roles',
   MODULE: 'menu.modules',
   FUNCTION: 'menu.functions',
-  'STRUCTURE-ASL': 'menu.structure.aslSearch',
-  STRUCTURE: 'menu.structures',
-  'STRUCTURE-FARMACY-O': 'menu.structure.hospitalPharmacySearch',
-  'STRUCTURE-FARMACY-R': 'menu.structure.retailPharmacySearch',
-  STRUCTURE_LOGISTICS_WAREHOUSE: 'menu.structure.logisticsWarehouseSearch',
-  STRUCTURE_MATERIAL_WAREHOUSE: 'menu.structure.materialWarehouseSearch',
-  STRUCTURE_PHARMA_COMPANY: 'menu.structure.pharmaCompanySearch',
-  STRUCTURE_SPECIALIST_CLINIC: 'menu.structure.specialistClinicSearch',
+  [STRUCTURE_MODULE_CODES.ASL]: 'menu.structure.aslSearch',
+  [STRUCTURE_MODULE_CODES.GENERIC]: 'menu.structures',
+  [STRUCTURE_MODULE_CODES.HOSPITAL_PHARMACY]: 'menu.structure.hospitalPharmacySearch',
+  [STRUCTURE_MODULE_CODES.RETAIL_PHARMACY]: 'menu.structure.retailPharmacySearch',
+  [STRUCTURE_MODULE_CODES.LOGISTICS_WAREHOUSE]: 'menu.structure.logisticsWarehouseSearch',
+  [STRUCTURE_MODULE_CODES.MATERIAL_WAREHOUSE]: 'menu.structure.materialWarehouseSearch',
+  [STRUCTURE_MODULE_CODES.PHARMA_COMPANY]: 'menu.structure.pharmaCompanySearch',
+  [STRUCTURE_MODULE_CODES.SPECIALIST_CLINIC]: 'menu.structure.specialistClinicSearch',
   PROJECT: 'menu.projects',
   TENANT: 'menu.tenants'
 };
@@ -69,23 +70,23 @@ const MODULE_MESSAGE_PREFIXES: Record<string, string> = {
   PATIENT: 'patients',
   DOCTOR: 'doctors',
   NURSE: 'nurses',
-  HOSPITAL: 'structures',
+  [STRUCTURE_MODULE_CODES.HOSPITAL]: 'structures',
   ROLE: 'roles',
   MODULE: 'modules',
   FUNCTION: 'functions',
-  'STRUCTURE-ASL': 'structures',
-  STRUCTURE: 'structures',
-  'STRUCTURE-FARMACY-O': 'structures',
-  'STRUCTURE-FARMACY-R': 'structures',
-  STRUCTURE_LOGISTICS_WAREHOUSE: 'structures',
-  STRUCTURE_MATERIAL_WAREHOUSE: 'structures',
-  STRUCTURE_PHARMA_COMPANY: 'structures',
-  STRUCTURE_SPECIALIST_CLINIC: 'structures',
+  [STRUCTURE_MODULE_CODES.ASL]: 'structures',
+  [STRUCTURE_MODULE_CODES.GENERIC]: 'structures',
+  [STRUCTURE_MODULE_CODES.HOSPITAL_PHARMACY]: 'structures',
+  [STRUCTURE_MODULE_CODES.RETAIL_PHARMACY]: 'structures',
+  [STRUCTURE_MODULE_CODES.LOGISTICS_WAREHOUSE]: 'structures',
+  [STRUCTURE_MODULE_CODES.MATERIAL_WAREHOUSE]: 'structures',
+  [STRUCTURE_MODULE_CODES.PHARMA_COMPANY]: 'structures',
+  [STRUCTURE_MODULE_CODES.SPECIALIST_CLINIC]: 'structures',
   PROJECT: 'projects',
   TENANT: 'tenants'
 };
 
-const MODULE_DISPLAY_ORDER = ['USER', 'PATIENT', 'DOCTOR', 'NURSE', 'STRUCTURE-ASL', 'HOSPITAL', 'STRUCTURE', 'STRUCTURE-FARMACY-O', 'STRUCTURE-FARMACY-R', 'STRUCTURE_LOGISTICS_WAREHOUSE', 'STRUCTURE_MATERIAL_WAREHOUSE', 'STRUCTURE_PHARMA_COMPANY', 'STRUCTURE_SPECIALIST_CLINIC', 'ROLE', 'MODULE', 'FUNCTION', 'PROJECT', 'TENANT'];
+const MODULE_DISPLAY_ORDER = ['USER', 'PATIENT', 'DOCTOR', 'NURSE', STRUCTURE_MODULE_CODES.ASL, STRUCTURE_MODULE_CODES.HOSPITAL, STRUCTURE_MODULE_CODES.GENERIC, STRUCTURE_MODULE_CODES.HOSPITAL_PHARMACY, STRUCTURE_MODULE_CODES.RETAIL_PHARMACY, STRUCTURE_MODULE_CODES.LOGISTICS_WAREHOUSE, STRUCTURE_MODULE_CODES.MATERIAL_WAREHOUSE, STRUCTURE_MODULE_CODES.PHARMA_COMPANY, STRUCTURE_MODULE_CODES.SPECIALIST_CLINIC, 'ROLE', 'MODULE', 'FUNCTION', 'PROJECT', 'TENANT'];
 
 @Component({
   selector: 'app-authorizations-management',

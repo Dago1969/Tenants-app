@@ -21,7 +21,6 @@ import { SearchField, SearchPageComponent } from '../../shared/search-page.compo
       [moduleCode]="moduleCode"
       [createFunctionCode]="createFunctionCode"
       [autoSearch]="true"
-      [showViewAction]="false"
     />
   `
 })

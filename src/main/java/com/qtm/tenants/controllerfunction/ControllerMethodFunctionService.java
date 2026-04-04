@@ -10,6 +10,7 @@ import com.qtm.tenants.module.repository.ModuleRepository;
 import com.qtm.tenants.nurse.controller.NurseController;
 import com.qtm.tenants.patient.controller.PatientController;
 import com.qtm.tenants.role.controller.RoleController;
+import com.qtm.tenants.structure.StructureModuleCodes;
 import com.qtm.tenants.structure.controller.StructureController;
 import com.qtm.tenants.user.controller.UserController;
 import lombok.RequiredArgsConstructor;
@@ -72,25 +73,22 @@ public class ControllerMethodFunctionService {
             APPROVE_FUNCTION_CODE
     );
 
-            private static final Map<String, Class<?>> MODULE_CONTROLLERS = Map.ofEntries(
-                Map.entry("USER", UserController.class),
-                Map.entry("PATIENT", PatientController.class),
-                Map.entry("DOCTOR", DoctorController.class),
-                Map.entry("NURSE", NurseController.class),
-                Map.entry("ROLE", RoleController.class),
-                Map.entry("MODULE", ModuleController.class),
-                Map.entry("FUNCTION", FunctionController.class),
-                Map.entry("STRUCTURE-ASL", StructureController.class),
-                Map.entry("STRUCTURE-FARMACY-O", StructureController.class),
-                Map.entry("STRUCTURE-FARMACY-R", StructureController.class),
-                Map.entry("STRUCTURE_LOGISTICS_WAREHOUSE", StructureController.class),
-                Map.entry("STRUCTURE_MATERIAL_WAREHOUSE", StructureController.class),
-                Map.entry("STRUCTURE_PHARMA_COMPANY", StructureController.class),
-                Map.entry("STRUCTURE_SPECIALIST_CLINIC", StructureController.class),
-                Map.entry("STRUCTURE", StructureController.class)
-            );
+            private static final Map<String, Class<?>> MODULE_CONTROLLERS = buildModuleControllers();
 
     private static final Map<String, String> DEFAULT_METHOD_FUNCTION_CODES = buildDefaultMethodFunctionCodes();
+
+    private static Map<String, Class<?>> buildModuleControllers() {
+        LinkedHashMap<String, Class<?>> controllers = new LinkedHashMap<>();
+        controllers.put("USER", UserController.class);
+        controllers.put("PATIENT", PatientController.class);
+        controllers.put("DOCTOR", DoctorController.class);
+        controllers.put("NURSE", NurseController.class);
+        controllers.put("ROLE", RoleController.class);
+        controllers.put("MODULE", ModuleController.class);
+        controllers.put("FUNCTION", FunctionController.class);
+        StructureModuleCodes.AUTHORIZATION_MODULE_CODES.forEach(moduleCode -> controllers.put(moduleCode, StructureController.class));
+        return Map.copyOf(controllers);
+    }
 
     private final ControllerMethodFunctionRepository controllerMethodFunctionRepository;
     private final ControllerMethodFunctionMapper controllerMethodFunctionMapper;

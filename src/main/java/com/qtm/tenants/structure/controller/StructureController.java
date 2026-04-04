@@ -1,6 +1,7 @@
 package com.qtm.tenants.structure.controller;
 
 import com.qtm.tenants.authorization.service.ControllerFunctionAuthorizationService;
+import com.qtm.tenants.structure.StructureModuleCodes;
 import com.qtm.tenants.structure.dto.StructureDto;
 import com.qtm.tenants.structure.dto.StructureParentOptionDto;
 import com.qtm.tenants.structure.dto.StructureTypeDto;
@@ -33,16 +34,6 @@ import java.util.List;
 @RequestMapping("/api/tenants/structures")
 @RequiredArgsConstructor
 public class StructureController {
-
-        private static final String DEFAULT_MODULE_CODE = "STRUCTURE";
-        private static final String ASL_MODULE_CODE = "STRUCTURE-ASL";
-        private static final String HOSPITAL_MODULE_CODE = "HOSPITAL";
-        private static final String HOSPITAL_PHARMACY_MODULE_CODE = "STRUCTURE-FARMACY-O";
-        private static final String RETAIL_PHARMACY_MODULE_CODE = "STRUCTURE-FARMACY-R";
-        private static final String LOGISTICS_WAREHOUSE_MODULE_CODE = "STRUCTURE_LOGISTICS_WAREHOUSE";
-        private static final String MATERIAL_WAREHOUSE_MODULE_CODE = "STRUCTURE_MATERIAL_WAREHOUSE";
-        private static final String PHARMA_COMPANY_MODULE_CODE = "STRUCTURE_PHARMA_COMPANY";
-        private static final String SPECIALIST_CLINIC_MODULE_CODE = "STRUCTURE_SPECIALIST_CLINIC";
 
     private final StructureService structureService;
     private final ControllerFunctionAuthorizationService controllerFunctionAuthorizationService;
@@ -89,7 +80,7 @@ public class StructureController {
     public ResponseEntity<List<StructureTypeDto>> findTypes(
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
-                controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, DEFAULT_MODULE_CODE);
+                controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, StructureModuleCodes.GENERIC);
         return ResponseEntity.ok(structureService.findSupportedTypes());
     }
 
@@ -145,20 +136,6 @@ public class StructureController {
     }
 
         private String resolveModuleCode(String structureType) {
-                if (structureType == null || structureType.isBlank()) {
-                        return DEFAULT_MODULE_CODE;
-                }
-
-                return switch (structureType) {
-                        case "ASL" -> ASL_MODULE_CODE;
-                        case "HOSPITAL" -> HOSPITAL_MODULE_CODE;
-                        case "HOSPITAL_PHARMACY" -> HOSPITAL_PHARMACY_MODULE_CODE;
-                        case "RETAIL_PHARMACY" -> RETAIL_PHARMACY_MODULE_CODE;
-                        case "LOGISTICS_WAREHOUSE" -> LOGISTICS_WAREHOUSE_MODULE_CODE;
-                        case "MATERIAL_WAREHOUSE" -> MATERIAL_WAREHOUSE_MODULE_CODE;
-                        case "PHARMA_COMPANY" -> PHARMA_COMPANY_MODULE_CODE;
-                        case "SPECIALIST_CLINIC" -> SPECIALIST_CLINIC_MODULE_CODE;
-                        default -> DEFAULT_MODULE_CODE;
-                };
+                return StructureModuleCodes.resolveModuleCode(structureType);
         }
 }

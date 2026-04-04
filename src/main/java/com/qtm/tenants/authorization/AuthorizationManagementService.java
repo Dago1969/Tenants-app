@@ -19,6 +19,7 @@ import com.qtm.tenants.nurse.entity.NurseEntity;
 import com.qtm.tenants.patient.entity.PatientEntity;
 import com.qtm.tenants.role.entity.RoleEntity;
 import com.qtm.tenants.role.repository.RoleRepository;
+import com.qtm.tenants.structure.StructureModuleCodes;
 import com.qtm.tenants.structure.entity.StructureEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -59,6 +60,8 @@ public class AuthorizationManagementService {
             "enabled"
     );
 
+    private static final List<String> STRUCTURE_FIELDS = resolveEntityFields(StructureEntity.class, Set.of("id"), Map.of());
+
     private static final Map<String, ModuleDefinition> MODULE_DEFINITIONS = List.of(
             new ModuleDefinition(
                     "USER",
@@ -89,16 +92,10 @@ public class AuthorizationManagementService {
                     List.of()
             ),
             // --- INIZIO AGGIUNTA BLOCCO HOSPITAL ---
+            structureModuleDefinition(StructureModuleCodes.ASL),
             new ModuleDefinition(
-                    "STRUCTURE-ASL",
-                    "ASL",
-                    "structure",
-                    resolveEntityFields(StructureEntity.class, Set.of("id"), Map.of()),
-                    List.of()
-            ),
-            new ModuleDefinition(
-                    "HOSPITAL",
-                    "Ospedali",
+                    StructureModuleCodes.HOSPITAL,
+                    StructureModuleCodes.resolveModuleName(StructureModuleCodes.HOSPITAL),
                     "hospital",
                     resolveEntityFields(
                         com.qtm.tenants.hospital.entity.HospitalEntity.class,
@@ -107,52 +104,16 @@ public class AuthorizationManagementService {
                     ),
                     DEFAULT_COMMON_FUNCTION_CODES
             ),
-            new ModuleDefinition(
-                    "STRUCTURE-FARMACY-O",
-                    "Farmacie Ospedaliere",
-                    "structure",
-                    resolveEntityFields(StructureEntity.class, Set.of("id"), Map.of()),
-                    List.of()
-            ),
-            new ModuleDefinition(
-                    "STRUCTURE-FARMACY-R",
-                    "Farmacie Retail",
-                    "structure",
-                    resolveEntityFields(StructureEntity.class, Set.of("id"), Map.of()),
-                    List.of()
-            ),
-            new ModuleDefinition(
-                    "STRUCTURE_LOGISTICS_WAREHOUSE",
-                    "Magazzini Logistica",
-                    "structure",
-                    resolveEntityFields(StructureEntity.class, Set.of("id"), Map.of()),
-                    List.of()
-            ),
-            new ModuleDefinition(
-                    "STRUCTURE_MATERIAL_WAREHOUSE",
-                    "Magazzini Materiale",
-                    "structure",
-                    resolveEntityFields(StructureEntity.class, Set.of("id"), Map.of()),
-                    List.of()
-            ),
-            new ModuleDefinition(
-                    "STRUCTURE_PHARMA_COMPANY",
-                    "Aziende Farmaceutiche",
-                    "structure",
-                    resolveEntityFields(StructureEntity.class, Set.of("id"), Map.of()),
-                    List.of()
-            ),
-            new ModuleDefinition(
-                    "STRUCTURE_SPECIALIST_CLINIC",
-                    "Cliniche e Ambulatori Specialistici",
-                    "structure",
-                    resolveEntityFields(StructureEntity.class, Set.of("id"), Map.of()),
-                    List.of()
-            ),
+            structureModuleDefinition(StructureModuleCodes.HOSPITAL_PHARMACY),
+            structureModuleDefinition(StructureModuleCodes.RETAIL_PHARMACY),
+            structureModuleDefinition(StructureModuleCodes.LOGISTICS_WAREHOUSE),
+            structureModuleDefinition(StructureModuleCodes.MATERIAL_WAREHOUSE),
+            structureModuleDefinition(StructureModuleCodes.PHARMA_COMPANY),
+            structureModuleDefinition(StructureModuleCodes.SPECIALIST_CLINIC),
             new ModuleDefinition("ROLE", "Ruoli", "role", resolveEntityFields(RoleEntity.class, Set.of(), Map.of()), List.of()),
             new ModuleDefinition("MODULE", "Moduli", "module", resolveEntityFields(ModuleEntity.class, Set.of(), Map.of()), List.of()),
             new ModuleDefinition("FUNCTION", "Funzioni", "function", resolveEntityFields(FunctionEntity.class, Set.of(), Map.of()), List.of()),
-            new ModuleDefinition("STRUCTURE", "Strutture", "structure", resolveEntityFields(StructureEntity.class, Set.of("id"), Map.of()), List.of()),
+            structureModuleDefinition(StructureModuleCodes.GENERIC),
             new ModuleDefinition("PROJECT", "Progetti", "project", resolveEntityFields(ProjectDto.class, Set.of("id"), Map.of()), DEFAULT_COMMON_FUNCTION_CODES),
             new ModuleDefinition("TENANT", "Tenants", "tenant", TENANT_FIELDS, DEFAULT_COMMON_FUNCTION_CODES)
     ).stream().collect(Collectors.toMap(ModuleDefinition::code, definition -> definition, (left, right) -> right, LinkedHashMap::new));
@@ -164,6 +125,16 @@ public class AuthorizationManagementService {
     private final FieldAuthorizationRepository fieldAuthorizationRepository;
     private final FunctionModuleRoleAuthorizationRepository functionModuleRoleAuthorizationRepository;
     private final ControllerFunctionAuthorizationService controllerFunctionAuthorizationService;
+
+        private static ModuleDefinition structureModuleDefinition(String moduleCode) {
+                return new ModuleDefinition(
+                                moduleCode,
+                                StructureModuleCodes.resolveModuleName(moduleCode),
+                                "structure",
+                                STRUCTURE_FIELDS,
+                                List.of()
+                );
+        }
 
     @Transactional(readOnly = true)
     public AuthorizationRoleMatrixDto getRoleMatrix(String roleId) {

@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
+import { STRUCTURE_MODULE_CODES } from '../../core/structure-module-codes';
 import { MessageKey, t } from '../../i18n/messages';
 import { environment } from '../../../environments/environment';
 
@@ -86,7 +87,7 @@ export class DashboardComponent implements OnInit {
     { route: '/roles', labelKey: 'roles.search.title', moduleCode: 'ROLE' },
     { route: '/modules/search', labelKey: 'menu.modulesSearch', moduleCode: 'MODULE' },
     { route: '/functions/search', labelKey: 'menu.functionsSearch', moduleCode: 'FUNCTION' },
-    { route: '/structures/asl', labelKey: 'menu.structure.aslSearch', moduleCode: 'STRUCTURE' },
+    { route: '/structures/asl', labelKey: 'menu.structure.aslSearch', moduleCode: STRUCTURE_MODULE_CODES.ASL },
     { route: '/patients/search', labelKey: 'menu.patientsSearch', moduleCode: 'PATIENT' },
     { route: '/doctors/search', labelKey: 'menu.doctorsSearch', moduleCode: 'DOCTOR' },
     { route: '/nurses/search', labelKey: 'menu.nursesSearch', moduleCode: 'NURSE' }

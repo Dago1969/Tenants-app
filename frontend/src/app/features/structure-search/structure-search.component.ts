@@ -6,6 +6,7 @@ import { SearchField, SearchPageComponent } from '../../shared/search-page.compo
 import { AddWizardComponentAsl } from '../../shared/add-wizard.component-asl';
 import { AddWizardComponentHospital } from '../../shared/add-wizard.component-hospital';
 import { AddWizardComponentPharmacy } from '../../shared/add-wizard.component-pharmacy';
+import { STRUCTURE_MODULE_CODES } from '../../core/structure-module-codes';
 import { FunctionAuthorizationService } from '../../core/function-authorization.service';
 
 type PopupStructureType =
@@ -36,7 +37,6 @@ type PopupStructureType =
       [moduleCode]="moduleCode"
       [createFunctionCode]="createFunctionCode"
       [autoSearch]="true"
-      [showViewAction]="false"
       [showCreateAction]="false"
       [interceptEditAction]="interceptEditAction"
       (editAction)="openStructureWizard($event)"
@@ -81,7 +81,7 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
   fixedParams: Record<string, string> = {};
   createRoute = '';
   detailRouteBase = '';
-  moduleCode = 'STRUCTURE';
+  moduleCode: string = STRUCTURE_MODULE_CODES.GENERIC;
   createFunctionCode = 'CREATE';
 
   filters: SearchField[] = [
@@ -117,7 +117,7 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.titleKey = (this.route.snapshot.data['titleKey'] ?? 'structures.title') as MessageKey;
     const structureType = String(this.route.snapshot.data['structureType'] ?? 'ASL');
-    this.moduleCode = String(this.route.snapshot.data['moduleCode'] ?? 'STRUCTURE');
+    this.moduleCode = String(this.route.snapshot.data['moduleCode'] ?? STRUCTURE_MODULE_CODES.GENERIC);
     this.popupStructureType = structureType as PopupStructureType;
     this.fixedParams = { structureType };
     if (this.isPopupWizardStructureType(structureType)) {

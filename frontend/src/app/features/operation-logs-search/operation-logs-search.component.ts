@@ -18,7 +18,6 @@ import { t } from '../../i18n/messages';
       [autoSearch]="true"
       [showCreateAction]="false"
       [showEditAction]="false"
-      [showViewAction]="false"
       [showDeleteAction]="false"
     />
   `

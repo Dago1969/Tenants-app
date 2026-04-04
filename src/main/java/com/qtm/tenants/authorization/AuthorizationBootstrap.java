@@ -4,6 +4,7 @@ import com.qtm.tenants.module.entity.ModuleEntity;
 import com.qtm.tenants.module.repository.ModuleRepository;
 import com.qtm.tenants.role.entity.RoleEntity;
 import com.qtm.tenants.role.repository.RoleRepository;
+import com.qtm.tenants.structure.StructureModuleCodes;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
@@ -16,6 +17,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Bootstrap dati di autorizzazione: moduli applicativi, regole modulo+ruolo e regole campo.
@@ -28,40 +30,14 @@ public class AuthorizationBootstrap implements CommandLineRunner {
     private static final String MODULE_PATIENT = "PATIENT";
     private static final String MODULE_DOCTOR = "DOCTOR";
     private static final String MODULE_NURSE = "NURSE";
-    private static final String MODULE_FUNCTION = "FUNCTION";
-    private static final String MODULE_ASL = "STRUCTURE-ASL";
-    private static final String MODULE_HOSPITAL_PHARMACY = "STRUCTURE-FARMACY-O";
-    private static final String MODULE_RETAIL_PHARMACY = "STRUCTURE-FARMACY-R";
-    private static final String MODULE_LOGISTICS_WAREHOUSE = "STRUCTURE_LOGISTICS_WAREHOUSE";
-    private static final String MODULE_MATERIAL_WAREHOUSE = "STRUCTURE_MATERIAL_WAREHOUSE";
-    private static final String MODULE_PHARMA_COMPANY = "STRUCTURE_PHARMA_COMPANY";
-    private static final String MODULE_SPECIALIST_CLINIC = "STRUCTURE_SPECIALIST_CLINIC";
-    private static final Map<String, String> MODULE_NAMES = Map.of(
-            MODULE_ASL, "ASL",
-            MODULE_HOSPITAL_PHARMACY, "Farmacie Ospedaliere",
-            MODULE_RETAIL_PHARMACY, "Farmacie Retail",
-            MODULE_LOGISTICS_WAREHOUSE, "Magazzini Logistica",
-            MODULE_MATERIAL_WAREHOUSE, "Magazzini Materiale",
-            MODULE_PHARMA_COMPANY, "Aziende Farmaceutiche",
-            MODULE_SPECIALIST_CLINIC, "Cliniche e Ambulatori Specialistici"
-    );
-    private static final List<String> MODULE_CODES = List.of(
-            "USER",
-            "STRUCTURE",
-            MODULE_ASL,
-            MODULE_HOSPITAL_PHARMACY,
-            MODULE_RETAIL_PHARMACY,
-            MODULE_LOGISTICS_WAREHOUSE,
-            MODULE_MATERIAL_WAREHOUSE,
-            MODULE_PHARMA_COMPANY,
-            MODULE_SPECIALIST_CLINIC,
-            "ROLE",
-            "MODULE",
-            MODULE_FUNCTION,
-            MODULE_PATIENT,
-            MODULE_DOCTOR,
-            MODULE_NURSE
-    );
+        private static final String MODULE_FUNCTION = "FUNCTION";
+        private static final List<String> MODULE_CODES = Stream.of(
+                List.of("USER"),
+                StructureModuleCodes.AUTHORIZATION_MODULE_CODES,
+                List.of("ROLE", "MODULE", MODULE_FUNCTION, MODULE_PATIENT, MODULE_DOCTOR, MODULE_NURSE)
+            )
+            .flatMap(List::stream)
+            .toList();
     private static final String ENTITY_PATIENT = "patient";
     private static final String ENTITY_DOCTOR = "doctor";
     private static final String ENTITY_NURSE = "nurse";
@@ -126,7 +102,7 @@ public class AuthorizationBootstrap implements CommandLineRunner {
                 .orElseGet(() -> {
                     ModuleEntity module = new ModuleEntity();
                     module.setCode(moduleCode);
-                    module.setName(MODULE_NAMES.getOrDefault(moduleCode, moduleCode));
+                    module.setName(StructureModuleCodes.resolveModuleName(moduleCode));
                     return moduleRepository.save(module);
                 });
     }

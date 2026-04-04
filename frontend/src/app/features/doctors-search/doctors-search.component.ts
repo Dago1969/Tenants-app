@@ -12,6 +12,7 @@ import { SearchField, SearchPageComponent } from '../../shared/search-page.compo
     <app-search-page
       [titleKey]="titleKey"
       [endpoint]="endpoint"
+      [fieldPermissionsEndpoint]="permissionsEndpoint"
       [filters]="filters"
       [resultColumns]="resultColumns"
     />
@@ -20,6 +21,7 @@ import { SearchField, SearchPageComponent } from '../../shared/search-page.compo
 export class DoctorsSearchComponent {
   titleKey = 'doctors.search.title' as const;
   endpoint = 'doctors';
+  permissionsEndpoint = 'doctors/permissions';
 
   filters: SearchField[] = [
     { key: 'doctorFlyerId', labelKey: 'doctors.field.doctorFlyerId', type: 'text' },

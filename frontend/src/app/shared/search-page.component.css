@@ -323,6 +323,29 @@ th {
 /* ...existing code... */
 /* rimosso blocco orfano non valido */
 
+.search-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.34);
+  backdrop-filter: blur(3px);
+}
+
+.search-dialog {
+  width: min(640px, 92vw);
+  max-height: 88vh;
+  overflow: auto;
+  background: #ffffff;
+  border: 1px solid #d9e4f1;
+  border-radius: 18px;
+  box-shadow: 0 22px 54px rgba(31, 61, 110, 0.18);
+  padding: 24px;
+}
+
 .search-dialog-title {
   margin: 0 0 16px;
   color: #1f3d6e;
@@ -376,6 +399,228 @@ th {
   justify-content: flex-end;
   gap: 12px;
   margin-top: 24px;
+}
+
+.search-view-dialog {
+  width: min(900px, 92vw);
+  max-height: 88vh;
+  overflow: hidden;
+  background: #ffffff;
+  border-radius: 22px;
+  box-shadow: 0 8px 32px rgba(19, 31, 54, 0.18);
+  border: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.search-view-dialog-header {
+  position: relative;
+  background:
+    linear-gradient(115deg, rgba(0, 99, 247, 0.98) 0%, rgba(0, 161, 255, 0.95) 34%, rgba(0, 191, 182, 0.94) 68%, rgba(15, 206, 73, 0.96) 100%),
+    url('/assets/texture.png');
+  background-size: 100% 100%, 460px;
+  background-repeat: no-repeat, repeat;
+  background-position: center, center;
+  background-blend-mode: multiply;
+  color: #fff;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.22);
+  padding: 28px 32px 34px 32px;
+  min-height: 132px;
+  box-shadow: 0 12px 28px rgba(8, 76, 172, 0.18);
+  overflow: hidden;
+}
+
+.search-view-dialog-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('/assets/texture.png');
+  background-repeat: repeat;
+  background-size: 460px;
+  opacity: 0.28;
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+
+.search-view-dialog-header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+}
+
+.search-view-dialog .search-dialog-title {
+  color: #fff;
+  margin-bottom: 0;
+  font-size: 1.6rem;
+}
+
+.search-view-dialog-subtitle {
+  margin: 6px 0 0;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 1.04rem;
+}
+
+.search-view-summary-grid {
+  padding: 24px 32px 0 32px;
+  margin-bottom: 0;
+}
+
+.search-view-dialog-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-bottom: 8px;
+}
+
+.search-view-empty-message {
+  padding: 24px 32px 0 32px;
+}
+
+.search-view-summary-row {
+  gap: 32px;
+  margin-bottom: 8px;
+}
+
+.search-view-summary-col {
+  flex: 1 1 0;
+  min-width: 120px;
+}
+
+.search-view-label {
+  color: #1870e8;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 2px;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.search-view-value-block {
+  color: #222;
+  font-size: 1.05rem;
+  font-weight: 400;
+  margin-bottom: 8px;
+  word-break: break-word;
+}
+
+.search-view-value {
+  color: #111827;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.search-view-dialog-close {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+}
+
+.search-view-dialog-close-circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.12);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 14px rgba(7, 48, 110, 0.18);
+  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+}
+
+.search-view-dialog-close-icon {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  display: inline-block;
+}
+
+.search-view-dialog-close-icon::before,
+.search-view-dialog-close-icon::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 10px;
+  height: 1.7px;
+  border-radius: 999px;
+  background: #fff;
+  transform-origin: center;
+}
+
+.search-view-dialog-close-icon::before {
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.search-view-dialog-close-icon::after {
+  transform: translateY(-50%) rotate(-45deg);
+}
+
+.search-view-dialog-close:hover {
+  transform: translateY(-1px);
+}
+
+.search-view-dialog-close:hover .search-view-dialog-close-circle {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: #fff;
+  transform: scale(1.04);
+}
+
+.search-dialog-actions {
+  padding: 18px 32px 24px 32px;
+  margin-top: 8px;
+}
+
+@media (max-width: 720px) {
+  .search-dialog-backdrop {
+    padding: 12px;
+    align-items: flex-end;
+  }
+
+  .search-dialog {
+    width: 100%;
+    max-height: 92vh;
+    padding: 18px;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .search-view-dialog {
+    padding: 0;
+  }
+
+  .search-view-dialog-header,
+  .search-view-dialog-body,
+  .search-view-summary-grid,
+  .search-dialog-actions {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .search-view-empty-message {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .search-view-summary-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .search-view-summary-col {
+    min-width: 0;
+  }
 }
 
 .search-dialog-btn {

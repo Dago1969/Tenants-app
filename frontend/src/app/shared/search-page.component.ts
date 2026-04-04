@@ -49,6 +49,14 @@ interface OperationLogEntry {
   message: string;
 }
 
+interface ViewDetailItem {
+  key: string;
+  label: string;
+  value: string;
+  isStatus: boolean;
+  statusClass?: string;
+}
+
 
 
 type DeleteDialogMode = 'confirm' | 'reassign';
@@ -174,14 +182,14 @@ type DeleteDialogMode = 'confirm' | 'reassign';
           <thead>
             <tr>
               <th>{{ translate(resultIdLabelKey) }}</th>
-              <th *ngFor="let column of resultColumns">{{ translate(column.labelKey) }}</th>
+              <th *ngFor="let column of orderedResultColumns()">{{ translate(column.labelKey) }}</th>
               <th *ngIf="hasRowActions">{{ translate('search.actions') }}</th>
             </tr>
           </thead>
           <tbody>
             <tr *ngFor="let row of filteredResults()">
               <td>{{ getRowIdentifier(row) }}</td>
-              <td *ngFor="let column of resultColumns">
+              <td *ngFor="let column of orderedResultColumns()">
                 <ng-container *ngIf="isStatusLikeColumn(column.key); else normalCell">
                   <span class="status-badge" [ngClass]="getStatusBadgeClass(column.key, row[column.key])">
                     {{ translate(getStatusLabelKey(column.key, row[column.key])) }}
@@ -193,7 +201,7 @@ type DeleteDialogMode = 'confirm' | 'reassign';
                 <button *ngIf="showEditAction && canEdit" class="icon-btn" type="button" (click)="openEdit(getRowIdentifier(row))" [title]="translate('search.action.edit')">
                   <span class="icon">✏️</span>
                 </button>
-                <button *ngIf="showViewAction" class="icon-btn" type="button" (click)="openView(getRowIdentifier(row))" [title]="translate('search.action.view')">
+                <button *ngIf="showViewAction" class="icon-btn" type="button" (click)="openView(row)" [title]="translate('search.action.view')">
                   <span class="icon">👁️</span>
                 </button>
                 <button *ngIf="showDeleteAction && canDelete" class="icon-btn" type="button" (click)="deleteRecord(getRowIdentifier(row))" [title]="translate('search.action.delete')">
@@ -211,6 +219,55 @@ type DeleteDialogMode = 'confirm' | 'reassign';
           <span>{{ translate('pagination.page') }} 1 {{ translate('pagination.of') }} 1</span>
           <button class="icon-btn" disabled><span class="icon">◀</span></button>
           <button class="icon-btn" disabled><span class="icon">▶</span></button>
+        </div>
+      </div>
+
+      <div *ngIf="viewDialogOpen" class="search-dialog-backdrop" (click)="closeViewDialog()">
+        <div class="search-dialog search-view-dialog" role="dialog" aria-modal="true" aria-labelledby="search-view-dialog-title" (click)="$event.stopPropagation()">
+          <div class="search-view-dialog-header">
+            <div class="search-view-dialog-header-top">
+              <div>
+                <h3 id="search-view-dialog-title" class="search-dialog-title">{{ translate('search.view.title') }}</h3>
+                <p class="search-view-dialog-subtitle">{{ viewDialogSubtitle }}</p>
+              </div>
+              <button class="search-view-dialog-close" type="button" (click)="closeViewDialog()" [attr.aria-label]="translate('crud.actions.cancel')">
+                <span class="search-view-dialog-close-circle" aria-hidden="true">
+                  <span class="search-view-dialog-close-icon"></span>
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <div class="search-view-dialog-body">
+            <div *ngIf="viewDetailItems.length > 0; else emptyViewState" class="summary4-grid search-view-summary-grid">
+              <div *ngFor="let row of viewDetailRows" class="summary4-row search-view-summary-row">
+                <div *ngFor="let item of row" class="summary4-col search-view-summary-col">
+                  <div class="summary2-label search-view-label">{{ item.label }}</div>
+                  <div class="summary2-value search-view-value-block">
+                    <span *ngIf="item.isStatus; else standardViewValue" class="status-badge" [ngClass]="item.statusClass">
+                      {{ item.value }}
+                    </span>
+                    <ng-template #standardViewValue>
+                      <span class="search-view-value">{{ item.value }}</span>
+                    </ng-template>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <ng-template #emptyViewState>
+              <p class="search-dialog-message search-view-empty-message">{{ translate('search.view.empty') }}</p>
+            </ng-template>
+          </div>
+
+          <div class="search-dialog-actions">
+            <button type="button" class="search-dialog-btn search-dialog-btn-primary" (click)="printViewDialog()">
+              {{ translate('search.action.print') }}
+            </button>
+            <button type="button" class="search-dialog-btn search-dialog-btn-secondary" (click)="closeViewDialog()">
+              {{ translate('crud.actions.cancel') }}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -269,6 +326,7 @@ export class SearchPageComponent implements OnInit {
   @Input({ required: true }) resultColumns!: SearchField[];
   @Input() createRoute = '';
   @Input() detailRouteBase = '';
+  @Input() fieldPermissionsEndpoint = '';
   @Input() moduleCode = '';
   @Input() createFunctionCode = 'CREATE';
   @Input() editFunctionCode = 'UPDATE';
@@ -292,9 +350,11 @@ export class SearchPageComponent implements OnInit {
   selectedClient = '';
   fieldOptions: Record<string, SelectOption[]> = {};
   autocompleteOptions: Record<string, SelectOption[]> = {};
+  fieldPermissions: Record<string, string> = {};
   canCreate = true;
   canEdit = true;
   canDelete = true;
+  viewDialogOpen = false;
   deleteDialogOpen = false;
   deleteDialogMode: DeleteDialogMode = 'confirm';
   deleteDialogRecordId = '';
@@ -302,6 +362,7 @@ export class SearchPageComponent implements OnInit {
   deleteDialogReplacementRoles: SelectOption[] = [];
   deleteDialogReplacementRoleId = '';
   operationLogs: OperationLogEntry[] = [];
+  selectedViewRow: SearchResult | null = null;
   private operationLogTimeouts: { [key: string]: any } = {};
 
   constructor(
@@ -315,10 +376,21 @@ export class SearchPageComponent implements OnInit {
     this.selectedRole = this.authService.getSelectedRole();
     this.selectedClient = this.authService.getSelectedClient();
     this.loadSelectOptions();
+    this.loadFieldPermissions();
     void this.loadActionPermissions();
     if (this.autoSearch) {
       this.search(false);
     }
+  }
+
+  get visibleResultColumns(): SearchField[] {
+    return this.resultColumns.filter((column) => !this.isFieldHidden(column.key));
+  }
+
+  orderedResultColumns(): SearchField[] {
+    const regularColumns = this.visibleResultColumns.filter((column) => !this.isStatusLikeColumn(column.key));
+    const statusColumns = this.visibleResultColumns.filter((column) => this.isStatusLikeColumn(column.key));
+    return [...regularColumns, ...statusColumns];
   }
 
   // (definizioni già presenti, duplicati rimossi)
@@ -333,6 +405,47 @@ export class SearchPageComponent implements OnInit {
     } catch {
       return key;
     }
+  }
+
+  get viewDialogSubtitle(): string {
+    if (!this.selectedViewRow) {
+      return '';
+    }
+
+    const identifier = this.getRowIdentifier(this.selectedViewRow);
+    if (identifier === null) {
+      return this.translate(this.titleKey);
+    }
+
+    return `${this.translate(this.resultIdLabelKey)}: ${identifier}`;
+  }
+
+  get viewDetailItems(): ViewDetailItem[] {
+    if (!this.selectedViewRow) {
+      return [];
+    }
+
+    const preferredKeys = [
+      this.resultIdKey,
+      ...this.orderedResultColumns().map((column) => column.key),
+      ...Object.keys(this.selectedViewRow).filter((key) => !this.isFieldHidden(key))
+    ];
+    const uniqueKeys = preferredKeys.filter((key, index) => preferredKeys.indexOf(key) === index);
+
+    return uniqueKeys
+      .map((key) => this.buildViewDetailItem(key, this.selectedViewRow?.[key]))
+      .filter((item): item is ViewDetailItem => item !== null);
+  }
+
+  get viewDetailRows(): ViewDetailItem[][] {
+    const items = this.viewDetailItems;
+    const rows: ViewDetailItem[][] = [];
+
+    for (let index = 0; index < items.length; index += 4) {
+      rows.push(items.slice(index, index + 4));
+    }
+
+    return rows;
   }
 
   getFieldOptions(field: SearchField): SelectOption[] {
@@ -463,8 +576,9 @@ export class SearchPageComponent implements OnInit {
     });
   }
 
-  openView(id: unknown): void {
-    this.openCrudPage(id, 'view');
+  openView(row: SearchResult): void {
+    this.selectedViewRow = row;
+    this.viewDialogOpen = true;
   }
 
   openEdit(id: unknown): void {
@@ -481,6 +595,28 @@ export class SearchPageComponent implements OnInit {
     }
 
     this.openCrudPage(id, 'edit');
+  }
+
+  closeViewDialog(): void {
+    this.viewDialogOpen = false;
+    this.selectedViewRow = null;
+  }
+
+  printViewDialog(): void {
+    if (!this.selectedViewRow) {
+      return;
+    }
+
+    const popupWindow = window.open('', '_blank', 'width=960,height=720');
+    if (!popupWindow) {
+      return;
+    }
+
+    popupWindow.document.open();
+    popupWindow.document.write(this.buildPrintMarkup());
+    popupWindow.document.close();
+    popupWindow.focus();
+    popupWindow.print();
   }
 
   openManage(id: unknown): void {
@@ -558,12 +694,6 @@ export class SearchPageComponent implements OnInit {
     return this.endpoint.replace(/\/search$/, '');
   }
 
-  private buildExternalDetailUrl(normalizedId: string): string {
-    const normalizedRouteBase = this.detailRouteBase.trim().replace(/^\/+|\/+$/g, '');
-    const routeBase = normalizedRouteBase.length > 0 ? normalizedRouteBase : 'users';
-    return `${window.location.origin}/${routeBase}/${normalizedId}`;
-  }
-
   private handleDeleteWithPrecheck(normalizedId: string): void {
     this.http.get<DeleteCheckResponse>(`${environment.apiBaseUrl}/${this.deleteCheckEndpoint}/${normalizedId}`).subscribe({
       next: (deleteCheck) => {
@@ -580,6 +710,100 @@ export class SearchPageComponent implements OnInit {
         this.pushOperationLog('error', this.buildErrorMessage('search.error.deleteCheck', error));
       }
     });
+  }
+
+  private buildViewDetailItem(key: string, value: unknown): ViewDetailItem | null {
+    const trimmedKey = key?.trim();
+    if (!trimmedKey || this.isFieldHidden(trimmedKey)) {
+      return null;
+    }
+
+    const isStatus = this.isStatusLikeColumn(trimmedKey);
+    return {
+      key: trimmedKey,
+      label: this.resolveFieldLabel(trimmedKey),
+      value: this.formatViewValue(trimmedKey, value),
+      isStatus,
+      statusClass: isStatus ? this.getStatusBadgeClass(trimmedKey, value) : undefined
+    };
+  }
+
+  private resolveFieldLabel(key: string): string {
+    if (key === this.resultIdKey) {
+      return this.translate(this.resultIdLabelKey);
+    }
+
+    const knownField = [...this.resultColumns, ...this.filters].find((field) => field.key === key);
+    if (knownField) {
+      return this.translate(knownField.labelKey);
+    }
+
+    return key
+      .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+      .replace(/[._-]+/g, ' ')
+      .replace(/^./, (initial) => initial.toUpperCase());
+  }
+
+  private formatViewValue(key: string, value: unknown): string {
+    if (this.isStatusLikeColumn(key)) {
+      return this.translate(this.getStatusLabelKey(key, value));
+    }
+
+    if (typeof value === 'boolean') {
+      return value ? this.translate('search.boolean.true') : this.translate('search.boolean.false');
+    }
+
+    if (Array.isArray(value)) {
+      return value.map((item) => this.formatViewValue(key, item)).join(', ');
+    }
+
+    if (value && typeof value === 'object') {
+      return JSON.stringify(value, null, 2);
+    }
+
+    return value === undefined || value === null ? '' : String(value);
+  }
+
+  private buildPrintMarkup(): string {
+    const title = this.escapeHtml(this.translate('search.view.title'));
+    const subtitle = this.escapeHtml(this.viewDialogSubtitle);
+    const rows = this.viewDetailItems.map((item) => `
+      <div class="print-row">
+        <div class="print-label">${this.escapeHtml(item.label)}</div>
+        <div class="print-value">${this.escapeHtml(item.value).replace(/\n/g, '<br>')}</div>
+      </div>
+    `).join('');
+
+    return `<!DOCTYPE html>
+      <html lang="it">
+        <head>
+          <meta charset="utf-8">
+          <title>${title}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 32px; color: #1f2937; }
+            h1 { margin: 0 0 8px; font-size: 24px; color: #1f3d6e; }
+            .subtitle { margin: 0 0 24px; color: #4b5563; }
+            .print-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+            .print-row { border: 1px solid #dbe4f0; border-radius: 10px; padding: 12px 14px; break-inside: avoid; }
+            .print-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #4667a8; margin-bottom: 8px; }
+            .print-value { font-size: 14px; white-space: pre-wrap; word-break: break-word; }
+          </style>
+        </head>
+        <body>
+          <h1>${title}</h1>
+          <p class="subtitle">${subtitle}</p>
+          <div class="print-grid">${rows}</div>
+        </body>
+      </html>`;
+  }
+
+  private escapeHtml(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\"/g, '&quot;')
+      .replace(/'/g, '&#39;');
   }
 
   private openDeleteConfirmationDialog(normalizedId: string): void {
@@ -784,6 +1008,30 @@ export class SearchPageComponent implements OnInit {
 
   private resolveMessage(message: MessageKey | string): string {
     return hasMessageKey(message) ? this.translate(message) : message;
+  }
+
+  private loadFieldPermissions(): void {
+    if (!this.fieldPermissionsEndpoint) {
+      this.fieldPermissions = {};
+      return;
+    }
+
+    this.http.get<Record<string, string>>(`${environment.apiBaseUrl}/${this.fieldPermissionsEndpoint}`).subscribe({
+      next: (permissions) => {
+        this.fieldPermissions = permissions ?? {};
+      },
+      error: () => {
+        this.fieldPermissions = {};
+      }
+    });
+  }
+
+  private getFieldPermission(fieldKey: string): string {
+    return this.fieldPermissions[fieldKey] ?? 'full-edit';
+  }
+
+  private isFieldHidden(fieldKey: string): boolean {
+    return this.getFieldPermission(fieldKey) === 'hide-field';
   }
 
   private async loadActionPermissions(): Promise<void> {
