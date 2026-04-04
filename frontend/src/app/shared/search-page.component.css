@@ -419,7 +419,8 @@ th {
   background:
     linear-gradient(115deg, rgba(0, 99, 247, 0.98) 0%, rgba(0, 161, 255, 0.95) 34%, rgba(0, 191, 182, 0.94) 68%, rgba(15, 206, 73, 0.96) 100%),
     url('/assets/texture.png');
-  background-size: 100% 100%, 460px;
+    /*definisco  grandezza della texture come variabile per poterla riutilizzare e mantenere coerenza tra i vari livelli di background*/
+  background-size: 100% 100%, 520px;
   background-repeat: no-repeat, repeat;
   background-position: center, center;
   background-blend-mode: multiply;
@@ -429,6 +430,7 @@ th {
   min-height: 132px;
   box-shadow: 0 12px 28px rgba(8, 76, 172, 0.18);
   overflow: hidden;
+  isolation: isolate;
 }
 
 .search-view-dialog-header::before {
@@ -437,8 +439,22 @@ th {
   inset: 0;
   background-image: url('/assets/texture.png');
   background-repeat: repeat;
-  background-size: 460px;
-  opacity: 0.28;
+    /*definisco la grandezza della texture come variabile per poterla riutilizzare e mantenere coerenza tra i vari livelli di background*/
+  background-size: 520px;
+  opacity: 0.48;
+  mix-blend-mode: overlay;
+  filter: contrast(1.15) saturate(1.05);
+  pointer-events: none;
+}
+
+.search-view-dialog-header::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('/assets/texture.png');
+  background-repeat: repeat;
+  background-size: 320px;
+  opacity: 0.16;
   mix-blend-mode: soft-light;
   pointer-events: none;
 }
