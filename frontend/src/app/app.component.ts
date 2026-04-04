@@ -23,6 +23,7 @@ interface MenuItem {
   labelKey: MessageKey;
   route: string;
   moduleCode?: string;
+  iconSrc?: string;
 }
 
 /**
@@ -101,7 +102,7 @@ export class AppComponent implements OnDestroy {
     { labelKey: 'roles.search.title', route: '/roles', moduleCode: 'ROLE' },
     { labelKey: 'menu.modulesSearch', route: '/modules/search', moduleCode: 'MODULE' },
     { labelKey: 'menu.functionsSearch', route: '/functions/search', moduleCode: 'FUNCTION' },
-    { labelKey: 'projects.search.title', route: '/projects/search', moduleCode: 'PROJECT' },
+    { labelKey: 'projects.search.title', route: '/projects/search', moduleCode: 'PROJECT', iconSrc: 'assets/progetto.png' },
     { labelKey: 'menu.structureTypesSearch', route: '/structure-types/search', moduleCode: STRUCTURE_MODULE_CODES.GENERIC },
     { labelKey: 'menu.authorizations', route: '/authorizations' },
     { labelKey: 'menu.controllerFunctionMappings', route: '/controller-function-mappings' },
@@ -116,15 +117,15 @@ export class AppComponent implements OnDestroy {
   ];
 
   structureMenuItems: MenuItem[] = [
-    { labelKey: 'menu.structure.aslSearch', route: '/structures/asl', moduleCode: STRUCTURE_MODULE_CODES.ASL },
-    { labelKey: 'menu.structure.hospitalSearch', route: '/structures/hospitals', moduleCode: STRUCTURE_MODULE_CODES.HOSPITAL },
-    { labelKey: 'menu.structure.hospitalPharmacySearch', route: '/structures/hospital-pharmacies', moduleCode: STRUCTURE_MODULE_CODES.HOSPITAL_PHARMACY },
-    { labelKey: 'menu.structure.retailPharmacySearch', route: '/structures/retail-pharmacies', moduleCode: STRUCTURE_MODULE_CODES.RETAIL_PHARMACY },
-    { labelKey: 'menu.structure.logisticsWarehouseSearch', route: '/structures/logistics-warehouses', moduleCode: STRUCTURE_MODULE_CODES.LOGISTICS_WAREHOUSE },
-    { labelKey: 'menu.structure.materialWarehouseSearch', route: '/structures/material-warehouses', moduleCode: STRUCTURE_MODULE_CODES.MATERIAL_WAREHOUSE },
-    { labelKey: 'menu.structure.pharmaCompanySearch', route: '/structures/pharma-companies', moduleCode: STRUCTURE_MODULE_CODES.PHARMA_COMPANY },
-    { labelKey: 'menu.structure.specialistClinicSearch', route: '/structures/specialist-clinics', moduleCode: STRUCTURE_MODULE_CODES.SPECIALIST_CLINIC },
-    { labelKey: 'menu.structure.vendorSearch', route: '/structures/vendors', moduleCode: STRUCTURE_MODULE_CODES.GENERIC }
+    { labelKey: 'menu.structure.aslSearch', route: '/structures/asl', moduleCode: STRUCTURE_MODULE_CODES.ASL, iconSrc: 'assets/asl.png' },
+    { labelKey: 'menu.structure.hospitalSearch', route: '/structures/hospitals', moduleCode: STRUCTURE_MODULE_CODES.HOSPITAL, iconSrc: 'assets/hospital.png' },
+    { labelKey: 'menu.structure.hospitalPharmacySearch', route: '/structures/hospital-pharmacies', moduleCode: STRUCTURE_MODULE_CODES.HOSPITAL_PHARMACY, iconSrc: 'assets/farmacy-O.png' },
+    { labelKey: 'menu.structure.retailPharmacySearch', route: '/structures/retail-pharmacies', moduleCode: STRUCTURE_MODULE_CODES.RETAIL_PHARMACY, iconSrc: 'assets/farmacy-R.png' },
+    { labelKey: 'menu.structure.logisticsWarehouseSearch', route: '/structures/logistics-warehouses', moduleCode: STRUCTURE_MODULE_CODES.LOGISTICS_WAREHOUSE, iconSrc: 'assets/logistic.png' },
+    { labelKey: 'menu.structure.materialWarehouseSearch', route: '/structures/material-warehouses', moduleCode: STRUCTURE_MODULE_CODES.MATERIAL_WAREHOUSE, iconSrc: 'assets/dwh.png' },
+    { labelKey: 'menu.structure.pharmaCompanySearch', route: '/structures/pharma-companies', moduleCode: STRUCTURE_MODULE_CODES.PHARMA_COMPANY, iconSrc: 'assets/farmaceutica.png' },
+    { labelKey: 'menu.structure.specialistClinicSearch', route: '/structures/specialist-clinics', moduleCode: STRUCTURE_MODULE_CODES.SPECIALIST_CLINIC, iconSrc: 'assets/clinic.png' },
+    { labelKey: 'menu.structure.vendorSearch', route: '/structures/vendors', moduleCode: STRUCTURE_MODULE_CODES.GENERIC, iconSrc: 'assets/fornitore.png' }
   ];
 
   bulkImportMenuItems: MenuItem[] = [

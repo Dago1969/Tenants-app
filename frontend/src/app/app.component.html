@@ -29,7 +29,13 @@
             [routerLink]="item.route"
             routerLinkActive="active"
             class="nav-group-link"
-          >{{ translate(item.labelKey) }}</a>
+            [class.nav-group-link-icon-only]="!!item.iconSrc"
+            [attr.title]="item.iconSrc ? translate(item.labelKey) : null"
+            [attr.aria-label]="item.iconSrc ? translate(item.labelKey) : null"
+          >
+            <img *ngIf="item.iconSrc" class="nav-group-icon" [src]="item.iconSrc" [attr.alt]="translate(item.labelKey)" />
+            <span *ngIf="!item.iconSrc">{{ translate(item.labelKey) }}</span>
+          </a>
         </div>
       </div>
 
@@ -61,7 +67,13 @@
             [routerLink]="item.route"
             routerLinkActive="active"
             class="nav-group-link"
-          >{{ translate(item.labelKey) }}</a>
+            [class.nav-group-link-icon-only]="!!item.iconSrc"
+            [attr.title]="item.iconSrc ? translate(item.labelKey) : null"
+            [attr.aria-label]="item.iconSrc ? translate(item.labelKey) : null"
+          >
+            <img *ngIf="item.iconSrc" class="nav-group-icon" [src]="item.iconSrc" [attr.alt]="translate(item.labelKey)" />
+            <span *ngIf="!item.iconSrc">{{ translate(item.labelKey) }}</span>
+          </a>
         </div>
       </div>
 

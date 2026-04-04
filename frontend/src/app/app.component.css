@@ -108,10 +108,23 @@
 }
 
 .sidebar nav a.nav-group-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   margin-left: 20px;
   width: calc(100% - 28px);
   padding-left: 24px;
   font-size: 0.98rem;
+}
+
+.sidebar nav a.nav-group-link-icon-only {
+  justify-content: flex-start;
+}
+
+.sidebar nav a.nav-group-link-icon-only.active,
+.sidebar nav a.nav-group-link-icon-only:hover {
+  background: #e5e7eb;
+  color: #22304a;
 }
 
 .content {
