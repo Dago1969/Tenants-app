@@ -420,7 +420,7 @@ export class ProjectsCrudComponent implements OnInit {
     return {
       ...this.createProjectFromTenant(tenant, this.authService.getSelectedClient().trim()),
       ...project,
-      administrators: [...(project.administrators ?? [])],
+      administrators: this.normalizeProjectAdministrators(project.administrators ?? []),
       roleIds: [...(project.roleIds ?? [])],
       enabledModuleCodes: this.withCoreModules(project.enabledModuleCodes ?? [])
     };
@@ -450,10 +450,35 @@ export class ProjectsCrudComponent implements OnInit {
       logo: this.project.logo?.trim(),
       footer: this.project.footer?.trim(),
       emailSender: this.project.emailSender?.trim(),
-      administrators: [...(this.project.administrators ?? [])],
+      administrators: this.normalizeProjectAdministrators(this.project.administrators ?? []),
       roleIds: [],
       enabledModuleCodes: this.withCoreModules(this.project.enabledModuleCodes ?? [])
     };
+  }
+
+  private normalizeProjectAdministrators(administrators: ProjectAdministratorDto[]): ProjectAdministratorDto[] {
+    return administrators
+      .map((administrator) => this.normalizeProjectAdministrator(administrator))
+      .filter((administrator): administrator is ProjectAdministratorDto => administrator !== null);
+  }
+
+  private normalizeProjectAdministrator(administrator: ProjectAdministratorDto): ProjectAdministratorDto | null {
+    const matchingOption = this.adminOptions.find((option) => option.userId === administrator.userId);
+    if (matchingOption) {
+      return this.toAdministratorDto(matchingOption);
+    }
+
+    const normalizedRoleId = this.normalizeRoleText(administrator.roleId);
+    if (normalizedRoleId === 'super_admin' || normalizedRoleId === 'admin_qtm') {
+      return {
+        userId: administrator.userId,
+        roleId: administrator.roleId,
+        username: administrator.username,
+        email: administrator.email
+      };
+    }
+
+    return null;
   }
 
   private canLeaveCurrentStep(): boolean {
