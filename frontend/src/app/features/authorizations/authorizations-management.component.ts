@@ -3,8 +3,10 @@ import { HttpClient } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/auth.service';
+import { STRUCTURE_MODULE_CODES } from '../../core/structure-module-codes';
 import { MessageKey, hasMessageKey, t } from '../../i18n/messages';
 import { environment } from '../../../environments/environment';
+import { NotificationService } from '../../shared/notification.service';
 
 type ModuleAuthorizationCode = 'allow' | 'deny';
 type FieldAuthorizationCode = 'full-edit' | 'read-only' | 'hide-field';
@@ -47,10 +49,18 @@ const MODULE_TITLE_KEYS: Record<string, MessageKey> = {
   PATIENT: 'menu.patients',
   DOCTOR: 'menu.doctors',
   NURSE: 'menu.nurses',
+  [STRUCTURE_MODULE_CODES.HOSPITAL]: 'menu.structure.hospitalSearch',
   ROLE: 'menu.roles',
   MODULE: 'menu.modules',
   FUNCTION: 'menu.functions',
-  STRUCTURE: 'menu.structures',
+  [STRUCTURE_MODULE_CODES.ASL]: 'menu.structure.aslSearch',
+  [STRUCTURE_MODULE_CODES.GENERIC]: 'menu.structures',
+  [STRUCTURE_MODULE_CODES.HOSPITAL_PHARMACY]: 'menu.structure.hospitalPharmacySearch',
+  [STRUCTURE_MODULE_CODES.RETAIL_PHARMACY]: 'menu.structure.retailPharmacySearch',
+  [STRUCTURE_MODULE_CODES.LOGISTICS_WAREHOUSE]: 'menu.structure.logisticsWarehouseSearch',
+  [STRUCTURE_MODULE_CODES.MATERIAL_WAREHOUSE]: 'menu.structure.materialWarehouseSearch',
+  [STRUCTURE_MODULE_CODES.PHARMA_COMPANY]: 'menu.structure.pharmaCompanySearch',
+  [STRUCTURE_MODULE_CODES.SPECIALIST_CLINIC]: 'menu.structure.specialistClinicSearch',
   PROJECT: 'menu.projects',
   TENANT: 'menu.tenants'
 };
@@ -60,15 +70,23 @@ const MODULE_MESSAGE_PREFIXES: Record<string, string> = {
   PATIENT: 'patients',
   DOCTOR: 'doctors',
   NURSE: 'nurses',
+  [STRUCTURE_MODULE_CODES.HOSPITAL]: 'structures',
   ROLE: 'roles',
   MODULE: 'modules',
   FUNCTION: 'functions',
-  STRUCTURE: 'structures',
+  [STRUCTURE_MODULE_CODES.ASL]: 'structures',
+  [STRUCTURE_MODULE_CODES.GENERIC]: 'structures',
+  [STRUCTURE_MODULE_CODES.HOSPITAL_PHARMACY]: 'structures',
+  [STRUCTURE_MODULE_CODES.RETAIL_PHARMACY]: 'structures',
+  [STRUCTURE_MODULE_CODES.LOGISTICS_WAREHOUSE]: 'structures',
+  [STRUCTURE_MODULE_CODES.MATERIAL_WAREHOUSE]: 'structures',
+  [STRUCTURE_MODULE_CODES.PHARMA_COMPANY]: 'structures',
+  [STRUCTURE_MODULE_CODES.SPECIALIST_CLINIC]: 'structures',
   PROJECT: 'projects',
   TENANT: 'tenants'
 };
 
-const MODULE_DISPLAY_ORDER = ['USER', 'PATIENT', 'DOCTOR', 'NURSE', 'ROLE', 'MODULE', 'FUNCTION', 'STRUCTURE', 'PROJECT', 'TENANT'];
+const MODULE_DISPLAY_ORDER = ['USER', 'PATIENT', 'DOCTOR', 'NURSE', STRUCTURE_MODULE_CODES.ASL, STRUCTURE_MODULE_CODES.HOSPITAL, STRUCTURE_MODULE_CODES.GENERIC, STRUCTURE_MODULE_CODES.HOSPITAL_PHARMACY, STRUCTURE_MODULE_CODES.RETAIL_PHARMACY, STRUCTURE_MODULE_CODES.LOGISTICS_WAREHOUSE, STRUCTURE_MODULE_CODES.MATERIAL_WAREHOUSE, STRUCTURE_MODULE_CODES.PHARMA_COMPANY, STRUCTURE_MODULE_CODES.SPECIALIST_CLINIC, 'ROLE', 'MODULE', 'FUNCTION', 'PROJECT', 'TENANT'];
 
 @Component({
   selector: 'app-authorizations-management',
@@ -92,8 +110,7 @@ export class AuthorizationsManagementComponent implements OnInit {
   expandedModuleCodes = new Set<string>();
   loading = false;
   saving = false;
-  errorMessage = '';
-  successMessage = '';
+
 
   readonly moduleScopeOptions: { value: ModuleAuthorizationCode; labelKey: MessageKey }[] = [
     { value: 'allow', labelKey: 'authorizations.scope.allow' },
@@ -113,7 +130,8 @@ export class AuthorizationsManagementComponent implements OnInit {
 
   constructor(
     private readonly http: HttpClient,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
+    readonly notificationService: NotificationService
   ) {}
 
   ngOnInit(): void {
@@ -136,9 +154,6 @@ export class AuthorizationsManagementComponent implements OnInit {
     }
 
     this.saving = true;
-    this.errorMessage = '';
-    this.successMessage = '';
-
     this.http
       .put<AuthorizationRoleMatrixDto>(
         `${environment.apiBaseUrl}/authorizations/roles/${this.selectedRoleId}`,
@@ -148,11 +163,11 @@ export class AuthorizationsManagementComponent implements OnInit {
         next: (matrix: AuthorizationRoleMatrixDto) => {
           this.modules = this.sortModules(matrix.modules ?? []);
           this.syncExpandedModules();
-          this.successMessage = this.translate('authorizations.success.save');
+          this.notificationService.showSuccess(this.translate('authorizations.success.save'));
           this.saving = false;
         },
         error: () => {
-          this.errorMessage = this.translate('authorizations.error.save');
+          this.notificationService.showError(this.translate('authorizations.error.save'));
           this.saving = false;
         }
       });
@@ -253,8 +268,6 @@ export class AuthorizationsManagementComponent implements OnInit {
 
   private loadRoles(): void {
     this.loading = true;
-    this.errorMessage = '';
-
     this.http.get<RoleDto[]>(`${environment.apiBaseUrl}/roles`).subscribe({
       next: (roles: RoleDto[]) => {
         this.roles = [...(roles ?? [])].sort((left, right) => left.id.localeCompare(right.id));
@@ -276,7 +289,7 @@ export class AuthorizationsManagementComponent implements OnInit {
         this.roles = [];
         this.modules = [];
         this.loading = false;
-        this.errorMessage = this.translate('authorizations.error.loadRoles');
+        this.notificationService.showError(this.translate('authorizations.error.loadRoles'));
       }
     });
   }
@@ -289,9 +302,6 @@ export class AuthorizationsManagementComponent implements OnInit {
     }
 
     this.loading = true;
-    this.errorMessage = '';
-    this.successMessage = '';
-
     this.http
       .get<AuthorizationRoleMatrixDto>(`${environment.apiBaseUrl}/authorizations/roles/${this.selectedRoleId}`)
       .subscribe({
@@ -303,7 +313,7 @@ export class AuthorizationsManagementComponent implements OnInit {
         error: () => {
           this.modules = [];
           this.loading = false;
-          this.errorMessage = this.translate('authorizations.error.loadMatrix');
+          this.notificationService.showError(this.translate('authorizations.error.loadMatrix'));
         }
       });
   }

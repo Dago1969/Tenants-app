@@ -217,8 +217,9 @@ export class AuthorizationsManagementComponent implements OnInit {
   }
 
   public translateModuleLabel(module: AuthorizationModuleDto): string {
-    const moduleKey = this.getModuleTitleKey(module.moduleCode);
-    return moduleKey ? this.translate(moduleKey) : module.moduleName;
+    // Prova a usare la chiave menu.NOMEMODULO se esiste nei file di properties
+    const key = `menu.${module.moduleCode.toLowerCase()}`;
+    return hasMessageKey(key) ? t(key) : (module.moduleName || module.moduleCode);
   }
 
   public isModuleExpanded(moduleCode: string): boolean {

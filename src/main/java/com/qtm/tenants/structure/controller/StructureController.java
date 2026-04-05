@@ -1,12 +1,14 @@
 package com.qtm.tenants.structure.controller;
 
 import com.qtm.tenants.authorization.service.ControllerFunctionAuthorizationService;
+import com.qtm.tenants.structure.StructureModuleCodes;
 import com.qtm.tenants.structure.dto.StructureDto;
 import com.qtm.tenants.structure.dto.StructureParentOptionDto;
 import com.qtm.tenants.structure.dto.StructureTypeDto;
 import com.qtm.tenants.structure.service.StructureService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -23,12 +25,15 @@ import java.util.List;
 /**
  * Controller REST CRUD strutture.
  */
+/**
+ * Controller REST CRUD strutture.
+ * La chiamata GET /api/tenants/structures invoca il metodo findAll con tutti i parametri, incluso active.
+ */
+@Slf4j
 @RestController
 @RequestMapping("/api/tenants/structures")
 @RequiredArgsConstructor
 public class StructureController {
-
-    private static final String MODULE_CODE = "STRUCTURE";
 
     private final StructureService structureService;
     private final ControllerFunctionAuthorizationService controllerFunctionAuthorizationService;
@@ -38,32 +43,44 @@ public class StructureController {
             @RequestBody StructureDto structureDto,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
+        String moduleCode = resolveModuleCode(structureDto.getStructureType());
         controllerFunctionAuthorizationService.requireFullEditPermission(
                 selectedRole,
-                MODULE_CODE,
+                moduleCode,
                 ControllerFunctionAuthorizationService.CREATE_FUNCTION_CODE
         );
         return ResponseEntity.ok(structureService.create(structureDto));
     }
 
+    /**
+     * Ricerca strutture filtrando per structureType, parentStructureId, code, name, city, active.
+     * Viene invocato da GET /api/tenants/structures.
+     */
     @GetMapping
-    public ResponseEntity<List<StructureDto>> findAll(
+        public ResponseEntity<List<StructureDto>> findAll(
             @RequestParam(required = false) String structureType,
             @RequestParam(required = false) Long parentStructureId,
-                        @RequestParam(required = false) String code,
-                        @RequestParam(required = false) String name,
-                        @RequestParam(required = false) String city,
+            @RequestParam(required = false) String code,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) Boolean active,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
-        controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
-                return ResponseEntity.ok(structureService.findAll(structureType, parentStructureId, code, name, city));
+        String moduleCode = resolveModuleCode(structureType);
+        log.info("[StructureController] GET /structures params: structureType={}, parentStructureId={}, code={}, name={}, city={}, active={}, selectedRole={}",
+                structureType, parentStructureId, code, name, city, active, selectedRole);
+        // Loggo i tipi struttura disponibili per debug e prevenzione errori code
+        List<StructureTypeDto> types = structureService.findSupportedTypes();
+        log.info("[StructureController] Tipi struttura disponibili: {}", types.stream().map(StructureTypeDto::getCode).toList());
+        controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, moduleCode);
+        return ResponseEntity.ok(structureService.findAll(structureType, parentStructureId, code, name, city, active));
     }
 
     @GetMapping("/types")
     public ResponseEntity<List<StructureTypeDto>> findTypes(
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
-        controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
+                controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, StructureModuleCodes.GENERIC);
         return ResponseEntity.ok(structureService.findSupportedTypes());
     }
 
@@ -72,7 +89,7 @@ public class StructureController {
             @RequestParam String structureType,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
-        controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
+                controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, resolveModuleCode(structureType));
         return ResponseEntity.ok(structureService.findParentOptions(structureType));
     }
 
@@ -81,7 +98,10 @@ public class StructureController {
             @PathVariable Long id,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
-        controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
+        controllerFunctionAuthorizationService.requireModuleAccess(
+                selectedRole,
+                resolveModuleCode(structureService.findStructureTypeCode(id))
+        );
         return ResponseEntity.ok(structureService.findById(id));
     }
 
@@ -91,9 +111,10 @@ public class StructureController {
             @RequestBody StructureDto structureDto,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
+        String moduleCode = resolveModuleCode(structureDto.getStructureType());
         controllerFunctionAuthorizationService.requireFullEditPermission(
                 selectedRole,
-                MODULE_CODE,
+                moduleCode,
                 ControllerFunctionAuthorizationService.UPDATE_FUNCTION_CODE
         );
         return ResponseEntity.ok(structureService.update(id, structureDto));
@@ -104,12 +125,17 @@ public class StructureController {
             @PathVariable Long id,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
+                String moduleCode = resolveModuleCode(structureService.findStructureTypeCode(id));
         controllerFunctionAuthorizationService.requireFullEditPermission(
                 selectedRole,
-                MODULE_CODE,
+                                moduleCode,
                 ControllerFunctionAuthorizationService.DELETE_FUNCTION_CODE
         );
         structureService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+        private String resolveModuleCode(String structureType) {
+                return StructureModuleCodes.resolveModuleCode(structureType);
+        }
 }

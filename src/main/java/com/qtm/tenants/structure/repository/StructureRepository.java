@@ -13,6 +13,8 @@ public interface StructureRepository extends JpaRepository<StructureEntity, Long
 
         List<StructureEntity> findAllByStructureTypeOrderByNameAsc(String structureType);
 
+        List<StructureEntity> findAllByStructureTypeAndActiveOrderByNameAsc(String structureType, Boolean active);
+
     List<StructureEntity> findAllByStructureTypeAndParentStructureIdOrderByNameAsc(
             String structureType,
             Long parentStructureId

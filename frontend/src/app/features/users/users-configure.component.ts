@@ -361,6 +361,22 @@ export class UsersConfigureComponent implements OnInit {
     return String(tenantId);
   }
 
+  canAssociateProject(project: ProjectDto): boolean {
+    return typeof project.id === 'number' && !this.isProjectAssociated(project.id);
+  }
+
+  associateProjectCandidate(project: ProjectDto): void {
+    if (typeof project.id === 'number') {
+      this.associateProject(project.id);
+    }
+  }
+
+  disassociateProjectCandidate(project: ProjectDto): void {
+    if (typeof project.id === 'number') {
+      this.disassociateProject(project.id);
+    }
+  }
+
   private resolveSelectedProjectId(): number | null {
     const normalizedSelectedProject = this.selectedProject.trim();
     if (!normalizedSelectedProject) {
@@ -372,7 +388,7 @@ export class UsersConfigureComponent implements OnInit {
       || currentProject.code.trim().toLowerCase() === normalizedSelectedProject.toLowerCase());
 
     if (project) {
-      return project.id;
+      return project.id ?? null;
     }
 
     const directProjectId = Number(normalizedSelectedProject);

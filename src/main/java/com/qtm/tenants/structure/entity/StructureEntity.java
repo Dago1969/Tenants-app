@@ -1,11 +1,7 @@
 package com.qtm.tenants.structure.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import com.qtm.tenants.referent.entity.ReferentEntity;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -33,8 +29,24 @@ public class StructureEntity {
     @Column(name = "description")
     private String description;
 
+
     @Column(name = "address", nullable = false)
     private String address;
+
+    @Column(name = "cap")
+    private String cap;
+
+
+    /**
+     * Lista di referenti associati alla struttura.
+     */
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(
+        name = "structure_referents",
+        joinColumns = @JoinColumn(name = "structure_id"),
+        inverseJoinColumns = @JoinColumn(name = "referent_id")
+    )
+    private java.util.List<ReferentEntity> referents = new java.util.ArrayList<>();
 
     @Column(name = "city_id")
     private Long cityId;
@@ -60,6 +72,9 @@ public class StructureEntity {
     @Column(name = "email")
     private String email;
 
+    @Column(name = "service_calendar_hours")
+    private String serviceCalendarHours;
+
     @Column(name = "active")
     private Boolean active = true;
 
@@ -68,4 +83,15 @@ public class StructureEntity {
 
     @Column(name = "parent_structure_id")
     private Long parentStructureId;
+
+    /**
+     * Lista di farmacie collegate (altre strutture di tipo farmacia)
+     */
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "structure_pharmacies",
+        joinColumns = @JoinColumn(name = "structure_id"),
+        inverseJoinColumns = @JoinColumn(name = "pharmacy_id")
+    )
+    private java.util.List<StructureEntity> pharmacies = new java.util.ArrayList<>();
 }

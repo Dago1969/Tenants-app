@@ -25,7 +25,7 @@ public class ProjectLoggingFilter extends OncePerRequestFilter {
         }
         log.debug("[ProjectLoggingFilter] Filtro eseguito per {} {}", request.getMethod(), request.getRequestURI());
         if (project != null && !project.isBlank()) {
-            log.info("[ProjectLoggingFilter] Parametro 'project' ricevuto: {}", project);
+            //log.info("[ProjectLoggingFilter] Parametro 'project' ricevuto: {}", project);
         } else {
             log.info("[ProjectLoggingFilter] Nessun parametro 'project' presente nella richiesta");
         }

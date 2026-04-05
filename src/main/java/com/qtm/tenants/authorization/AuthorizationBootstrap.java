@@ -4,6 +4,7 @@ import com.qtm.tenants.module.entity.ModuleEntity;
 import com.qtm.tenants.module.repository.ModuleRepository;
 import com.qtm.tenants.role.entity.RoleEntity;
 import com.qtm.tenants.role.repository.RoleRepository;
+import com.qtm.tenants.structure.StructureModuleCodes;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
@@ -14,8 +15,10 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Bootstrap dati di autorizzazione: moduli applicativi, regole modulo+ruolo e regole campo.
@@ -28,8 +31,14 @@ public class AuthorizationBootstrap implements CommandLineRunner {
     private static final String MODULE_PATIENT = "PATIENT";
     private static final String MODULE_DOCTOR = "DOCTOR";
     private static final String MODULE_NURSE = "NURSE";
-    private static final String MODULE_FUNCTION = "FUNCTION";
-    private static final List<String> MODULE_CODES = List.of("USER", "STRUCTURE", "ROLE", "MODULE", MODULE_FUNCTION, MODULE_PATIENT, MODULE_DOCTOR, MODULE_NURSE);
+        private static final String MODULE_FUNCTION = "FUNCTION";
+        private static final List<String> MODULE_CODES = Stream.of(
+                List.of("USER"),
+                StructureModuleCodes.AUTHORIZATION_MODULE_CODES,
+                List.of("ROLE", "MODULE", MODULE_FUNCTION, MODULE_PATIENT, MODULE_DOCTOR, MODULE_NURSE)
+            )
+            .flatMap(List::stream)
+            .toList();
     private static final String ENTITY_PATIENT = "patient";
     private static final String ENTITY_DOCTOR = "doctor";
     private static final String ENTITY_NURSE = "nurse";
@@ -71,10 +80,11 @@ public class AuthorizationBootstrap implements CommandLineRunner {
         for (RoleEntity role : roles) {
             boolean adminRole = isAdminRole(role.getId());
             for (String moduleCode : MODULE_CODES) {
+                AuthorizationScope defaultScope = resolveDefaultModuleScope(moduleCode, adminRole);
                 ModuleRoleAuthorizationEntity moduleRoleAuthorization = ensureModuleRoleAuthorization(
                         modulesByCode.get(moduleCode),
                         role,
-                        adminRole ? AuthorizationScope.FULL_EDIT : AuthorizationScope.READ_ONLY
+                        defaultScope
                 );
                 if (MODULE_PATIENT.equals(moduleCode)) {
                     ensurePatientFieldAuthorizations(moduleRoleAuthorization, adminRole);
@@ -89,12 +99,20 @@ public class AuthorizationBootstrap implements CommandLineRunner {
         }
     }
 
+    private AuthorizationScope resolveDefaultModuleScope(String moduleCode, boolean adminRole) {
+        if (StructureModuleCodes.BULK_IMPORT.equals(moduleCode)) {
+            return adminRole ? AuthorizationScope.FULL_EDIT : AuthorizationScope.DENY;
+        }
+
+        return adminRole ? AuthorizationScope.FULL_EDIT : AuthorizationScope.READ_ONLY;
+    }
+
     private ModuleEntity ensureModule(String moduleCode) {
-        return moduleRepository.findById(moduleCode)
+        return moduleRepository.findById(Objects.requireNonNull(moduleCode, "moduleCode"))
                 .orElseGet(() -> {
                     ModuleEntity module = new ModuleEntity();
                     module.setCode(moduleCode);
-                    module.setName(moduleCode);
+                    module.setName(StructureModuleCodes.resolveModuleName(moduleCode));
                     return moduleRepository.save(module);
                 });
     }

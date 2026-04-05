@@ -1,0 +1,224 @@
+.bulk-import-page {
+  min-height: 100%;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top left, rgba(45, 118, 255, 0.12), transparent 32%),
+    radial-gradient(circle at top right, rgba(16, 185, 129, 0.12), transparent 28%),
+    linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
+}
+
+.bulk-import-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.bulk-import-kicker {
+  margin: 0 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #2962ff;
+}
+
+.bulk-import-hero h2 {
+  margin: 0;
+  font-size: clamp(1.9rem, 3vw, 2.8rem);
+  line-height: 1.08;
+  color: #0f172a;
+}
+
+.bulk-import-subtitle {
+  margin: 10px 0 0;
+  max-width: 62ch;
+  color: #475569;
+}
+
+.bulk-import-badge {
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: rgba(15, 23, 42, 0.92);
+  color: #fff;
+  font-size: 0.92rem;
+  font-weight: 600;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.16);
+}
+
+.bulk-import-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 20px;
+}
+
+.bulk-import-card {
+  border-radius: 24px;
+  padding: 24px;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  box-shadow: 0 22px 50px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.bulk-import-card h3,
+.bulk-import-card h4 {
+  margin: 0 0 12px;
+  color: #0f172a;
+}
+
+.bulk-import-copy {
+  margin: 0 0 18px;
+  color: #475569;
+}
+
+.bulk-import-upload-zone {
+  display: block;
+  border-radius: 20px;
+  border: 1.5px dashed rgba(41, 98, 255, 0.4);
+  background: linear-gradient(180deg, rgba(41, 98, 255, 0.05), rgba(16, 185, 129, 0.04));
+  padding: 22px;
+  cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.bulk-import-upload-zone:hover,
+.bulk-import-upload-zone-active {
+  transform: translateY(-1px);
+  border-color: rgba(41, 98, 255, 0.75);
+  box-shadow: 0 16px 32px rgba(41, 98, 255, 0.08);
+}
+
+.bulk-import-upload-zone input {
+  display: block;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.bulk-import-upload-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #334155;
+}
+
+.bulk-import-upload-copy span {
+  color: #64748b;
+}
+
+.bulk-import-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 18px;
+}
+
+.bulk-import-samples {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.bulk-import-samples-title {
+  margin: 0 0 10px;
+  font-size: 0.96rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.bulk-import-samples-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.bulk-import-samples-hint {
+  margin: 10px 0 0;
+  color: #64748b;
+  font-size: 0.92rem;
+}
+
+.bulk-import-message {
+  margin: 16px 0 0;
+  padding: 14px 16px;
+  border-radius: 16px;
+  font-weight: 600;
+}
+
+.bulk-import-message-error {
+  background: rgba(220, 38, 38, 0.09);
+  color: #b91c1c;
+}
+
+.bulk-import-message-success {
+  background: rgba(16, 185, 129, 0.11);
+  color: #047857;
+}
+
+.bulk-import-guidelines {
+  margin: 0;
+  padding-left: 20px;
+  color: #334155;
+}
+
+.bulk-import-guidelines li + li {
+  margin-top: 8px;
+}
+
+.bulk-import-result {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(148, 163, 184, 0.22);
+}
+
+.bulk-import-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.bulk-import-summary div {
+  border-radius: 16px;
+  padding: 14px;
+  background: rgba(15, 23, 42, 0.04);
+}
+
+.bulk-import-summary dt {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+}
+
+.bulk-import-summary dd {
+  margin: 6px 0 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.bulk-import-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.bulk-import-chip {
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(41, 98, 255, 0.12);
+  color: #1d4ed8;
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+@media (max-width: 900px) {
+  .bulk-import-grid,
+  .bulk-import-hero {
+    grid-template-columns: 1fr;
+    flex-direction: column;
+  }
+}

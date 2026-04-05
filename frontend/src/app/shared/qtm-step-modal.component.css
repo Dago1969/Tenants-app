@@ -1,0 +1,231 @@
+/* Stile per input Google Place Autocomplete Web Component */
+gmpx-place-autocomplete {
+  display: block;
+  width: 100%;
+  margin-bottom: 0.5em;
+}
+gmpx-place-autocomplete input {
+  width: 100% !important;
+  background: #eaf6ff;
+  border: 1.5px solid #d2e6fa;
+  border-radius: 16px;
+  padding: 12px 18px;
+  font-size: 1rem;
+  color: #1a3a5d;
+  margin-top: 4px;
+  box-sizing: border-box;
+  transition: border 0.2s;
+}
+gmpx-place-autocomplete input:focus {
+  border: 1.5px solid #1870e8;
+  outline: none;
+}
+/* QtmStepModal: stili base per popup wizard step-by-step */
+.qtm-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(30, 40, 80, 0.18);
+  z-index: 9999 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+}
+.qtm-modal {
+  background: #fff;
+  border-radius: 22px;
+  box-shadow: 0 8px 32px rgba(19, 31, 54, 0.18);
+  min-width: 700px;
+  max-width: 99vw;
+  width: 900px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  border: none;
+}
+.qtm-modal-header {
+  background:
+    linear-gradient(115deg, rgba(0, 99, 247, 0.98) 0%, rgba(0, 161, 255, 0.95) 34%, rgba(0, 191, 182, 0.94) 68%, rgba(15, 206, 73, 0.96) 100%),
+    url('/assets/texture.png');
+  background-size: 100% 100%, 520px;
+  background-repeat: no-repeat, repeat;
+  background-position: center, center;
+  background-blend-mode: multiply;
+  color: #fff !important;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.22);
+  padding: 24px 32px 18px 32px;
+  display: flex;
+  flex-direction: column;
+  border-top-left-radius: 22px;
+  border-top-right-radius: 22px;
+  box-shadow: 0 12px 28px rgba(8, 76, 172, 0.18);
+  position: relative;
+  overflow: hidden;
+}
+
+.qtm-modal-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('/assets/texture.png');
+  background-repeat: repeat;
+  background-size: 520px;
+  opacity: 0.48;
+  mix-blend-mode: overlay;
+  filter: contrast(1.15) saturate(1.05);
+  pointer-events: none;
+}
+.qtm-modal-header-top {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  position: relative;
+  z-index: 1;
+}
+.qtm-modal-title {
+  color: #fff;
+  font-size: 1.28rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+.qtm-modal-close {
+  background: transparent;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  border-radius: 50%;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s;
+  position: relative;
+  z-index: 1;
+}
+.qtm-modal-close-circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.12);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 14px rgba(7, 48, 110, 0.18);
+  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+}
+.qtm-modal-close-icon {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  display: inline-block;
+}
+.qtm-modal-close-icon::before,
+.qtm-modal-close-icon::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 10px;
+  height: 1.7px;
+  border-radius: 999px;
+  background: #fff;
+  transform-origin: center;
+}
+.qtm-modal-close-icon::before {
+  transform: translateY(-50%) rotate(45deg);
+}
+.qtm-modal-close-icon::after {
+  transform: translateY(-50%) rotate(-45deg);
+}
+.qtm-modal-close:hover {
+  transform: translateY(-1px);
+}
+.qtm-modal-close:hover .qtm-modal-close-circle {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: #fff;
+  transform: scale(1.04);
+}
+.qtm-modal-stepper {
+  padding: 20px 32px 0 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  position: relative;
+  z-index: 1;
+}
+.qtm-modal-step-title {
+  color: #36557f;
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: center;
+}
+.qtm-modal-step-description {
+  color: #5f7596;
+  font-size: 0.98rem;
+  font-weight: 500;
+  text-align: center;
+  max-width: 70ch;
+}
+.qtm-modal-progress-bar {
+  background: #e3eaf7;
+  border-radius: 999px;
+  height: 6px;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+  margin-top: 10px;
+}
+.qtm-modal-progress {
+  background: linear-gradient(90deg, #1870e8 0%, #1ec6ff 100%);
+  height: 100%;
+  transition: width 0.3s;
+}
+.qtm-modal-content {
+  padding: 32px;
+  flex: 1 1 auto;
+  overflow-y: auto;
+}
+.qtm-modal-actions {
+  padding: 18px 32px 0 32px;
+  display: flex;
+  gap: 16px;
+  justify-content: flex-end;
+}
+@media (max-width: 600px) {
+  .qtm-modal {
+    min-width: 0;
+    width: 98vw;
+    padding: 0;
+  }
+  .qtm-modal-header, .qtm-modal-content, .qtm-modal-actions {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .qtm-modal-header {
+    padding-top: 18px;
+    padding-bottom: 16px;
+  }
+  .qtm-modal-title {
+    font-size: 1.08rem;
+  }
+  .qtm-modal-stepper {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  .qtm-modal-step-title {
+    font-size: 1.02rem;
+  }
+  .qtm-modal-step-description {
+    font-size: 0.92rem;
+  }
+}

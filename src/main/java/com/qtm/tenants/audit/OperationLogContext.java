@@ -3,7 +3,7 @@ package com.qtm.tenants.audit;
 import java.util.Map;
 import lombok.Builder;
 import lombok.Getter;
-
+ 
 @Getter
 @Builder
 public class OperationLogContext {

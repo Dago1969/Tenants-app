@@ -7,6 +7,8 @@ spring:
     username: root
     password: dago
     driver-class-name: com.mysql.cj.jdbc.Driver
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
   jpa:
     hibernate:
       ddl-auto: update

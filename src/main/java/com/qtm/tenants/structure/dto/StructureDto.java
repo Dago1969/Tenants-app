@@ -3,6 +3,7 @@ package com.qtm.tenants.structure.dto;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import com.qtm.tenants.referent.dto.ReferentDto;
 
 /**
  * DTO struttura tenant con parametri decodificati per tipo e parent.
@@ -18,6 +19,7 @@ public class StructureDto {
     private String selectionLabel;
     private String description;
     private String address;
+    private String cap;
     private Long cityId;
     private String city;
     private Long provinceId;
@@ -26,6 +28,7 @@ public class StructureDto {
     private String region;
     private String phone;
     private String email;
+    private String serviceCalendarHours;
     private boolean active;
     private String structureType;
     private String structureTypeDescription;
@@ -33,4 +36,14 @@ public class StructureDto {
     private Integer structureTypeDisplayOrder;
     private Long parentStructureId;
     private String parentStructureName;
+
+    /**
+     * Lista di referenti associati alla struttura.
+     */
+    private java.util.List<ReferentDto> referents;
+
+    /**
+     * Lista di farmacie collegate (altre strutture di tipo farmacia)
+     */
+    private java.util.List<StructureDto> pharmacies;
 }

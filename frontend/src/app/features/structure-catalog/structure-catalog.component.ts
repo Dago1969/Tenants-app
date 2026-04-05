@@ -1,8 +1,10 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { GeographyApiService, GeographicOptionDto } from '../../core/geography-api.service';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, ParamMap, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { MessageKey, t } from '../../i18n/messages';
 
@@ -70,10 +72,13 @@ export class StructureCatalogComponent implements OnInit {
   successMessage = '';
   formModel: StructureDto = this.createEmptyForm();
   selectedStructureId: number | null = null;
+  private routeParamSubscription?: Subscription;
 
   constructor(
     private readonly http: HttpClient,
-    private readonly route: ActivatedRoute
+    private readonly route: ActivatedRoute,
+    private readonly router: Router,
+    private readonly geographyApi: GeographyApiService
   ) {}
 
   ngOnInit(): void {
@@ -83,6 +88,7 @@ export class StructureCatalogComponent implements OnInit {
     }
 
     this.loadRegions();
+    this.subscribeToRouteParams();
     this.loadTypeMetadata();
   }
 
@@ -99,26 +105,27 @@ export class StructureCatalogComponent implements OnInit {
   }
 
   startCreate(): void {
-    this.formModel = this.createEmptyForm();
-    if (this.currentType) {
-      this.formModel.structureType = this.currentType.code;
-      this.formModel.active = true;
+    const manageRouteBase = this.getManageRouteBase();
+    if (this.selectedStructureId !== null && manageRouteBase) {
+      void this.router.navigateByUrl(manageRouteBase);
+      return;
     }
-    this.provinceOptions = [];
-    this.cityOptions = [];
-    this.errorMessage = '';
-    this.successMessage = '';
+
+    this.resetForm();
   }
 
   edit(structure: StructureDto): void {
-    this.formModel = {
-      ...structure,
-      parentStructureId: structure.parentStructureId ?? null
-    };
-    this.loadProvinces();
-    this.loadCities();
-    this.errorMessage = '';
-    this.successMessage = '';
+    if (typeof structure.id !== 'number') {
+      return;
+    }
+
+    const manageRouteBase = this.getManageRouteBase();
+    if (!manageRouteBase) {
+      this.applyStructureToForm(structure);
+      return;
+    }
+
+    void this.router.navigateByUrl(`${manageRouteBase}/${structure.id}`);
   }
 
   onRegionChange(): void {
@@ -170,24 +177,34 @@ export class StructureCatalogComponent implements OnInit {
     this.errorMessage = '';
     this.successMessage = '';
     this.formModel.structureType = this.currentType.code;
+    const editMode = this.isEditMode();
 
-    const request = this.isEditMode()
+    const request = editMode
       ? this.http.put<StructureDto>(`${environment.apiBaseUrl}/structures/${this.formModel.id}`, this.formModel)
       : this.http.post<StructureDto>(`${environment.apiBaseUrl}/structures`, this.formModel);
 
     request.subscribe({
       next: () => {
         this.successMessage = this.translate(
-          this.isEditMode() ? 'structures.message.updateSuccess' : 'structures.message.createSuccess'
+          editMode ? 'structures.message.updateSuccess' : 'structures.message.createSuccess'
         );
         this.saving = false;
-        this.startCreate();
+        if (editMode) {
+          const manageRouteBase = this.getManageRouteBase();
+          if (manageRouteBase) {
+            void this.router.navigateByUrl(manageRouteBase);
+          } else {
+            this.resetForm();
+          }
+        } else {
+          this.resetForm();
+        }
         this.loadStructures();
         this.loadParentOptions();
       },
       error: () => {
         this.errorMessage = this.translate(
-          this.isEditMode() ? 'structures.message.updateError' : 'structures.message.createError'
+          editMode ? 'structures.message.updateError' : 'structures.message.createError'
         );
         this.saving = false;
       }
@@ -207,10 +224,9 @@ export class StructureCatalogComponent implements OnInit {
       next: (types) => {
         const structureTypeCode = String(this.route.snapshot.data['structureType'] ?? 'ASL');
         this.currentType = (types ?? []).find((type) => type.code === structureTypeCode) ?? null;
-        this.startCreate();
         this.loadParentOptions();
         this.loadStructures();
-        this.loadStructureFromRoute();
+        this.applyRouteSelection();
       },
       error: () => {
         this.currentType = null;
@@ -240,26 +256,74 @@ export class StructureCatalogComponent implements OnInit {
     });
   }
 
-  private loadStructureFromRoute(): void {
-    const idParam = this.route.snapshot.paramMap.get('id');
-    if (!idParam) {
+  private subscribeToRouteParams(): void {
+    this.routeParamSubscription?.unsubscribe();
+    this.routeParamSubscription = this.route.paramMap.subscribe((paramMap) => {
+      this.selectedStructureId = this.parseStructureId(paramMap);
+      this.applyRouteSelection();
+    });
+  }
+
+  private applyRouteSelection(): void {
+    if (!this.currentType) {
       return;
     }
 
-    const id = Number(idParam);
-    if (Number.isNaN(id)) {
+    if (this.selectedStructureId === null) {
+      this.resetForm();
       return;
     }
 
-    this.selectedStructureId = id;
-    this.http.get<StructureDto>(`${environment.apiBaseUrl}/structures/${id}`).subscribe({
+    this.http.get<StructureDto>(`${environment.apiBaseUrl}/structures/${this.selectedStructureId}`).subscribe({
       next: (structure) => {
-        this.edit(structure);
+        this.applyStructureToForm(structure);
       },
       error: () => {
         this.errorMessage = this.translate('structures.message.loadError');
       }
     });
+  }
+
+  private parseStructureId(paramMap: ParamMap): number | null {
+    const idParam = paramMap.get('id');
+    if (!idParam) {
+      return null;
+    }
+
+    const id = Number(idParam);
+    return Number.isNaN(id) ? null : id;
+  }
+
+  private applyStructureToForm(structure: StructureDto): void {
+    this.formModel = {
+      ...structure,
+      parentStructureId: structure.parentStructureId ?? null
+    };
+    this.loadProvinces();
+    this.loadCities();
+    this.errorMessage = '';
+    this.successMessage = '';
+  }
+
+  private resetForm(): void {
+    this.formModel = this.createEmptyForm();
+    if (this.currentType) {
+      this.formModel.structureType = this.currentType.code;
+      this.formModel.active = true;
+    }
+    this.provinceOptions = [];
+    this.cityOptions = [];
+    this.errorMessage = '';
+    this.successMessage = '';
+  }
+
+  private getManageRouteBase(): string {
+    const currentUrl = this.router.url.split('?')[0];
+    if (this.selectedStructureId !== null && currentUrl.endsWith(`/${this.selectedStructureId}`)) {
+      return currentUrl.slice(0, -(String(this.selectedStructureId).length + 1));
+    }
+
+    return currentUrl;
   }
 
   private loadParentOptions(): void {
@@ -280,7 +344,7 @@ export class StructureCatalogComponent implements OnInit {
   }
 
   private loadRegions(): void {
-    this.http.get<GeographyOptionDto[]>(`${environment.apiBaseUrl}/geography/regions`).subscribe({
+    this.geographyApi.getRegions().subscribe({
       next: (options) => {
         this.regionOptions = options ?? [];
       },
@@ -295,8 +359,7 @@ export class StructureCatalogComponent implements OnInit {
       this.provinceOptions = [];
       return;
     }
-
-    this.http.get<GeographyOptionDto[]>(`${environment.apiBaseUrl}/geography/provinces/by-region/${this.formModel.regionId}`).subscribe({
+    this.geographyApi.getProvincesByRegion(this.formModel.regionId).subscribe({
       next: (options) => {
         this.provinceOptions = options ?? [];
       },
@@ -311,8 +374,7 @@ export class StructureCatalogComponent implements OnInit {
       this.cityOptions = [];
       return;
     }
-
-    this.http.get<GeographyOptionDto[]>(`${environment.apiBaseUrl}/geography/cities/by-province/${this.formModel.provinceId}`).subscribe({
+    this.geographyApi.getCitiesByProvince(this.formModel.provinceId).subscribe({
       next: (options) => {
         this.cityOptions = options ?? [];
       },

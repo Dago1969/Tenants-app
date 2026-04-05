@@ -3,14 +3,28 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
+export interface ProjectAdministratorDto {
+  userId: number;
+  roleId: string;
+  username: string;
+  email: string;
+}
+
 export interface ProjectDto {
-  id: number;
+  id?: number;
   code: string;
   descrizione: string;
-  clientCode: string;
-  tenantId: number;
+  clientCode?: string;
+  tenantId?: number;
+  tenant?: string;
+  logo?: string;
+  footer?: string;
+  emailSender?: string;
   dataInizio?: string;
   dataFine?: string;
+  administrators?: ProjectAdministratorDto[];
+  roleIds?: string[];
+  enabledModuleCodes?: string[];
   enabled?: boolean;
 }
 
@@ -26,6 +40,19 @@ export class ProjectApiService {
   getProjectsByTenant(tenant: string): Observable<ProjectDto[]> {
     return this.http.get<ProjectDto[]>(`${this.baseUrl}/projects?tenant=${encodeURIComponent(tenant)}`);
   }
+
+  getProjectById(id: number): Observable<ProjectDto> {
+    return this.http.get<ProjectDto>(`${this.baseUrl}/projects/${id}`);
+  }
+
+  createProject(project: ProjectDto): Observable<ProjectDto> {
+    return this.http.post<ProjectDto>(`${this.baseUrl}/projects`, project);
+  }
+
+  updateProject(id: number, project: ProjectDto): Observable<ProjectDto> {
+    return this.http.put<ProjectDto>(`${this.baseUrl}/projects/${id}`, project);
+  }
+
   /**
    * Restituisce i progetti associati a uno user tramite la tabella user_role_project.
    */

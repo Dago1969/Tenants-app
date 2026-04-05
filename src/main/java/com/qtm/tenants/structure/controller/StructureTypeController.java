@@ -1,6 +1,7 @@
 package com.qtm.tenants.structure.controller;
 
 import com.qtm.tenants.authorization.service.ControllerFunctionAuthorizationService;
+import com.qtm.tenants.structure.StructureModuleCodes;
 import com.qtm.tenants.structure.dto.StructureTypeDto;
 import com.qtm.tenants.structure.service.StructureTypeService;
 import lombok.RequiredArgsConstructor;
@@ -26,7 +27,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class StructureTypeController {
 
-    private static final String MODULE_CODE = "STRUCTURE";
+        private static final String MODULE_CODE = StructureModuleCodes.GENERIC;
 
     private final StructureTypeService structureTypeService;
     private final ControllerFunctionAuthorizationService controllerFunctionAuthorizationService;

@@ -1,0 +1,223 @@
+<qtm-step-modal
+  *ngIf="!loading; else loadingTemplate"
+  [title]="translate(titleKey)"
+  [step]="currentStepIndex + 1"
+  [totalSteps]="steps.length"
+  [stepTitle]="translate(currentStep.titleKey)"
+  [stepDescription]="currentStepDescription"
+  (close)="cancel()"
+>
+  <div *ngIf="errorMessage" class="error-message">
+    {{ errorMessage }}
+  </div>
+
+  <div class="projects-step-pills">
+    <button
+      *ngFor="let step of steps; let index = index"
+      type="button"
+      class="projects-step-pill"
+      [class.projects-step-pill-active]="index === currentStepIndex"
+      [class.projects-step-pill-complete]="index < currentStepIndex"
+      (click)="goToStep(index)"
+    >
+      <span class="projects-step-pill-index">{{ index + 1 }}</span>
+      <span class="projects-step-pill-label">{{ translate(step.titleKey) }}</span>
+    </button>
+  </div>
+
+  <div class="projects-wizard-panel" [ngSwitch]="currentStep.key">
+    <div *ngSwitchCase="'general'" class="projects-form-grid">
+      <div class="projects-field">
+        <label for="project-code">{{ translate('projects.field.code') }}</label>
+        <input id="project-code" type="text" [(ngModel)]="project.code" [disabled]="isViewMode || projectId !== null" />
+      </div>
+
+      <div class="projects-field projects-field-wide">
+        <label for="project-description">{{ translate('projects.field.descrizione') }}</label>
+        <input id="project-description" type="text" [(ngModel)]="project.descrizione" [disabled]="isViewMode" />
+      </div>
+
+      <div class="projects-field">
+        <label for="project-client">{{ translate('projects.field.clientCode') }}</label>
+        <input id="project-client" type="text" [ngModel]="project.clientCode" disabled />
+      </div>
+
+      <div class="projects-field">
+        <label for="project-tenant">{{ translate('projects.field.tenant') }}</label>
+        <input id="project-tenant" type="text" [ngModel]="project.tenant" disabled />
+      </div>
+
+      <div class="projects-field">
+        <label for="project-logo">{{ translate('projects.field.logo') }}</label>
+        <input id="project-logo" type="text" [(ngModel)]="project.logo" [disabled]="isViewMode" />
+      </div>
+
+      <div class="projects-field">
+        <label for="project-email-sender">{{ translate('projects.field.emailSender') }}</label>
+        <input id="project-email-sender" type="email" [(ngModel)]="project.emailSender" [disabled]="isViewMode" />
+      </div>
+
+      <div class="projects-field">
+        <label for="project-start">{{ translate('projects.field.dataInizio') }}</label>
+        <input id="project-start" type="date" [(ngModel)]="project.dataInizio" [disabled]="isViewMode" />
+      </div>
+
+      <div class="projects-field">
+        <label for="project-end">{{ translate('projects.field.dataFine') }}</label>
+        <input id="project-end" type="date" [(ngModel)]="project.dataFine" [disabled]="isViewMode" />
+      </div>
+
+      <div class="projects-field projects-field-wide">
+        <label for="project-footer">{{ translate('projects.field.footer') }}</label>
+        <textarea id="project-footer" rows="4" [(ngModel)]="project.footer" [disabled]="isViewMode"></textarea>
+      </div>
+    </div>
+
+    <div *ngSwitchCase="'administrators'" class="projects-section">
+      <div *ngIf="adminOptions.length > 0; else noAdminsTemplate" class="projects-card-grid">
+        <label *ngFor="let option of adminOptions" class="projects-selection-card">
+          <div class="projects-selection-head">
+            <input
+              type="checkbox"
+              [checked]="isAdministratorSelected(option)"
+              [disabled]="isViewMode"
+              (change)="toggleAdministrator(option, $any($event.target).checked)"
+            />
+            <div>
+              <strong>{{ option.username }}</strong>
+              <span>{{ option.email }}</span>
+              <span class="projects-selection-role">{{ translate('projects.wizard.step.administrators.role') }}: {{ option.roleLabel }}</span>
+            </div>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <div *ngSwitchCase="'roles'" class="projects-section">
+      <div class="projects-placeholder-card">
+        <strong>{{ translate('projects.wizard.step.roles.heading') }}</strong>
+        <span>{{ translate('projects.wizard.step.roles.empty') }}</span>
+      </div>
+    </div>
+
+    <div *ngSwitchCase="'modules'" class="projects-section">
+      <div class="projects-card-grid">
+        <label *ngFor="let option of moduleOptions" class="projects-selection-card" [class.projects-selection-card-core]="option.core">
+          <div class="projects-selection-head">
+            <input
+              type="checkbox"
+              [checked]="isModuleSelected(option.code)"
+              [disabled]="isViewMode || option.core"
+              (change)="toggleModule(option.code, $any($event.target).checked)"
+            />
+            <div>
+              <strong>{{ translate(option.labelKey) }}</strong>
+              <span>{{ translate(option.descriptionKey) }}</span>
+            </div>
+          </div>
+          <span *ngIf="option.core" class="projects-core-badge">CORE</span>
+        </label>
+      </div>
+    </div>
+
+    <div *ngSwitchCase="'summary'" class="projects-section">
+      <div class="summary2-grid">
+        <div class="summary2-row">
+          <div class="summary2-col">
+            <div class="summary2-label">{{ translate('projects.field.code') }}</div>
+            <div class="summary2-value">{{ project.code || '-' }}</div>
+          </div>
+          <div class="summary2-col">
+            <div class="summary2-label">{{ translate('projects.field.descrizione') }}</div>
+            <div class="summary2-value">{{ project.descrizione || '-' }}</div>
+          </div>
+        </div>
+        <div class="summary2-row">
+          <div class="summary2-col">
+            <div class="summary2-label">{{ translate('projects.field.clientCode') }}</div>
+            <div class="summary2-value">{{ project.clientCode || '-' }}</div>
+          </div>
+          <div class="summary2-col">
+            <div class="summary2-label">{{ translate('projects.field.tenant') }}</div>
+            <div class="summary2-value">{{ project.tenant || '-' }}</div>
+          </div>
+        </div>
+        <div class="summary2-row">
+          <div class="summary2-col">
+            <div class="summary2-label">{{ translate('projects.field.logo') }}</div>
+            <div class="summary2-value">{{ project.logo || '-' }}</div>
+          </div>
+          <div class="summary2-col">
+            <div class="summary2-label">{{ translate('projects.field.emailSender') }}</div>
+            <div class="summary2-value">{{ project.emailSender || '-' }}</div>
+          </div>
+        </div>
+        <div class="summary2-row">
+          <div class="summary2-col">
+            <div class="summary2-label">{{ translate('projects.field.dataInizio') }}</div>
+            <div class="summary2-value">{{ project.dataInizio || '-' }}</div>
+          </div>
+          <div class="summary2-col">
+            <div class="summary2-label">{{ translate('projects.field.dataFine') }}</div>
+            <div class="summary2-value">{{ project.dataFine || '-' }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="projects-summary-block">
+        <div class="summary2-label">{{ translate('projects.field.footer') }}</div>
+        <div class="summary2-value">{{ project.footer || '-' }}</div>
+      </div>
+
+      <div class="projects-summary-block">
+        <div class="summary2-label">{{ translate('projects.wizard.summary.administrators') }}</div>
+        <div class="projects-summary-list" *ngIf="(project.administrators ?? []).length > 0; else noAdminSummaryTemplate">
+          <div *ngFor="let administrator of project.administrators" class="projects-summary-item">
+            <strong>{{ administrator.username }}</strong>
+            <span>{{ administrator.email }}</span>
+            <span>{{ translate('projects.wizard.step.administrators.role') }}: {{ getAdministratorRoleLabel(administrator) }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="projects-summary-block">
+        <div class="summary2-label">{{ translate('projects.wizard.summary.modules') }}</div>
+        <div class="projects-summary-list">
+          <div *ngFor="let label of selectedModuleLabels" class="projects-summary-item">{{ label }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div modal-actions>
+    <button type="button" class="btn btn-outline" (click)="cancel()">
+      {{ translate(isViewMode ? 'crud.actions.back' : 'crud.actions.cancel') }}
+    </button>
+
+    <button *ngIf="!isFirstStep" type="button" class="btn btn-outline" (click)="previousStep()">
+      {{ translate('projects.wizard.actions.previous') }}
+    </button>
+
+    <button *ngIf="!isLastStep" type="button" class="btn btn-primary" (click)="nextStep()">
+      {{ translate('projects.wizard.actions.next') }}
+    </button>
+
+    <button *ngIf="isLastStep && !isViewMode" type="button" class="btn btn-primary" [disabled]="saving" (click)="save()">
+      {{ translate(projectId === null ? 'crud.actions.create' : 'crud.actions.update') }}
+    </button>
+  </div>
+</qtm-step-modal>
+
+<ng-template #loadingTemplate>
+  <section class="projects-loading-shell">
+    <div class="projects-loading-card">{{ translate('projects.wizard.loading') }}</div>
+  </section>
+</ng-template>
+
+<ng-template #noAdminsTemplate>
+  <div class="projects-placeholder-card">{{ translate('projects.wizard.step.administrators.empty') }}</div>
+</ng-template>
+
+<ng-template #noAdminSummaryTemplate>
+  <div class="projects-summary-item">-</div>
+</ng-template>

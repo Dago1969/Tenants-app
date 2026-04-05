@@ -6,6 +6,8 @@ import { AuthService } from './core/auth.service';
 import { MessageKey, t } from './i18n/messages';
 import { environment } from '../environments/environment';
 import { Subscription } from 'rxjs';
+import { STRUCTURE_MODULE_CODES } from './core/structure-module-codes';
+import { HeaderComponent } from './shared/header.component';
 
 interface AuthorizationModuleDto {
   moduleCode: string;
@@ -21,6 +23,7 @@ interface MenuItem {
   labelKey: MessageKey;
   route: string;
   moduleCode?: string;
+  iconSrc?: string;
 }
 
 /**
@@ -29,7 +32,7 @@ interface MenuItem {
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, HeaderComponent],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })
@@ -42,9 +45,10 @@ export class AppComponent implements OnDestroy {
   selectedClient = '';
   selectedProject: string | null = null;
   hiddenModuleCodes = new Set<string>();
-  managementMenuOpen = true;
-  registryMenuOpen = true;
-  structuresMenuOpen = true;
+  managementMenuOpen = false;
+  registryMenuOpen = false;
+  structuresMenuOpen = false;
+  bulkImportMenuOpen = false;
   private readonly subscriptions = new Subscription();
 
   constructor(
@@ -98,8 +102,8 @@ export class AppComponent implements OnDestroy {
     { labelKey: 'roles.search.title', route: '/roles', moduleCode: 'ROLE' },
     { labelKey: 'menu.modulesSearch', route: '/modules/search', moduleCode: 'MODULE' },
     { labelKey: 'menu.functionsSearch', route: '/functions/search', moduleCode: 'FUNCTION' },
-    { labelKey: 'projects.search.title', route: '/projects/search', moduleCode: 'PROJECT' },
-    { labelKey: 'menu.structureTypesSearch', route: '/structure-types/search', moduleCode: 'STRUCTURE' },
+    { labelKey: 'projects.search.title', route: '/projects/search', moduleCode: 'PROJECT', iconSrc: 'assets/progetto.png' },
+    { labelKey: 'menu.structureTypesSearch', route: '/structure-types/search', moduleCode: STRUCTURE_MODULE_CODES.GENERIC },
     { labelKey: 'menu.authorizations', route: '/authorizations' },
     { labelKey: 'menu.controllerFunctionMappings', route: '/controller-function-mappings' },
     { labelKey: 'menu.operationLogsSearch', route: '/operation-logs/search' },
@@ -113,15 +117,19 @@ export class AppComponent implements OnDestroy {
   ];
 
   structureMenuItems: MenuItem[] = [
-    { labelKey: 'menu.structure.aslSearch', route: '/structures/asl', moduleCode: 'STRUCTURE' },
-    { labelKey: 'menu.structure.hospitalSearch', route: '/structures/hospitals', moduleCode: 'STRUCTURE' },
-    { labelKey: 'menu.structure.hospitalPharmacySearch', route: '/structures/hospital-pharmacies', moduleCode: 'STRUCTURE' },
-    { labelKey: 'menu.structure.retailPharmacySearch', route: '/structures/retail-pharmacies', moduleCode: 'STRUCTURE' },
-    { labelKey: 'menu.structure.logisticsWarehouseSearch', route: '/structures/logistics-warehouses', moduleCode: 'STRUCTURE' },
-    { labelKey: 'menu.structure.materialWarehouseSearch', route: '/structures/material-warehouses', moduleCode: 'STRUCTURE' },
-    { labelKey: 'menu.structure.pharmaCompanySearch', route: '/structures/pharma-companies', moduleCode: 'STRUCTURE' },
-    { labelKey: 'menu.structure.specialistClinicSearch', route: '/structures/specialist-clinics', moduleCode: 'STRUCTURE' },
-    { labelKey: 'menu.structure.vendorSearch', route: '/structures/vendors', moduleCode: 'STRUCTURE' }
+    { labelKey: 'menu.structure.aslSearch', route: '/structures/asl', moduleCode: STRUCTURE_MODULE_CODES.ASL, iconSrc: 'assets/asl.png' },
+    { labelKey: 'menu.structure.hospitalSearch', route: '/structures/hospitals', moduleCode: STRUCTURE_MODULE_CODES.HOSPITAL, iconSrc: 'assets/hospital.png' },
+    { labelKey: 'menu.structure.hospitalPharmacySearch', route: '/structures/hospital-pharmacies', moduleCode: STRUCTURE_MODULE_CODES.HOSPITAL_PHARMACY, iconSrc: 'assets/farmacy-O.png' },
+    { labelKey: 'menu.structure.retailPharmacySearch', route: '/structures/retail-pharmacies', moduleCode: STRUCTURE_MODULE_CODES.RETAIL_PHARMACY, iconSrc: 'assets/farmacy-R.png' },
+    { labelKey: 'menu.structure.logisticsWarehouseSearch', route: '/structures/logistics-warehouses', moduleCode: STRUCTURE_MODULE_CODES.LOGISTICS_WAREHOUSE, iconSrc: 'assets/logistic.png' },
+    { labelKey: 'menu.structure.materialWarehouseSearch', route: '/structures/material-warehouses', moduleCode: STRUCTURE_MODULE_CODES.MATERIAL_WAREHOUSE, iconSrc: 'assets/dwh.png' },
+    { labelKey: 'menu.structure.pharmaCompanySearch', route: '/structures/pharma-companies', moduleCode: STRUCTURE_MODULE_CODES.PHARMA_COMPANY, iconSrc: 'assets/farmaceutica.png' },
+    { labelKey: 'menu.structure.specialistClinicSearch', route: '/structures/specialist-clinics', moduleCode: STRUCTURE_MODULE_CODES.SPECIALIST_CLINIC, iconSrc: 'assets/clinic.png' },
+    { labelKey: 'menu.structure.vendorSearch', route: '/structures/vendors', moduleCode: STRUCTURE_MODULE_CODES.GENERIC, iconSrc: 'assets/fornitore.png' }
+  ];
+
+  bulkImportMenuItems: MenuItem[] = [
+    { labelKey: 'menu.structure.bulkImport', route: '/imports/structures', moduleCode: STRUCTURE_MODULE_CODES.BULK_IMPORT }
   ];
 
   get visibleMenuItems(): MenuItem[] {
@@ -152,6 +160,14 @@ export class AppComponent implements OnDestroy {
     return this.visibleStructureMenuItems.length > 0;
   }
 
+  get visibleBulkImportMenuItems(): MenuItem[] {
+    return this.bulkImportMenuItems.filter((item) => !item.moduleCode || !this.hiddenModuleCodes.has(item.moduleCode));
+  }
+
+  get isBulkImportMenuVisible(): boolean {
+    return this.visibleBulkImportMenuItems.length > 0;
+  }
+
   toggleStructuresMenu(): void {
     this.structuresMenuOpen = !this.structuresMenuOpen;
   }
@@ -162,6 +178,10 @@ export class AppComponent implements OnDestroy {
 
   toggleRegistryMenu(): void {
     this.registryMenuOpen = !this.registryMenuOpen;
+  }
+
+  toggleBulkImportMenu(): void {
+    this.bulkImportMenuOpen = !this.bulkImportMenuOpen;
   }
 
   translate(key: MessageKey): string {
