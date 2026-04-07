@@ -38,9 +38,16 @@ export const appRoutes: Routes = [
   { path: 'hospitals-search', pathMatch: 'full', redirectTo: 'structures/hospitals' },
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
-  { path: 'users', component: UsersSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('USER')] },
-  { path: 'users/:id', component: UsersCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('USER')] },
   { path: 'users/configure/:id', component: UsersConfigureComponent, canActivate: [authGuard, moduleVisibilityGuard('USER')] },
+  {
+    path: 'users',
+    component: UsersSearchComponent,
+    canActivate: [authGuard, moduleVisibilityGuard('USER')],
+    children: [
+      { path: 'new', component: UsersCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('USER')] },
+      { path: ':id', component: UsersCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('USER')] }
+    ]
+  },
   { path: 'users/:id/configure', redirectTo: 'users/configure/:id', pathMatch: 'full' },
   { path: 'doctors/search', component: DoctorsSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('DOCTOR')] },
   { path: 'nurses/search', component: NursesSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('NURSE')] },

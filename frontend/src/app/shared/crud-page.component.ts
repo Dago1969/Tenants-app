@@ -28,6 +28,7 @@ export interface CrudField {
 export interface CrudFolder {
   key: string;
   titleKey: MessageKey;
+  descriptionKey?: MessageKey;
   fields: CrudField[];
 }
 
@@ -51,12 +52,23 @@ interface OperationLogEntry {
   imports: [CommonModule, FormsModule],
   styleUrls: ['./crud-page.component.css'],
   template: `
-    <section class="crud-shell">
-      <div class="crud-card">
-        <header class="crud-header">
+    <section class="crud-shell" [class.crud-shell-popup]="popupMode">
+      <div class="crud-card" [class.crud-card-popup]="popupMode">
+        <header class="crud-header" [class.crud-header-wizard]="wizardMode && folders.length > 0">
           <div>
             <h2>{{ translate(titleKey) }}</h2>
           </div>
+          <button
+            *ngIf="wizardMode && folders.length > 0"
+            type="button"
+            class="crud-wizard-close"
+            (click)="cancel()"
+            [attr.aria-label]="translate('crud.actions.cancel')"
+          >
+            <span class="crud-wizard-close-circle" aria-hidden="true">
+              <span class="crud-wizard-close-icon"></span>
+            </span>
+          </button>
         </header>
 
         <div *ngIf="operationLogs.length > 0" class="crud-log-panel">
@@ -70,7 +82,19 @@ interface OperationLogEntry {
           </div>
         </div>
 
-        <div *ngIf="folders.length > 0" class="crud-folder-tabs">
+        <div *ngIf="wizardMode && folders.length > 0" class="crud-wizard-stepper">
+          <span class="crud-wizard-step-title">
+            Step {{ currentFolderIndex + 1 }} / {{ folders.length }}: {{ translate(currentFolder.titleKey) }}
+          </span>
+          <span class="crud-wizard-step-description">
+            {{ currentFolder.descriptionKey ? translate(currentFolder.descriptionKey) : translate(currentFolder.titleKey) }}
+          </span>
+          <div class="crud-wizard-progress-bar">
+            <div class="crud-wizard-progress" [style.width.%]="folderProgressPercent"></div>
+          </div>
+        </div>
+
+        <div *ngIf="!wizardMode && folders.length > 0" class="crud-folder-tabs">
           <button
             *ngFor="let folder of folders"
             type="button"
@@ -166,7 +190,7 @@ interface OperationLogEntry {
             </div>
           </div>
 
-          <div class="crud-actions" *ngIf="!hideActions && !isViewMode">
+          <div class="crud-actions" *ngIf="!hideActions && !isViewMode && !wizardMode">
             <button class="crud-btn crud-btn-secondary" type="button" (click)="cancel()">
               {{ translate('crud.actions.cancel') }}
             </button>
@@ -177,9 +201,27 @@ interface OperationLogEntry {
 
           <ng-content></ng-content>
 
-          <div class="crud-actions" *ngIf="!hideActions && isViewMode">
+          <div class="crud-actions" *ngIf="!hideActions && isViewMode && !wizardMode">
             <button class="crud-btn crud-btn-secondary" type="button" (click)="cancel()">
               {{ translate('crud.actions.back') }}
+            </button>
+          </div>
+
+          <div class="crud-actions" *ngIf="!hideActions && wizardMode">
+            <button class="crud-btn crud-btn-secondary" type="button" (click)="cancel()">
+              {{ translate(isViewMode ? 'crud.actions.back' : 'crud.actions.cancel') }}
+            </button>
+
+            <button *ngIf="!isFirstFolder" class="crud-btn crud-btn-secondary" type="button" (click)="goToPreviousFolder()">
+              {{ translate('projects.wizard.actions.previous') }}
+            </button>
+
+            <button *ngIf="!isLastFolder && !isViewMode" class="crud-btn crud-btn-primary" type="button" (click)="goToNextFolder()">
+              {{ translate('crud.actions.next') }}
+            </button>
+
+            <button *ngIf="isLastFolder && !isViewMode" class="crud-btn crud-btn-primary" type="submit">
+              {{ loadedEntityKeyValue !== null || isEditMode ? translate('crud.actions.update') : translate('crud.actions.create') }}
             </button>
           </div>
 
@@ -212,6 +254,10 @@ export class CrudPageComponent implements OnInit, OnChanges {
   @Input() forceViewMode = false;
   @Input() hideActions = false;
   @Input() showCancel = false;
+  @Input() wizardMode = false;
+  @Input() popupMode = false;
+  @Input() closeRoute = '';
+  @Input() closeOnSave = false;
 
   formModel: CrudEntity = {};
   usernameTaken = false;
@@ -252,6 +298,26 @@ export class CrudPageComponent implements OnInit, OnChanges {
 
     const active = this.folders.find((folder) => folder.key === this.activeFolder);
     return (active?.fields ?? []).filter((field) => this.shouldDisplayField(field));
+  }
+
+  get currentFolder(): CrudFolder {
+    return this.folders.find((folder) => folder.key === this.activeFolder) ?? this.folders[0];
+  }
+
+  get currentFolderIndex(): number {
+    return Math.max(this.folders.findIndex((folder) => folder.key === this.activeFolder), 0);
+  }
+
+  get isFirstFolder(): boolean {
+    return this.currentFolderIndex === 0;
+  }
+
+  get isLastFolder(): boolean {
+    return this.currentFolderIndex === this.folders.length - 1;
+  }
+
+  get folderProgressPercent(): number {
+    return this.folders.length > 1 ? ((this.currentFolderIndex + 1) / this.folders.length) * 100 : 100;
   }
 
   isFieldDisabled(field: CrudField): boolean {
@@ -310,6 +376,28 @@ export class CrudPageComponent implements OnInit, OnChanges {
     this.loadSelectOptions();
   }
 
+  goToNextFolder(): void {
+    if (this.isLastFolder) {
+      return;
+    }
+
+    const nextFolder = this.folders[this.currentFolderIndex + 1];
+    if (nextFolder) {
+      this.activeFolder = nextFolder.key;
+    }
+  }
+
+  goToPreviousFolder(): void {
+    if (this.isFirstFolder) {
+      return;
+    }
+
+    const previousFolder = this.folders[this.currentFolderIndex - 1];
+    if (previousFolder) {
+      this.activeFolder = previousFolder.key;
+    }
+  }
+
   save(form: NgForm): void {
     this.submissionAttempted = true;
     if (form.invalid) {
@@ -331,6 +419,11 @@ export class CrudPageComponent implements OnInit, OnChanges {
         .put<CrudEntity>(`${environment.apiBaseUrl}/${this.endpoint}/${this.loadedEntityKeyValue}`, payload)
         .subscribe({
           next: () => {
+            if (this.closeOnSave) {
+              this.pushOperationLog('success', 'crud.success.update');
+              this.navigateAfterCompletion();
+              return;
+            }
             this.resetForm();
             this.pushOperationLog('success', 'crud.success.update');
           },
@@ -346,6 +439,11 @@ export class CrudPageComponent implements OnInit, OnChanges {
 
     this.http.post<CrudEntity>(`${environment.apiBaseUrl}/${this.endpoint}`, payload).subscribe({
       next: () => {
+        if (this.closeOnSave) {
+          this.pushOperationLog('success', 'crud.success.create');
+          this.navigateAfterCompletion();
+          return;
+        }
         this.resetForm();
         this.pushOperationLog('success', 'crud.success.create');
       },
@@ -367,12 +465,26 @@ export class CrudPageComponent implements OnInit, OnChanges {
   }
 
   cancel(): void {
+    if (this.closeRoute) {
+      void this.router.navigateByUrl(this.closeRoute);
+      return;
+    }
+
     if (window.history.length > 1) {
       this.location.back();
       return;
     }
 
     void this.router.navigateByUrl(this.getDefaultRoute());
+  }
+
+  private navigateAfterCompletion(): void {
+    if (this.closeRoute) {
+      void this.router.navigateByUrl(this.closeRoute);
+      return;
+    }
+
+    this.cancel();
   }
 
   private async initializePage(): Promise<void> {

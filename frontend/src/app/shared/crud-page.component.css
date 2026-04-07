@@ -6,6 +6,18 @@
     linear-gradient(180deg, #f4f6f0 0%, #eef1ea 100%);
 }
 
+.crud-shell-popup {
+  position: fixed;
+  inset: 0;
+  min-height: 0;
+  padding: 24px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(30, 40, 80, 0.18);
+}
+
 .crud-card {
   max-width: 820px;
   margin: 0 auto;
@@ -14,6 +26,36 @@
   border: 1px solid #d5dfcf;
   border-radius: 16px;
   box-shadow: 0 18px 40px rgba(77, 94, 63, 0.12);
+}
+
+.crud-card-popup {
+  width: min(900px, 96vw);
+  max-width: min(900px, 96vw);
+  max-height: 90vh;
+  margin: 0;
+  overflow-y: auto;
+  border-radius: 22px;
+  box-shadow: 0 8px 32px rgba(19, 31, 54, 0.18);
+}
+
+.crud-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.crud-header-wizard {
+  background:
+    linear-gradient(115deg, rgba(0, 99, 247, 0.98) 0%, rgba(0, 161, 255, 0.95) 34%, rgba(0, 191, 182, 0.94) 68%, rgba(15, 206, 73, 0.96) 100%),
+    url('../../assets/texture.png');
+  background-size: 100% 100%, 520px;
+  background-repeat: no-repeat, repeat;
+  background-position: center, center;
+  background-blend-mode: multiply;
+  margin: -36px -42px 0;
+  padding: 24px 32px 18px;
+  box-shadow: 0 12px 28px rgba(8, 76, 172, 0.18);
 }
 
 .crud-header h2 {
@@ -26,6 +68,106 @@
   background-size: auto;
   border-radius: 10px 10px 0 0;
   padding: 12px 24px;
+}
+
+.crud-header-wizard h2 {
+  color: #fff;
+  font-size: 1.28rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  background: none;
+  padding: 0;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.22);
+}
+
+.crud-wizard-close {
+  background: transparent;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.crud-wizard-close-circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.12);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 14px rgba(7, 48, 110, 0.18);
+}
+
+.crud-wizard-close-icon {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  display: inline-block;
+}
+
+.crud-wizard-close-icon::before,
+.crud-wizard-close-icon::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 10px;
+  height: 1.7px;
+  border-radius: 999px;
+  background: #fff;
+  transform-origin: center;
+}
+
+.crud-wizard-close-icon::before {
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.crud-wizard-close-icon::after {
+  transform: translateY(-50%) rotate(-45deg);
+}
+
+.crud-wizard-stepper {
+  padding: 20px 0 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.crud-wizard-step-title {
+  color: #36557f;
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.crud-wizard-step-description {
+  color: #5f7596;
+  font-size: 0.98rem;
+  font-weight: 500;
+  text-align: center;
+  max-width: 70ch;
+}
+
+.crud-wizard-progress-bar {
+  background: #e3eaf7;
+  border-radius: 999px;
+  height: 6px;
+  width: 100%;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.crud-wizard-progress {
+  background: linear-gradient(90deg, #1870e8 0%, #1ec6ff 100%);
+  height: 100%;
+  transition: width 0.3s;
 }
 
 .crud-log-panel {
@@ -217,9 +359,24 @@
     padding: 18px 12px 28px;
   }
 
+  .crud-shell-popup {
+    padding: 12px;
+  }
+
   .crud-card {
     padding: 22px 16px;
     border-radius: 12px;
+  }
+
+  .crud-card-popup {
+    width: 98vw;
+    max-width: 98vw;
+    max-height: 94vh;
+  }
+
+  .crud-header-wizard {
+    margin: -22px -16px 0;
+    padding: 18px 16px 16px;
   }
 
   .crud-field-row {

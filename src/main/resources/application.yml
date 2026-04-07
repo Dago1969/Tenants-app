@@ -29,3 +29,23 @@ logging:
 qtm:
   dashboard:
     api-base-url: http://localhost:8086/api
+
+# Email configuration for SMTP (Gmail example)
+spring:
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: francesco.tripodi@gmail.com
+    password: ihzzvkidfhhfyzub
+    protocol: smtp
+    properties:
+      mail:
+        smtp:
+          auth: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+          starttls:
+            enable: true
+          ssl:
+            trust: smtp.gmail.com
