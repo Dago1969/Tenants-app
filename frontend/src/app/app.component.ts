@@ -3,7 +3,9 @@ import { HttpClient } from '@angular/common/http';
 import { Component, OnDestroy } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from './core/auth.service';
-import { MessageKey, t } from './i18n/messages';
+import { ProjectApiService, ProjectDto } from './core/project-api.service';
+import { getCurrentLanguage, MessageKey, t } from './i18n/messages';
+import { messages as localizedMessages } from './i18n/messages.generated';
 import { environment } from '../environments/environment';
 import { Subscription } from 'rxjs';
 import { STRUCTURE_MODULE_CODES } from './core/structure-module-codes';
@@ -44,6 +46,7 @@ export class AppComponent implements OnDestroy {
   selectedRole = '';
   selectedClient = '';
   selectedProject: string | null = null;
+    projectFooterText: string | null = null;
   hiddenModuleCodes = new Set<string>();
   managementMenuOpen = false;
   registryMenuOpen = false;
@@ -53,7 +56,8 @@ export class AppComponent implements OnDestroy {
 
   constructor(
     private readonly authService: AuthService,
-    private readonly http: HttpClient
+    private readonly http: HttpClient,
+    private readonly projectApi: ProjectApiService
   ) {
     if (typeof document !== 'undefined') {
       document.title = t('app.title');
@@ -69,6 +73,7 @@ export class AppComponent implements OnDestroy {
     this.selectedClient = this.authService.getSelectedClient();
     this.username = this.authService.getName();
     this.preferredUsername = this.authService.getPreferredUsername();
+    this.loadProjectFooter();
     // Log info utente dal JWT
     const token = this.authService.getToken();
     if (token) {
@@ -188,10 +193,85 @@ export class AppComponent implements OnDestroy {
     return t(key);
   }
 
+  private translateTemplate(key: string): string {
+    const language = getCurrentLanguage();
+    const translatedMessages = localizedMessages[language] as Record<string, string>;
+    const fallbackMessages = localizedMessages.it as Record<string, string>;
+    return translatedMessages[key] ?? fallbackMessages[key] ?? key;
+  }
+
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
   }
   // --- Helper functions: solo una versione ---
+  private loadProjectFooter(): void {
+    const selectedClient = this.selectedClient.trim();
+    const selectedProject = this.selectedProject?.trim() ?? '';
+
+    if (!selectedClient || !selectedProject) {
+      this.projectFooterText = null;
+      return;
+    }
+
+    this.subscriptions.add(
+      this.projectApi.getProjectsByTenant(selectedClient).subscribe({
+        next: (projects) => {
+          const matchedProject = projects.find((project) => this.matchesSelectedProject(project, selectedProject));
+            this.projectFooterText = matchedProject ? this.buildProjectFooterText(matchedProject) : null;
+        },
+        error: () => {
+            this.projectFooterText = null;
+        }
+      })
+    );
+  }
+
+    private buildProjectFooterText(project: ProjectDto): string {
+      const template = project.footer?.trim() || this.buildDefaultProjectFooter();
+      return this.resolveProjectFooterTemplate(template, project);
+  }
+
+    private buildDefaultProjectFooter(): string {
+      return this.normalizeFooterTemplate(this.translateTemplate('projects.footer.template'));
+  }
+
+  private normalizeFooterTemplate(template: string): string {
+    return template.replace(/\\n/g, '\n');
+  }
+
+  private resolveProjectFooterTemplate(template: string, project: ProjectDto): string {
+    const footerValues: Record<string, string> = {
+      CodProgetto: this.formatFooterValue(project.code),
+      descProgetto: this.formatFooterValue(project.descrizione),
+      dataInizio: this.formatFooterValue(project.dataInizio),
+      dataFine: this.formatFooterValue(project.dataFine),
+      mail: this.formatFooterValue(project.emailSender)
+    };
+
+    return this.normalizeFooterTemplate(template).replace(/\{([^}]+)\}/g, (match, key) => footerValues[key] ?? match);
+  }
+
+  private formatFooterValue(value: string | null | undefined): string {
+    const trimmed = value?.trim();
+    return trimmed && trimmed.length > 0 ? trimmed : '-';
+  }
+
+  private matchesSelectedProject(project: ProjectDto, selectedProject: string): boolean {
+    const normalizedSelection = selectedProject.trim().toLowerCase();
+
+    if (!normalizedSelection) {
+      return false;
+    }
+
+    const projectCode = project.code?.trim().toLowerCase() ?? '';
+    if (projectCode && projectCode === normalizedSelection) {
+      return true;
+    }
+
+    const projectId = project.id?.toString() ?? '';
+    return projectId === normalizedSelection;
+  }
+
   private storeTokenFromQueryString(): void {
     if (typeof window === 'undefined') return;
     const url = new URL(window.location.href);

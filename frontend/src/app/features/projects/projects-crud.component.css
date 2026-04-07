@@ -72,8 +72,20 @@
   gap: 8px;
 }
 
+.projects-field-hint {
+  color: #5f7596;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
 .projects-field-wide {
   grid-column: 1 / -1;
+}
+
+.projects-summary-description {
+  color: #5f7596;
+  font-size: 0.9rem;
+  line-height: 1.45;
 }
 
 .projects-field label {
@@ -185,6 +197,32 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.projects-summary-block {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, #ffffff 0%, #eff7ff 100%);
+  box-shadow: 0 10px 26px rgba(34, 48, 74, 0.07);
+}
+
+.projects-summary-block::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 6px;
+  background: linear-gradient(180deg, #1870e8 0%, #1ec6ff 100%);
+}
+
+.projects-summary-block .summary2-label {
+  color: #175fcb;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.projects-summary-block .summary2-value {
+  color: #1a3a5d;
 }
 
 .summary2-grid {

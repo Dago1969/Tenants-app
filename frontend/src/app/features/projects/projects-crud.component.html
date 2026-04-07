@@ -29,12 +29,24 @@
     <div *ngSwitchCase="'general'" class="projects-form-grid">
       <div class="projects-field">
         <label for="project-code">{{ translate('projects.field.code') }}</label>
-        <input id="project-code" type="text" [(ngModel)]="project.code" [disabled]="isViewMode || projectId !== null" />
+        <input
+          id="project-code"
+          type="text"
+          [ngModel]="project.code"
+          (ngModelChange)="project.code = $event; onFooterSourceChange()"
+          [disabled]="isViewMode || projectId !== null"
+        />
       </div>
 
-      <div class="projects-field projects-field-wide">
+      <div class="projects-field">
         <label for="project-description">{{ translate('projects.field.descrizione') }}</label>
-        <input id="project-description" type="text" [(ngModel)]="project.descrizione" [disabled]="isViewMode" />
+        <input
+          id="project-description"
+          type="text"
+          [ngModel]="project.descrizione"
+          (ngModelChange)="project.descrizione = $event; onFooterSourceChange()"
+          [disabled]="isViewMode"
+        />
       </div>
 
       <div class="projects-field">
@@ -54,22 +66,47 @@
 
       <div class="projects-field">
         <label for="project-email-sender">{{ translate('projects.field.emailSender') }}</label>
-        <input id="project-email-sender" type="email" [(ngModel)]="project.emailSender" [disabled]="isViewMode" />
+        <input
+          id="project-email-sender"
+          type="email"
+          [ngModel]="project.emailSender"
+          (ngModelChange)="project.emailSender = $event; onFooterSourceChange()"
+          [disabled]="isViewMode"
+        />
       </div>
 
       <div class="projects-field">
         <label for="project-start">{{ translate('projects.field.dataInizio') }}</label>
-        <input id="project-start" type="date" [(ngModel)]="project.dataInizio" [disabled]="isViewMode" />
+        <input
+          id="project-start"
+          type="date"
+          [ngModel]="project.dataInizio"
+          (ngModelChange)="project.dataInizio = $event; onFooterSourceChange()"
+          [disabled]="isViewMode"
+        />
       </div>
 
       <div class="projects-field">
         <label for="project-end">{{ translate('projects.field.dataFine') }}</label>
-        <input id="project-end" type="date" [(ngModel)]="project.dataFine" [disabled]="isViewMode" />
+        <input
+          id="project-end"
+          type="date"
+          [ngModel]="project.dataFine"
+          (ngModelChange)="project.dataFine = $event; onFooterSourceChange()"
+          [disabled]="isViewMode"
+        />
       </div>
 
       <div class="projects-field projects-field-wide">
         <label for="project-footer">{{ translate('projects.field.footer') }}</label>
-        <textarea id="project-footer" rows="4" [(ngModel)]="project.footer" [disabled]="isViewMode"></textarea>
+        <textarea
+          id="project-footer"
+          rows="2"
+          [placeholder]="translate('projects.footer.template')"
+          [(ngModel)]="project.footer"
+          [disabled]="isViewMode"
+        ></textarea>
+        <div class="projects-field-hint">{{ translate('projects.field.footerHint') }}</div>
       </div>
     </div>
 
