@@ -52,6 +52,14 @@ public class RoleController {
         return ResponseEntity.ok(roleService.findAll());
     }
 
+        @GetMapping("/proxy")
+        public ResponseEntity<List<com.qtm.commonlib.dto.RoleDto>> findProxyRoles(
+                        @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
+        ) {
+                controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
+                return ResponseEntity.ok(roleService.findProxyRoles());
+        }
+
     @GetMapping("/{id}")
     public ResponseEntity<RoleDto> findById(
             @PathVariable String id,

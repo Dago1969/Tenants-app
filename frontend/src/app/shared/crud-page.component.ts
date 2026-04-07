@@ -258,6 +258,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
   @Input() popupMode = false;
   @Input() closeRoute = '';
   @Input() closeOnSave = false;
+  @Input() createEndpoint = '';
 
   formModel: CrudEntity = {};
   usernameTaken = false;
@@ -437,7 +438,8 @@ export class CrudPageComponent implements OnInit, OnChanges {
       return;
     }
 
-    this.http.post<CrudEntity>(`${environment.apiBaseUrl}/${this.endpoint}`, payload).subscribe({
+    const createTargetEndpoint = this.createEndpoint.trim().length > 0 ? this.createEndpoint : this.endpoint;
+    this.http.post<CrudEntity>(`${environment.apiBaseUrl}/${createTargetEndpoint}`, payload).subscribe({
       next: () => {
         if (this.closeOnSave) {
           this.pushOperationLog('success', 'crud.success.create');

@@ -2,6 +2,8 @@ package com.qtm.tenants.user.controller;
 
 import com.qtm.commonlib.dto.UserDto;
 import com.qtm.tenants.authorization.service.ControllerFunctionAuthorizationService;
+import com.qtm.tenants.user.dto.UserOnboardingRequest;
+import com.qtm.tenants.user.service.UserOnboardingService;
 import com.qtm.tenants.user.service.UserRemoteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -35,6 +37,7 @@ public class UserController {
     private static final String MODULE_CODE = "USER";
 
         private final UserRemoteService userRemoteService;
+        private final UserOnboardingService userOnboardingService;
     private final ControllerFunctionAuthorizationService controllerFunctionAuthorizationService;
 
     @PostMapping
@@ -50,6 +53,21 @@ public class UserController {
         );
                 enrichClientId(userDto, selectedClient);
         return ResponseEntity.ok(userRemoteService.create(userDto));
+    }
+
+    @PostMapping("/onboard")
+    public ResponseEntity<UserDto> onboard(
+            @RequestBody UserOnboardingRequest request,
+            @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole,
+            @RequestHeader(name = "X-Selected-Client", required = false) String selectedClient
+    ) {
+        controllerFunctionAuthorizationService.requireFullEditPermission(
+                selectedRole,
+                MODULE_CODE,
+                ControllerFunctionAuthorizationService.CREATE_FUNCTION_CODE
+        );
+        enrichClientId(request, selectedClient);
+        return ResponseEntity.ok(userOnboardingService.onboard(request));
     }
 
         @GetMapping

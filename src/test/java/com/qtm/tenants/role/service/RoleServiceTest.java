@@ -45,6 +45,8 @@ class RoleServiceTest {
     private FunctionModuleRoleAuthorizationRepository functionModuleRoleAuthorizationRepository;
     @Mock
     private UserRemoteService userRemoteService;
+    @Mock
+    private DashboardRoleClient dashboardRoleClient;
 
     private RoleService roleService;
 
@@ -57,7 +59,8 @@ class RoleServiceTest {
             moduleRoleAuthorizationRepository,
             fieldAuthorizationRepository,
             functionModuleRoleAuthorizationRepository,
-            userRemoteService
+            userRemoteService,
+            dashboardRoleClient
         );
     }
 

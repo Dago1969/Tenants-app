@@ -5,6 +5,7 @@ import com.qtm.tenants.authorization.AuthorizationManagementService;
 import com.qtm.tenants.authorization.FieldAuthorizationRepository;
 import com.qtm.tenants.authorization.ModuleRoleAuthorizationRepository;
 import com.qtm.tenants.authorization.repository.FunctionModuleRoleAuthorizationRepository;
+import com.qtm.tenants.role.service.DashboardRoleClient;
 import com.qtm.tenants.role.dto.RoleDeleteCheckDto;
 import com.qtm.tenants.role.dto.RoleDeleteLinkedUserDto;
 import com.qtm.tenants.role.dto.RoleDto;
@@ -36,6 +37,7 @@ public class RoleService {
     private final FieldAuthorizationRepository fieldAuthorizationRepository;
     private final FunctionModuleRoleAuthorizationRepository functionModuleRoleAuthorizationRepository;
     private final UserRemoteService userRemoteService;
+    private final DashboardRoleClient dashboardRoleClient;
 
     @Transactional
     public RoleDto create(RoleDto roleDto) {
@@ -47,6 +49,11 @@ public class RoleService {
     @Transactional(readOnly = true)
     public List<RoleDto> findAll() {
         return roleRepository.findAll().stream().map(roleMapper::toDto).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<com.qtm.commonlib.dto.RoleDto> findProxyRoles() {
+        return dashboardRoleClient.findAll();
     }
 
     @Transactional(readOnly = true)

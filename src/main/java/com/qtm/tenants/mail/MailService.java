@@ -1,4 +1,4 @@
-package com.qtm.tenantsapp.mail;
+package com.qtm.tenants.mail;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,25 +8,20 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 /**
- * Service per l'invio di email tramite SMTP.
- * Utilizza la configurazione spring.mail.* da application.yml.
- * Esempio di utilizzo:
- *   mailService.sendSimpleMail("destinatario@email.com", "Oggetto", "Testo del messaggio");
+ * Service dedicato all'invio delle email applicative tramite configurazione SMTP di Spring.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class MailService {
+
     private final JavaMailSender mailSender;
 
     @Value("${spring.mail.username}")
     private String from;
 
     /**
-     * Invia una semplice email di testo.
-     * @param to destinatario
-     * @param subject oggetto
-     * @param text corpo del messaggio
+     * Invia una mail testuale semplice verso il destinatario specificato.
      */
     public void sendSimpleMail(String to, String subject, String text) {
         try {
@@ -36,10 +31,10 @@ public class MailService {
             message.setSubject(subject);
             message.setText(text);
             mailSender.send(message);
-            log.info("Email inviata a {} con oggetto '{}'.", to, subject);
-        } catch (Exception e) {
-            log.error("Errore durante l'invio della mail a {}: {}", to, e.getMessage(), e);
-            throw new RuntimeException("Errore invio mail", e);
+            log.info("[MailService] Email inviata a {} con oggetto {}", to, subject);
+        } catch (Exception exception) {
+            log.error("[MailService] Errore durante l'invio della mail a {}", to, exception);
+            throw new IllegalStateException("Errore durante l'invio della mail di onboarding", exception);
         }
     }
 }
