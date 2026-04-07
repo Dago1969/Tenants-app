@@ -76,8 +76,8 @@
         <label>Progetto</label>
         <input type="text" [value]="selectedProject" disabled>
       </div>
-      <div class="role-profile-actions">
-        <button type="button" (click)="associateRoleProject()" [disabled]="!canAssociateRoleProject()">{{ labelAssociate }}</button>
+      <div class="role-profile-actions" style="gap: 12px;">
+        <button type="button" class="btn btn-primary" (click)="associateRoleProject()" [disabled]="!canAssociateRoleProject()">{{ labelAssociate }}</button>
       </div>
     </div>
     <ng-container *ngIf="loadingRoles || loadingAssociatedRoles">{{ translate('users.configure.loading') }}</ng-container>

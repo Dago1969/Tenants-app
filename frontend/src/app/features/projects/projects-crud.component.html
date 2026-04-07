@@ -11,20 +11,6 @@
     {{ errorMessage }}
   </div>
 
-  <div class="projects-step-pills">
-    <button
-      *ngFor="let step of steps; let index = index"
-      type="button"
-      class="projects-step-pill"
-      [class.projects-step-pill-active]="index === currentStepIndex"
-      [class.projects-step-pill-complete]="index < currentStepIndex"
-      (click)="goToStep(index)"
-    >
-      <span class="projects-step-pill-index">{{ index + 1 }}</span>
-      <span class="projects-step-pill-label">{{ translate(step.titleKey) }}</span>
-    </button>
-  </div>
-
   <div class="projects-wizard-panel" [ngSwitch]="currentStep.key">
     <div *ngSwitchCase="'general'" class="projects-form-grid">
       <div class="projects-field">

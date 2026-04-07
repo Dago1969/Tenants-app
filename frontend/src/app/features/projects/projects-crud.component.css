@@ -1,63 +1,18 @@
 .projects-wizard-panel {
   min-height: 420px;
+  padding-top: 4px;
 }
 
-.projects-step-pills {
+[modal-actions] {
   display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 24px;
 }
 
-.projects-step-pill {
-  border: 1px solid #d7e7fb;
-  background: #f8fbff;
-  border-radius: 999px;
-  padding: 10px 14px;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  color: #36557f;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.2s;
-}
-
-.projects-step-pill:hover {
-  transform: translateY(-1px);
-  border-color: #9dc7fa;
-}
-
-.projects-step-pill-index {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: #dcecff;
-  color: #175fcb;
-  font-size: 0.92rem;
-  font-weight: 700;
-}
-
-.projects-step-pill-active {
-  background: linear-gradient(90deg, #1870e8 0%, #1ec6ff 100%);
-  border-color: transparent;
-  color: #fff;
-}
-
-.projects-step-pill-active .projects-step-pill-index {
-  background: rgba(255, 255, 255, 0.18);
-  color: #fff;
-}
-
-.projects-step-pill-complete {
-  background: #eef7fd;
-}
-
-.projects-step-pill-label {
-  line-height: 1.2;
+[modal-actions] .btn {
+  flex: 0 0 auto;
 }
 
 .projects-form-grid {
@@ -139,6 +94,7 @@
   border-radius: 18px;
   padding: 16px 18px;
   background: #f8fbff;
+  box-shadow: none;
 }
 
 .projects-selection-card {
@@ -200,25 +156,12 @@
 }
 
 .projects-summary-block {
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(180deg, #ffffff 0%, #eff7ff 100%);
-  box-shadow: 0 10px 26px rgba(34, 48, 74, 0.07);
-}
-
-.projects-summary-block::before {
-  content: '';
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 6px;
-  background: linear-gradient(180deg, #1870e8 0%, #1ec6ff 100%);
+  background: #f8fbff;
 }
 
 .projects-summary-block .summary2-label {
   color: #175fcb;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+  font-weight: 700;
 }
 
 .projects-summary-block .summary2-value {
@@ -289,13 +232,12 @@
     grid-template-columns: 1fr;
   }
 
-  .projects-step-pills {
-    flex-direction: column;
+  [modal-actions] {
+    justify-content: stretch;
   }
 
-  .projects-step-pill {
+  [modal-actions] .btn {
     width: 100%;
-    justify-content: flex-start;
   }
 
   .summary2-row {
