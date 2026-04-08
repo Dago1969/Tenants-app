@@ -442,12 +442,20 @@ export class CrudPageComponent implements OnInit, OnChanges {
     this.http.post<CrudEntity>(`${environment.apiBaseUrl}/${createTargetEndpoint}`, payload).subscribe({
       next: () => {
         if (this.closeOnSave) {
-          this.pushOperationLog('success', 'crud.success.create');
+          if (this.endpoint === 'users') {
+            this.pushOperationLog('success', 'users.success.passwordSent');
+          } else {
+            this.pushOperationLog('success', 'crud.success.create');
+          }
           this.navigateAfterCompletion();
           return;
         }
         this.resetForm();
-        this.pushOperationLog('success', 'crud.success.create');
+        if (this.endpoint === 'users') {
+          this.pushOperationLog('success', 'users.success.passwordSent');
+        } else {
+          this.pushOperationLog('success', 'crud.success.create');
+        }
       },
       error: (error) => {
         // eslint-disable-next-line no-console
