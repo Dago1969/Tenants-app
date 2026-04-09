@@ -56,9 +56,17 @@ export class UsersCrudComponent {
   createEndpoint = 'users/onboard';
   moduleCode = 'USER';
   createFunctionCode = 'CREATE';
-  initialFormModel: Record<string, unknown> = this.authService.getSelectedClient().trim().length > 0
-    ? { clientId: this.authService.getSelectedClient().trim(), enabled: true }
-    : { enabled: true };
+  initialFormModel: Record<string, unknown> = (() => {
+    const base = this.authService.getSelectedClient().trim().length > 0
+      ? { clientId: this.authService.getSelectedClient().trim(), enabled: true }
+      : { enabled: true };
+    // Calcola la data di scadenza password a 6 mesi da oggi (formato yyyy-MM-dd)
+    const now = new Date();
+    const expiry = new Date(now.getFullYear(), now.getMonth() + 6, now.getDate());
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const expiryStr = `${expiry.getFullYear()}-${pad(expiry.getMonth() + 1)}-${pad(expiry.getDate())}`;
+    return { ...base, dataFineValiditaPassword: expiryStr };
+  })();
 
   fields: CrudField[] = [
     { key: 'clientId', labelKey: 'users.field.clientId', type: 'text', hidden: true },
