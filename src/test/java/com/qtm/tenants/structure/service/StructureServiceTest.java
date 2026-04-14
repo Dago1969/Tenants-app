@@ -16,8 +16,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyIterable;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.when;
 
@@ -25,6 +24,7 @@ import static org.mockito.Mockito.when;
  * Test del service strutture: verifica gestione CRUD di base.
  */
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings("null")
 class StructureServiceTest {
 
     @Mock
@@ -58,11 +58,11 @@ class StructureServiceTest {
             10
         );
 
-        when(structureRepository.save(any(StructureEntity.class))).thenReturn(saved);
+        when(structureRepository.save(org.mockito.ArgumentMatchers.<StructureEntity>any())).thenReturn(saved);
         when(structureRepository.findById(1L)).thenReturn(Optional.of(saved));
         when(structureRepository.findByCode("ASL-ROMA")).thenReturn(Optional.empty());
         when(structureRepository.findAll()).thenReturn(List.of(saved));
-        when(structureRepository.findAllById(anyIterable())).thenReturn(List.of());
+        when(structureRepository.findAllById(org.mockito.ArgumentMatchers.<Iterable<Long>>any())).thenReturn(List.of());
         when(structureTypeRegistry.getRequiredByCode("ASL")).thenReturn(aslType);
         when(structureTypeRegistry.findByCode("ASL")).thenReturn(Optional.of(aslType));
 
@@ -114,7 +114,7 @@ class StructureServiceTest {
         hospital.setActive(true);
 
         when(structureRepository.findAll()).thenReturn(List.of(district, hospital));
-        when(structureRepository.findAllById(argThat(ids -> {
+        when(structureRepository.findAllById(argThat((Iterable<Long> ids) -> {
             Set<?> values = ids instanceof Set<?> set ? set : Set.of();
             return values.isEmpty();
         }))).thenReturn(List.of());
@@ -128,5 +128,44 @@ class StructureServiceTest {
                 .containsExactly(20L, 10L);
         assertThat(structures.get(0).getSelectionLabel()).isEqualTo("Ospedale Centrale - Ospedale");
         assertThat(structures.get(1).getSelectionLabel()).isEqualTo("Distretto Nord - Distretto");
+    }
+
+    @Test
+    void shouldAcceptLegacyHospitalAliasWhenCreatingStructure() {
+        StructureEntity saved = new StructureEntity();
+        saved.setId(2L);
+        saved.setCode("OSP-001");
+        saved.setName("Ospedale Centrale");
+        saved.setAddress("Via Roma 10");
+        saved.setStructureType("HOSPITAL");
+
+        StructureType hospitalType = new StructureType(
+                "HOSPITAL",
+                "Struttura Ospedaliera",
+                "Centro clinico",
+                "ASL",
+                "Azienda Sanitaria Locale",
+                20
+        );
+
+        StructureEntity parentAsl = new StructureEntity();
+        parentAsl.setId(6L);
+        parentAsl.setStructureType("ASL");
+        parentAsl.setName("ASL 2");
+
+        when(structureRepository.findByCode("OSP-001")).thenReturn(Optional.empty());
+        when(structureRepository.findById(6L)).thenReturn(Optional.of(parentAsl));
+        when(structureRepository.save(org.mockito.ArgumentMatchers.<StructureEntity>any())).thenReturn(saved);
+        when(structureTypeRegistry.getRequiredByCode("STRUCTURE_HOSPITAL")).thenReturn(hospitalType);
+        when(structureTypeRegistry.findByCode("HOSPITAL")).thenReturn(Optional.of(hospitalType));
+
+        StructureDto toCreate = new StructureDto();
+        toCreate.setCode("OSP-001");
+        toCreate.setName("Ospedale Centrale");
+        toCreate.setAddress("Via Roma 10");
+        toCreate.setParentStructureId(6L);
+        toCreate.setStructureType("STRUCTURE_HOSPITAL");
+
+        assertThatCode(() -> structureService.create(toCreate)).doesNotThrowAnyException();
     }
 }

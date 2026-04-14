@@ -21,6 +21,10 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class StructureTypeRegistry {
 
+    private static final Map<String, String> LEGACY_TYPE_ALIASES = Map.of(
+            "STRUCTURE_HOSPITAL", "HOSPITAL"
+    );
+
     private final StructureTypeRepository structureTypeRepository;
 
     private volatile Map<String, StructureType> typesByCode = Map.of();
@@ -64,7 +68,7 @@ public class StructureTypeRegistry {
             return Optional.empty();
         }
         ensureLoaded();
-        return Optional.ofNullable(typesByCode.get(normalizeCode(code)));
+        return Optional.ofNullable(typesByCode.get(resolveCanonicalCode(code)));
     }
 
     public StructureType getRequiredByCode(String code) {
@@ -80,6 +84,11 @@ public class StructureTypeRegistry {
 
     private String normalizeCode(String code) {
         return code == null ? null : code.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private String resolveCanonicalCode(String code) {
+        String normalizedCode = normalizeCode(code);
+        return LEGACY_TYPE_ALIASES.getOrDefault(normalizedCode, normalizedCode);
     }
 
     private String normalizeNullableCode(String code) {

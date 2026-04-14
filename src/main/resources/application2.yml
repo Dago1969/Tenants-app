@@ -1,0 +1,52 @@
+server:
+  port: 8087
+
+spring:
+  profiles:
+    active: ${QTM_ENV:sviluppo}
+  datasource:
+    url: jdbc:mysql://localhost:3306/QTMTenant?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: root
+    password: dago
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        '[format_sql]': true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI:http://host.docker.internal:8085/realms/QTM}
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: francesco.tripodi@gmail.com
+    password: ayekcfnurmmpwrxd
+    protocol: smtp
+    properties:
+      mail:
+        smtp:
+          auth: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+          starttls:
+            enable: true
+          ssl:
+            trust: smtp.gmail.com
+
+logging:
+  level:
+    root: INFO
+
+qtm:
+  dashboard:
+    api-base-url: http://localhost:8086/api
+  frontend:
+    base-url: http://localhost:4200

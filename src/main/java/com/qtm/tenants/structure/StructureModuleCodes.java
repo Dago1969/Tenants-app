@@ -48,6 +48,7 @@ public final class StructureModuleCodes {
     private static final Map<String, String> STRUCTURE_TYPE_TO_MODULE_CODE = Map.ofEntries(
             Map.entry("ASL", ASL),
             Map.entry("HOSPITAL", HOSPITAL),
+            Map.entry("STRUCTURE_HOSPITAL", HOSPITAL),
             Map.entry("HOSPITAL_PHARMACY", HOSPITAL_PHARMACY),
             Map.entry("RETAIL_PHARMACY", RETAIL_PHARMACY),
             Map.entry("LOGISTICS_WAREHOUSE", LOGISTICS_WAREHOUSE),

@@ -291,7 +291,7 @@ export class AddWizardComponentHospital implements OnInit {
     parentStructureName: '',
     referents: [],
     pharmacyIds: [],
-    structureType: 'STRUCTURE_HOSPITAL',
+    structureType: 'HOSPITAL',
     googleAddress: ''
   };
 
@@ -429,7 +429,7 @@ export class AddWizardComponentHospital implements OnInit {
       parentStructureName: this.model.parentStructureName,
       referents: this.model.referents,
       pharmacies: this.toSelectedPharmacies(),
-      structureType: 'STRUCTURE_HOSPITAL'
+      structureType: 'HOSPITAL'
     };
 
     const request = this.isEditMode() && this.structureId !== null
@@ -562,7 +562,7 @@ export class AddWizardComponentHospital implements OnInit {
           pharmacyIds: (structure.pharmacies ?? [])
             .map((pharmacy) => pharmacy.id)
             .filter((pharmacyId): pharmacyId is number => typeof pharmacyId === 'number'),
-          structureType: structure.structureType ?? 'STRUCTURE_HOSPITAL'
+          structureType: structure.structureType ?? 'HOSPITAL'
         };
 
         if (this.model.regionId) {

@@ -11,7 +11,7 @@ import { FunctionAuthorizationService } from '../../core/function-authorization.
 
 type PopupStructureType =
   | 'ASL'
-  | 'STRUCTURE_HOSPITAL'
+  | 'HOSPITAL'
   | 'HOSPITAL_PHARMACY'
   | 'RETAIL_PHARMACY'
   | 'LOGISTICS_WAREHOUSE'
@@ -51,7 +51,7 @@ type PopupStructureType =
       (close)="closeStructureWizard()"
     ></add-wizard-component-asl>
     <add-wizard-component-hospital
-      *ngIf="showStructureWizard && popupStructureType === 'STRUCTURE_HOSPITAL'"
+      *ngIf="showStructureWizard && popupStructureType === 'HOSPITAL'"
       [structureId]="selectedStructureId"
       (close)="closeStructureWizard()"
     ></add-wizard-component-hospital>
@@ -174,7 +174,7 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
   }
 
   isManagedStructurePopup(): boolean {
-    return this.isPopupWizardStructureType(this.popupStructureType) && this.popupStructureType !== 'ASL' && this.popupStructureType !== 'STRUCTURE_HOSPITAL';
+    return this.isPopupWizardStructureType(this.popupStructureType) && this.popupStructureType !== 'ASL' && this.popupStructureType !== 'HOSPITAL';
   }
 
   getManagedPopupStructureType(): 'HOSPITAL_PHARMACY' | 'RETAIL_PHARMACY' | 'LOGISTICS_WAREHOUSE' | 'MATERIAL_WAREHOUSE' | 'PHARMA_COMPANY' | 'SPECIALIST_CLINIC' {
@@ -193,7 +193,7 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
 
   getStructureTypeLabelKey(): MessageKey {
     switch (this.popupStructureType) {
-      case 'STRUCTURE_HOSPITAL':
+      case 'HOSPITAL':
         return 'structures.type.hospital.label';
       case 'HOSPITAL_PHARMACY':
         return 'structures.type.hospitalPharmacy.label';
@@ -213,10 +213,6 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
   }
 
   private normalizePopupStructureType(structureType: string): PopupStructureType {
-    if (structureType === 'HOSPITAL') {
-      return 'STRUCTURE_HOSPITAL';
-    }
-
     return this.isPopupWizardStructureType(structureType) ? (structureType as PopupStructureType) : 'ASL';
   }
 
@@ -224,7 +220,7 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
     switch (structureType) {
       case 'ASL':
         return '/structures/asl/manage';
-      case 'STRUCTURE_HOSPITAL':
+      case 'HOSPITAL':
         return '/structures/hospitals/manage';
       case 'HOSPITAL_PHARMACY':
         return '/structures/hospital-pharmacies/manage';
@@ -246,7 +242,7 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
   private isPopupWizardStructureType(structureType: string): boolean {
     return [
       'ASL',
-      'STRUCTURE_HOSPITAL',
+      'HOSPITAL',
       'HOSPITAL_PHARMACY',
       'RETAIL_PHARMACY',
       'LOGISTICS_WAREHOUSE',
