@@ -1,0 +1,8 @@
+-- Placeholder: inserisci qui tutte le CREATE TABLE base per il DB QTM Tenant.
+-- Puoi generare questo file con:
+--   mysqldump -u root -p --no-data QTMTenant > schema-base.sql
+--
+-- Esempio:
+-- CREATE TABLE roles (...);
+-- CREATE TABLE users (...);
+-- ...

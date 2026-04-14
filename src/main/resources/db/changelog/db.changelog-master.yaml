@@ -1,5 +1,505 @@
 databaseChangeLog:
   - changeSet:
+      id: 2026-04-14-create-base-tables
+      author: copilot
+      validCheckSum:
+        - 9:1d43b9313aca899264436c48ab6812d7
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              CREATE TABLE IF NOT EXISTS structures (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                code VARCHAR(255) UNIQUE,
+                name VARCHAR(255) NOT NULL,
+                description VARCHAR(255),
+                address VARCHAR(255) NOT NULL,
+                cap VARCHAR(255),
+                city_id BIGINT,
+                city VARCHAR(255),
+                province_id BIGINT,
+                province VARCHAR(255),
+                region_id BIGINT,
+                region VARCHAR(255),
+                phone VARCHAR(255),
+                email VARCHAR(255),
+                service_calendar_hours TEXT,
+                active BIT,
+                structure_type VARCHAR(255),
+                parent_structure_id BIGINT
+              );
+
+              CREATE TABLE IF NOT EXISTS structure_types (
+                code VARCHAR(255) PRIMARY KEY,
+                description VARCHAR(255) NOT NULL,
+                function_description VARCHAR(1000) NOT NULL,
+                parent_type_code VARCHAR(255),
+                display_order INT NOT NULL
+              );
+
+              CREATE TABLE IF NOT EXISTS referents (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                first_name VARCHAR(255) NOT NULL,
+                last_name VARCHAR(255) NOT NULL,
+                role VARCHAR(255),
+                phone VARCHAR(255),
+                email VARCHAR(255)
+              );
+
+              CREATE TABLE IF NOT EXISTS structure_referents (
+                structure_id BIGINT UNSIGNED NOT NULL,
+                referent_id BIGINT UNSIGNED NOT NULL,
+                PRIMARY KEY (structure_id, referent_id)
+              );
+
+              CREATE TABLE IF NOT EXISTS structure_pharmacies (
+                structure_id BIGINT UNSIGNED NOT NULL,
+                pharmacy_id BIGINT UNSIGNED NOT NULL,
+                PRIMARY KEY (structure_id, pharmacy_id)
+              );
+
+              CREATE TABLE IF NOT EXISTS modules (
+                code VARCHAR(255) PRIMARY KEY,
+                name VARCHAR(255) NOT NULL
+              );
+
+              CREATE TABLE IF NOT EXISTS roles (
+                id VARCHAR(255) PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                description VARCHAR(255) NOT NULL
+              );
+
+              CREATE TABLE IF NOT EXISTS functions (
+                code VARCHAR(255) PRIMARY KEY,
+                name VARCHAR(255) NOT NULL
+              );
+
+              CREATE TABLE IF NOT EXISTS controller_method_functions (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                module_code VARCHAR(100) NOT NULL,
+                method_name VARCHAR(150) NOT NULL,
+                function_code VARCHAR(100) NOT NULL,
+                UNIQUE KEY uk_controller_method_function (module_code, method_name)
+              );
+
+              CREATE TABLE IF NOT EXISTS module_role_authorizations (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                module_code VARCHAR(255) NOT NULL,
+                role_id VARCHAR(255) NOT NULL,
+                authorization VARCHAR(255) NOT NULL,
+                UNIQUE KEY uk_module_role_authorizations_module_code_role (module_code, role_id)
+              );
+
+              CREATE TABLE IF NOT EXISTS field_authorizations (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                module_role_authorization_id BIGINT NOT NULL,
+                entity_name VARCHAR(255) NOT NULL,
+                field_name VARCHAR(255) NOT NULL,
+                authorization VARCHAR(255) NOT NULL,
+                UNIQUE KEY uk_field_authorizations_module_role_entity_field (module_role_authorization_id, entity_name, field_name)
+              );
+
+              CREATE TABLE IF NOT EXISTS function_module_role_authorizations (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                function_code VARCHAR(255) NOT NULL,
+                module_code VARCHAR(255) NOT NULL,
+                role_id VARCHAR(255) NOT NULL,
+                authorization VARCHAR(255) NOT NULL,
+                UNIQUE KEY uk_fmra_func_mod_role (function_code, module_code, role_id)
+              );
+
+              CREATE TABLE IF NOT EXISTS patients (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                assisted_id VARCHAR(255) UNIQUE,
+                first_name VARCHAR(255) NOT NULL,
+                last_name VARCHAR(255) NOT NULL,
+                fiscal_code VARCHAR(255) NOT NULL UNIQUE,
+                email VARCHAR(255),
+                primary_phone VARCHAR(255),
+                secondary_phone VARCHAR(255),
+                region_id BIGINT,
+                region VARCHAR(255),
+                province_id BIGINT,
+                province VARCHAR(255),
+                city_id BIGINT,
+                city VARCHAR(255),
+                delivery_address VARCHAR(255),
+                secondary_addresses VARCHAR(2000),
+                communication_channels VARCHAR(255),
+                identification_document_reference VARCHAR(2000),
+                data_processing_consent BIT,
+                data_processing_consent_datetime DATETIME,
+                data_processing_consent_revocation_log VARCHAR(4000),
+                additional_consents VARCHAR(2000),
+                therapy_status VARCHAR(255),
+                prescribing_specialist VARCHAR(255),
+                reference_hospital_structure VARCHAR(255),
+                reference_pharmacy VARCHAR(255),
+                preferred_pickup_pharmacy VARCHAR(255),
+                delivery_mode VARCHAR(255),
+                reminder_enabled BIT,
+                caregiver_full_name VARCHAR(255),
+                caregiver_phone VARCHAR(255),
+                preferred_contact VARCHAR(255),
+                structure_id BIGINT
+              );
+
+              CREATE TABLE IF NOT EXISTS doctors (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                doctor_flyer_id VARCHAR(255) UNIQUE,
+                full_name VARCHAR(255) NOT NULL,
+                email VARCHAR(255),
+                primary_phone VARCHAR(255),
+                secondary_phone VARCHAR(255),
+                region_id BIGINT,
+                region VARCHAR(255),
+                province_id BIGINT,
+                province VARCHAR(255),
+                city_id BIGINT,
+                city VARCHAR(255),
+                delivery_address VARCHAR(255),
+                secondary_addresses VARCHAR(2000),
+                structure_id BIGINT,
+                specialization VARCHAR(255),
+                data_processing_consent BIT,
+                data_processing_consent_datetime DATETIME,
+                data_processing_consent_revocation_log VARCHAR(4000),
+                additional_consents VARCHAR(2000)
+              );
+
+              CREATE TABLE IF NOT EXISTS nurses (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                nurse_project_id VARCHAR(255) UNIQUE,
+                full_name VARCHAR(255) NOT NULL,
+                email VARCHAR(255),
+                primary_phone VARCHAR(255),
+                secondary_phone VARCHAR(255),
+                region_id BIGINT,
+                region VARCHAR(255),
+                province_id BIGINT,
+                province VARCHAR(255),
+                city_id BIGINT,
+                city VARCHAR(255),
+                coverage_area VARCHAR(255),
+                reference_provider VARCHAR(255),
+                professional_register VARCHAR(255),
+                enabled BIT
+              );
+
+              CREATE TABLE IF NOT EXISTS operation_logs (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                occurred_at DATETIME NOT NULL,
+                module_code VARCHAR(255) NOT NULL,
+                function_code VARCHAR(255),
+                operation VARCHAR(255) NOT NULL,
+                description TEXT,
+                target_id VARCHAR(255),
+                role_id VARCHAR(255),
+                username VARCHAR(255) NOT NULL,
+                client_ip VARCHAR(255),
+                user_agent TEXT,
+                metadata TEXT
+              );
+
+  - changeSet:
+      id: 2026-04-14-create-missing-entity-tables
+      author: copilot
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              CREATE TABLE IF NOT EXISTS structures (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                code VARCHAR(255) UNIQUE,
+                name VARCHAR(255) NOT NULL,
+                description VARCHAR(255),
+                address VARCHAR(255) NOT NULL,
+                cap VARCHAR(255),
+                city_id BIGINT,
+                city VARCHAR(255),
+                province_id BIGINT,
+                province VARCHAR(255),
+                region_id BIGINT,
+                region VARCHAR(255),
+                phone VARCHAR(255),
+                email VARCHAR(255),
+                service_calendar_hours TEXT,
+                active BIT,
+                structure_type VARCHAR(255),
+                parent_structure_id BIGINT
+              );
+
+              CREATE TABLE IF NOT EXISTS structure_types (
+                code VARCHAR(255) PRIMARY KEY,
+                description VARCHAR(255) NOT NULL,
+                function_description VARCHAR(1000) NOT NULL,
+                parent_type_code VARCHAR(255),
+                display_order INT NOT NULL
+              );
+
+              CREATE TABLE IF NOT EXISTS referents (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                first_name VARCHAR(255) NOT NULL,
+                last_name VARCHAR(255) NOT NULL,
+                role VARCHAR(255),
+                phone VARCHAR(255),
+                email VARCHAR(255)
+              );
+
+              CREATE TABLE IF NOT EXISTS structure_referents (
+                structure_id BIGINT UNSIGNED NOT NULL,
+                referent_id BIGINT UNSIGNED NOT NULL,
+                PRIMARY KEY (structure_id, referent_id)
+              );
+
+              CREATE TABLE IF NOT EXISTS structure_pharmacies (
+                structure_id BIGINT UNSIGNED NOT NULL,
+                pharmacy_id BIGINT UNSIGNED NOT NULL,
+                PRIMARY KEY (structure_id, pharmacy_id)
+              );
+
+              CREATE TABLE IF NOT EXISTS modules (
+                code VARCHAR(255) PRIMARY KEY,
+                name VARCHAR(255) NOT NULL
+              );
+
+              CREATE TABLE IF NOT EXISTS roles (
+                id VARCHAR(255) PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                description VARCHAR(255) NOT NULL
+              );
+
+              CREATE TABLE IF NOT EXISTS functions (
+                code VARCHAR(255) PRIMARY KEY,
+                name VARCHAR(255) NOT NULL
+              );
+
+              CREATE TABLE IF NOT EXISTS controller_method_functions (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                module_code VARCHAR(100) NOT NULL,
+                method_name VARCHAR(150) NOT NULL,
+                function_code VARCHAR(100) NOT NULL,
+                UNIQUE KEY uk_controller_method_function (module_code, method_name)
+              );
+
+              CREATE TABLE IF NOT EXISTS module_role_authorizations (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                module_code VARCHAR(255) NOT NULL,
+                role_id VARCHAR(255) NOT NULL,
+                authorization VARCHAR(255) NOT NULL,
+                UNIQUE KEY uk_module_role_authorizations_module_code_role (module_code, role_id)
+              );
+
+              CREATE TABLE IF NOT EXISTS field_authorizations (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                module_role_authorization_id BIGINT NOT NULL,
+                entity_name VARCHAR(255) NOT NULL,
+                field_name VARCHAR(255) NOT NULL,
+                authorization VARCHAR(255) NOT NULL,
+                UNIQUE KEY uk_field_authorizations_module_role_entity_field (module_role_authorization_id, entity_name, field_name)
+              );
+
+              CREATE TABLE IF NOT EXISTS function_module_role_authorizations (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                function_code VARCHAR(255) NOT NULL,
+                module_code VARCHAR(255) NOT NULL,
+                role_id VARCHAR(255) NOT NULL,
+                authorization VARCHAR(255) NOT NULL,
+                UNIQUE KEY uk_fmra_func_mod_role (function_code, module_code, role_id)
+              );
+
+              CREATE TABLE IF NOT EXISTS patients (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                assisted_id VARCHAR(255) UNIQUE,
+                first_name VARCHAR(255) NOT NULL,
+                last_name VARCHAR(255) NOT NULL,
+                fiscal_code VARCHAR(255) NOT NULL UNIQUE,
+                email VARCHAR(255),
+                primary_phone VARCHAR(255),
+                secondary_phone VARCHAR(255),
+                region_id BIGINT,
+                region VARCHAR(255),
+                province_id BIGINT,
+                province VARCHAR(255),
+                city_id BIGINT,
+                city VARCHAR(255),
+                delivery_address VARCHAR(255),
+                secondary_addresses VARCHAR(2000),
+                communication_channels VARCHAR(255),
+                identification_document_reference VARCHAR(2000),
+                data_processing_consent BIT,
+                data_processing_consent_datetime DATETIME,
+                data_processing_consent_revocation_log VARCHAR(4000),
+                additional_consents VARCHAR(2000),
+                therapy_status VARCHAR(255),
+                prescribing_specialist VARCHAR(255),
+                reference_hospital_structure VARCHAR(255),
+                reference_pharmacy VARCHAR(255),
+                preferred_pickup_pharmacy VARCHAR(255),
+                delivery_mode VARCHAR(255),
+                reminder_enabled BIT,
+                caregiver_full_name VARCHAR(255),
+                caregiver_phone VARCHAR(255),
+                preferred_contact VARCHAR(255),
+                structure_id BIGINT
+              );
+
+              CREATE TABLE IF NOT EXISTS doctors (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                doctor_flyer_id VARCHAR(255) UNIQUE,
+                full_name VARCHAR(255) NOT NULL,
+                email VARCHAR(255),
+                primary_phone VARCHAR(255),
+                secondary_phone VARCHAR(255),
+                region_id BIGINT,
+                region VARCHAR(255),
+                province_id BIGINT,
+                province VARCHAR(255),
+                city_id BIGINT,
+                city VARCHAR(255),
+                delivery_address VARCHAR(255),
+                secondary_addresses VARCHAR(2000),
+                structure_id BIGINT,
+                specialization VARCHAR(255),
+                data_processing_consent BIT,
+                data_processing_consent_datetime DATETIME,
+                data_processing_consent_revocation_log VARCHAR(4000),
+                additional_consents VARCHAR(2000)
+              );
+
+              CREATE TABLE IF NOT EXISTS nurses (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                nurse_project_id VARCHAR(255) UNIQUE,
+                full_name VARCHAR(255) NOT NULL,
+                email VARCHAR(255),
+                primary_phone VARCHAR(255),
+                secondary_phone VARCHAR(255),
+                region_id BIGINT,
+                region VARCHAR(255),
+                province_id BIGINT,
+                province VARCHAR(255),
+                city_id BIGINT,
+                city VARCHAR(255),
+                coverage_area VARCHAR(255),
+                reference_provider VARCHAR(255),
+                professional_register VARCHAR(255),
+                enabled BIT
+              );
+
+              CREATE TABLE IF NOT EXISTS operation_logs (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                occurred_at DATETIME NOT NULL,
+                module_code VARCHAR(255) NOT NULL,
+                function_code VARCHAR(255),
+                operation VARCHAR(255) NOT NULL,
+                description TEXT,
+                target_id VARCHAR(255),
+                role_id VARCHAR(255),
+                username VARCHAR(255) NOT NULL,
+                client_ip VARCHAR(255),
+                user_agent TEXT,
+                metadata TEXT
+              );
+  - changeSet:
+      id: 2026-04-14-create-modules
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            tableExists:
+              tableName: modules
+      changes:
+        - createTable:
+            tableName: modules
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT UNSIGNED AUTO_INCREMENT
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+            remarks: Tabella dei moduli applicativi
+  - changeSet:
+      id: 2026-04-14-create-module-role-authorizations
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            tableExists:
+              tableName: module_role_authorizations
+      changes:
+        - createTable:
+            tableName: module_role_authorizations
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT UNSIGNED AUTO_INCREMENT
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: module_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role_id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: function_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+            remarks: Tabella di autorizzazione ruolo-funzione-modulo
+        - addUniqueConstraint:
+            tableName: module_role_authorizations
+            columnNames: module_id, role_id, function_id
+            constraintName: uq_module_role_authorizations
+
+  # ATTENZIONE: Per supportare la creazione di un nuovo DB da zero,
+  # inserire qui come primo changeset uno script SQL che contenga tutte le CREATE TABLE base.
+  # Esempio: esporta lo schema da un DB funzionante con mysqldump --no-data > schema-base.sql
+  # Sostituisci il path con quello reale e popola lo script.
+  - changeSet:
+      id: 2026-04-14-schema-base
+      author: copilot
+      preConditions:
+        - onFail: HALT
+        - onError: HALT
+        - not:
+            tableExists:
+              tableName: roles
+      changes:
+        - sqlFile:
+            path: ../manual-migrations/schema-base.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: false
+
+  - changeSet:
       id: 2026-04-04-module-code-schema-migration
       author: copilot
       preConditions:
@@ -15,6 +515,29 @@ databaseChangeLog:
             relativeToChangelogFile: true
             splitStatements: true
             stripComments: false
+
+  - changeSet:
+      id: 2026-04-14-align-module-role-authorizations-schema
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: module_role_authorizations
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE module_role_authorizations
+                MODIFY COLUMN module_id BIGINT NULL,
+                MODIFY COLUMN function_id BIGINT NULL;
+
+              ALTER TABLE module_role_authorizations
+                DROP INDEX uq_module_role_authorizations;
+
+              ALTER TABLE module_role_authorizations
+                ADD UNIQUE INDEX uq_module_role_authorizations_code_role (module_code, role_id);
 
   - changeSet:
       id: 2026-04-04-structure-service-calendar-schema-migration
