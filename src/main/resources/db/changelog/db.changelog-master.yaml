@@ -5,7 +5,7 @@ databaseChangeLog:
       validCheckSum:
         - 9:1d43b9313aca899264436c48ab6812d7
       preConditions:
-        - onFail: HALT
+        - onFail: MARK_RAN
         - onError: HALT
       changes:
         - sql:
@@ -209,7 +209,7 @@ databaseChangeLog:
       id: 2026-04-14-create-missing-entity-tables
       author: copilot
       preConditions:
-        - onFail: HALT
+        - onFail: MARK_RAN
         - onError: HALT
       changes:
         - sql:
@@ -487,7 +487,7 @@ databaseChangeLog:
       id: 2026-04-14-schema-base
       author: copilot
       preConditions:
-        - onFail: HALT
+        - onFail: MARK_RAN
         - onError: HALT
         - not:
             tableExists:
@@ -522,8 +522,15 @@ databaseChangeLog:
       preConditions:
         - onFail: MARK_RAN
         - onError: HALT
-        - tableExists:
-            tableName: module_role_authorizations
+        - and:
+            - tableExists:
+                tableName: module_role_authorizations
+            - columnExists:
+                tableName: module_role_authorizations
+                columnName: module_id
+            - columnExists:
+                tableName: module_role_authorizations
+                columnName: function_id
       changes:
         - sql:
             splitStatements: true
