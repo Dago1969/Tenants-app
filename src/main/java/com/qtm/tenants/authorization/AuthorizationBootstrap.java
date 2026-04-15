@@ -1,5 +1,6 @@
 package com.qtm.tenants.authorization;
 
+import com.qtm.tenants.equipment.dto.EquipmentTypeDTO;
 import com.qtm.tenants.module.entity.ModuleEntity;
 import com.qtm.tenants.module.repository.ModuleRepository;
 import com.qtm.tenants.role.entity.RoleEntity;
@@ -11,11 +12,14 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.lang.reflect.Modifier;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -28,6 +32,7 @@ import java.util.stream.Stream;
 @Order(10)
 public class AuthorizationBootstrap implements CommandLineRunner {
 
+    private static final String MODULE_EQUIPMENT_TYPE = "EQUIPMENT_TYPE";
     private static final String MODULE_PATIENT = "PATIENT";
     private static final String MODULE_DOCTOR = "DOCTOR";
     private static final String MODULE_NURSE = "NURSE";
@@ -35,13 +40,15 @@ public class AuthorizationBootstrap implements CommandLineRunner {
         private static final List<String> MODULE_CODES = Stream.of(
                 List.of("USER"),
                 StructureModuleCodes.AUTHORIZATION_MODULE_CODES,
-                List.of("ROLE", "MODULE", MODULE_FUNCTION, MODULE_PATIENT, MODULE_DOCTOR, MODULE_NURSE)
+                List.of("ROLE", "MODULE", MODULE_FUNCTION, MODULE_PATIENT, MODULE_DOCTOR, MODULE_NURSE, MODULE_EQUIPMENT_TYPE)
             )
             .flatMap(List::stream)
             .toList();
+    private static final String ENTITY_EQUIPMENT_TYPE = "equipmentType";
     private static final String ENTITY_PATIENT = "patient";
     private static final String ENTITY_DOCTOR = "doctor";
     private static final String ENTITY_NURSE = "nurse";
+    private static final List<String> EQUIPMENT_TYPE_FIELDS = resolveEntityFields(EquipmentTypeDTO.class, Set.of("id"));
 
     private static final List<String> PATIENT_FIELDS = List.of(
             "assistedId", "firstName", "lastName", "fiscalCode", "email", "primaryPhone", "secondaryPhone",
@@ -95,6 +102,9 @@ public class AuthorizationBootstrap implements CommandLineRunner {
                 if (MODULE_NURSE.equals(moduleCode)) {
                     ensureNurseFieldAuthorizations(moduleRoleAuthorization, adminRole);
                 }
+                if (MODULE_EQUIPMENT_TYPE.equals(moduleCode)) {
+                    ensureEquipmentTypeFieldAuthorizations(moduleRoleAuthorization, adminRole);
+                }
             }
         }
     }
@@ -108,13 +118,28 @@ public class AuthorizationBootstrap implements CommandLineRunner {
     }
 
     private ModuleEntity ensureModule(String moduleCode) {
+        String resolvedModuleName = resolveModuleName(moduleCode);
         return moduleRepository.findById(Objects.requireNonNull(moduleCode, "moduleCode"))
+                .map(existing -> {
+                    if (!Objects.equals(existing.getName(), resolvedModuleName)) {
+                        existing.setName(resolvedModuleName);
+                        return moduleRepository.save(existing);
+                    }
+                    return existing;
+                })
                 .orElseGet(() -> {
                     ModuleEntity module = new ModuleEntity();
                     module.setCode(moduleCode);
-                    module.setName(StructureModuleCodes.resolveModuleName(moduleCode));
+                    module.setName(resolvedModuleName);
                     return moduleRepository.save(module);
                 });
+    }
+
+    private String resolveModuleName(String moduleCode) {
+        if (MODULE_EQUIPMENT_TYPE.equals(moduleCode)) {
+            return "Tipi Attrezzature";
+        }
+        return StructureModuleCodes.resolveModuleName(moduleCode);
     }
 
     private ModuleRoleAuthorizationEntity ensureModuleRoleAuthorization(
@@ -241,6 +266,46 @@ public class AuthorizationBootstrap implements CommandLineRunner {
             return AuthorizationScope.FULL_EDIT;
         }
         return AuthorizationScope.READ_ONLY;
+    }
+
+    private void ensureEquipmentTypeFieldAuthorizations(
+            ModuleRoleAuthorizationEntity moduleRoleAuthorization,
+            boolean adminRole
+    ) {
+        Map<String, FieldAuthorizationEntity> existingByField = fieldAuthorizationRepository
+                .findAllByModuleRoleAuthorizationModuleCodeAndModuleRoleAuthorizationRoleIdAndEntityName(
+                        MODULE_EQUIPMENT_TYPE,
+                        moduleRoleAuthorization.getRole().getId(),
+                        ENTITY_EQUIPMENT_TYPE
+                ).stream().collect(Collectors.toMap(FieldAuthorizationEntity::getFieldName, Function.identity()));
+
+        for (String field : EQUIPMENT_TYPE_FIELDS) {
+            if (existingByField.containsKey(field)) {
+                continue;
+            }
+
+            FieldAuthorizationEntity fieldAuthorization = new FieldAuthorizationEntity();
+            fieldAuthorization.setModuleRoleAuthorization(moduleRoleAuthorization);
+            fieldAuthorization.setEntityName(ENTITY_EQUIPMENT_TYPE);
+            fieldAuthorization.setFieldName(field);
+            fieldAuthorization.setAuthorization(defaultEquipmentTypeFieldScope(adminRole));
+            fieldAuthorizationRepository.save(fieldAuthorization);
+        }
+    }
+
+    private AuthorizationScope defaultEquipmentTypeFieldScope(boolean adminRole) {
+        if (adminRole) {
+            return AuthorizationScope.FULL_EDIT;
+        }
+        return AuthorizationScope.READ_ONLY;
+    }
+
+    private static List<String> resolveEntityFields(Class<?> entityClass, Set<String> excludedFields) {
+        return Arrays.stream(entityClass.getDeclaredFields())
+                .filter(field -> !Modifier.isStatic(field.getModifiers()))
+                .map(field -> field.getName())
+                .filter(fieldName -> !excludedFields.contains(fieldName))
+                .toList();
     }
 
     private boolean isAdminRole(String roleId) {

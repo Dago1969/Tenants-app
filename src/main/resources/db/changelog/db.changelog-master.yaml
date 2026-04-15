@@ -1,5 +1,59 @@
 databaseChangeLog:
   - changeSet:
+      id: 20260415-01-create-equipment-type-table
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            tableExists:
+              tableName: equipment_type
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              CREATE TABLE IF NOT EXISTS equipment_type (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                code VARCHAR(64) NOT NULL UNIQUE,
+                name VARCHAR(128) NOT NULL,
+                description VARCHAR(512),
+                equipment_use VARCHAR(256),
+                cost DECIMAL(19,2),
+                supplier VARCHAR(128),
+                serial_number_required BIT,
+                principal_json_present BIT,
+                principal_json_path VARCHAR(256),
+                secondary_json_present BIT,
+                secondary_json_path VARCHAR(256),
+                purchase_date DATE,
+                status VARCHAR(32),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP
+              );
+  - changeSet:
+      id: 20260415-02-rename-equipment-type-use-column
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: equipment_type
+        - columnExists:
+            tableName: equipment_type
+            columnName: use
+        - not:
+            columnExists:
+              tableName: equipment_type
+              columnName: equipment_use
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE equipment_type
+                CHANGE COLUMN `use` equipment_use VARCHAR(256);
+  - changeSet:
       id: 2026-04-14-create-base-tables
       author: copilot
       validCheckSum:

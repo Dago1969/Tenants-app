@@ -10,6 +10,7 @@ import com.qtm.tenants.authorization.dto.AuthorizationUpdateRequestDto;
 import com.qtm.tenants.authorization.entity.FunctionModuleRoleAuthorizationEntity;
 import com.qtm.tenants.authorization.repository.FunctionModuleRoleAuthorizationRepository;
 import com.qtm.tenants.authorization.service.ControllerFunctionAuthorizationService;
+import com.qtm.tenants.equipment.dto.EquipmentTypeDTO;
 import com.qtm.tenants.function.entity.FunctionEntity;
 import com.qtm.tenants.function.repository.FunctionRepository;
 import com.qtm.tenants.doctor.entity.DoctorEntity;
@@ -44,6 +45,8 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 @Service
 @RequiredArgsConstructor
 public class AuthorizationManagementService {
+
+        private static final String MODULE_EQUIPMENT_TYPE = "EQUIPMENT_TYPE";
 
     private static final List<String> DEFAULT_COMMON_FUNCTION_CODES = List.of(
             ControllerFunctionAuthorizationService.CREATE_FUNCTION_CODE,
@@ -90,6 +93,13 @@ public class AuthorizationManagementService {
                     "nurse",
                     resolveEntityFields(NurseEntity.class, Set.of("id"), Map.of()),
                     List.of()
+            ),
+            new ModuleDefinition(
+                    MODULE_EQUIPMENT_TYPE,
+                    "Tipi Attrezzature",
+                    "equipmentType",
+                    resolveEntityFields(EquipmentTypeDTO.class, Set.of("id"), Map.of()),
+                    DEFAULT_COMMON_FUNCTION_CODES
             ),
             structureModuleDefinition(StructureModuleCodes.ASL),
             structureModuleDefinition(StructureModuleCodes.HOSPITAL),
@@ -178,7 +188,7 @@ public class AuthorizationManagementService {
                                 updateFunctionAuthorizations(definition, role, module, functionsByCode, requestedModule.getFunctions());
                         } else {
                                 // Modulo dinamico: gestisci solo il livello modulo
-                                module = moduleRepository.findById(requestedModule.getModuleCode())
+                                module = moduleRepository.findById(java.util.Objects.requireNonNull(requestedModule.getModuleCode(), "moduleCode"))
                                                 .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Modulo non trovato: " + requestedModule.getModuleCode()));
                                 moduleRoleAuthorization = ensureModuleRoleAuthorization(module, role, moduleScope);
                                 if (moduleRoleAuthorization.getAuthorization() != moduleScope) {
@@ -294,7 +304,7 @@ public class AuthorizationManagementService {
             ModuleDefinition definition,
             Map<String, FunctionEntity> functionsByCode
     ) {
-        Optional<ModuleEntity> module = moduleRepository.findById(definition.code());
+        Optional<ModuleEntity> module = moduleRepository.findById(java.util.Objects.requireNonNull(definition.code(), "moduleCode"));
         Optional<ModuleRoleAuthorizationEntity> moduleRoleAuthorization = module
                 .flatMap(currentModule -> moduleRoleAuthorizationRepository.findByModuleCodeAndRoleId(currentModule.getCode(), role.getId()));
 
@@ -371,12 +381,12 @@ public class AuthorizationManagementService {
     }
 
     private RoleEntity findRole(String roleId) {
-        return roleRepository.findById(roleId)
+        return roleRepository.findById(java.util.Objects.requireNonNull(roleId, "roleId"))
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Ruolo non trovato"));
     }
 
     private ModuleEntity ensureModule(ModuleDefinition definition) {
-        return moduleRepository.findById(definition.code())
+        return moduleRepository.findById(java.util.Objects.requireNonNull(definition.code(), "moduleCode"))
                                 .map(existing -> {
                                         if (!definition.name().equals(existing.getName())) {
                                                 existing.setName(definition.name());

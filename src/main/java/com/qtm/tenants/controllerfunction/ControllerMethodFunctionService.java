@@ -4,6 +4,7 @@ import com.qtm.tenants.function.entity.FunctionEntity;
 import com.qtm.tenants.function.repository.FunctionRepository;
 import com.qtm.tenants.function.controller.FunctionController;
 import com.qtm.tenants.doctor.controller.DoctorController;
+import com.qtm.tenants.equipment.controller.EquipmentTypeController;
 import com.qtm.tenants.module.controller.ModuleController;
 import com.qtm.tenants.module.entity.ModuleEntity;
 import com.qtm.tenants.module.repository.ModuleRepository;
@@ -85,6 +86,7 @@ public class ControllerMethodFunctionService {
         controllers.put("PATIENT", PatientController.class);
         controllers.put("DOCTOR", DoctorController.class);
         controllers.put("NURSE", NurseController.class);
+        controllers.put("EQUIPMENT_TYPE", EquipmentTypeController.class);
         controllers.put("ROLE", RoleController.class);
         controllers.put("MODULE", ModuleController.class);
         controllers.put("FUNCTION", FunctionController.class);
@@ -305,7 +307,9 @@ public class ControllerMethodFunctionService {
     private static Map<String, String> buildDefaultMethodFunctionCodes() {
         Map<String, String> mapping = new LinkedHashMap<>();
         mapping.put("create", CREATE_FUNCTION_CODE);
+        mapping.put("getById", READ_FUNCTION_CODE);
         mapping.put("findById", READ_FUNCTION_CODE);
+        mapping.put("getAll", SEARCH_FUNCTION_CODE);
         mapping.put("read", READ_FUNCTION_CODE);
         mapping.put("findAll", SEARCH_FUNCTION_CODE);
         mapping.put("findByCode", SEARCH_FUNCTION_CODE);
