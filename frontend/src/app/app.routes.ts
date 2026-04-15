@@ -26,6 +26,8 @@ import { ControllerFunctionMappingsComponent } from './features/controller-funct
 import { StructureCatalogComponent } from './features/structure-catalog/structure-catalog.component';
 import { StructureSearchComponent } from './features/structure-search/structure-search.component';
 import { StructureTypesSearchComponent } from './features/structure-types-search/structure-types-search.component';
+import { EquipmentTypesSearchComponent } from './features/equipment-types-search/equipment-types-search.component';
+import { EquipmentTypesCrudComponent } from './features/equipment-types/equipment-types-crud.component';
 import { StructureTypesCrudComponent } from './features/structure-types-crud/structure-types-crud.component';
 import { OperationLogsSearchComponent } from './features/operation-logs-search/operation-logs-search.component';
 import { STRUCTURE_MODULE_CODES } from './core/structure-module-codes';
@@ -38,6 +40,9 @@ export const appRoutes: Routes = [
   { path: 'hospitals-search', pathMatch: 'full', redirectTo: 'structures/hospitals' },
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
+  { path: 'equipment-types/search', component: EquipmentTypesSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('EQUIPMENT_TYPE')] },
+  { path: 'equipment-types/manage', component: EquipmentTypesCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('EQUIPMENT_TYPE')] },
+  { path: 'equipment-types/manage/:code', component: EquipmentTypesCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('EQUIPMENT_TYPE')] },
   { path: 'users/configure/:id', component: UsersConfigureComponent, canActivate: [authGuard, moduleVisibilityGuard('USER')] },
   {
     path: 'users',

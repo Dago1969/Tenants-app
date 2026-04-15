@@ -109,6 +109,7 @@ export class AppComponent implements OnDestroy {
     { labelKey: 'menu.functionsSearch', route: '/functions/search', moduleCode: 'FUNCTION' },
     { labelKey: 'projects.search.title', route: '/projects/search', moduleCode: 'PROJECT', iconSrc: 'assets/progetto.png' },
     { labelKey: 'menu.structureTypesSearch', route: '/structure-types/search', moduleCode: STRUCTURE_MODULE_CODES.GENERIC },
+    { labelKey: 'menu.equipmentTypesSearch', route: '/equipment-types/search', moduleCode: 'EQUIPMENT_TYPE', iconSrc: 'assets/equipment.png' },
     { labelKey: 'menu.authorizations', route: '/authorizations' },
     { labelKey: 'menu.controllerFunctionMappings', route: '/controller-function-mappings' },
     { labelKey: 'menu.operationLogsSearch', route: '/operation-logs/search' },
