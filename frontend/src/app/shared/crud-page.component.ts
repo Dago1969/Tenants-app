@@ -11,6 +11,7 @@ export interface CrudField {
   key: string;
   labelKey: MessageKey;
   type: 'text' | 'number' | 'checkbox' | 'date' | 'datetime-local' | 'select';
+  columnSpan?: number;
   hidden?: boolean;
   createOnly?: boolean;
   readonly?: boolean;
@@ -107,13 +108,12 @@ interface OperationLogEntry {
         </div>
 
         <form class="crud-form" #crudForm="ngForm" (ngSubmit)="save(crudForm)" novalidate>
-          <div class="crud-fields">
-            <div class="crud-field-row" *ngFor="let field of currentFields">
+          <div class="crud-fields crud-fields-multicol">
+            <div class="crud-field-col" *ngFor="let field of currentFields" [style.grid-column]="resolveGridColumn(field)">
               <label class="crud-label" [for]="field.key">
                 {{ translate(field.labelKey) }}
                 <span *ngIf="field.required === true" class="crud-required-marker">*</span>
               </label>
-
               <div *ngIf="field.type !== 'checkbox' && field.type !== 'select'" class="crud-field-control">
                 <ng-container *ngIf="field.key === 'username'; else genericInput">
                   <input
@@ -135,7 +135,6 @@ interface OperationLogEntry {
                     {{ translate(requiredFieldMessageKey) }}
                   </div>
                 </ng-container>
-
                 <ng-template #genericInput>
                   <input
                     class="crud-input"
@@ -154,7 +153,6 @@ interface OperationLogEntry {
                   </div>
                 </ng-template>
               </div>
-
               <div *ngIf="field.type === 'select'" class="crud-field-control">
                 <select
                   class="crud-input"
@@ -176,7 +174,6 @@ interface OperationLogEntry {
                   {{ translate(requiredFieldMessageKey) }}
                 </div>
               </div>
-
               <label *ngIf="field.type === 'checkbox'" class="crud-checkbox-wrap" [for]="field.key">
                 <input
                   class="crud-checkbox"
@@ -399,6 +396,14 @@ export class CrudPageComponent implements OnInit, OnChanges {
     }
   }
 
+  resolveGridColumn(field: CrudField): string | null {
+    if (!field.columnSpan || field.columnSpan <= 1) {
+      return null;
+    }
+
+    return `span ${field.columnSpan}`;
+  }
+
   save(form: NgForm): void {
     this.submissionAttempted = true;
     if (form.invalid) {
@@ -475,16 +480,11 @@ export class CrudPageComponent implements OnInit, OnChanges {
   }
 
   cancel(): void {
+    // Forza sempre la chiusura verso closeRoute se presente
     if (this.closeRoute) {
       void this.router.navigateByUrl(this.closeRoute);
       return;
     }
-
-    if (window.history.length > 1) {
-      this.location.back();
-      return;
-    }
-
     void this.router.navigateByUrl(this.getDefaultRoute());
   }
 

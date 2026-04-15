@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
 import { SearchField, SearchPageComponent } from '../../shared/search-page.component';
 
 /**
@@ -7,21 +8,36 @@ import { SearchField, SearchPageComponent } from '../../shared/search-page.compo
 @Component({
   selector: 'app-patients-search',
   standalone: true,
-  imports: [SearchPageComponent],
+  imports: [SearchPageComponent, RouterOutlet],
   template: `
     <app-search-page
+      #searchPage
       [titleKey]="titleKey"
       [endpoint]="endpoint"
       [fieldPermissionsEndpoint]="permissionsEndpoint"
+      [moduleCode]="moduleCode"
+      [createFunctionCode]="createFunctionCode"
+      [detailRouteBase]="detailRouteBase"
       [filters]="filters"
       [resultColumns]="resultColumns"
     />
+
+    <router-outlet (deactivate)="refreshAfterWizardClose()"></router-outlet>
   `
 })
 export class PatientsSearchComponent {
+  @ViewChild('searchPage') private searchPage?: SearchPageComponent;
+
   titleKey = 'patients.search.title' as const;
   endpoint = 'patients';
   permissionsEndpoint = 'patients/permissions';
+  moduleCode = 'PATIENT';
+  createFunctionCode = 'CREATE';
+  detailRouteBase = '/patients/search';
+
+  refreshAfterWizardClose(): void {
+    this.searchPage?.search(false);
+  }
 
   filters: SearchField[] = [
     { key: 'assistedId', labelKey: 'patients.field.assistedId', type: 'text' },
