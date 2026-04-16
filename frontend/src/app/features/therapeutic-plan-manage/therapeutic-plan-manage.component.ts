@@ -90,6 +90,30 @@ interface TherapeuticPlanAlertForm {
   confirmationSent: 'yes' | 'no' | 'na';
 }
 
+interface TherapeuticPlanNotification {
+  id?: number;
+  therapeuticPlanId: number;
+  sentDate: string;
+  sentByOperator?: string | null;
+  subject: string;
+  message: string;
+  confirmed: boolean | null;
+  confirmationDate?: string | null;
+  confirmedByDoctor?: string | null;
+  notes?: string | null;
+}
+
+interface TherapeuticPlanNotificationForm {
+  sentDate: string;
+  sentByOperator: string;
+  subject: string;
+  message: string;
+  confirmedChoice: '' | 'yes' | 'no';
+  confirmationDate: string;
+  confirmedByDoctor: string;
+  notes: string;
+}
+
 /**
  * Pagina di gestione del piano terapeutico con tab dedicati per riepilogo, paziente e aree operative collegate.
  */
@@ -127,6 +151,12 @@ export class TherapeuticPlanManageComponent implements OnInit {
   nurse: TherapeuticPlanNurse | null = null;
   doctor: TherapeuticPlanDoctor | null = null;
   selectedEquipment: TherapeuticPlanEquipment[] = [];
+  notifications: TherapeuticPlanNotification[] = [];
+  notificationModalOpen = false;
+  notificationSaving = false;
+  notificationErrorMessage = '';
+  editingNotificationId: number | null = null;
+  notificationForm: TherapeuticPlanNotificationForm = this.createEmptyNotificationForm();
   alerts: TherapeuticPlanAlert[] = [];
   alertModalOpen = false;
   alertSaving = false;
@@ -216,37 +246,30 @@ export class TherapeuticPlanManageComponent implements OnInit {
     return String(this.selectedEquipment.length);
   }
 
-  get summaryNotificationKeys(): MessageKey[] {
-    if (!this.plan) {
-      return [];
-    }
-
-    const alerts: MessageKey[] = [];
-    const normalizedToday = new Date();
-    normalizedToday.setHours(0, 0, 0, 0);
-
-    const endDate = this.plan.endDate?.trim() ? new Date(this.plan.endDate) : null;
-    if (endDate && !Number.isNaN(endDate.getTime()) && endDate < normalizedToday && !['completed', 'cancelled'].includes(this.plan.status)) {
-      alerts.push('therapeuticPlan.manage.alert.overdue');
-    }
-
-    if (!this.selectedEquipment.length) {
-      alerts.push('therapeuticPlan.manage.alert.noEquipment');
-    }
-
-    if (!this.structure || !this.doctor || !this.nurse) {
-      alerts.push('therapeuticPlan.manage.alert.incompleteCareTeam');
-    }
-
-    if (this.plan.status === 'suspended') {
-      alerts.push('therapeuticPlan.manage.alert.suspended');
-    }
-
-    return alerts;
-  }
-
   get canCreateAlert(): boolean {
     return !!this.planId && !!this.plan?.doctorId;
+  }
+
+  get isEditingNotification(): boolean {
+    return this.editingNotificationId !== null;
+  }
+
+  get notificationModalTitleKey(): MessageKey {
+    return this.isEditingNotification
+      ? 'therapeuticPlan.notification.modal.titleEdit'
+      : 'therapeuticPlan.notification.modal.title';
+  }
+
+  get notificationSubmitLabelKey(): MessageKey {
+    return this.isEditingNotification ? 'crud.actions.update' : 'crud.actions.create';
+  }
+
+  get notificationConfirmationSelected(): boolean {
+    return this.notificationForm.confirmedChoice !== '';
+  }
+
+  get notificationNotesRequired(): boolean {
+    return this.notificationForm.confirmedChoice === 'no';
   }
 
   get alertConfirmationSentVisible(): boolean {
@@ -398,6 +421,18 @@ export class TherapeuticPlanManageComponent implements OnInit {
     return this.translate(value ? 'common.yes' : 'common.no');
   }
 
+  getConfirmedDisplayValue(value: boolean | null | undefined): string {
+    if (value === true) {
+      return this.translate('common.yes');
+    }
+
+    if (value === false) {
+      return this.translate('common.no');
+    }
+
+    return this.translate('therapeuticPlan.notification.confirmed.pending');
+  }
+
   getConfirmationSentDisplayValue(value?: string): string {
     if (!value?.trim()) {
       return this.translate('common.notAvailable');
@@ -413,9 +448,129 @@ export class TherapeuticPlanManageComponent implements OnInit {
     }
   }
 
+  openNotificationModal(): void {
+    if (!this.planId || this.notificationSaving) {
+      return;
+    }
+
+    this.notificationErrorMessage = '';
+    this.editingNotificationId = null;
+    this.notificationForm = this.createEmptyNotificationForm();
+    this.notificationModalOpen = true;
+  }
+
+  openNotificationEditModal(notification: TherapeuticPlanNotification): void {
+    if (!this.planId || notification.id == null || this.notificationSaving) {
+      return;
+    }
+
+    this.notificationErrorMessage = '';
+    this.editingNotificationId = notification.id;
+    this.notificationForm = {
+      sentDate: notification.sentDate ?? '',
+      sentByOperator: notification.sentByOperator?.trim() || this.getCurrentOperatorDisplayLabel(),
+      subject: notification.subject ?? '',
+      message: notification.message ?? '',
+      confirmedChoice: this.normalizeConfirmedChoice(notification.confirmed),
+      confirmationDate: notification.confirmationDate ?? '',
+      confirmedByDoctor: notification.confirmedByDoctor ?? '',
+      notes: notification.notes ?? ''
+    };
+    this.notificationModalOpen = true;
+  }
+
+  closeNotificationModal(): void {
+    if (this.notificationSaving) {
+      return;
+    }
+
+    this.notificationModalOpen = false;
+    this.notificationErrorMessage = '';
+    this.editingNotificationId = null;
+    this.notificationForm = this.createEmptyNotificationForm();
+  }
+
+  onNotificationConfirmedChange(): void {
+    if (!this.notificationConfirmationSelected) {
+      this.notificationForm.confirmationDate = '';
+      this.notificationForm.notes = '';
+      return;
+    }
+
+    if (this.notificationForm.confirmedChoice === 'yes') {
+      this.notificationForm.notes = '';
+    }
+  }
+
+  saveNotification(): void {
+    if (!this.planId || this.notificationSaving) {
+      return;
+    }
+
+    this.notificationErrorMessage = '';
+    if (!this.notificationForm.sentDate.trim()) {
+      this.notificationErrorMessage = this.translate('therapeuticPlan.notification.validation.sentDateRequired');
+      return;
+    }
+    if (!this.notificationForm.subject.trim()) {
+      this.notificationErrorMessage = this.translate('therapeuticPlan.notification.validation.subjectRequired');
+      return;
+    }
+    if (!this.notificationForm.message.trim()) {
+      this.notificationErrorMessage = this.translate('therapeuticPlan.notification.validation.messageRequired');
+      return;
+    }
+    if (this.notificationConfirmationSelected && !this.notificationForm.confirmationDate.trim()) {
+      this.notificationErrorMessage = this.translate('therapeuticPlan.notification.validation.confirmationDateRequired');
+      return;
+    }
+    if (this.notificationNotesRequired && !this.notificationForm.notes.trim()) {
+      this.notificationErrorMessage = this.translate('therapeuticPlan.notification.validation.notesRequiredWhenRejected');
+      return;
+    }
+
+    this.notificationSaving = true;
+    const payload: TherapeuticPlanNotification = {
+      therapeuticPlanId: this.planId,
+      sentDate: this.notificationForm.sentDate,
+      sentByOperator: this.notificationForm.sentByOperator.trim() || undefined,
+      subject: this.notificationForm.subject.trim(),
+      message: this.notificationForm.message.trim(),
+      confirmed: this.notificationForm.confirmedChoice === '' ? null : this.notificationForm.confirmedChoice === 'yes',
+      confirmationDate: this.notificationConfirmationSelected ? this.notificationForm.confirmationDate.trim() : null,
+      notes: this.notificationForm.notes.trim() || null
+    };
+
+    const request = this.isEditingNotification && this.editingNotificationId !== null
+      ? this.http.put<TherapeuticPlanNotification>(
+          `${environment.apiBaseUrl}/therapeutic-plans/${this.planId}/notifications/${this.editingNotificationId}`,
+          payload
+        )
+      : this.http.post<TherapeuticPlanNotification>(
+          `${environment.apiBaseUrl}/therapeutic-plans/${this.planId}/notifications`,
+          payload
+        );
+
+    request.subscribe({
+      next: (savedNotification) => {
+        this.notificationSaving = false;
+        this.notifications = this.sortNotifications([
+          savedNotification,
+          ...this.notifications.filter((currentNotification) => currentNotification.id !== savedNotification.id)
+        ]);
+        this.closeNotificationModal();
+      },
+      error: (error: HttpErrorResponse) => {
+        this.notificationSaving = false;
+        this.notificationErrorMessage = this.resolveErrorMessage(error);
+      }
+    });
+  }
+
   private loadManageData(planId: number): void {
     forkJoin({
       plan: this.http.get<TherapeuticPlanManageResponse>(`${environment.apiBaseUrl}/therapeutic-plans/${planId}`),
+      notifications: this.http.get<TherapeuticPlanNotification[]>(`${environment.apiBaseUrl}/therapeutic-plans/${planId}/notifications`).pipe(catchError(() => of([] as TherapeuticPlanNotification[]))),
       alerts: this.http.get<TherapeuticPlanAlert[]>(`${environment.apiBaseUrl}/therapeutic-plans/${planId}/alerts`).pipe(catchError(() => of([] as TherapeuticPlanAlert[]))),
       patients: this.http.get<TherapeuticPlanPatient[]>(`${environment.apiBaseUrl}/patients`).pipe(catchError(() => of([] as TherapeuticPlanPatient[]))),
       hospitals: this.structureApiService.getStructuresByType('HOSPITAL', true).pipe(catchError(() => of([] as StructureDto[]))),
@@ -424,7 +579,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
       doctors: this.http.get<TherapeuticPlanDoctor[]>(`${environment.apiBaseUrl}/doctors`).pipe(catchError(() => of([] as TherapeuticPlanDoctor[]))),
       equipment: this.http.get<TherapeuticPlanEquipment[]>(`${environment.apiBaseUrl}/equipment`).pipe(catchError(() => of([] as TherapeuticPlanEquipment[])))
     }).subscribe({
-      next: ({ plan, alerts, patients, hospitals, specialistClinics, nurses, doctors, equipment }) => {
+      next: ({ plan, notifications, alerts, patients, hospitals, specialistClinics, nurses, doctors, equipment }) => {
         // Controllo progetto
         const currentProject = this.authService.getSelectedProject();
         if (plan.projectCode !== currentProject) {
@@ -437,6 +592,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
         this.nurse = nurses.find((currentNurse) => currentNurse.id === plan.nurseId) ?? null;
         this.doctor = doctors.find((currentDoctor) => currentDoctor.id === plan.doctorId) ?? null;
         this.selectedEquipment = (equipment ?? []).filter((currentEquipment) => plan.equipmentIds?.includes(currentEquipment.id));
+        this.notifications = this.sortNotifications(notifications ?? []);
         this.alerts = this.sortAlerts(alerts ?? []);
         this.loading = false;
       },
@@ -470,6 +626,19 @@ export class TherapeuticPlanManageComponent implements OnInit {
     };
   }
 
+  private createEmptyNotificationForm(): TherapeuticPlanNotificationForm {
+    return {
+      sentDate: this.getTodayDateInputValue(),
+      sentByOperator: this.getCurrentOperatorDisplayLabel(),
+      subject: '',
+      message: '',
+      confirmedChoice: '',
+      confirmationDate: '',
+      confirmedByDoctor: '',
+      notes: ''
+    };
+  }
+
   private getTodayDateInputValue(): string {
     const today = new Date();
     const timezoneOffset = today.getTimezoneOffset() * 60_000;
@@ -485,6 +654,30 @@ export class TherapeuticPlanManageComponent implements OnInit {
       default:
         return 'na';
     }
+  }
+
+  private normalizeConfirmedChoice(value: boolean | null | undefined): '' | 'yes' | 'no' {
+    if (value === true) {
+      return 'yes';
+    }
+
+    if (value === false) {
+      return 'no';
+    }
+
+    return '';
+  }
+
+  private getCurrentOperatorDisplayLabel(): string {
+    return this.authService.getUsername()?.trim() || this.translate('common.notAvailable');
+  }
+
+  private sortNotifications(notifications: TherapeuticPlanNotification[]): TherapeuticPlanNotification[] {
+    return [...notifications].sort((left, right) => {
+      const leftDate = left.sentDate ?? '';
+      const rightDate = right.sentDate ?? '';
+      return rightDate.localeCompare(leftDate) || (right.id ?? 0) - (left.id ?? 0);
+    });
   }
 
   private sortAlerts(alerts: TherapeuticPlanAlert[]): TherapeuticPlanAlert[] {

@@ -3,10 +3,14 @@ package com.qtm.tenants.therapeuticplan.controller;
 import com.qtm.tenants.alert.dto.AlertDto;
 import com.qtm.tenants.alert.service.AlertService;
 import com.qtm.tenants.authorization.service.ControllerFunctionAuthorizationService;
+import com.qtm.tenants.notification.dto.NotificationDto;
+import com.qtm.tenants.notification.service.NotificationService;
 import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanDto;
 import com.qtm.tenants.therapeuticplan.service.TherapeuticPlanService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,6 +39,7 @@ public class TherapeuticPlanController {
 
     private final TherapeuticPlanService therapeuticPlanService;
         private final AlertService alertService;
+        private final NotificationService notificationService;
     private final ControllerFunctionAuthorizationService controllerFunctionAuthorizationService;
 
     @GetMapping
@@ -67,6 +72,15 @@ public class TherapeuticPlanController {
         return alertService.findAll(id, null);
     }
 
+        @GetMapping("/{id}/notifications")
+        public List<NotificationDto> findNotificationsByTherapeuticPlan(
+                        @PathVariable Long id,
+                        @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
+        ) {
+                controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
+                return notificationService.findAll(id);
+        }
+
     @PostMapping("/{id}/alerts")
     public AlertDto createAlert(
             @PathVariable Long id,
@@ -80,6 +94,21 @@ public class TherapeuticPlanController {
         );
         return alertService.create(mergeAlertPlanId(dto, id));
     }
+
+        @PostMapping("/{id}/notifications")
+        public NotificationDto createNotification(
+                        @PathVariable Long id,
+                        @RequestBody NotificationDto dto,
+                        @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole,
+                        @AuthenticationPrincipal Jwt jwt
+        ) {
+                controllerFunctionAuthorizationService.requireFullEditPermission(
+                                selectedRole,
+                                MODULE_CODE,
+                                ControllerFunctionAuthorizationService.CREATE_FUNCTION_CODE
+                );
+                return notificationService.create(mergeNotificationPlanId(dto, id, resolveOperatorLabel(jwt)), resolveOperatorLabel(jwt));
+        }
 
     @PutMapping("/{id}/alerts/{alertId}")
     public AlertDto updateAlert(
@@ -97,6 +126,22 @@ public class TherapeuticPlanController {
         return alertService.update(alertId, mergeAlertPlanId(dto, id));
     }
 
+        @PutMapping("/{id}/notifications/{notificationId}")
+        public NotificationDto updateNotification(
+                        @PathVariable Long id,
+                        @PathVariable Long notificationId,
+                        @RequestBody NotificationDto dto,
+                        @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
+        ) {
+                controllerFunctionAuthorizationService.requireFullEditPermission(
+                                selectedRole,
+                                MODULE_CODE,
+                                ControllerFunctionAuthorizationService.UPDATE_FUNCTION_CODE
+                );
+                ensureNotificationBelongsToPlan(notificationId, id);
+                return notificationService.update(notificationId, mergeNotificationPlanId(dto, id, null));
+        }
+
     @DeleteMapping("/{id}/alerts/{alertId}")
     public ResponseEntity<Void> deleteAlert(
             @PathVariable Long id,
@@ -112,6 +157,22 @@ public class TherapeuticPlanController {
         alertService.delete(alertId);
         return ResponseEntity.noContent().build();
     }
+
+        @DeleteMapping("/{id}/notifications/{notificationId}")
+        public ResponseEntity<Void> deleteNotification(
+                        @PathVariable Long id,
+                        @PathVariable Long notificationId,
+                        @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
+        ) {
+                controllerFunctionAuthorizationService.requireFullEditPermission(
+                                selectedRole,
+                                MODULE_CODE,
+                                ControllerFunctionAuthorizationService.DELETE_FUNCTION_CODE
+                );
+                ensureNotificationBelongsToPlan(notificationId, id);
+                notificationService.delete(notificationId);
+                return ResponseEntity.noContent().build();
+        }
 
     @PostMapping
     public TherapeuticPlanDto create(
@@ -171,10 +232,69 @@ public class TherapeuticPlanController {
                                 .build();
         }
 
+        private NotificationDto mergeNotificationPlanId(NotificationDto dto, Long therapeuticPlanId, String sentByOperator) {
+                if (dto == null) {
+                        return NotificationDto.builder()
+                                        .therapeuticPlanId(therapeuticPlanId)
+                                        .sentByOperator(sentByOperator)
+                                        .build();
+                }
+
+                return NotificationDto.builder()
+                                .id(dto.getId())
+                                .therapeuticPlanId(therapeuticPlanId)
+                                .sentDate(dto.getSentDate())
+                                .sentByOperator(sentByOperator != null ? sentByOperator : dto.getSentByOperator())
+                                .subject(dto.getSubject())
+                                .message(dto.getMessage())
+                                .confirmed(dto.getConfirmed())
+                                .confirmationDate(dto.getConfirmationDate())
+                                .confirmedByDoctor(dto.getConfirmedByDoctor())
+                                .notes(dto.getNotes())
+                                .build();
+        }
+
+        private String resolveOperatorLabel(Jwt jwt) {
+                if (jwt == null) {
+                        return null;
+                }
+
+                String preferredUsername = trimToNull(jwt.getClaimAsString("preferred_username"));
+                if (preferredUsername != null) {
+                        return preferredUsername;
+                }
+
+                String username = trimToNull(jwt.getClaimAsString("username"));
+                if (username != null) {
+                        return username;
+                }
+
+                String email = trimToNull(jwt.getClaimAsString("email"));
+                if (email != null) {
+                        return email;
+                }
+
+                return trimToNull(jwt.getSubject());
+        }
+
+        private String trimToNull(String value) {
+                if (value == null || value.isBlank()) {
+                        return null;
+                }
+                return value.trim();
+        }
+
         private void ensureAlertBelongsToPlan(Long alertId, Long therapeuticPlanId) {
                 AlertDto existingAlert = alertService.findById(alertId);
                 if (!therapeuticPlanId.equals(existingAlert.getTherapeuticPlanId())) {
                         throw new ResponseStatusException(BAD_REQUEST, "L'alert non appartiene al piano terapeutico specificato");
+                }
+        }
+
+        private void ensureNotificationBelongsToPlan(Long notificationId, Long therapeuticPlanId) {
+                NotificationDto existingNotification = notificationService.findById(notificationId);
+                if (!therapeuticPlanId.equals(existingNotification.getTherapeuticPlanId())) {
+                        throw new ResponseStatusException(BAD_REQUEST, "La notifica non appartiene al piano terapeutico specificato");
                 }
         }
 }

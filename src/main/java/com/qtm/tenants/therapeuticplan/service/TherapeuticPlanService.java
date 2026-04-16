@@ -1,6 +1,7 @@
 package com.qtm.tenants.therapeuticplan.service;
 
 import com.qtm.tenants.alert.repository.AlertRepository;
+import com.qtm.tenants.notification.repository.NotificationRepository;
 import com.qtm.tenants.doctor.entity.DoctorEntity;
 import com.qtm.tenants.doctor.repository.DoctorRepository;
 import com.qtm.tenants.equipment.EquipmentStatusRules;
@@ -55,6 +56,7 @@ public class TherapeuticPlanService {
     private final EquipmentRepository equipmentRepository;
     private final TherapeuticPlanMapper therapeuticPlanMapper;
     private final AlertRepository alertRepository;
+    private final NotificationRepository notificationRepository;
 
     @Transactional(readOnly = true)
     public List<TherapeuticPlanDto> findAll(String patientName, String projectCode, String status, String drugCode) {
@@ -143,6 +145,7 @@ public class TherapeuticPlanService {
 
         synchronizeEquipmentStatuses(entity.getEquipments(), List.of());
         alertRepository.deleteByTherapeuticPlan_Id(entity.getId());
+        notificationRepository.deleteByTherapeuticPlan_Id(entity.getId());
         therapeuticPlanRepository.delete(entity);
     }
 

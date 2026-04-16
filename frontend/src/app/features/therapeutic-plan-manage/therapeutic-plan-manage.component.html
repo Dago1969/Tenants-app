@@ -72,67 +72,64 @@
       </nav>
 
       <div *ngIf="activeSummarySubTab === 'notifications'" class="manage-panel-grid">
-        <article class="manage-panel-card">
-          <h2>{{ translate('therapeuticPlan.manage.section.summary') }}</h2>
-          <dl class="detail-grid">
-            <div>
-              <dt>{{ translate('therapeuticPlan.field.patient') }}</dt>
-              <dd>{{ patientDisplayName }}</dd>
-            </div>
-            <div>
-              <dt>{{ translate('patients.field.assistedId') }}</dt>
-              <dd>{{ patientCode }}</dd>
-            </div>
-            <div>
-              <dt>{{ translate('therapeuticPlan.field.projectCode') }}</dt>
-              <dd>{{ plan?.projectCode || translate('common.notAvailable') }}</dd>
-            </div>
-            <div>
-              <dt>{{ translate('therapeuticPlan.field.drugCode') }}</dt>
-              <dd>{{ plan?.drugCode || translate('common.notAvailable') }}</dd>
-            </div>
-            <div>
-              <dt>{{ translate('therapeuticPlan.field.nurse') }}</dt>
-              <dd>{{ nurseLabel }}</dd>
-            </div>
-            <div>
-              <dt>{{ translate('therapeuticPlan.field.doctor') }}</dt>
-              <dd>{{ doctorLabel }}</dd>
-            </div>
-          </dl>
-        </article>
-
-        <article class="manage-panel-card">
-          <h2>{{ translate('therapeuticPlan.manage.section.notifications') }}</h2>
-          <dl class="detail-grid">
-            <div>
-              <dt>{{ translate('therapeuticPlan.field.startDate') }}</dt>
-              <dd>{{ formatDate(plan?.startDate) }}</dd>
-            </div>
-            <div>
-              <dt>{{ translate('therapeuticPlan.field.endDate') }}</dt>
-              <dd>{{ formatDate(plan?.endDate) }}</dd>
-            </div>
-            <div>
-              <dt>{{ translate('therapeuticPlan.field.status') }}</dt>
-              <dd>{{ translate(statusLabelKey) }}</dd>
-            </div>
-            <div>
-              <dt>{{ translate('therapeuticPlan.manage.field.equipmentCount') }}</dt>
-              <dd>{{ selectedEquipmentCount }}</dd>
-            </div>
-          </dl>
-
-          <ul *ngIf="summaryNotificationKeys.length > 0" class="summary-notification-list">
-            <li *ngFor="let notificationKey of summaryNotificationKeys" class="summary-notification-item">
-              {{ translate(notificationKey) }}
-            </li>
-          </ul>
-        </article>
-
         <article class="manage-panel-card manage-panel-card-wide">
-          <h2>{{ translate('therapeuticPlan.field.notes') }}</h2>
-          <p class="note-box">{{ plan?.notes?.trim() || translate('therapeuticPlan.manage.empty.notes') }}</p>
+          <div class="manage-section-header">
+            <div>
+              <h2>{{ translate('therapeuticPlan.manage.section.notifications') }}</h2>
+              <p class="section-copy">{{ translate('therapeuticPlan.notification.section.description') }}</p>
+            </div>
+            <button
+              type="button"
+              class="manage-add-button"
+              (click)="openNotificationModal()"
+            >
+              {{ translate('therapeuticPlan.notification.actions.add') }}
+            </button>
+          </div>
+
+          <div *ngIf="notifications.length > 0; else notificationsEmpty" class="notification-list-table-wrapper">
+            <table class="notification-list-table">
+              <thead>
+                <tr>
+                  <th>{{ translate('therapeuticPlan.notification.field.sentDate') }}</th>
+                  <th>{{ translate('therapeuticPlan.notification.field.sentByOperator') }}</th>
+                  <th>{{ translate('therapeuticPlan.notification.field.subject') }}</th>
+                  <th>{{ translate('therapeuticPlan.notification.field.message') }}</th>
+                  <th>{{ translate('therapeuticPlan.notification.field.confirmed') }}</th>
+                  <th>{{ translate('therapeuticPlan.notification.field.confirmationDate') }}</th>
+                  <th>{{ translate('therapeuticPlan.notification.field.confirmedByDoctor') }}</th>
+                  <th>{{ translate('therapeuticPlan.notification.field.notes') }}</th>
+                  <th>{{ translate('search.actions') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let notification of notifications">
+                  <td class="notification-list-date">{{ formatDate(notification.sentDate) }}</td>
+                  <td>{{ notification.sentByOperator || translate('common.notAvailable') }}</td>
+                  <td class="notification-list-subject">{{ notification.subject }}</td>
+                  <td class="notification-list-message">{{ notification.message }}</td>
+                  <td>{{ getConfirmedDisplayValue(notification.confirmed) }}</td>
+                  <td>{{ formatDate(notification.confirmationDate || undefined) }}</td>
+                  <td>{{ notification.confirmedByDoctor || translate('common.notAvailable') }}</td>
+                  <td class="notification-list-notes">{{ notification.notes || translate('common.notAvailable') }}</td>
+                  <td class="alert-list-actions-cell">
+                    <button
+                      type="button"
+                      class="icon-btn"
+                      [attr.title]="translate('common.actions.edit')"
+                      (click)="openNotificationEditModal(notification)"
+                    >
+                      <span class="icon" aria-hidden="true">✏️</span>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <ng-template #notificationsEmpty>
+            <p class="empty-state">{{ translate('therapeuticPlan.manage.empty.notifications') }}</p>
+          </ng-template>
         </article>
       </div>
 
@@ -177,12 +174,11 @@
                   <td class="alert-list-actions-cell">
                     <button
                       type="button"
-                      class="alert-list-icon-btn"
-                      [attr.aria-label]="translate('therapeuticPlan.alert.actions.edit')"
+                      class="icon-btn"
                       [attr.title]="translate('therapeuticPlan.alert.actions.edit')"
                       (click)="openAlertEditModal(alert)"
                     >
-                      <span aria-hidden="true">✎</span>
+                      <span class="icon" aria-hidden="true">✏️</span>
                     </button>
                   </td>
                 </tr>
@@ -395,6 +391,78 @@
     </button>
     <button type="button" class="therapeutic-plan-btn therapeutic-plan-btn-primary" [disabled]="alertSaving" (click)="saveAlert()">
       {{ translate(alertSubmitLabelKey) }}
+    </button>
+  </div>
+</qtm-step-modal>
+
+<qtm-step-modal
+  *ngIf="notificationModalOpen"
+  [title]="translate(notificationModalTitleKey)"
+  [step]="1"
+  [totalSteps]="1"
+  [stepTitle]="translate('therapeuticPlan.notification.modal.stepTitle')"
+  [stepDescription]="translate('therapeuticPlan.notification.modal.stepDescription')"
+  (close)="closeNotificationModal()"
+>
+  <div class="alert-modal-shell">
+    <div *ngIf="notificationErrorMessage" class="therapeutic-plan-alert therapeutic-plan-alert-error">
+      {{ notificationErrorMessage }}
+    </div>
+
+    <section class="alert-modal-grid">
+      <label class="alert-modal-field">
+        <span>{{ translate('therapeuticPlan.notification.field.sentDate') }}</span>
+        <input [(ngModel)]="notificationForm.sentDate" type="date" />
+      </label>
+
+      <label class="alert-modal-field">
+        <span>{{ translate('therapeuticPlan.notification.field.sentByOperator') }}</span>
+        <input [(ngModel)]="notificationForm.sentByOperator" type="text" readonly />
+      </label>
+
+      <label class="alert-modal-field alert-modal-field-full">
+        <span>{{ translate('therapeuticPlan.notification.field.subject') }}</span>
+        <input [(ngModel)]="notificationForm.subject" type="text" maxlength="255" />
+      </label>
+
+      <label class="alert-modal-field alert-modal-field-full">
+        <span>{{ translate('therapeuticPlan.notification.field.message') }}</span>
+        <textarea [(ngModel)]="notificationForm.message" rows="4"></textarea>
+      </label>
+
+      <label class="alert-modal-field">
+        <span>{{ translate('therapeuticPlan.notification.field.confirmed') }}</span>
+        <select [(ngModel)]="notificationForm.confirmedChoice" (ngModelChange)="onNotificationConfirmedChange()">
+          <option value="">{{ translate('therapeuticPlan.notification.confirmed.pending') }}</option>
+          <option value="yes">{{ translate('common.yes') }}</option>
+          <option value="no">{{ translate('common.no') }}</option>
+        </select>
+      </label>
+
+
+      <label *ngIf="notificationConfirmationSelected" class="alert-modal-field">
+        <span>{{ translate('therapeuticPlan.notification.field.confirmationDate') }}</span>
+        <input [(ngModel)]="notificationForm.confirmationDate" type="date" />
+      </label>
+
+      <label *ngIf="notificationConfirmationSelected" class="alert-modal-field alert-modal-field-full">
+        <span>{{ translate('therapeuticPlan.notification.field.confirmedByDoctor') }}</span>
+        <input [(ngModel)]="notificationForm.confirmedByDoctor" type="text" maxlength="255" />
+      </label>
+
+      <label class="alert-modal-field alert-modal-field-full">
+        <span>{{ translate('therapeuticPlan.notification.field.notes') }}</span>
+        <textarea [(ngModel)]="notificationForm.notes" rows="4"></textarea>
+      </label>
+    </section>
+  </div>
+
+  <div modal-actions class="therapeutic-plan-actions">
+    <button type="button" class="therapeutic-plan-btn therapeutic-plan-btn-secondary" (click)="closeNotificationModal()">
+      {{ translate('crud.actions.cancel') }}
+    </button>
+    <button type="button" class="therapeutic-plan-btn therapeutic-plan-btn-primary" [disabled]="notificationSaving" (click)="saveNotification()">
+      {{ translate(notificationSubmitLabelKey) }}
     </button>
   </div>
 </qtm-step-modal>

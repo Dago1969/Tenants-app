@@ -908,3 +908,36 @@ databaseChangeLog:
               CREATE INDEX idx_therapeutic_plan_alert_doctor_id ON therapeutic_plan_alert (doctor_id);
               CREATE INDEX idx_therapeutic_plan_alert_date ON therapeutic_plan_alert (alert_date);
               CREATE INDEX idx_therapeutic_plan_alert_confirmation_sent ON therapeutic_plan_alert (confirmation_sent);
+
+  - changeSet:
+      id: 2026-04-16-create-therapeutic-plan-notification-table
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            tableExists:
+              tableName: therapeutic_plan_notification
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              CREATE TABLE IF NOT EXISTS therapeutic_plan_notification (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                therapeutic_plan_id BIGINT NOT NULL,
+                sent_date DATE NOT NULL,
+                sent_by_operator VARCHAR(255) NOT NULL,
+                subject VARCHAR(255) NOT NULL,
+                message TEXT NOT NULL,
+                confirmed BIT NULL,
+                confirmation_date DATE NULL,
+                confirmed_by_doctor VARCHAR(255) NULL,
+                notes TEXT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+              );
+
+              CREATE INDEX idx_therapeutic_plan_notification_plan_id ON therapeutic_plan_notification (therapeutic_plan_id);
+              CREATE INDEX idx_therapeutic_plan_notification_sent_date ON therapeutic_plan_notification (sent_date);
+              CREATE INDEX idx_therapeutic_plan_notification_confirmed ON therapeutic_plan_notification (confirmed);
