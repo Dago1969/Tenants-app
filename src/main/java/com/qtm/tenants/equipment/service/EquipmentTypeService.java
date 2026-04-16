@@ -11,6 +11,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -20,11 +21,13 @@ import java.util.Objects;
 @Service
 @RequiredArgsConstructor
 public class EquipmentTypeService {
+    private static final String DEFAULT_STATUS = "attivo";
+
     private final EquipmentTypeRepository repository;
     private final EquipmentTypeMapper mapper;
 
     public List<EquipmentTypeDTO> findAll(String code, String name, String status) {
-        return mapper.toDtoList(repository.findByCodeContainingIgnoreCaseAndNameContainingIgnoreCaseAndStatusContainingIgnoreCase(
+        return mapper.toDtoList(repository.searchByFilters(
                 normalizeFilter(code),
                 normalizeFilter(name),
                 normalizeFilter(status)
@@ -43,6 +46,7 @@ public class EquipmentTypeService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "equipmentType.code.duplicate");
         }
         EquipmentTypeEntity entity = mapper.toEntity(dto);
+        entity.setStatus(normalizeStatus(dto.getStatus()));
         EquipmentTypeEntity savedEntity = repository.save(Objects.requireNonNull(entity, "equipmentTypeEntity"));
         return mapper.toDto(savedEntity);
     }
@@ -67,7 +71,7 @@ public class EquipmentTypeService {
         entity.setSecondaryJsonPresent(dto.isSecondaryJsonPresent());
         entity.setSecondaryJsonPath(dto.getSecondaryJsonPath());
         entity.setPurchaseDate(dto.getPurchaseDate());
-        entity.setStatus(dto.getStatus());
+        entity.setStatus(normalizeStatus(dto.getStatus()));
         return mapper.toDto(repository.save(entity));
     }
 
@@ -96,5 +100,14 @@ public class EquipmentTypeService {
 
     private String normalizeFilter(String value) {
         return value == null ? "" : value.trim();
+    }
+
+    private String normalizeStatus(String value) {
+        String normalizedValue = normalizeFilter(value);
+        if (normalizedValue.isEmpty()) {
+            return DEFAULT_STATUS;
+        }
+
+        return normalizedValue.toLowerCase(Locale.ROOT);
     }
 }

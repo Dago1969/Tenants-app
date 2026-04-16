@@ -45,19 +45,19 @@ public class EquipmentTypeEntity {
     @Column(name = "principal_json_present")
     private boolean principalJsonPresent;
 
-    @Column(name = "principal_json_path", length = 256)
+    @Column(name = "principal_json_path", columnDefinition = "TEXT")
     private String principalJsonPath;
 
     @Column(name = "secondary_json_present")
     private boolean secondaryJsonPresent;
 
-    @Column(name = "secondary_json_path", length = 256)
+    @Column(name = "secondary_json_path", columnDefinition = "TEXT")
     private String secondaryJsonPath;
 
     @Column(name = "purchase_date")
     private LocalDate purchaseDate;
 
-    @Column(name = "status", length = 32)
+    @Column(name = "status", length = 32, nullable = false)
     private String status;
 
     @Column(name = "created_at", updatable = false)

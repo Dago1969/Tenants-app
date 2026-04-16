@@ -720,3 +720,49 @@ databaseChangeLog:
             relativeToChangelogFile: true
             splitStatements: true
             stripComments: false
+
+  - changeSet:
+      id: 2026-04-16-equipment-type-json-paths-text
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: equipment_type
+        - columnExists:
+            tableName: equipment_type
+            columnName: principal_json_path
+        - columnExists:
+            tableName: equipment_type
+            columnName: secondary_json_path
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE equipment_type
+                MODIFY COLUMN principal_json_path TEXT NULL,
+                MODIFY COLUMN secondary_json_path TEXT NULL;
+
+  - changeSet:
+      id: 2026-04-16-equipment-type-status-default-attivo
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: equipment_type
+        - columnExists:
+            tableName: equipment_type
+            columnName: status
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              UPDATE equipment_type
+              SET status = 'attivo'
+              WHERE status IS NULL OR TRIM(status) = '';
+
+              ALTER TABLE equipment_type
+                MODIFY COLUMN status VARCHAR(32) NOT NULL DEFAULT 'attivo';

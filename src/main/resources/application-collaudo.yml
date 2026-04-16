@@ -3,4 +3,4 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://host.docker.internal:8085/realms/QTM
+          issuer-uri: http://localhost:8085/realms/QTM

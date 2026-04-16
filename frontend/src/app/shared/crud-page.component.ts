@@ -10,8 +10,9 @@ import { hasMessageKey, MessageKey, t } from '../i18n/messages';
 export interface CrudField {
   key: string;
   labelKey: MessageKey;
-  type: 'text' | 'number' | 'checkbox' | 'date' | 'datetime-local' | 'select';
+  type: 'text' | 'textarea' | 'number' | 'checkbox' | 'date' | 'datetime-local' | 'select';
   columnSpan?: number;
+  rows?: number;
   hidden?: boolean;
   createOnly?: boolean;
   readonly?: boolean;
@@ -136,21 +137,40 @@ interface OperationLogEntry {
                   </div>
                 </ng-container>
                 <ng-template #genericInput>
-                  <input
-                    class="crud-input"
-                    [class.crud-input-invalid]="shouldShowRequiredError(field, genericField)"
-                    [id]="field.key"
-                    [type]="field.type"
-                    [(ngModel)]="formModel[field.key]"
-                    [name]="field.key"
-                    [disabled]="isFieldDisabled(field)"
-                    (blur)="onFieldBlur(field)"
-                    [required]="field.required === true"
-                    #genericField="ngModel"
-                  />
-                  <div *ngIf="shouldShowRequiredError(field, genericField)" class="crud-field-error">
-                    {{ translate(requiredFieldMessageKey) }}
-                  </div>
+                  <ng-container *ngIf="field.type === 'textarea'; else genericTextInput">
+                    <textarea
+                      class="crud-input crud-textarea"
+                      [class.crud-input-invalid]="shouldShowRequiredError(field, genericField)"
+                      [id]="field.key"
+                      [(ngModel)]="formModel[field.key]"
+                      [name]="field.key"
+                      [disabled]="isFieldDisabled(field)"
+                      (blur)="onFieldBlur(field)"
+                      [required]="field.required === true"
+                      [rows]="field.rows ?? 6"
+                      #genericField="ngModel"
+                    ></textarea>
+                    <div *ngIf="shouldShowRequiredError(field, genericField)" class="crud-field-error">
+                      {{ translate(requiredFieldMessageKey) }}
+                    </div>
+                  </ng-container>
+                  <ng-template #genericTextInput>
+                    <input
+                      class="crud-input"
+                      [class.crud-input-invalid]="shouldShowRequiredError(field, genericField)"
+                      [id]="field.key"
+                      [type]="field.type"
+                      [(ngModel)]="formModel[field.key]"
+                      [name]="field.key"
+                      [disabled]="isFieldDisabled(field)"
+                      (blur)="onFieldBlur(field)"
+                      [required]="field.required === true"
+                      #genericField="ngModel"
+                    />
+                    <div *ngIf="shouldShowRequiredError(field, genericField)" class="crud-field-error">
+                      {{ translate(requiredFieldMessageKey) }}
+                    </div>
+                  </ng-template>
                 </ng-template>
               </div>
               <div *ngIf="field.type === 'select'" class="crud-field-control">
