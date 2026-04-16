@@ -1,5 +1,6 @@
 package com.qtm.tenants.therapeuticplan.service;
 
+import com.qtm.tenants.alert.repository.AlertRepository;
 import com.qtm.tenants.doctor.entity.DoctorEntity;
 import com.qtm.tenants.doctor.repository.DoctorRepository;
 import com.qtm.tenants.equipment.EquipmentStatusRules;
@@ -53,6 +54,7 @@ public class TherapeuticPlanService {
     private final DoctorRepository doctorRepository;
     private final EquipmentRepository equipmentRepository;
     private final TherapeuticPlanMapper therapeuticPlanMapper;
+    private final AlertRepository alertRepository;
 
     @Transactional(readOnly = true)
     public List<TherapeuticPlanDto> findAll(String patientName, String projectCode, String status, String drugCode) {
@@ -140,6 +142,7 @@ public class TherapeuticPlanService {
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Piano terapeutico non trovato"));
 
         synchronizeEquipmentStatuses(entity.getEquipments(), List.of());
+        alertRepository.deleteByTherapeuticPlan_Id(entity.getId());
         therapeuticPlanRepository.delete(entity);
     }
 

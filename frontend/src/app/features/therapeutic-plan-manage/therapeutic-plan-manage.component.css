@@ -241,6 +241,42 @@
   text-align: right;
 }
 
+.manage-section-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.manage-add-button {
+  border: none;
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: #fff;
+  background: linear-gradient(90deg, #1870e8 0%, #1fc4ff 100%);
+  box-shadow: 0 10px 24px rgba(24, 112, 232, 0.22);
+}
+
+.manage-add-button:disabled {
+  opacity: 0.55;
+  cursor: default;
+  box-shadow: none;
+}
+
+.inline-info-box {
+  margin: 0 0 18px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: #eef6ff;
+  border: 1px solid #d5e5f7;
+  color: #31577e;
+}
+
+.summary-notification-list,
 .alert-list {
   list-style: none;
   margin: 0;
@@ -250,6 +286,11 @@
   gap: 12px;
 }
 
+.summary-notification-list {
+  margin-top: 18px;
+}
+
+.summary-notification-item,
 .alert-list-item {
   padding: 16px 18px;
   border-radius: 18px;
@@ -257,6 +298,183 @@
   border: 1px solid #f3d6a0;
   color: #7b4d00;
   font-weight: 600;
+}
+
+.summary-notification-item {
+  background: #f8fbff;
+  border-color: #dce6f3;
+  color: #355277;
+}
+
+.alert-list-table-wrapper {
+  overflow-x: auto;
+}
+
+.alert-list-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.alert-list-table th,
+.alert-list-table td {
+  padding: 12px;
+  border-bottom: 1px solid #dce6f3;
+  text-align: left;
+  color: #17365f;
+}
+
+.alert-list-table th {
+  color: #5d7598;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 800;
+}
+
+.alert-list-table td {
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+.alert-list-date {
+  white-space: nowrap;
+}
+
+.alert-list-subject {
+  min-width: 280px;
+  overflow-wrap: anywhere;
+}
+
+.alert-list-actions-cell {
+  width: 72px;
+  text-align: center;
+}
+
+.alert-list-icon-btn {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  background: #e3ebf8;
+  color: #24406a;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.alert-list-icon-btn:hover {
+  background: #d7e3f6;
+}
+
+.alert-list-icon-btn:focus-visible {
+  outline: 2px solid #21406d;
+  outline-offset: 2px;
+}
+
+.therapeutic-plan-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.therapeutic-plan-btn {
+  min-width: 144px;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.therapeutic-plan-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.therapeutic-plan-btn-primary {
+  color: #fff;
+  background: linear-gradient(90deg, #1870e8 0%, #1fc4ff 100%);
+  box-shadow: 0 10px 24px rgba(24, 112, 232, 0.22);
+}
+
+.therapeutic-plan-btn-secondary {
+  color: #355277;
+  background: #edf4fb;
+}
+
+.therapeutic-plan-btn-small {
+  min-width: 112px;
+  padding: 10px 16px;
+}
+
+.alert-modal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 20px;
+}
+
+.alert-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.alert-modal-field span {
+  color: #175fcb;
+  font-size: 0.98rem;
+  font-weight: 500;
+}
+
+.alert-modal-field input,
+.alert-modal-field select,
+.alert-modal-field textarea {
+  width: 100%;
+  border: 1.5px solid #d3e5f8;
+  border-radius: 16px;
+  background: #edf6ff;
+  color: #1a3a5d;
+  padding: 12px 16px;
+  font-size: 0.96rem;
+  line-height: 1.45;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.alert-modal-field textarea {
+  min-height: 120px;
+  resize: vertical;
+  font-family: inherit;
+  display: block;
+}
+
+.alert-modal-field select {
+  min-height: 50px;
+  padding-top: 0;
+  padding-bottom: 0;
+  padding-right: 42px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #1870e8 50%),
+    linear-gradient(135deg, #1870e8 50%, transparent 50%);
+  background-position:
+    calc(100% - 22px) calc(50% - 2px),
+    calc(100% - 16px) calc(50% - 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+}
+
+.alert-modal-field input:focus,
+.alert-modal-field select:focus,
+.alert-modal-field textarea:focus {
+  outline: none;
+  border-color: #1870e8;
+  box-shadow: 0 0 0 3px rgba(24, 112, 232, 0.12);
 }
 
 .manage-feedback-card {
@@ -282,8 +500,8 @@
 }
 
 .status-draft {
-  background: #eef2ff;
-  color: #3949ab;
+  background: #dbeafe;
+  color: #1d4ed8;
 }
 
 .status-active {
@@ -322,8 +540,13 @@
 
   .manage-overview-strip,
   .manage-panel-grid,
-  .detail-grid {
+  .detail-grid,
+  .alert-modal-grid {
     grid-template-columns: 1fr;
+  }
+
+  .alert-list-table {
+    min-width: 760px;
   }
 }
 
@@ -342,6 +565,11 @@
     grid-template-columns: 1fr;
   }
 
+  .manage-section-header,
+  .therapeutic-plan-actions {
+    flex-direction: column;
+  }
+
   .resource-list-item {
     flex-direction: column;
     align-items: flex-start;
@@ -349,5 +577,14 @@
 
   .resource-list-meta {
     text-align: left;
+  }
+
+  .therapeutic-plan-btn {
+    width: 100%;
+  }
+
+  .alert-list-table th,
+  .alert-list-table td {
+    padding: 10px;
   }
 }

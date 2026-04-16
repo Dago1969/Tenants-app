@@ -877,3 +877,34 @@ databaseChangeLog:
         - dropForeignKeyConstraint:
             baseTableName: therapeutic_plan
             constraintName: FK9r1ucp0kt9paqj1fwr66ld3du
+
+  - changeSet:
+      id: 2026-04-16-create-therapeutic-plan-alert-table
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            tableExists:
+              tableName: therapeutic_plan_alert
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              CREATE TABLE IF NOT EXISTS therapeutic_plan_alert (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                therapeutic_plan_id BIGINT NOT NULL,
+                doctor_id BIGINT NOT NULL,
+                alert_date DATE NOT NULL,
+                subject VARCHAR(255) NOT NULL,
+                confirmation_required BIT NOT NULL,
+                confirmation_sent VARCHAR(8) NOT NULL DEFAULT 'na',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+              );
+
+              CREATE INDEX idx_therapeutic_plan_alert_plan_id ON therapeutic_plan_alert (therapeutic_plan_id);
+              CREATE INDEX idx_therapeutic_plan_alert_doctor_id ON therapeutic_plan_alert (doctor_id);
+              CREATE INDEX idx_therapeutic_plan_alert_date ON therapeutic_plan_alert (alert_date);
+              CREATE INDEX idx_therapeutic_plan_alert_confirmation_sent ON therapeutic_plan_alert (confirmation_sent);

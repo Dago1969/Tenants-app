@@ -122,6 +122,12 @@
               <dd>{{ selectedEquipmentCount }}</dd>
             </div>
           </dl>
+
+          <ul *ngIf="summaryNotificationKeys.length > 0" class="summary-notification-list">
+            <li *ngFor="let notificationKey of summaryNotificationKeys" class="summary-notification-item">
+              {{ translate(notificationKey) }}
+            </li>
+          </ul>
         </article>
 
         <article class="manage-panel-card manage-panel-card-wide">
@@ -132,12 +138,57 @@
 
       <div *ngIf="activeSummarySubTab === 'alerts'" class="manage-panel-grid">
         <article class="manage-panel-card manage-panel-card-wide">
-          <h2>{{ translate('therapeuticPlan.manage.section.alerts') }}</h2>
-          <ul *ngIf="alertKeys.length > 0; else alertsEmpty" class="alert-list">
-            <li *ngFor="let alertKey of alertKeys" class="alert-list-item">
-              {{ translate(alertKey) }}
-            </li>
-          </ul>
+          <div class="manage-section-header">
+            <div>
+              <h2>{{ translate('therapeuticPlan.manage.section.alerts') }}</h2>
+              <p class="section-copy">{{ translate('therapeuticPlan.alert.section.description') }}</p>
+            </div>
+            <button
+              type="button"
+              class="manage-add-button"
+              (click)="openAlertModal()"
+              [disabled]="!canCreateAlert"
+            >
+              {{ translate('therapeuticPlan.alert.actions.add') }}
+            </button>
+          </div>
+
+          <p *ngIf="!canCreateAlert" class="inline-info-box">
+            {{ translate('therapeuticPlan.alert.info.doctorRequired') }}
+          </p>
+
+          <div *ngIf="alerts.length > 0; else alertsEmpty" class="alert-list-table-wrapper">
+            <table class="alert-list-table">
+              <thead>
+                <tr>
+                  <th>{{ translate('therapeuticPlan.alert.field.date') }}</th>
+                  <th>{{ translate('therapeuticPlan.alert.field.subject') }}</th>
+                  <th>{{ translate('therapeuticPlan.alert.field.confirmationRequired') }}</th>
+                  <th>{{ translate('therapeuticPlan.alert.field.confirmationSent') }}</th>
+                  <th>{{ translate('search.actions') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let alert of alerts">
+                  <td class="alert-list-date">{{ formatDate(alert.date) }}</td>
+                  <td class="alert-list-subject">{{ alert.subject }}</td>
+                  <td>{{ getConfirmationRequiredLabel(alert.confirmationRequired) }}</td>
+                  <td>{{ getConfirmationSentDisplayValue(alert.confirmationSent) }}</td>
+                  <td class="alert-list-actions-cell">
+                    <button
+                      type="button"
+                      class="alert-list-icon-btn"
+                      [attr.aria-label]="translate('therapeuticPlan.alert.actions.edit')"
+                      [attr.title]="translate('therapeuticPlan.alert.actions.edit')"
+                      (click)="openAlertEditModal(alert)"
+                    >
+                      <span aria-hidden="true">✎</span>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
           <ng-template #alertsEmpty>
             <p class="empty-state">{{ translate('therapeuticPlan.manage.empty.alerts') }}</p>
@@ -294,3 +345,56 @@
     </div>
   </div>
 </ng-template>
+
+<qtm-step-modal
+  *ngIf="alertModalOpen"
+  [title]="translate(alertModalTitleKey)"
+  [step]="1"
+  [totalSteps]="1"
+  [stepTitle]="translate('therapeuticPlan.alert.modal.stepTitle')"
+  [stepDescription]="translate('therapeuticPlan.alert.modal.stepDescription')"
+  (close)="closeAlertModal()"
+>
+  <div class="alert-modal-shell">
+    <div *ngIf="alertErrorMessage" class="therapeutic-plan-alert therapeutic-plan-alert-error">
+      {{ alertErrorMessage }}
+    </div>
+
+    <section class="alert-modal-grid">
+      <label class="alert-modal-field">
+        <span>{{ translate('therapeuticPlan.alert.field.date') }}</span>
+        <input [(ngModel)]="alertForm.date" type="date" />
+      </label>
+
+      <label class="alert-modal-field alert-modal-field-full">
+        <span>{{ translate('therapeuticPlan.alert.field.subject') }}</span>
+        <textarea [(ngModel)]="alertForm.subject" rows="4" maxlength="255"></textarea>
+      </label>
+
+      <label class="alert-modal-field">
+        <span>{{ translate('therapeuticPlan.alert.field.confirmationRequired') }}</span>
+        <select [(ngModel)]="alertForm.confirmationRequired" (ngModelChange)="onConfirmationRequiredChange()">
+          <option [ngValue]="true">{{ translate('common.yes') }}</option>
+          <option [ngValue]="false">{{ translate('common.no') }}</option>
+        </select>
+      </label>
+
+      <label *ngIf="alertConfirmationSentVisible" class="alert-modal-field">
+        <span>{{ translate('therapeuticPlan.alert.field.confirmationSent') }}</span>
+        <select [(ngModel)]="alertForm.confirmationSent">
+          <option value="yes">{{ translate('common.yes') }}</option>
+          <option value="no">{{ translate('common.no') }}</option>
+        </select>
+      </label>
+    </section>
+  </div>
+
+  <div modal-actions class="therapeutic-plan-actions">
+    <button type="button" class="therapeutic-plan-btn therapeutic-plan-btn-secondary" (click)="closeAlertModal()">
+      {{ translate('crud.actions.cancel') }}
+    </button>
+    <button type="button" class="therapeutic-plan-btn therapeutic-plan-btn-primary" [disabled]="alertSaving" (click)="saveAlert()">
+      {{ translate(alertSubmitLabelKey) }}
+    </button>
+  </div>
+</qtm-step-modal>

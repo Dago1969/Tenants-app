@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
 import { forkJoin, of } from 'rxjs';
@@ -8,6 +9,7 @@ import { catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { StructureApiService, StructureDto } from '../../core/structure-api.service';
 import { MessageKey, t } from '../../i18n/messages';
+import { QtmStepModalComponent } from '../../shared/qtm-step-modal.component';
 
 interface TherapeuticPlanManageResponse {
   id?: number;
@@ -70,13 +72,31 @@ interface TherapeuticPlanSummarySubTab {
   titleKey: MessageKey;
 }
 
+interface TherapeuticPlanAlert {
+  id?: number;
+  therapeuticPlanId: number;
+  doctorId: number | null;
+  doctorName?: string;
+  date: string;
+  subject: string;
+  confirmationRequired: boolean;
+  confirmationSent: string;
+}
+
+interface TherapeuticPlanAlertForm {
+  date: string;
+  subject: string;
+  confirmationRequired: boolean;
+  confirmationSent: 'yes' | 'no' | 'na';
+}
+
 /**
  * Pagina di gestione del piano terapeutico con tab dedicati per riepilogo, paziente e aree operative collegate.
  */
 @Component({
   selector: 'app-therapeutic-plan-manage',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule, QtmStepModalComponent],
   templateUrl: './therapeutic-plan-manage.component.html',
   styleUrl: './therapeutic-plan-manage.component.css'
 })
@@ -107,6 +127,12 @@ export class TherapeuticPlanManageComponent implements OnInit {
   nurse: TherapeuticPlanNurse | null = null;
   doctor: TherapeuticPlanDoctor | null = null;
   selectedEquipment: TherapeuticPlanEquipment[] = [];
+  alerts: TherapeuticPlanAlert[] = [];
+  alertModalOpen = false;
+  alertSaving = false;
+  alertErrorMessage = '';
+  editingAlertId: number | null = null;
+  alertForm: TherapeuticPlanAlertForm = this.createEmptyAlertForm();
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -190,7 +216,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
     return String(this.selectedEquipment.length);
   }
 
-  get alertKeys(): MessageKey[] {
+  get summaryNotificationKeys(): MessageKey[] {
     if (!this.plan) {
       return [];
     }
@@ -219,6 +245,40 @@ export class TherapeuticPlanManageComponent implements OnInit {
     return alerts;
   }
 
+  get canCreateAlert(): boolean {
+    return !!this.planId && !!this.plan?.doctorId;
+  }
+
+  get alertConfirmationSentVisible(): boolean {
+    return this.alertForm.confirmationRequired;
+  }
+
+  get isEditingAlert(): boolean {
+    return this.editingAlertId !== null;
+  }
+
+  get alertModalTitleKey(): MessageKey {
+    return this.isEditingAlert
+      ? 'therapeuticPlan.alert.modal.titleEdit'
+      : 'therapeuticPlan.alert.modal.title';
+  }
+
+  get alertSubmitLabelKey(): MessageKey {
+    return this.isEditingAlert ? 'crud.actions.update' : 'crud.actions.create';
+  }
+
+  get confirmationSentLabel(): string {
+    if (!this.alertConfirmationSentVisible) {
+      return this.translate('therapeuticPlan.alert.confirmationSent.na');
+    }
+
+    return this.translate(this.alertForm.confirmationSent === 'yes'
+      ? 'common.yes'
+      : this.alertForm.confirmationSent === 'no'
+        ? 'common.no'
+        : 'therapeuticPlan.alert.confirmationSent.na');
+  }
+
   formatDate(value?: string): string {
     if (!value?.trim()) {
       return this.translate('common.notAvailable');
@@ -236,9 +296,127 @@ export class TherapeuticPlanManageComponent implements OnInit {
     }).format(parsedDate);
   }
 
+  openAlertModal(): void {
+    if (!this.canCreateAlert) {
+      return;
+    }
+
+    this.alertErrorMessage = '';
+    this.editingAlertId = null;
+    this.alertForm = this.createEmptyAlertForm();
+    this.alertModalOpen = true;
+  }
+
+  openAlertEditModal(alert: TherapeuticPlanAlert): void {
+    if (!this.canCreateAlert || alert.id == null) {
+      return;
+    }
+
+    this.alertErrorMessage = '';
+    this.editingAlertId = alert.id;
+    this.alertForm = {
+      date: alert.date ?? '',
+      subject: alert.subject ?? '',
+      confirmationRequired: alert.confirmationRequired,
+      confirmationSent: alert.confirmationRequired
+        ? this.normalizeConfirmationSent(alert.confirmationSent)
+        : 'na'
+    };
+    this.alertModalOpen = true;
+  }
+
+  closeAlertModal(): void {
+    if (this.alertSaving) {
+      return;
+    }
+
+    this.alertModalOpen = false;
+    this.alertErrorMessage = '';
+    this.editingAlertId = null;
+    this.alertForm = this.createEmptyAlertForm();
+  }
+
+  onConfirmationRequiredChange(): void {
+    if (!this.alertForm.confirmationRequired) {
+      this.alertForm.confirmationSent = 'na';
+    }
+  }
+
+  saveAlert(): void {
+    if (!this.planId || !this.plan?.doctorId || this.alertSaving) {
+      return;
+    }
+
+    this.alertErrorMessage = '';
+    if (!this.alertForm.date.trim()) {
+      this.alertErrorMessage = this.translate('therapeuticPlan.alert.validation.dateRequired');
+      return;
+    }
+    if (!this.alertForm.subject.trim()) {
+      this.alertErrorMessage = this.translate('therapeuticPlan.alert.validation.subjectRequired');
+      return;
+    }
+    if (this.alertForm.confirmationRequired && !['yes', 'no'].includes(this.alertForm.confirmationSent)) {
+      this.alertErrorMessage = this.translate('therapeuticPlan.alert.validation.confirmationSentRequired');
+      return;
+    }
+
+    this.alertSaving = true;
+    const payload: TherapeuticPlanAlert = {
+      therapeuticPlanId: this.planId,
+      doctorId: this.plan.doctorId,
+      date: this.alertForm.date,
+      subject: this.alertForm.subject.trim(),
+      confirmationRequired: this.alertForm.confirmationRequired,
+      confirmationSent: this.alertForm.confirmationRequired ? this.alertForm.confirmationSent : 'na'
+    };
+
+    const request = this.isEditingAlert && this.editingAlertId !== null
+      ? this.http.put<TherapeuticPlanAlert>(
+          `${environment.apiBaseUrl}/therapeutic-plans/${this.planId}/alerts/${this.editingAlertId}`,
+          payload
+        )
+      : this.http.post<TherapeuticPlanAlert>(`${environment.apiBaseUrl}/therapeutic-plans/${this.planId}/alerts`, payload);
+
+    request.subscribe({
+      next: (savedAlert) => {
+        this.alertSaving = false;
+        this.alerts = this.sortAlerts([
+          savedAlert,
+          ...this.alerts.filter((currentAlert) => currentAlert.id !== savedAlert.id)
+        ]);
+        this.closeAlertModal();
+      },
+      error: (error: HttpErrorResponse) => {
+        this.alertSaving = false;
+        this.alertErrorMessage = this.resolveErrorMessage(error);
+      }
+    });
+  }
+
+  getConfirmationRequiredLabel(value: boolean): string {
+    return this.translate(value ? 'common.yes' : 'common.no');
+  }
+
+  getConfirmationSentDisplayValue(value?: string): string {
+    if (!value?.trim()) {
+      return this.translate('common.notAvailable');
+    }
+
+    switch (value.trim().toLowerCase()) {
+      case 'yes':
+        return this.translate('common.yes');
+      case 'no':
+        return this.translate('common.no');
+      default:
+        return this.translate('therapeuticPlan.alert.confirmationSent.na');
+    }
+  }
+
   private loadManageData(planId: number): void {
     forkJoin({
       plan: this.http.get<TherapeuticPlanManageResponse>(`${environment.apiBaseUrl}/therapeutic-plans/${planId}`),
+      alerts: this.http.get<TherapeuticPlanAlert[]>(`${environment.apiBaseUrl}/therapeutic-plans/${planId}/alerts`).pipe(catchError(() => of([] as TherapeuticPlanAlert[]))),
       patients: this.http.get<TherapeuticPlanPatient[]>(`${environment.apiBaseUrl}/patients`).pipe(catchError(() => of([] as TherapeuticPlanPatient[]))),
       hospitals: this.structureApiService.getStructuresByType('HOSPITAL', true).pipe(catchError(() => of([] as StructureDto[]))),
       specialistClinics: this.structureApiService.getStructuresByType('SPECIALIST_CLINIC', true).pipe(catchError(() => of([] as StructureDto[]))),
@@ -246,7 +424,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
       doctors: this.http.get<TherapeuticPlanDoctor[]>(`${environment.apiBaseUrl}/doctors`).pipe(catchError(() => of([] as TherapeuticPlanDoctor[]))),
       equipment: this.http.get<TherapeuticPlanEquipment[]>(`${environment.apiBaseUrl}/equipment`).pipe(catchError(() => of([] as TherapeuticPlanEquipment[])))
     }).subscribe({
-      next: ({ plan, patients, hospitals, specialistClinics, nurses, doctors, equipment }) => {
+      next: ({ plan, alerts, patients, hospitals, specialistClinics, nurses, doctors, equipment }) => {
         // Controllo progetto
         const currentProject = this.authService.getSelectedProject();
         if (plan.projectCode !== currentProject) {
@@ -259,6 +437,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
         this.nurse = nurses.find((currentNurse) => currentNurse.id === plan.nurseId) ?? null;
         this.doctor = doctors.find((currentDoctor) => currentDoctor.id === plan.doctorId) ?? null;
         this.selectedEquipment = (equipment ?? []).filter((currentEquipment) => plan.equipmentIds?.includes(currentEquipment.id));
+        this.alerts = this.sortAlerts(alerts ?? []);
         this.loading = false;
       },
       error: (error: HttpErrorResponse) => {
@@ -280,5 +459,39 @@ export class TherapeuticPlanManageComponent implements OnInit {
     }
 
     return this.translate('crud.error.load');
+  }
+
+  private createEmptyAlertForm(): TherapeuticPlanAlertForm {
+    return {
+      date: this.getTodayDateInputValue(),
+      subject: '',
+      confirmationRequired: true,
+      confirmationSent: 'no'
+    };
+  }
+
+  private getTodayDateInputValue(): string {
+    const today = new Date();
+    const timezoneOffset = today.getTimezoneOffset() * 60_000;
+    return new Date(today.getTime() - timezoneOffset).toISOString().slice(0, 10);
+  }
+
+  private normalizeConfirmationSent(value?: string): 'yes' | 'no' | 'na' {
+    switch (value?.trim().toLowerCase()) {
+      case 'yes':
+        return 'yes';
+      case 'no':
+        return 'no';
+      default:
+        return 'na';
+    }
+  }
+
+  private sortAlerts(alerts: TherapeuticPlanAlert[]): TherapeuticPlanAlert[] {
+    return [...alerts].sort((left, right) => {
+      const leftDate = left.date ?? '';
+      const rightDate = right.date ?? '';
+      return rightDate.localeCompare(leftDate) || (right.id ?? 0) - (left.id ?? 0);
+    });
   }
 }
