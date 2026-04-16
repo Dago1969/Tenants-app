@@ -9,6 +9,7 @@ import com.qtm.tenants.authorization.dto.AuthorizationRoleMatrixDto;
 import com.qtm.tenants.authorization.dto.AuthorizationUpdateRequestDto;
 import com.qtm.tenants.authorization.entity.FunctionModuleRoleAuthorizationEntity;
 import com.qtm.tenants.authorization.repository.FunctionModuleRoleAuthorizationRepository;
+import com.qtm.tenants.equipment.dto.EquipmentDTO;
 import com.qtm.tenants.authorization.service.ControllerFunctionAuthorizationService;
 import com.qtm.tenants.equipment.dto.EquipmentTypeDTO;
 import com.qtm.tenants.function.entity.FunctionEntity;
@@ -46,6 +47,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 @RequiredArgsConstructor
 public class AuthorizationManagementService {
 
+        private static final String MODULE_EQUIPMENT = "EQUIPMENT";
         private static final String MODULE_EQUIPMENT_TYPE = "EQUIPMENT_TYPE";
 
     private static final List<String> DEFAULT_COMMON_FUNCTION_CODES = List.of(
@@ -93,6 +95,13 @@ public class AuthorizationManagementService {
                     "nurse",
                     resolveEntityFields(NurseEntity.class, Set.of("id"), Map.of()),
                     List.of()
+            ),
+            new ModuleDefinition(
+                    MODULE_EQUIPMENT,
+                    "Attrezzature",
+                    "equipment",
+                    resolveEntityFields(EquipmentDTO.class, Set.of("id", "equipmentTypeCode", "equipmentTypeName"), Map.of()),
+                    DEFAULT_COMMON_FUNCTION_CODES
             ),
             new ModuleDefinition(
                     MODULE_EQUIPMENT_TYPE,

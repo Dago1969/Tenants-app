@@ -1,0 +1,221 @@
+.equipment-wizard-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.equipment-step-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 20px;
+}
+
+.equipment-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.equipment-field span,
+.equipment-json-grid-head {
+  color: #355277;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.equipment-field-full,
+.equipment-inline-hint-full {
+  grid-column: 1 / -1;
+}
+
+.equipment-field input,
+.equipment-field select,
+.equipment-field textarea,
+.equipment-json-value input,
+.equipment-json-value textarea {
+  width: 100%;
+  border: 1.5px solid #d3e5f8;
+  border-radius: 16px;
+  background: #edf6ff;
+  color: #1a3a5d;
+  padding: 12px 16px;
+  font-size: 0.96rem;
+  box-sizing: border-box;
+}
+
+.equipment-field textarea,
+.equipment-json-value textarea {
+  resize: vertical;
+  min-height: 112px;
+}
+
+.equipment-field input:focus,
+.equipment-field select:focus,
+.equipment-field textarea:focus,
+.equipment-json-value input:focus,
+.equipment-json-value textarea:focus {
+  outline: none;
+  border-color: #1870e8;
+  box-shadow: 0 0 0 3px rgba(24, 112, 232, 0.12);
+}
+
+.equipment-inline-hint {
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: #f0f7ff;
+  color: #466487;
+  font-size: 0.92rem;
+}
+
+.equipment-json-step {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.equipment-json-field-row {
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: #f8fbff;
+  border: 1px solid #e3edf8;
+}
+
+.equipment-json-grid {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.9fr) minmax(320px, 1.1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.equipment-json-grid-row {
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: #f8fbff;
+  border: 1px solid #e3edf8;
+}
+
+.equipment-json-key {
+  color: #355277;
+  font-weight: 600;
+  word-break: break-word;
+  padding-top: 12px;
+}
+
+.equipment-checkbox-line {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #355277;
+  font-weight: 600;
+}
+
+.equipment-alert {
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-size: 0.94rem;
+}
+
+.equipment-alert-error {
+  background: #fff1f2;
+  color: #b42318;
+  border: 1px solid #fecdd3;
+}
+
+.equipment-alert-info {
+  background: #eef6ff;
+  color: #31577e;
+  border: 1px solid #d5e5f7;
+}
+
+.equipment-metadata-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.equipment-metadata-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.9fr) minmax(280px, 1.1fr) auto;
+  gap: 12px;
+  align-items: end;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: #f8fbff;
+  border: 1px solid #e3edf8;
+}
+
+.equipment-metadata-remove {
+  min-width: 48px;
+  height: 48px;
+  border: 1px solid #d3e5f8;
+  border-radius: 16px;
+  background: #fff;
+  color: #355277;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.equipment-btn-small {
+  min-width: auto;
+  padding: 10px 16px;
+}
+
+.equipment-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.equipment-btn {
+  min-width: 144px;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
+}
+
+.equipment-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.equipment-btn-primary {
+  color: #fff;
+  background: linear-gradient(90deg, #1870e8 0%, #1fc4ff 100%);
+  box-shadow: 0 10px 24px rgba(24, 112, 232, 0.22);
+}
+
+.equipment-btn-secondary {
+  color: #355277;
+  background: #edf4fb;
+}
+
+.equipment-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 240px;
+  color: #466487;
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .equipment-step-grid,
+  .equipment-json-grid,
+  .equipment-metadata-row {
+    grid-template-columns: 1fr;
+  }
+
+  .equipment-actions {
+    flex-wrap: wrap;
+  }
+
+  .equipment-btn {
+    flex: 1 1 180px;
+  }
+}

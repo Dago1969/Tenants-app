@@ -26,6 +26,8 @@ import { ControllerFunctionMappingsComponent } from './features/controller-funct
 import { StructureCatalogComponent } from './features/structure-catalog/structure-catalog.component';
 import { StructureSearchComponent } from './features/structure-search/structure-search.component';
 import { StructureTypesSearchComponent } from './features/structure-types-search/structure-types-search.component';
+import { EquipmentSearchComponent } from './features/equipment-search/equipment-search.component';
+import { EquipmentCrudComponent } from './features/equipment/equipment-crud.component';
 import { EquipmentTypesSearchComponent } from './features/equipment-types-search/equipment-types-search.component';
 import { EquipmentTypesCrudComponent } from './features/equipment-types/equipment-types-crud.component';
 import { StructureTypesCrudComponent } from './features/structure-types-crud/structure-types-crud.component';
@@ -40,6 +42,9 @@ export const appRoutes: Routes = [
   { path: 'hospitals-search', pathMatch: 'full', redirectTo: 'structures/hospitals' },
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
+  { path: 'equipment/search', component: EquipmentSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('EQUIPMENT')] },
+  { path: 'equipment/manage', component: EquipmentCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('EQUIPMENT')] },
+  { path: 'equipment/manage/:id', component: EquipmentCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('EQUIPMENT')] },
   { path: 'equipment-types/search', component: EquipmentTypesSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('EQUIPMENT_TYPE')] },
   { path: 'equipment-types/manage', component: EquipmentTypesCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('EQUIPMENT_TYPE')] },
   { path: 'equipment-types/manage/:code', component: EquipmentTypesCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('EQUIPMENT_TYPE')] },

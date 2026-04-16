@@ -1,5 +1,6 @@
 package com.qtm.tenants.authorization;
 
+import com.qtm.tenants.equipment.dto.EquipmentDTO;
 import com.qtm.tenants.equipment.dto.EquipmentTypeDTO;
 import com.qtm.tenants.module.entity.ModuleEntity;
 import com.qtm.tenants.module.repository.ModuleRepository;
@@ -32,6 +33,7 @@ import java.util.stream.Stream;
 @Order(10)
 public class AuthorizationBootstrap implements CommandLineRunner {
 
+    private static final String MODULE_EQUIPMENT = "EQUIPMENT";
     private static final String MODULE_EQUIPMENT_TYPE = "EQUIPMENT_TYPE";
     private static final String MODULE_PATIENT = "PATIENT";
     private static final String MODULE_DOCTOR = "DOCTOR";
@@ -40,14 +42,19 @@ public class AuthorizationBootstrap implements CommandLineRunner {
         private static final List<String> MODULE_CODES = Stream.of(
                 List.of("USER"),
                 StructureModuleCodes.AUTHORIZATION_MODULE_CODES,
-                List.of("ROLE", "MODULE", MODULE_FUNCTION, MODULE_PATIENT, MODULE_DOCTOR, MODULE_NURSE, MODULE_EQUIPMENT_TYPE)
+            List.of("ROLE", "MODULE", MODULE_FUNCTION, MODULE_PATIENT, MODULE_DOCTOR, MODULE_NURSE, MODULE_EQUIPMENT, MODULE_EQUIPMENT_TYPE)
             )
             .flatMap(List::stream)
             .toList();
+        private static final String ENTITY_EQUIPMENT = "equipment";
     private static final String ENTITY_EQUIPMENT_TYPE = "equipmentType";
     private static final String ENTITY_PATIENT = "patient";
     private static final String ENTITY_DOCTOR = "doctor";
     private static final String ENTITY_NURSE = "nurse";
+        private static final List<String> EQUIPMENT_FIELDS = resolveEntityFields(
+            EquipmentDTO.class,
+            Set.of("id", "equipmentTypeCode", "equipmentTypeName")
+        );
     private static final List<String> EQUIPMENT_TYPE_FIELDS = resolveEntityFields(EquipmentTypeDTO.class, Set.of("id"));
 
     private static final List<String> PATIENT_FIELDS = List.of(
@@ -102,6 +109,9 @@ public class AuthorizationBootstrap implements CommandLineRunner {
                 if (MODULE_NURSE.equals(moduleCode)) {
                     ensureNurseFieldAuthorizations(moduleRoleAuthorization, adminRole);
                 }
+                if (MODULE_EQUIPMENT.equals(moduleCode)) {
+                    ensureEquipmentFieldAuthorizations(moduleRoleAuthorization, adminRole);
+                }
                 if (MODULE_EQUIPMENT_TYPE.equals(moduleCode)) {
                     ensureEquipmentTypeFieldAuthorizations(moduleRoleAuthorization, adminRole);
                 }
@@ -136,6 +146,9 @@ public class AuthorizationBootstrap implements CommandLineRunner {
     }
 
     private String resolveModuleName(String moduleCode) {
+        if (MODULE_EQUIPMENT.equals(moduleCode)) {
+            return "Attrezzature";
+        }
         if (MODULE_EQUIPMENT_TYPE.equals(moduleCode)) {
             return "Tipi Attrezzature";
         }
@@ -262,6 +275,38 @@ public class AuthorizationBootstrap implements CommandLineRunner {
     }
 
     private AuthorizationScope defaultNurseFieldScope(boolean adminRole) {
+        if (adminRole) {
+            return AuthorizationScope.FULL_EDIT;
+        }
+        return AuthorizationScope.READ_ONLY;
+    }
+
+    private void ensureEquipmentFieldAuthorizations(
+            ModuleRoleAuthorizationEntity moduleRoleAuthorization,
+            boolean adminRole
+    ) {
+        Map<String, FieldAuthorizationEntity> existingByField = fieldAuthorizationRepository
+                .findAllByModuleRoleAuthorizationModuleCodeAndModuleRoleAuthorizationRoleIdAndEntityName(
+                        MODULE_EQUIPMENT,
+                        moduleRoleAuthorization.getRole().getId(),
+                        ENTITY_EQUIPMENT
+                ).stream().collect(Collectors.toMap(FieldAuthorizationEntity::getFieldName, Function.identity()));
+
+        for (String field : EQUIPMENT_FIELDS) {
+            if (existingByField.containsKey(field)) {
+                continue;
+            }
+
+            FieldAuthorizationEntity fieldAuthorization = new FieldAuthorizationEntity();
+            fieldAuthorization.setModuleRoleAuthorization(moduleRoleAuthorization);
+            fieldAuthorization.setEntityName(ENTITY_EQUIPMENT);
+            fieldAuthorization.setFieldName(field);
+            fieldAuthorization.setAuthorization(defaultEquipmentFieldScope(adminRole));
+            fieldAuthorizationRepository.save(fieldAuthorization);
+        }
+    }
+
+    private AuthorizationScope defaultEquipmentFieldScope(boolean adminRole) {
         if (adminRole) {
             return AuthorizationScope.FULL_EDIT;
         }

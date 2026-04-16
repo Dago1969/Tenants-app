@@ -1,0 +1,148 @@
+<qtm-step-modal
+  [title]="translate(titleKey)"
+  [step]="currentStepIndex + 1"
+  [totalSteps]="steps.length"
+  [stepTitle]="stepTitle"
+  [stepDescription]="stepDescription"
+  (close)="cancel()"
+>
+  <div class="equipment-wizard-shell" *ngIf="!loading; else loadingState">
+    <div *ngIf="errorMessage" class="equipment-alert equipment-alert-error">
+      {{ errorMessage }}
+    </div>
+
+    <section *ngIf="currentStep.key === 'main'" class="equipment-step-grid">
+      <label class="equipment-field">
+        <span>{{ translate('equipment.field.code') }}</span>
+        <input [(ngModel)]="formModel.code" type="text" maxlength="64" />
+      </label>
+
+      <label class="equipment-field">
+        <span>{{ translate('equipment.field.equipmentType') }}</span>
+        <select
+          [ngModel]="formModel.equipmentTypeId ?? ''"
+          (ngModelChange)="onEquipmentTypeChange($event)"
+          [disabled]="equipmentTypeLocked"
+        >
+          <option value=""></option>
+          <option *ngFor="let equipmentType of equipmentTypes" [value]="equipmentType.id">
+            {{ equipmentType.code }} - {{ equipmentType.name }}
+          </option>
+        </select>
+      </label>
+
+      <div *ngIf="equipmentTypeLocked" class="equipment-inline-hint equipment-inline-hint-full">
+        {{ translate('equipment.type.locked') }}
+      </div>
+
+      <label class="equipment-field">
+        <span>{{ translate('equipment.field.status') }}</span>
+        <select [(ngModel)]="formModel.status">
+          <option *ngFor="let option of statusOptions" [value]="option.value">
+            {{ translate(option.labelKey) }}
+          </option>
+        </select>
+      </label>
+
+      <label class="equipment-field">
+        <span>
+          {{ translate('equipment.field.serialNumber') }}
+          <strong *ngIf="serialNumberRequired">*</strong>
+        </span>
+        <input [(ngModel)]="formModel.serialNumber" type="text" maxlength="128" />
+      </label>
+
+      <label class="equipment-field">
+        <span>{{ translate('equipment.field.location') }}</span>
+        <input [(ngModel)]="formModel.location" type="text" maxlength="255" />
+      </label>
+
+      <label class="equipment-field">
+        <span>{{ translate('equipment.field.assignedTo') }}</span>
+        <input [(ngModel)]="formModel.assignedTo" type="text" maxlength="255" />
+      </label>
+    </section>
+
+    <section *ngIf="currentStep.key === 'details'" class="equipment-step-grid">
+      <label class="equipment-field">
+        <span>{{ translate('equipment.field.purchaseDate') }}</span>
+        <input [(ngModel)]="formModel.purchaseDate" type="date" />
+      </label>
+
+      <label class="equipment-field">
+        <span>{{ translate('equipment.field.lastRevisionDate') }}</span>
+        <input [(ngModel)]="formModel.lastRevisionDate" type="date" />
+      </label>
+
+      <label class="equipment-field">
+        <span>{{ translate('equipment.field.nextRevisionDate') }}</span>
+        <input [(ngModel)]="formModel.nextRevisionDate" type="date" />
+      </label>
+
+      <label class="equipment-field equipment-field-full">
+        <span>{{ translate('equipment.field.notes') }}</span>
+        <textarea [(ngModel)]="formModel.notes" rows="6"></textarea>
+      </label>
+    </section>
+
+    <section *ngIf="currentStep.key === 'primary-json'" class="equipment-json-step">
+      <p *ngIf="primaryTemplateError" class="equipment-alert equipment-alert-info">{{ primaryTemplateError }}</p>
+      <div *ngFor="let entry of primaryJsonEntries" class="equipment-json-field-row">
+        <label class="equipment-field equipment-field-full">
+          <span>{{ entry.path }}</span>
+          <input *ngIf="entry.valueType === 'string' || entry.valueType === 'null'" [(ngModel)]="entry.stringValue" type="text" />
+          <input *ngIf="entry.valueType === 'number'" [(ngModel)]="entry.numberValue" type="number" />
+          <label *ngIf="entry.valueType === 'boolean'" class="equipment-checkbox-line">
+            <input [(ngModel)]="entry.booleanValue" type="checkbox" />
+            <span>{{ entry.booleanValue ? translate('common.yes') : translate('common.no') }}</span>
+          </label>
+          <textarea *ngIf="entry.valueType === 'json'" [(ngModel)]="entry.stringValue" rows="4"></textarea>
+        </label>
+      </div>
+    </section>
+
+    <section *ngIf="currentStep.key === 'secondary-json'" class="equipment-json-step">
+      <p *ngIf="secondaryTemplateError" class="equipment-alert equipment-alert-info">{{ secondaryTemplateError }}</p>
+      <div class="equipment-inline-hint" *ngIf="!secondaryJsonExtensible">
+        additional_metadata
+      </div>
+      <div class="equipment-metadata-toolbar" *ngIf="secondaryJsonExtensible">
+        <button type="button" class="equipment-btn equipment-btn-secondary equipment-btn-small" (click)="addSecondaryMetadataEntry()">
+          {{ translate('crud.actions.new') }} additional_metadata
+        </button>
+      </div>
+      <div *ngFor="let entry of secondaryMetadataEntries; let index = index" class="equipment-metadata-row">
+        <label class="equipment-field">
+          <span>additional_metadata</span>
+          <input [(ngModel)]="entry.key" type="text" />
+        </label>
+        <label class="equipment-field">
+          <span>{{ entry.key.trim() }}</span>
+          <input [(ngModel)]="entry.value" type="text" />
+        </label>
+        <button type="button" class="equipment-metadata-remove" (click)="removeSecondaryMetadataEntry(index)">
+          ×
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <ng-template #loadingState>
+    <div class="equipment-loading">{{ translate('equipment.state.loading') }}</div>
+  </ng-template>
+
+  <div modal-actions class="equipment-actions">
+    <button type="button" class="equipment-btn equipment-btn-secondary" (click)="cancel()">
+      {{ translate('crud.actions.cancel') }}
+    </button>
+    <button *ngIf="!isFirstStep" type="button" class="equipment-btn equipment-btn-secondary" (click)="previousStep()">
+      {{ translate('projects.wizard.actions.previous') }}
+    </button>
+    <button *ngIf="!isLastStep" type="button" class="equipment-btn equipment-btn-primary" (click)="nextStep()">
+      {{ translate('crud.actions.next') }}
+    </button>
+    <button *ngIf="isLastStep" type="button" class="equipment-btn equipment-btn-primary" [disabled]="saving" (click)="save()">
+      {{ translate(equipmentId === null ? 'crud.actions.create' : 'crud.actions.update') }}
+    </button>
+  </div>
+</qtm-step-modal>

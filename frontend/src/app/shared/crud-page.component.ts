@@ -187,7 +187,7 @@ interface OperationLogEntry {
                 >
                   <option value=""></option>
                   <option *ngFor="let option of getFieldOptions(field)" [ngValue]="option.value">
-                    {{ option.label }}
+                    {{ resolveOptionLabel(option.label) }}
                   </option>
                 </select>
                 <div *ngIf="shouldShowRequiredError(field, selectField)" class="crud-field-error">
@@ -348,6 +348,10 @@ export class CrudPageComponent implements OnInit, OnChanges {
 
   translate(key: MessageKey): string {
     return t(key);
+  }
+
+  resolveOptionLabel(label: string): string {
+    return hasMessageKey(label) ? t(label) : label;
   }
 
   getFieldOptions(field: CrudField): SelectOption[] {
