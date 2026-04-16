@@ -1,0 +1,296 @@
+<div class="therapeutic-plan-manage-page" *ngIf="!loading; else loadingState">
+  <ng-container *ngIf="!errorMessage; else errorState">
+    <header class="manage-hero">
+      <button class="manage-back" type="button" (click)="goBack()">
+        {{ translate('therapeuticPlan.manage.back') }}
+      </button>
+
+      <div class="manage-hero-copy">
+        <span class="manage-eyebrow">{{ translate('menu.therapeuticPlans') }}</span>
+        <h1>{{ translate('therapeuticPlan.manage.title') }}</h1>
+        <p>{{ translate('therapeuticPlan.manage.subtitle') }}</p>
+      </div>
+
+      <div class="manage-hero-metrics">
+        <div class="metric-card">
+          <span class="metric-label">{{ translate('common.id') }}</span>
+          <strong class="metric-value">#{{ planId }}</strong>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">{{ translate('therapeuticPlan.field.patient') }}</span>
+          <strong class="metric-value">{{ patientDisplayName }}</strong>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">{{ translate('therapeuticPlan.field.status') }}</span>
+          <span class="status-badge" [ngClass]="statusClass">{{ translate(statusLabelKey) }}</span>
+        </div>
+      </div>
+    </header>
+
+    <section class="manage-overview-strip">
+      <article class="overview-card">
+        <span class="overview-label">{{ translate('common.project') }}</span>
+        <strong>{{ plan?.projectCode || translate('common.notAvailable') }}</strong>
+      </article>
+      <article class="overview-card">
+        <span class="overview-label">{{ translate('therapeuticPlan.field.structure') }}</span>
+        <strong>{{ structureLabel }}</strong>
+      </article>
+      <article class="overview-card">
+        <span class="overview-label">{{ translate('therapeuticPlan.field.startDate') }}</span>
+        <strong>{{ formatDate(plan?.startDate) }}</strong>
+      </article>
+      <article class="overview-card">
+        <span class="overview-label">{{ translate('therapeuticPlan.field.endDate') }}</span>
+        <strong>{{ formatDate(plan?.endDate) }}</strong>
+      </article>
+    </section>
+
+    <nav class="manage-tabs" [attr.aria-label]="translate('therapeuticPlan.manage.tabs.ariaLabel')">
+      <button
+        *ngFor="let tab of tabs"
+        type="button"
+        class="manage-tab"
+        [class.manage-tab-active]="activeTab === tab.key"
+        (click)="setActiveTab(tab.key)"
+      >
+        {{ translate(tab.titleKey) }}
+      </button>
+    </nav>
+
+    <section *ngIf="activeTab === 'summary'" class="manage-summary-shell">
+      <nav class="manage-subtabs" [attr.aria-label]="translate('therapeuticPlan.manage.subtabs.ariaLabel')">
+        <button
+          *ngFor="let subtab of summarySubTabs"
+          type="button"
+          class="manage-subtab"
+          [class.manage-subtab-active]="activeSummarySubTab === subtab.key"
+          (click)="setActiveSummarySubTab(subtab.key)"
+        >
+          {{ translate(subtab.titleKey) }}
+        </button>
+      </nav>
+
+      <div *ngIf="activeSummarySubTab === 'notifications'" class="manage-panel-grid">
+        <article class="manage-panel-card">
+          <h2>{{ translate('therapeuticPlan.manage.section.summary') }}</h2>
+          <dl class="detail-grid">
+            <div>
+              <dt>{{ translate('therapeuticPlan.field.patient') }}</dt>
+              <dd>{{ patientDisplayName }}</dd>
+            </div>
+            <div>
+              <dt>{{ translate('patients.field.assistedId') }}</dt>
+              <dd>{{ patientCode }}</dd>
+            </div>
+            <div>
+              <dt>{{ translate('therapeuticPlan.field.projectCode') }}</dt>
+              <dd>{{ plan?.projectCode || translate('common.notAvailable') }}</dd>
+            </div>
+            <div>
+              <dt>{{ translate('therapeuticPlan.field.drugCode') }}</dt>
+              <dd>{{ plan?.drugCode || translate('common.notAvailable') }}</dd>
+            </div>
+            <div>
+              <dt>{{ translate('therapeuticPlan.field.nurse') }}</dt>
+              <dd>{{ nurseLabel }}</dd>
+            </div>
+            <div>
+              <dt>{{ translate('therapeuticPlan.field.doctor') }}</dt>
+              <dd>{{ doctorLabel }}</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="manage-panel-card">
+          <h2>{{ translate('therapeuticPlan.manage.section.notifications') }}</h2>
+          <dl class="detail-grid">
+            <div>
+              <dt>{{ translate('therapeuticPlan.field.startDate') }}</dt>
+              <dd>{{ formatDate(plan?.startDate) }}</dd>
+            </div>
+            <div>
+              <dt>{{ translate('therapeuticPlan.field.endDate') }}</dt>
+              <dd>{{ formatDate(plan?.endDate) }}</dd>
+            </div>
+            <div>
+              <dt>{{ translate('therapeuticPlan.field.status') }}</dt>
+              <dd>{{ translate(statusLabelKey) }}</dd>
+            </div>
+            <div>
+              <dt>{{ translate('therapeuticPlan.manage.field.equipmentCount') }}</dt>
+              <dd>{{ selectedEquipmentCount }}</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="manage-panel-card manage-panel-card-wide">
+          <h2>{{ translate('therapeuticPlan.field.notes') }}</h2>
+          <p class="note-box">{{ plan?.notes?.trim() || translate('therapeuticPlan.manage.empty.notes') }}</p>
+        </article>
+      </div>
+
+      <div *ngIf="activeSummarySubTab === 'alerts'" class="manage-panel-grid">
+        <article class="manage-panel-card manage-panel-card-wide">
+          <h2>{{ translate('therapeuticPlan.manage.section.alerts') }}</h2>
+          <ul *ngIf="alertKeys.length > 0; else alertsEmpty" class="alert-list">
+            <li *ngFor="let alertKey of alertKeys" class="alert-list-item">
+              {{ translate(alertKey) }}
+            </li>
+          </ul>
+
+          <ng-template #alertsEmpty>
+            <p class="empty-state">{{ translate('therapeuticPlan.manage.empty.alerts') }}</p>
+          </ng-template>
+        </article>
+      </div>
+    </section>
+
+    <section *ngIf="activeTab === 'patient'" class="manage-panel-grid">
+      <article class="manage-panel-card">
+        <h2>{{ translate('therapeuticPlan.manage.section.patientProfile') }}</h2>
+        <dl class="detail-grid">
+          <div>
+            <dt>{{ translate('patients.field.firstName') }}</dt>
+            <dd>{{ patient?.firstName || translate('common.notAvailable') }}</dd>
+          </div>
+          <div>
+            <dt>{{ translate('patients.field.lastName') }}</dt>
+            <dd>{{ patient?.lastName || translate('common.notAvailable') }}</dd>
+          </div>
+          <div>
+            <dt>{{ translate('patients.field.fiscalCode') }}</dt>
+            <dd>{{ patient?.fiscalCode || translate('common.notAvailable') }}</dd>
+          </div>
+          <div>
+            <dt>{{ translate('patients.field.assistedId') }}</dt>
+            <dd>{{ patientCode }}</dd>
+          </div>
+          <div>
+            <dt>{{ translate('patients.field.prescribingSpecialist') }}</dt>
+            <dd>{{ patient?.prescribingSpecialist || translate('common.notAvailable') }}</dd>
+          </div>
+          <div>
+            <dt>{{ translate('patients.field.preferredContact') }}</dt>
+            <dd>{{ patient?.preferredContact || translate('common.notAvailable') }}</dd>
+          </div>
+        </dl>
+      </article>
+
+      <article class="manage-panel-card">
+        <h2>{{ translate('therapeuticPlan.manage.section.patientContacts') }}</h2>
+        <dl class="detail-grid">
+          <div>
+            <dt>{{ translate('patients.field.email') }}</dt>
+            <dd>{{ patient?.email || translate('common.notAvailable') }}</dd>
+          </div>
+          <div>
+            <dt>{{ translate('patients.field.primaryPhone') }}</dt>
+            <dd>{{ patient?.primaryPhone || translate('common.notAvailable') }}</dd>
+          </div>
+          <div>
+            <dt>{{ translate('patients.field.deliveryAddress') }}</dt>
+            <dd>{{ patient?.deliveryAddress || translate('common.notAvailable') }}</dd>
+          </div>
+          <div>
+            <dt>{{ translate('patients.field.city') }}</dt>
+            <dd>{{ patient?.city || translate('common.notAvailable') }}</dd>
+          </div>
+          <div>
+            <dt>{{ translate('patients.field.province') }}</dt>
+            <dd>{{ patient?.province || translate('common.notAvailable') }}</dd>
+          </div>
+          <div>
+            <dt>{{ translate('patients.field.caregiverFullName') }}</dt>
+            <dd>{{ patient?.caregiverFullName || translate('common.notAvailable') }}</dd>
+          </div>
+        </dl>
+      </article>
+    </section>
+
+    <section *ngIf="activeTab === 'modules'" class="manage-panel-grid">
+      <article class="manage-panel-card manage-panel-card-wide">
+        <h2>{{ translate('therapeuticPlan.manage.section.modules') }}</h2>
+        <p class="section-copy">{{ translate('therapeuticPlan.manage.section.modules.description') }}</p>
+
+        <ul *ngIf="selectedEquipment.length > 0; else modulesEmpty" class="resource-list">
+          <li *ngFor="let equipment of selectedEquipment" class="resource-list-item">
+            <div>
+              <strong>{{ equipment.code }}</strong>
+              <span>{{ equipment.equipmentTypeName || translate('common.notAvailable') }}</span>
+            </div>
+            <div class="resource-list-meta">
+              <span>{{ equipment.serialNumber || translate('common.notAvailable') }}</span>
+              <span class="status-badge" [ngClass]="'status-' + equipment.status">{{ equipment.status }}</span>
+            </div>
+          </li>
+        </ul>
+
+        <ng-template #modulesEmpty>
+          <p class="empty-state">{{ translate('therapeuticPlan.manage.empty.modules') }}</p>
+        </ng-template>
+      </article>
+    </section>
+
+    <section *ngIf="activeTab === 'visits'" class="manage-panel-grid">
+      <article class="manage-panel-card">
+        <h2>{{ translate('therapeuticPlan.manage.section.visits') }}</h2>
+        <dl class="detail-grid">
+          <div>
+            <dt>{{ translate('therapeuticPlan.field.structure') }}</dt>
+            <dd>{{ structureLabel }}</dd>
+          </div>
+          <div>
+            <dt>{{ translate('therapeuticPlan.field.nurse') }}</dt>
+            <dd>{{ nurseLabel }}</dd>
+          </div>
+          <div>
+            <dt>{{ translate('therapeuticPlan.field.doctor') }}</dt>
+            <dd>{{ doctorLabel }}</dd>
+          </div>
+          <div>
+            <dt>{{ translate('therapeuticPlan.field.startDate') }}</dt>
+            <dd>{{ formatDate(plan?.startDate) }}</dd>
+          </div>
+          <div>
+            <dt>{{ translate('therapeuticPlan.field.endDate') }}</dt>
+            <dd>{{ formatDate(plan?.endDate) }}</dd>
+          </div>
+          <div>
+            <dt>{{ translate('therapeuticPlan.manage.field.visitSpecialization') }}</dt>
+            <dd>{{ doctor?.specialization || translate('common.notAvailable') }}</dd>
+          </div>
+        </dl>
+      </article>
+    </section>
+
+    <section *ngIf="activeTab === 'activity-booking'" class="manage-panel-grid">
+      <article class="manage-panel-card manage-panel-card-wide">
+        <h2>{{ translate('therapeuticPlan.manage.section.activityBooking') }}</h2>
+        <p class="empty-state">{{ translate('therapeuticPlan.manage.empty.activityBooking') }}</p>
+      </article>
+    </section>
+
+    <section *ngIf="activeTab === 'contact-requests'" class="manage-panel-grid">
+      <article class="manage-panel-card manage-panel-card-wide">
+        <h2>{{ translate('therapeuticPlan.manage.section.contactRequests') }}</h2>
+        <p class="empty-state">{{ translate('therapeuticPlan.manage.empty.contactRequests') }}</p>
+      </article>
+    </section>
+  </ng-container>
+</div>
+
+<ng-template #loadingState>
+  <div class="therapeutic-plan-manage-page">
+    <div class="manage-feedback-card">{{ translate('therapeuticPlan.manage.state.loading') }}</div>
+  </div>
+</ng-template>
+
+<ng-template #errorState>
+  <div class="therapeutic-plan-manage-page">
+    <div class="manage-feedback-card manage-feedback-card-error">
+      <p>{{ errorMessage }}</p>
+      <button class="manage-back" type="button" (click)="goBack()">{{ translate('therapeuticPlan.manage.back') }}</button>
+    </div>
+  </div>
+</ng-template>

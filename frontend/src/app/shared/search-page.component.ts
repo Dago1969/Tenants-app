@@ -207,7 +207,14 @@ type DeleteDialogMode = 'confirm' | 'reassign';
                 <button *ngIf="showDeleteAction && canDelete" class="icon-btn" type="button" (click)="deleteRecord(getRowIdentifier(row))" [title]="translate('search.action.delete')">
                   <span class="icon">🗑️</span>
                 </button>
-                <button *ngIf="showManageAction" class="icon-btn" type="button" (click)="openManage(getRowIdentifier(row))" [title]="translate('search.action.configure')">
+                <button
+                  *ngIf="showManageAction"
+                  class="icon-btn manage-btn"
+                  type="button"
+                  (click)="openManage(getRowIdentifier(row))"
+                  [title]="translate(manageActionLabelKey || 'search.action.configure')"
+                  [attr.aria-label]="translate(manageActionLabelKey || 'search.action.configure')"
+                >
                   <span class="icon">⚙️</span>
                 </button>
               </td>
@@ -340,6 +347,8 @@ export class SearchPageComponent implements OnInit {
   @Input() showViewAction = true;
   @Input() showDeleteAction = true;
   @Input() showManageAction = false;
+  @Input() manageRouteBase = '/users/configure';
+  @Input() manageActionLabelKey = '';
   @Input() deleteCheckEndpoint = '';
   @Input() interceptEditAction = false;
   @Output() editAction = new EventEmitter<string>();
@@ -624,7 +633,13 @@ export class SearchPageComponent implements OnInit {
     if (normalizedId === null) {
       return;
     }
-    void this.router.navigate([`/users/configure/${normalizedId}`]);
+
+    const normalizedRouteBase = this.manageRouteBase.trim();
+    if (!normalizedRouteBase) {
+      return;
+    }
+
+    void this.router.navigateByUrl(`${normalizedRouteBase}/${normalizedId}`);
   }
 
   deleteRecord(id: unknown): void {

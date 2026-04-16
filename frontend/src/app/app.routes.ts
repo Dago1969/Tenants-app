@@ -32,6 +32,7 @@ import { EquipmentTypesSearchComponent } from './features/equipment-types-search
 import { EquipmentTypesCrudComponent } from './features/equipment-types/equipment-types-crud.component';
 import { TherapeuticPlansSearchComponent } from './features/therapeutic-plans-search/therapeutic-plans-search.component';
 import { TherapeuticPlanCrudComponent } from './features/therapeutic-plan/therapeutic-plan-crud.component';
+import { TherapeuticPlanManageComponent } from './features/therapeutic-plan-manage/therapeutic-plan-manage.component';
 import { StructureTypesCrudComponent } from './features/structure-types-crud/structure-types-crud.component';
 import { OperationLogsSearchComponent } from './features/operation-logs-search/operation-logs-search.component';
 import { STRUCTURE_MODULE_CODES } from './core/structure-module-codes';
@@ -48,6 +49,7 @@ export const appRoutes: Routes = [
   { path: 'equipment/manage', component: EquipmentCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('EQUIPMENT')] },
   { path: 'equipment/manage/:id', component: EquipmentCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('EQUIPMENT')] },
   { path: 'therapeutic-plans', pathMatch: 'full', redirectTo: 'therapeutic-plans/search' },
+  { path: 'therapeutic-plans/manage/:id', component: TherapeuticPlanManageComponent, canActivate: [authGuard, moduleVisibilityGuard('THERAPEUTIC_PLAN')] },
   {
     path: 'therapeutic-plans/search',
     component: TherapeuticPlansSearchComponent,

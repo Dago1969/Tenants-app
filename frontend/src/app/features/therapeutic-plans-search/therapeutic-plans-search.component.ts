@@ -1,6 +1,8 @@
+
 import { Component, ViewChild } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { SearchField, SearchPageComponent } from '../../shared/search-page.component';
+import { AuthService } from '../../core/auth.service';
 
 /**
  * Pagina di ricerca dei piani terapeutici con wizard popup su route figlia.
@@ -20,7 +22,11 @@ import { SearchField, SearchPageComponent } from '../../shared/search-page.compo
       [createFunctionCode]="createFunctionCode"
       [createRoute]="createRoute"
       [detailRouteBase]="detailRouteBase"
+      [showManageAction]="true"
+      [manageRouteBase]="manageRouteBase"
+      [manageActionLabelKey]="manageActionLabelKey"
       [autoSearch]="true"
+      [fixedParams]="getFixedParams()"
     />
 
     <router-outlet (deactivate)="refreshAfterWizardClose()"></router-outlet>
@@ -35,6 +41,16 @@ export class TherapeuticPlansSearchComponent {
   createFunctionCode = 'CREATE';
   createRoute = '/therapeutic-plans/search/new';
   detailRouteBase = '/therapeutic-plans/search';
+  manageRouteBase = '/therapeutic-plans/manage';
+  manageActionLabelKey = 'therapeuticPlan.manage.action';
+  fixedParams: Record<string, string> = {};
+
+  constructor(private readonly authService: AuthService) {
+    const projectCode = this.authService.getSelectedProject();
+    if (projectCode) {
+      this.fixedParams = { projectCode };
+    }
+  }
 
   filters: SearchField[] = [
     { key: 'patientName', labelKey: 'therapeuticPlan.field.patient', type: 'text' },
@@ -68,5 +84,9 @@ export class TherapeuticPlansSearchComponent {
 
   refreshAfterWizardClose(): void {
     this.searchPage?.search(false);
+  }
+
+  getFixedParams(): Record<string, string> {
+    return this.fixedParams;
   }
 }
