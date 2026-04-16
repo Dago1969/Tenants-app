@@ -1,0 +1,179 @@
+.therapeutic-plan-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.therapeutic-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 20px;
+}
+
+.therapeutic-plan-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.therapeutic-plan-field span {
+  color: #355277;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.therapeutic-plan-field-full {
+  grid-column: 1 / -1;
+}
+
+.therapeutic-plan-field input,
+.therapeutic-plan-field select,
+.therapeutic-plan-field textarea {
+  width: 100%;
+  border: 1.5px solid #d3e5f8;
+  border-radius: 16px;
+  background: #edf6ff;
+  color: #1a3a5d;
+  padding: 12px 16px;
+  font-size: 0.96rem;
+  box-sizing: border-box;
+}
+
+.therapeutic-plan-field textarea {
+  resize: vertical;
+  min-height: 112px;
+}
+
+.therapeutic-plan-field input:focus,
+.therapeutic-plan-field select:focus,
+.therapeutic-plan-field textarea:focus {
+  outline: none;
+  border-color: #1870e8;
+  box-shadow: 0 0 0 3px rgba(24, 112, 232, 0.12);
+}
+
+.therapeutic-plan-inline-hint {
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: #f0f7ff;
+  color: #466487;
+  font-size: 0.92rem;
+}
+
+.therapeutic-plan-equipment-step {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.therapeutic-plan-equipment-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.therapeutic-plan-equipment-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1.5px solid #d3e5f8;
+  border-radius: 18px;
+  background: #f8fbff;
+  color: #355277;
+  text-align: left;
+  cursor: pointer;
+}
+
+.therapeutic-plan-equipment-card-selected {
+  border-color: #1870e8;
+  background: #eef6ff;
+  box-shadow: 0 10px 24px rgba(24, 112, 232, 0.14);
+}
+
+.therapeutic-plan-equipment-code {
+  font-weight: 700;
+  color: #1a3a5d;
+}
+
+.therapeutic-plan-equipment-detail,
+.therapeutic-plan-equipment-status {
+  font-size: 0.9rem;
+  color: #466487;
+}
+
+.therapeutic-plan-alert {
+  padding: 12px 16px;
+  border-radius: 16px;
+  font-size: 0.94rem;
+}
+
+.therapeutic-plan-alert-error {
+  background: #fff1f2;
+  color: #b42318;
+  border: 1px solid #fecdd3;
+}
+
+.therapeutic-plan-alert-info {
+  background: #eef6ff;
+  color: #31577e;
+  border: 1px solid #d5e5f7;
+}
+
+.therapeutic-plan-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.therapeutic-plan-btn {
+  min-width: 144px;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.therapeutic-plan-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.therapeutic-plan-btn-primary {
+  color: #fff;
+  background: linear-gradient(90deg, #1870e8 0%, #1fc4ff 100%);
+  box-shadow: 0 10px 24px rgba(24, 112, 232, 0.22);
+}
+
+.therapeutic-plan-btn-secondary {
+  color: #355277;
+  background: #edf4fb;
+}
+
+.therapeutic-plan-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 240px;
+  color: #466487;
+  font-weight: 600;
+}
+
+@media (max-width: 900px) {
+  .therapeutic-plan-grid,
+  .therapeutic-plan-equipment-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .therapeutic-plan-actions {
+    flex-wrap: wrap;
+  }
+
+  .therapeutic-plan-btn {
+    flex: 1 1 180px;
+  }
+}

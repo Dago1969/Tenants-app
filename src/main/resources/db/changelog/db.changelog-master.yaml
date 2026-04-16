@@ -802,3 +802,78 @@ databaseChangeLog:
 
               CREATE INDEX idx_equipment_type_id ON equipment (equipment_type_id);
               CREATE INDEX idx_equipment_status ON equipment (status);
+
+  - changeSet:
+      id: 2026-04-16-create-therapeutic-plan-tables
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            tableExists:
+              tableName: therapeutic_plan
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              CREATE TABLE IF NOT EXISTS therapeutic_plan (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                patient_id BIGINT NOT NULL,
+                project_code VARCHAR(128) NOT NULL,
+                structure_id BIGINT NOT NULL,
+                nurse_id BIGINT NOT NULL,
+                doctor_id BIGINT NOT NULL,
+                drug_code VARCHAR(128) NOT NULL,
+                start_date DATE NOT NULL,
+                end_date DATE,
+                status VARCHAR(32) NOT NULL DEFAULT 'draft',
+                notes VARCHAR(1000),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+              );
+
+              CREATE TABLE IF NOT EXISTS therapeutic_plan_equipment (
+                therapeutic_plan_id BIGINT NOT NULL,
+                equipment_id BIGINT NOT NULL,
+                PRIMARY KEY (therapeutic_plan_id, equipment_id),
+                CONSTRAINT fk_therapeutic_plan_equipment_plan
+                  FOREIGN KEY (therapeutic_plan_id) REFERENCES therapeutic_plan (id)
+                  ON DELETE CASCADE
+              );
+
+              CREATE INDEX idx_therapeutic_plan_patient_id ON therapeutic_plan (patient_id);
+              CREATE INDEX idx_therapeutic_plan_project_code ON therapeutic_plan (project_code);
+              CREATE INDEX idx_therapeutic_plan_status ON therapeutic_plan (status);
+              CREATE INDEX idx_therapeutic_plan_structure_id ON therapeutic_plan (structure_id);
+              CREATE INDEX idx_therapeutic_plan_equipment_equipment_id ON therapeutic_plan_equipment (equipment_id);
+
+  - changeSet:
+      id: 2026-04-16-therapeutic-plan-module-seed
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: modules
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              INSERT IGNORE INTO modules (code, name)
+              VALUES ('THERAPEUTIC_PLAN', 'THERAPEUTIC_PLAN');
+
+  - changeSet:
+      id: 2026-04-16-drop-therapeutic-plan-patient-fk
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - foreignKeyConstraintExists:
+            foreignKeyName: FK9r1ucp0kt9paqj1fwr66ld3du
+            foreignKeyTableName: therapeutic_plan
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: therapeutic_plan
+            constraintName: FK9r1ucp0kt9paqj1fwr66ld3du

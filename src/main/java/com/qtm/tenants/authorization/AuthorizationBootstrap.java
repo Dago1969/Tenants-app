@@ -7,6 +7,7 @@ import com.qtm.tenants.module.repository.ModuleRepository;
 import com.qtm.tenants.role.entity.RoleEntity;
 import com.qtm.tenants.role.repository.RoleRepository;
 import com.qtm.tenants.structure.StructureModuleCodes;
+import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
@@ -38,11 +39,12 @@ public class AuthorizationBootstrap implements CommandLineRunner {
     private static final String MODULE_PATIENT = "PATIENT";
     private static final String MODULE_DOCTOR = "DOCTOR";
     private static final String MODULE_NURSE = "NURSE";
+    private static final String MODULE_THERAPEUTIC_PLAN = "THERAPEUTIC_PLAN";
         private static final String MODULE_FUNCTION = "FUNCTION";
         private static final List<String> MODULE_CODES = Stream.of(
                 List.of("USER"),
                 StructureModuleCodes.AUTHORIZATION_MODULE_CODES,
-            List.of("ROLE", "MODULE", MODULE_FUNCTION, MODULE_PATIENT, MODULE_DOCTOR, MODULE_NURSE, MODULE_EQUIPMENT, MODULE_EQUIPMENT_TYPE)
+            List.of("ROLE", "MODULE", MODULE_FUNCTION, MODULE_PATIENT, MODULE_DOCTOR, MODULE_NURSE, MODULE_THERAPEUTIC_PLAN, MODULE_EQUIPMENT, MODULE_EQUIPMENT_TYPE)
             )
             .flatMap(List::stream)
             .toList();
@@ -51,11 +53,16 @@ public class AuthorizationBootstrap implements CommandLineRunner {
     private static final String ENTITY_PATIENT = "patient";
     private static final String ENTITY_DOCTOR = "doctor";
     private static final String ENTITY_NURSE = "nurse";
+    private static final String ENTITY_THERAPEUTIC_PLAN = "therapeuticPlan";
         private static final List<String> EQUIPMENT_FIELDS = resolveEntityFields(
             EquipmentDTO.class,
             Set.of("id", "equipmentTypeCode", "equipmentTypeName")
         );
     private static final List<String> EQUIPMENT_TYPE_FIELDS = resolveEntityFields(EquipmentTypeDTO.class, Set.of("id"));
+    private static final List<String> THERAPEUTIC_PLAN_FIELDS = resolveEntityFields(
+            TherapeuticPlanDto.class,
+            Set.of("id", "patientDisplayName", "equipmentCodes", "structureName", "nurseName", "doctorName")
+    );
 
     private static final List<String> PATIENT_FIELDS = List.of(
             "assistedId", "firstName", "lastName", "fiscalCode", "email", "primaryPhone", "secondaryPhone",
@@ -109,6 +116,9 @@ public class AuthorizationBootstrap implements CommandLineRunner {
                 if (MODULE_NURSE.equals(moduleCode)) {
                     ensureNurseFieldAuthorizations(moduleRoleAuthorization, adminRole);
                 }
+                if (MODULE_THERAPEUTIC_PLAN.equals(moduleCode)) {
+                    ensureTherapeuticPlanFieldAuthorizations(moduleRoleAuthorization, adminRole);
+                }
                 if (MODULE_EQUIPMENT.equals(moduleCode)) {
                     ensureEquipmentFieldAuthorizations(moduleRoleAuthorization, adminRole);
                 }
@@ -152,7 +162,35 @@ public class AuthorizationBootstrap implements CommandLineRunner {
         if (MODULE_EQUIPMENT_TYPE.equals(moduleCode)) {
             return "Tipi Attrezzature";
         }
+        if (MODULE_THERAPEUTIC_PLAN.equals(moduleCode)) {
+            return "Piani Terapeutici";
+        }
         return StructureModuleCodes.resolveModuleName(moduleCode);
+    }
+
+    private void ensureTherapeuticPlanFieldAuthorizations(
+            ModuleRoleAuthorizationEntity moduleRoleAuthorization,
+            boolean adminRole
+    ) {
+        Map<String, FieldAuthorizationEntity> existingByField = fieldAuthorizationRepository
+                .findAllByModuleRoleAuthorizationModuleCodeAndModuleRoleAuthorizationRoleIdAndEntityName(
+                        MODULE_THERAPEUTIC_PLAN,
+                        moduleRoleAuthorization.getRole().getId(),
+                        ENTITY_THERAPEUTIC_PLAN
+                ).stream().collect(Collectors.toMap(FieldAuthorizationEntity::getFieldName, Function.identity()));
+
+        for (String field : THERAPEUTIC_PLAN_FIELDS) {
+            if (existingByField.containsKey(field)) {
+                continue;
+            }
+
+            FieldAuthorizationEntity fieldAuthorization = new FieldAuthorizationEntity();
+            fieldAuthorization.setModuleRoleAuthorization(moduleRoleAuthorization);
+            fieldAuthorization.setEntityName(ENTITY_THERAPEUTIC_PLAN);
+            fieldAuthorization.setFieldName(field);
+            fieldAuthorization.setAuthorization(adminRole ? AuthorizationScope.FULL_EDIT : AuthorizationScope.READ_ONLY);
+            fieldAuthorizationRepository.save(fieldAuthorization);
+        }
     }
 
     private ModuleRoleAuthorizationEntity ensureModuleRoleAuthorization(

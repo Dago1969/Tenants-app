@@ -111,6 +111,7 @@ export class AppComponent implements OnDestroy {
     { labelKey: 'menu.structureTypesSearch', route: '/structure-types/search', moduleCode: STRUCTURE_MODULE_CODES.GENERIC },
     { labelKey: 'menu.equipmentSearch', route: '/equipment/search', moduleCode: 'EQUIPMENT', iconSrc: 'assets/equipment.png' },
     { labelKey: 'menu.equipmentTypesSearch', route: '/equipment-types/search', moduleCode: 'EQUIPMENT_TYPE', iconSrc: 'assets/equipment.png' },
+    { labelKey: 'menu.therapeuticPlansSearch', route: '/therapeutic-plans/search', moduleCode: 'THERAPEUTIC_PLAN' },
     { labelKey: 'menu.authorizations', route: '/authorizations' },
     { labelKey: 'menu.controllerFunctionMappings', route: '/controller-function-mappings' },
     { labelKey: 'menu.operationLogsSearch', route: '/operation-logs/search' },
@@ -120,7 +121,8 @@ export class AppComponent implements OnDestroy {
   registryMenuItems: MenuItem[] = [
     { labelKey: 'menu.patientsSearch', route: '/patients/search', moduleCode: 'PATIENT' },
     { labelKey: 'menu.doctorsSearch', route: '/doctors/search', moduleCode: 'DOCTOR' },
-    { labelKey: 'menu.nursesSearch', route: '/nurses/search', moduleCode: 'NURSE' }
+    { labelKey: 'menu.nursesSearch', route: '/nurses/search', moduleCode: 'NURSE' },
+    { labelKey: 'menu.therapeuticPlansSearch', route: '/therapeutic-plans/search', moduleCode: 'THERAPEUTIC_PLAN' }
   ];
 
   structureMenuItems: MenuItem[] = [

@@ -15,6 +15,7 @@ import com.qtm.tenants.role.controller.RoleController;
 import com.qtm.tenants.structure.StructureModuleCodes;
 import com.qtm.tenants.structure.controller.StructureBulkImportController;
 import com.qtm.tenants.structure.controller.StructureController;
+import com.qtm.tenants.therapeuticplan.controller.TherapeuticPlanController;
 import com.qtm.tenants.user.controller.UserController;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -87,6 +88,7 @@ public class ControllerMethodFunctionService {
         controllers.put("PATIENT", PatientController.class);
         controllers.put("DOCTOR", DoctorController.class);
         controllers.put("NURSE", NurseController.class);
+        controllers.put("THERAPEUTIC_PLAN", TherapeuticPlanController.class);
         controllers.put("EQUIPMENT", EquipmentController.class);
         controllers.put("EQUIPMENT_TYPE", EquipmentTypeController.class);
         controllers.put("ROLE", RoleController.class);

@@ -30,6 +30,8 @@ import { EquipmentSearchComponent } from './features/equipment-search/equipment-
 import { EquipmentCrudComponent } from './features/equipment/equipment-crud.component';
 import { EquipmentTypesSearchComponent } from './features/equipment-types-search/equipment-types-search.component';
 import { EquipmentTypesCrudComponent } from './features/equipment-types/equipment-types-crud.component';
+import { TherapeuticPlansSearchComponent } from './features/therapeutic-plans-search/therapeutic-plans-search.component';
+import { TherapeuticPlanCrudComponent } from './features/therapeutic-plan/therapeutic-plan-crud.component';
 import { StructureTypesCrudComponent } from './features/structure-types-crud/structure-types-crud.component';
 import { OperationLogsSearchComponent } from './features/operation-logs-search/operation-logs-search.component';
 import { STRUCTURE_MODULE_CODES } from './core/structure-module-codes';
@@ -45,6 +47,16 @@ export const appRoutes: Routes = [
   { path: 'equipment/search', component: EquipmentSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('EQUIPMENT')] },
   { path: 'equipment/manage', component: EquipmentCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('EQUIPMENT')] },
   { path: 'equipment/manage/:id', component: EquipmentCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('EQUIPMENT')] },
+  { path: 'therapeutic-plans', pathMatch: 'full', redirectTo: 'therapeutic-plans/search' },
+  {
+    path: 'therapeutic-plans/search',
+    component: TherapeuticPlansSearchComponent,
+    canActivate: [authGuard, moduleVisibilityGuard('THERAPEUTIC_PLAN')],
+    children: [
+      { path: 'new', component: TherapeuticPlanCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('THERAPEUTIC_PLAN')] },
+      { path: ':id', component: TherapeuticPlanCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('THERAPEUTIC_PLAN')] }
+    ]
+  },
   { path: 'equipment-types/search', component: EquipmentTypesSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('EQUIPMENT_TYPE')] },
   { path: 'equipment-types/manage', component: EquipmentTypesCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('EQUIPMENT_TYPE')] },
   { path: 'equipment-types/manage/:code', component: EquipmentTypesCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('EQUIPMENT_TYPE')] },

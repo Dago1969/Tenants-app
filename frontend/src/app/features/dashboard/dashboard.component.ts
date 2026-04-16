@@ -90,7 +90,8 @@ export class DashboardComponent implements OnInit {
     { route: '/structures/asl', labelKey: 'menu.structure.aslSearch', moduleCode: STRUCTURE_MODULE_CODES.ASL },
     { route: '/patients/search', labelKey: 'menu.patientsSearch', moduleCode: 'PATIENT' },
     { route: '/doctors/search', labelKey: 'menu.doctorsSearch', moduleCode: 'DOCTOR' },
-    { route: '/nurses/search', labelKey: 'menu.nursesSearch', moduleCode: 'NURSE' }
+    { route: '/nurses/search', labelKey: 'menu.nursesSearch', moduleCode: 'NURSE' },
+    { route: '/therapeutic-plans/search', labelKey: 'menu.therapeuticPlansSearch', moduleCode: 'THERAPEUTIC_PLAN' }
   ];
 
   constructor(
