@@ -37,8 +37,21 @@
       </label>
 
       <label class="therapeutic-plan-field">
-        <span>{{ translate('therapeuticPlan.field.drugCode') }}</span>
-        <input [(ngModel)]="formModel.drugCode" type="text" maxlength="128" />
+        <span>{{ translate('therapeuticPlan.field.medicine') }}</span>
+        <select2
+          class="therapeutic-plan-medicine-select"
+          [data]="medicineOptions"
+          [value]="formModel.drugCode || null"
+          [placeholder]="translate('therapeuticPlan.field.medicinePlaceholder')"
+          [noResultMessage]="translate('therapeuticPlan.field.medicineNoResults')"
+          [customSearchEnabled]="true"
+          [minCharForSearch]="2"
+          [displaySearchStatus]="'always'"
+          [resettable]="true"
+          (search)="onMedicineSearch($event)"
+          (update)="onMedicineUpdate($event)"
+        ></select2>
+        <small class="therapeutic-plan-field-help">{{ medicineSelectionInfo }}</small>
       </label>
     </section>
 

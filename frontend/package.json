@@ -12,12 +12,14 @@
     "test": "ng test"
   },
   "dependencies": {
+    "@angular/cdk": "^18.2.11",
     "@angular/common": "18.2.11",
     "@angular/compiler": "18.2.11",
     "@angular/core": "18.2.11",
     "@angular/forms": "18.2.11",
     "@angular/platform-browser": "18.2.11",
     "@angular/router": "18.2.11",
+    "ng-select2-component": "^17.2.10",
     "rxjs": "7.8.1",
     "tslib": "2.7.0",
     "zone.js": "0.14.10"

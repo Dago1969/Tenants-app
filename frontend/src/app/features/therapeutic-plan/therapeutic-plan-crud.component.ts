@@ -5,8 +5,10 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
+import { Select2, type Select2Data, type Select2Option, type Select2SearchEvent, type Select2UpdateEvent } from 'ng-select2-component';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../core/auth.service';
+import { MedicineApiService, type MedicineLookupDto } from '../../core/medicine-api.service';
 import { StructureApiService, StructureDto } from '../../core/structure-api.service';
 import { MessageKey, t } from '../../i18n/messages';
 import { QtmStepModalComponent } from '../../shared/qtm-step-modal.component';
@@ -68,7 +70,7 @@ interface WizardStep {
 @Component({
   selector: 'app-therapeutic-plan-crud',
   standalone: true,
-  imports: [CommonModule, FormsModule, QtmStepModalComponent],
+  imports: [CommonModule, FormsModule, Select2, QtmStepModalComponent],
   templateUrl: './therapeutic-plan-crud.component.html',
   styleUrl: './therapeutic-plan-crud.component.css'
 })
@@ -99,6 +101,8 @@ export class TherapeuticPlanCrudComponent implements OnInit {
   nurses: NurseOption[] = [];
   doctors: DoctorOption[] = [];
   equipmentOptions: EquipmentOption[] = [];
+  medicineOptions: Select2Data = [];
+  selectedMedicine: MedicineLookupDto | null = null;
 
   formModel: TherapeuticPlanPayload = this.createEmptyFormModel();
 
@@ -107,6 +111,7 @@ export class TherapeuticPlanCrudComponent implements OnInit {
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly authService: AuthService,
+    private readonly medicineApiService: MedicineApiService,
     private readonly structureApiService: StructureApiService
   ) {}
 
@@ -154,6 +159,18 @@ export class TherapeuticPlanCrudComponent implements OnInit {
 
   get selectedEquipmentCount(): number {
     return this.formModel.equipmentIds.length;
+  }
+
+  get medicineSelectionInfo(): string {
+    if (!this.selectedMedicine) {
+      return this.translate('therapeuticPlan.field.medicineSearchHint');
+    }
+
+    return [
+      this.selectedMedicine.codiceAic?.trim(),
+      this.selectedMedicine.descrizione?.trim(),
+      this.selectedMedicine.forma?.trim()
+    ].filter((value): value is string => !!value).join(' | ');
   }
 
   previousStep(): void {
@@ -216,6 +233,32 @@ export class TherapeuticPlanCrudComponent implements OnInit {
     return patient.assistedId?.trim() ? `${fullName} (${patient.assistedId.trim()})` : fullName;
   }
 
+  onMedicineSearch(event: Select2SearchEvent): void {
+    const query = event.search?.trim() ?? '';
+    if (query.length < 2) {
+      event.filteredData(this.medicineOptions);
+      return;
+    }
+
+    this.medicineApiService.lookupMedicines(query).pipe(
+      catchError(() => of([] as MedicineLookupDto[]))
+    ).subscribe((medicines) => {
+      const data = this.mergeMedicineOptions(medicines);
+      event.filteredData(data);
+    });
+  }
+
+  onMedicineUpdate(event: Select2UpdateEvent): void {
+    const selectedValue = typeof event.value === 'string' ? event.value : '';
+    this.formModel.drugCode = selectedValue;
+
+    const selectedOption = event.options?.[0]?.data as MedicineLookupDto | undefined;
+    this.selectedMedicine = selectedOption ?? this.selectedMedicine;
+    if (selectedOption) {
+      this.mergeMedicineOptions([selectedOption]);
+    }
+  }
+
   getStructureLabel(structure: StructureDto): string {
     return structure.selectionLabel?.trim().length ? structure.selectionLabel : structure.name;
   }
@@ -227,9 +270,10 @@ export class TherapeuticPlanCrudComponent implements OnInit {
       specialistClinics: this.structureApiService.getStructuresByType('SPECIALIST_CLINIC', true).pipe(catchError(() => of([] as StructureDto[]))),
       nurses: this.http.get<NurseOption[]>(`${environment.apiBaseUrl}/nurses`).pipe(catchError(() => of([] as NurseOption[]))),
       doctors: this.http.get<DoctorOption[]>(`${environment.apiBaseUrl}/doctors`).pipe(catchError(() => of([] as DoctorOption[]))),
-      equipment: this.http.get<EquipmentOption[]>(`${environment.apiBaseUrl}/equipment`).pipe(catchError(() => of([] as EquipmentOption[])))
+      equipment: this.http.get<EquipmentOption[]>(`${environment.apiBaseUrl}/equipment`).pipe(catchError(() => of([] as EquipmentOption[]))),
+      medicines: this.medicineApiService.lookupMedicines().pipe(catchError(() => of([] as MedicineLookupDto[])))
     }).subscribe({
-      next: ({ patients, hospitals, specialistClinics, nurses, doctors, equipment }) => {
+      next: ({ patients, hospitals, specialistClinics, nurses, doctors, equipment, medicines }) => {
         this.patients = [...patients].sort((left, right) => this.getPatientLabel(left).localeCompare(this.getPatientLabel(right), 'it', { sensitivity: 'base' }));
         this.structures = [...hospitals, ...specialistClinics].sort((left, right) => this.getStructureLabel(left).localeCompare(this.getStructureLabel(right), 'it', { sensitivity: 'base' }));
         this.nurses = [...nurses]
@@ -237,6 +281,7 @@ export class TherapeuticPlanCrudComponent implements OnInit {
           .sort((left, right) => left.fullName.localeCompare(right.fullName, 'it', { sensitivity: 'base' }));
         this.doctors = [...doctors].sort((left, right) => left.fullName.localeCompare(right.fullName, 'it', { sensitivity: 'base' }));
         this.equipmentOptions = equipment ?? [];
+        this.medicineOptions = this.buildMedicineSelectData(medicines ?? []);
 
         if (this.therapeuticPlanId === null) {
           this.loading = false;
@@ -268,6 +313,7 @@ export class TherapeuticPlanCrudComponent implements OnInit {
           status: typeof plan.status === 'string' ? plan.status : 'draft',
           notes: typeof plan.notes === 'string' ? plan.notes : ''
         };
+        this.loadSelectedMedicine(plan.drugCode);
         this.loading = false;
       },
       error: (error: HttpErrorResponse) => {
@@ -290,7 +336,7 @@ export class TherapeuticPlanCrudComponent implements OnInit {
         return false;
       }
       if (!this.formModel.drugCode.trim()) {
-        this.errorMessage = this.translate('therapeuticPlan.validation.drugCodeRequired');
+        this.errorMessage = this.translate('therapeuticPlan.validation.medicineRequired');
         return false;
       }
       if (!this.formModel.status.trim()) {
@@ -381,5 +427,69 @@ export class TherapeuticPlanCrudComponent implements OnInit {
 
   private close(): void {
     void this.router.navigateByUrl('/therapeutic-plans/search');
+  }
+
+  private loadSelectedMedicine(drugCode: string): void {
+    const normalizedDrugCode = drugCode?.trim();
+    if (!normalizedDrugCode) {
+      this.selectedMedicine = null;
+      return;
+    }
+
+    this.medicineApiService.getMedicineByCodiceAic(normalizedDrugCode).pipe(
+      catchError(() => of(null))
+    ).subscribe((medicine) => {
+      this.selectedMedicine = medicine;
+      if (medicine) {
+        this.mergeMedicineOptions([medicine]);
+      }
+    });
+  }
+
+  private buildMedicineSelectData(medicines: MedicineLookupDto[]): Select2Data {
+    return medicines
+      .filter((medicine) => !!medicine?.codiceAic)
+      .map((medicine) => this.toMedicineOption(medicine));
+  }
+
+  private mergeMedicineOptions(medicines: MedicineLookupDto[]): Select2Data {
+    const medicinesByCodiceAic = new Map<string, MedicineLookupDto>();
+    for (const currentOption of this.medicineOptions) {
+      if ('options' in currentOption) {
+        continue;
+      }
+      const medicine = currentOption.data as MedicineLookupDto | undefined;
+      const codiceAic = typeof currentOption.value === 'string' ? currentOption.value : medicine?.codiceAic;
+      if (codiceAic) {
+        medicinesByCodiceAic.set(codiceAic, medicine ?? { codiceAic, denominazione: currentOption.label });
+      }
+    }
+
+    for (const medicine of medicines) {
+      if (medicine?.codiceAic) {
+        medicinesByCodiceAic.set(medicine.codiceAic, medicine);
+      }
+    }
+
+    const mergedData = Array.from(medicinesByCodiceAic.values())
+      .sort((left, right) => this.getMedicineLabel(left).localeCompare(this.getMedicineLabel(right), 'it', { sensitivity: 'base' }))
+      .map((medicine) => this.toMedicineOption(medicine));
+
+    this.medicineOptions = mergedData;
+    return mergedData;
+  }
+
+  private toMedicineOption(medicine: MedicineLookupDto): Select2Option {
+    return {
+      value: medicine.codiceAic,
+      label: this.getMedicineLabel(medicine),
+      data: medicine
+    };
+  }
+
+  private getMedicineLabel(medicine: MedicineLookupDto): string {
+    const denominazione = medicine.denominazione?.trim();
+    const codiceAic = medicine.codiceAic?.trim() ?? '';
+    return denominazione?.length ? `${denominazione} (${codiceAic})` : codiceAic;
   }
 }

@@ -44,6 +44,31 @@
   min-height: 112px;
 }
 
+.therapeutic-plan-medicine-select {
+  display: block;
+  --select2-single-height: 50px;
+  --select2-selection-border-radius: 16px;
+  --select2-selection-background: #edf6ff;
+  --select2-selection-border-color: #d3e5f8;
+  --select2-selection-focus-border-color: #1870e8;
+  --select2-selection-text-color: #1a3a5d;
+  --select2-selection-padding: 0 44px 0 16px;
+  --select2-placeholder-color: #6f87a3;
+  --select2-dropdown-border-color: #d3e5f8;
+  --select2-dropdown-background: #ffffff;
+  --select2-option-selected-background: #eef6ff;
+  --select2-option-highlighted-background: #1870e8;
+  --select2-option-highlighted-text-color: #ffffff;
+  --select2-search-background: #f8fbff;
+  --select2-search-border-color: #d3e5f8;
+}
+
+.therapeutic-plan-field-help {
+  color: #466487;
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
 .therapeutic-plan-field input:focus,
 .therapeutic-plan-field select:focus,
 .therapeutic-plan-field textarea:focus {
@@ -175,5 +200,9 @@
 
   .therapeutic-plan-btn {
     flex: 1 1 180px;
+  }
+
+  .therapeutic-plan-medicine-select {
+    --select2-single-height: 48px;
   }
 }
