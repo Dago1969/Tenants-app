@@ -9,7 +9,6 @@ import { QtmStepModalComponent } from '../../shared/qtm-step-modal.component';
 import { TenantPointerApiService, TenantAppPointerDto } from '../../core/tenant-pointer-api.service';
 import { UserApiService, UserDto } from '../../core/user-api.service';
 import { getCurrentLanguage, MessageKey, t } from '../../i18n/messages';
-import { messages as localizedMessages } from '../../i18n/messages.generated';
 import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
 
 interface WizardStep {
@@ -101,10 +100,7 @@ export class ProjectsCrudComponent implements OnInit {
   }
 
   private translateTemplate(key: string): string {
-    const language = getCurrentLanguage();
-    const translatedMessages = localizedMessages[language] as Record<string, string>;
-    const fallbackMessages = localizedMessages.it as Record<string, string>;
-    return translatedMessages[key] ?? fallbackMessages[key] ?? key;
+    return t(key);
   }
 
   get currentStep(): WizardStep {

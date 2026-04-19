@@ -5,7 +5,6 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from './core/auth.service';
 import { ProjectApiService, ProjectDto } from './core/project-api.service';
 import { getCurrentLanguage, MessageKey, t } from './i18n/messages';
-import { messages as localizedMessages } from './i18n/messages.generated';
 import { environment } from '../environments/environment';
 import { Subscription } from 'rxjs';
 import { STRUCTURE_MODULE_CODES } from './core/structure-module-codes';
@@ -198,10 +197,7 @@ export class AppComponent implements OnDestroy {
   }
 
   private translateTemplate(key: string): string {
-    const language = getCurrentLanguage();
-    const translatedMessages = localizedMessages[language] as Record<string, string>;
-    const fallbackMessages = localizedMessages.it as Record<string, string>;
-    return translatedMessages[key] ?? fallbackMessages[key] ?? key;
+    return t(key);
   }
 
   ngOnDestroy(): void {

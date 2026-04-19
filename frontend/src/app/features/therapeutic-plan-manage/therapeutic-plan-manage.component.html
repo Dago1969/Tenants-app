@@ -22,11 +22,11 @@
         </div>
         <div class="metric-card">
           <span class="metric-label">{{ translate('patients.field.gender') }}</span>
-          <strong class="metric-value">{{ patient?.gender || translate('common.notAvailable') }}</strong>
+          <strong class="metric-value">{{ patientGenderLabel }}</strong>
         </div>
         <div class="metric-card">
           <span class="metric-label">{{ translate('patients.field.age') }}</span>
-          <strong class="metric-value">{{ patientAge }}</strong>
+          <strong class="metric-value">{{ patientAge }} <span *ngIf="patientBirthDate !== translate('common.notAvailable')">({{ patientBirthDate }})</span></strong>
         </div>
       </div>
     </header>

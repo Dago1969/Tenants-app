@@ -1,9 +1,10 @@
-import { messages } from './messages.generated';
+
+// Le traduzioni ora sono caricate solo dai file .properties tramite HttpClient o loader Angular.
 
 const DEFAULT_LANGUAGE = 'it' as const;
 
-export type Language = keyof typeof messages;
-export type MessageKey = keyof typeof messages.it;
+export type Language = 'it' | 'en';
+export type MessageKey = string;
 
 const LANGUAGE_STORAGE_KEYS = ['app.language', 'language', 'lang'] as const;
 
@@ -44,11 +45,49 @@ export function getCurrentLanguage(): Language {
   return DEFAULT_LANGUAGE;
 }
 
+
+
+// --- Simple .properties loader (browser only, sync at startup) ---
+const translations: Record<Language, Record<string, string>> = { it: {}, en: {} };
+let loaded = false;
+
+function loadPropertiesSync(lang: Language) {
+  const url = `/i18n/messages_${lang}.properties`;
+  const xhr = new XMLHttpRequest();
+  xhr.open('GET', url, false); // sync
+  xhr.send();
+  if (xhr.status === 200) {
+    const lines = xhr.responseText.split(/\r?\n/);
+    for (const line of lines) {
+      if (!line.trim() || line.startsWith('#')) continue;
+      const idx = line.indexOf('=');
+      if (idx > 0) {
+        const k = line.substring(0, idx).trim();
+        const v = line.substring(idx + 1).trim();
+        translations[lang][k] = v;
+      }
+    }
+  }
+}
+
+function ensureLoaded() {
+  if (!loaded && typeof window !== 'undefined') {
+    loadPropertiesSync('it');
+    loadPropertiesSync('en');
+    loaded = true;
+  }
+}
+
 export function t(key: MessageKey): string {
-  const language = getCurrentLanguage();
-  return messages[language][key] ?? messages[DEFAULT_LANGUAGE][key] ?? key;
+  ensureLoaded();
+  const lang = getCurrentLanguage();
+  return (
+    translations[lang][key] ||
+    translations[DEFAULT_LANGUAGE][key] ||
+    key
+  );
 }
 
 export function hasMessageKey(key: string): key is MessageKey {
-  return key in messages.it;
+  return true;
 }

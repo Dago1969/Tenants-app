@@ -140,6 +140,26 @@ export class TherapeuticPlanManageComponent implements OnInit {
       if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
       return age.toString();
     }
+  get patientGenderLabel(): string {
+    if (!this.patient?.gender) return this.translate('common.notAvailable');
+    switch ((this.patient.gender || '').toUpperCase()) {
+      case 'M':
+        return this.translate('patients.gender.male');
+      case 'F':
+        return this.translate('patients.gender.female');
+      case 'ALTRO':
+      case 'O':
+        return this.translate('patients.gender.other');
+      default:
+        return this.patient.gender;
+    }
+  }
+
+  get patientBirthDate(): string {
+    if (!this.patient?.birthDate) return this.translate('common.notAvailable');
+    return this.formatDate(this.patient.birthDate);
+  }
+
   readonly tabs: TherapeuticPlanManageTab[] = [
     { key: 'summary', titleKey: 'therapeuticPlan.manage.tab.summary' },
     { key: 'patient', titleKey: 'therapeuticPlan.manage.tab.patient' },
