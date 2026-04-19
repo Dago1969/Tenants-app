@@ -7,7 +7,7 @@
   (close)="cancel()"
 >
   <div class="therapeutic-plan-shell" *ngIf="!loading; else loadingState">
-    <div *ngIf="errorMessage" class="therapeutic-plan-alert therapeutic-plan-alert-error">
+    <div *ngIf="errorMessage && (currentStep.key !== 'main' || !formModel.drugCode)" class="therapeutic-plan-alert therapeutic-plan-alert-error">
       {{ errorMessage }}
     </div>
 
@@ -38,19 +38,12 @@
 
       <label class="therapeutic-plan-field">
         <span>{{ translate('therapeuticPlan.field.medicine') }}</span>
-        <select2
-          class="therapeutic-plan-medicine-select"
-          [data]="medicineOptions"
-          [value]="formModel.drugCode || null"
-          [placeholder]="translate('therapeuticPlan.field.medicinePlaceholder')"
-          [noResultMessage]="translate('therapeuticPlan.field.medicineNoResults')"
-          [customSearchEnabled]="true"
-          [minCharForSearch]="2"
-          [displaySearchStatus]="'always'"
-          [resettable]="true"
-          (search)="onMedicineSearch($event)"
-          (update)="onMedicineUpdate($event)"
-        ></select2>
+        <select [(ngModel)]="formModel.drugCode">
+          <option [ngValue]="''">{{ translate('therapeuticPlan.field.medicinePlaceholder') }}</option>
+          <option *ngFor="let med of medicineOptions" [ngValue]="med.value">
+            {{ med.label }}
+          </option>
+        </select>
         <small class="therapeutic-plan-field-help">{{ medicineSelectionInfo }}</small>
       </label>
     </section>

@@ -101,8 +101,7 @@ export class TherapeuticPlanCrudComponent implements OnInit {
   nurses: NurseOption[] = [];
   doctors: DoctorOption[] = [];
   equipmentOptions: EquipmentOption[] = [];
-  medicineOptions: Select2Data = [];
-  selectedMedicine: MedicineLookupDto | null = null;
+  medicineOptions: { value: string, label: string }[] = [];
 
   formModel: TherapeuticPlanPayload = this.createEmptyFormModel();
 
@@ -162,15 +161,11 @@ export class TherapeuticPlanCrudComponent implements OnInit {
   }
 
   get medicineSelectionInfo(): string {
-    if (!this.selectedMedicine) {
-      return this.translate('therapeuticPlan.field.medicineSearchHint');
+    if (!this.formModel.drugCode) {
+      return '';
     }
-
-    return [
-      this.selectedMedicine.codiceAic?.trim(),
-      this.selectedMedicine.descrizione?.trim(),
-      this.selectedMedicine.forma?.trim()
-    ].filter((value): value is string => !!value).join(' | ');
+    const med = this.medicineOptions.find(opt => opt.value === this.formModel.drugCode);
+    return med ? med.label : '';
   }
 
   previousStep(): void {
@@ -233,31 +228,6 @@ export class TherapeuticPlanCrudComponent implements OnInit {
     return patient.assistedId?.trim() ? `${fullName} (${patient.assistedId.trim()})` : fullName;
   }
 
-  onMedicineSearch(event: Select2SearchEvent): void {
-    const query = event.search?.trim() ?? '';
-    if (query.length < 2) {
-      event.filteredData(this.medicineOptions);
-      return;
-    }
-
-    this.medicineApiService.lookupMedicines(query).pipe(
-      catchError(() => of([] as MedicineLookupDto[]))
-    ).subscribe((medicines) => {
-      const data = this.mergeMedicineOptions(medicines);
-      event.filteredData(data);
-    });
-  }
-
-  onMedicineUpdate(event: Select2UpdateEvent): void {
-    const selectedValue = typeof event.value === 'string' ? event.value : '';
-    this.formModel.drugCode = selectedValue;
-
-    const selectedOption = event.options?.[0]?.data as MedicineLookupDto | undefined;
-    this.selectedMedicine = selectedOption ?? this.selectedMedicine;
-    if (selectedOption) {
-      this.mergeMedicineOptions([selectedOption]);
-    }
-  }
 
   getStructureLabel(structure: StructureDto): string {
     return structure.selectionLabel?.trim().length ? structure.selectionLabel : structure.name;
@@ -281,7 +251,12 @@ export class TherapeuticPlanCrudComponent implements OnInit {
           .sort((left, right) => left.fullName.localeCompare(right.fullName, 'it', { sensitivity: 'base' }));
         this.doctors = [...doctors].sort((left, right) => left.fullName.localeCompare(right.fullName, 'it', { sensitivity: 'base' }));
         this.equipmentOptions = equipment ?? [];
-        this.medicineOptions = this.buildMedicineSelectData(medicines ?? []);
+        this.medicineOptions = (medicines ?? [])
+          .filter((medicine) => !!medicine?.codiceAic)
+          .map((medicine) => ({
+            value: medicine.codiceAic,
+            label: [medicine.codiceAic, medicine.denominazione, medicine.forma].filter(Boolean).join(' | ')
+          }));
 
         if (this.therapeuticPlanId === null) {
           this.loading = false;
@@ -313,7 +288,7 @@ export class TherapeuticPlanCrudComponent implements OnInit {
           status: typeof plan.status === 'string' ? plan.status : 'draft',
           notes: typeof plan.notes === 'string' ? plan.notes : ''
         };
-        this.loadSelectedMedicine(plan.drugCode);
+        // nessun caricamento selezione farmaco custom
         this.loading = false;
       },
       error: (error: HttpErrorResponse) => {
@@ -429,62 +404,20 @@ export class TherapeuticPlanCrudComponent implements OnInit {
     void this.router.navigateByUrl('/therapeutic-plans/search');
   }
 
-  private loadSelectedMedicine(drugCode: string): void {
-    const normalizedDrugCode = drugCode?.trim();
-    if (!normalizedDrugCode) {
-      this.selectedMedicine = null;
-      return;
-    }
-
-    this.medicineApiService.getMedicineByCodiceAic(normalizedDrugCode).pipe(
-      catchError(() => of(null))
-    ).subscribe((medicine) => {
-      this.selectedMedicine = medicine;
-      if (medicine) {
-        this.mergeMedicineOptions([medicine]);
-      }
-    });
-  }
 
   private buildMedicineSelectData(medicines: MedicineLookupDto[]): Select2Data {
-    return medicines
-      .filter((medicine) => !!medicine?.codiceAic)
-      .map((medicine) => this.toMedicineOption(medicine));
+    // non più usato
+    return [];
   }
 
   private mergeMedicineOptions(medicines: MedicineLookupDto[]): Select2Data {
-    const medicinesByCodiceAic = new Map<string, MedicineLookupDto>();
-    for (const currentOption of this.medicineOptions) {
-      if ('options' in currentOption) {
-        continue;
-      }
-      const medicine = currentOption.data as MedicineLookupDto | undefined;
-      const codiceAic = typeof currentOption.value === 'string' ? currentOption.value : medicine?.codiceAic;
-      if (codiceAic) {
-        medicinesByCodiceAic.set(codiceAic, medicine ?? { codiceAic, denominazione: currentOption.label });
-      }
-    }
-
-    for (const medicine of medicines) {
-      if (medicine?.codiceAic) {
-        medicinesByCodiceAic.set(medicine.codiceAic, medicine);
-      }
-    }
-
-    const mergedData = Array.from(medicinesByCodiceAic.values())
-      .sort((left, right) => this.getMedicineLabel(left).localeCompare(this.getMedicineLabel(right), 'it', { sensitivity: 'base' }))
-      .map((medicine) => this.toMedicineOption(medicine));
-
-    this.medicineOptions = mergedData;
-    return mergedData;
+    // non più usato
+    return [];
   }
 
   private toMedicineOption(medicine: MedicineLookupDto): Select2Option {
-    return {
-      value: medicine.codiceAic,
-      label: this.getMedicineLabel(medicine),
-      data: medicine
-    };
+    // non più usato
+    return { value: '', label: '' };
   }
 
   private getMedicineLabel(medicine: MedicineLookupDto): string {

@@ -13,16 +13,20 @@
 
       <div class="manage-hero-metrics">
         <div class="metric-card">
-          <span class="metric-label">{{ translate('common.id') }}</span>
-          <strong class="metric-value">#{{ planId }}</strong>
-        </div>
-        <div class="metric-card">
           <span class="metric-label">{{ translate('therapeuticPlan.field.patient') }}</span>
           <strong class="metric-value">{{ patientDisplayName }}</strong>
         </div>
         <div class="metric-card">
           <span class="metric-label">{{ translate('therapeuticPlan.field.status') }}</span>
-          <span class="status-badge" [ngClass]="statusClass">{{ translate(statusLabelKey) }}</span>
+          <span class="status-badge status-badge-black" [ngClass]="statusClass">{{ translate(statusLabelKey) }}</span>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">{{ translate('patients.field.gender') }}</span>
+          <strong class="metric-value">{{ patient?.gender || translate('common.notAvailable') }}</strong>
+        </div>
+        <div class="metric-card">
+          <span class="metric-label">{{ translate('patients.field.age') }}</span>
+          <strong class="metric-value">{{ patientAge }}</strong>
         </div>
       </div>
     </header>

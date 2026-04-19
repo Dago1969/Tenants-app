@@ -19,17 +19,44 @@
 }
 
 .manage-hero {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: 20px;
-  align-items: start;
-  padding: 28px;
-  border-radius: 28px;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 32px 18px 32px;
+  border-top-left-radius: 22px;
+  border-top-right-radius: 22px;
+  border-bottom-left-radius: 22px;
+  border-bottom-right-radius: 22px;
   background:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.42), transparent 34%),
-    linear-gradient(140deg, #0d4f8b 0%, #1271c8 46%, #16a3b8 100%);
-  color: #ffffff;
-  box-shadow: 0 20px 48px rgba(17, 64, 126, 0.2);
+    linear-gradient(115deg, rgba(0, 99, 247, 0.98) 0%, rgba(0, 161, 255, 0.95) 34%, rgba(0, 191, 182, 0.94) 68%, rgba(15, 206, 73, 0.96) 100%),
+    url('/assets/texture.png');
+  background-size: 100% 100%, 520px;
+  background-repeat: no-repeat, repeat;
+  background-position: center, center;
+  background-blend-mode: multiply;
+  color: #fff !important;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 12px 28px rgba(8, 76, 172, 0.18);
+  position: relative;
+  overflow: hidden;
+}
+
+.manage-hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url('/assets/texture.png');
+  background-repeat: repeat;
+  background-size: 520px;
+  opacity: 0.48;
+  mix-blend-mode: overlay;
+  filter: contrast(1.15) saturate(1.05);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.manage-hero > * {
+  position: relative;
+  z-index: 1;
 }
 
 .manage-back {
@@ -45,12 +72,13 @@
 .manage-hero-copy h1 {
   margin: 6px 0 10px;
   font-size: 2rem;
+  color: #fff !important;
 }
 
 .manage-hero-copy p {
   margin: 0;
   max-width: 720px;
-  color: rgba(255, 255, 255, 0.88);
+  color: #fff !important;
 }
 
 .manage-eyebrow {
@@ -59,7 +87,7 @@
   letter-spacing: 0.08em;
   font-size: 0.78rem;
   font-weight: 800;
-  color: rgba(255, 255, 255, 0.78);
+  color: #fff !important;
 }
 
 .manage-hero-metrics {
@@ -67,6 +95,7 @@
   grid-template-columns: repeat(3, minmax(120px, 1fr));
   gap: 12px;
   min-width: 360px;
+  color: #fff !important;
 }
 
 .metric-card {
@@ -77,19 +106,20 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
+  color: #fff !important;
 }
 
-.metric-label,
-.overview-label,
-.detail-grid dt {
+ .metric-label {
   font-size: 0.78rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   font-weight: 800;
+  color: #fff !important;
 }
 
 .metric-value {
   font-size: 1.05rem;
+  color: #fff !important;
 }
 
 .manage-overview-strip {
@@ -526,6 +556,7 @@
   background: #fff4f4;
 }
 
+/* Badge stato nero per header */
 .status-badge {
   display: inline-flex;
   align-items: center;
@@ -536,6 +567,12 @@
   font-size: 0.9rem;
   font-weight: 700;
   text-transform: lowercase;
+  color: #fff !important;
+}
+.status-badge-black {
+  background: #111 !important;
+  color: #fff !important;
+  border: 1px solid #222;
 }
 
 .status-draft {

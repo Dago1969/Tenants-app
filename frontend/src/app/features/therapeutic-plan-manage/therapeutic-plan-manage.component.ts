@@ -41,6 +41,8 @@ interface TherapeuticPlanPatient {
   prescribingSpecialist?: string;
   caregiverFullName?: string;
   caregiverPhone?: string;
+  gender?: string; // M/F/Altro
+  birthDate?: string; // ISO date
 }
 
 interface TherapeuticPlanNurse {
@@ -125,6 +127,19 @@ interface TherapeuticPlanNotificationForm {
   styleUrl: './therapeutic-plan-manage.component.css'
 })
 export class TherapeuticPlanManageComponent implements OnInit {
+    /**
+     * Calcola l'età del paziente dalla data di nascita (se disponibile), altrimenti mostra "Non disponibile".
+     */
+    get patientAge(): string {
+      if (!this.patient || !(this.patient as any).birthDate) return this.translate('common.notAvailable');
+      const birth = new Date((this.patient as any).birthDate);
+      if (Number.isNaN(birth.getTime())) return this.translate('common.notAvailable');
+      const today = new Date();
+      let age = today.getFullYear() - birth.getFullYear();
+      const m = today.getMonth() - birth.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+      return age.toString();
+    }
   readonly tabs: TherapeuticPlanManageTab[] = [
     { key: 'summary', titleKey: 'therapeuticPlan.manage.tab.summary' },
     { key: 'patient', titleKey: 'therapeuticPlan.manage.tab.patient' },
