@@ -1,0 +1,194 @@
+.patient-contacts-search-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.search-eyebrow {
+  display: inline-block;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #4c6f93;
+}
+
+.search-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.search-header h2 {
+  margin: 0;
+}
+
+.search-header p {
+  margin: 8px 0 0;
+}
+
+.search-header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.search-filters-panel {
+  background: #f8fafc;
+  border-radius: 18px;
+  padding: 18px;
+  border: 1px solid #e2e8f0;
+}
+
+.search-filters-form-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+.search-filter-label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 700;
+  color: #274067;
+}
+
+.search-filter-label-inline input,
+.search-filter-label-inline select {
+  height: 40px;
+  border-radius: 18px;
+  border: 1px solid #cbd5e1;
+  padding: 8px 14px;
+  background: #ffffff;
+  color: #243b53;
+  min-width: 180px;
+}
+
+.search-filter-label-wide {
+  flex: 1 1 320px;
+}
+
+.search-filter-label-wide input {
+  width: 100%;
+}
+
+.search-filters-actions-inline {
+  display: flex;
+  align-items: center;
+}
+
+.table-search-bar-inside {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.patient-contacts-table-search {
+  margin-top: 18px;
+}
+
+.table-search-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  min-width: 320px;
+  border-radius: 999px;
+  border: 1px solid #dbe3ef;
+  background: #ffffff;
+}
+
+.table-search-input {
+  border: none;
+  outline: none;
+  width: 100%;
+  background: transparent;
+  padding: 8px 4px;
+}
+
+.close-btn {
+  border: none;
+  background: transparent;
+  padding: 4px;
+  cursor: pointer;
+}
+
+.modern-table {
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1px solid #dce6f3;
+  box-shadow: 0 14px 32px rgba(26, 48, 84, 0.08);
+  padding: 18px;
+}
+
+.search-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.search-table th,
+.search-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #e5edf6;
+  text-align: left;
+  vertical-align: top;
+}
+
+.search-table th {
+  background: #f8fbff;
+  color: #28476f;
+}
+
+.search-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.status-badge {
+  display: inline-block;
+  min-width: 110px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-weight: 700;
+  text-align: center;
+  text-transform: none;
+}
+
+.status-phoneCall {
+  background: #e8f3ff;
+  color: #1f4f8f;
+}
+
+.status-homeVisit {
+  background: #e9fbef;
+  color: #166534;
+}
+
+.status-message {
+  background: #f5ecff;
+  color: #6b21a8;
+}
+
+.status-caregiverUpdate {
+  background: #fff1e6;
+  color: #b45309;
+}
+
+.empty-state {
+  margin: 0;
+  padding: 16px;
+  border-radius: 16px;
+  background: #f8fbff;
+  border: 1px dashed #d2deea;
+  color: #4a5f78;
+}
+
+.search-pagination {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 14px;
+  color: #4a5f78;
+  font-weight: 700;
+}

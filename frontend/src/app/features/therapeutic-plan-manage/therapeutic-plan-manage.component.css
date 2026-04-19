@@ -212,6 +212,245 @@
   grid-column: 1 / -1;
 }
 
+.manage-panel-grid-medical-record {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.medical-record-hero-card {
+  background:
+    linear-gradient(115deg, rgba(18, 102, 176, 0.98) 0%, rgba(21, 136, 210, 0.95) 55%, rgba(33, 166, 151, 0.95) 100%),
+    url('/assets/texture.png');
+  background-size: 100% 100%, 520px;
+  background-repeat: no-repeat, repeat;
+  background-position: center, center;
+  color: #fff;
+}
+
+.medical-record-hero-card .section-copy,
+.medical-record-hero-card h2,
+.medical-record-hero-card .manage-eyebrow {
+  color: #fff !important;
+}
+
+.medical-record-detail-grid {
+  margin-top: 16px;
+}
+
+.medical-record-criticality-card {
+  min-height: 180px;
+}
+
+.medical-record-criticality-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 18px;
+}
+
+.medical-record-criticality-label {
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #5b728f;
+}
+
+.criticality-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 110px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.criticality-high {
+  background: #ffe4e4;
+  color: #b42318;
+  border: 1px solid #f8b4b4;
+}
+
+.criticality-medium {
+  background: #fff4db;
+  color: #a15c00;
+  border: 1px solid #f7d47a;
+}
+
+.criticality-low {
+  background: #e8f7ed;
+  color: #1f6a3a;
+  border: 1px solid #b7e3c2;
+}
+
+.medical-record-content-card {
+  margin-top: 4px;
+}
+
+.medical-record-dosage-card {
+  grid-column: 1 / -1;
+  padding: 18px;
+  border-radius: 18px;
+  background: #f8fbff;
+  border: 1px solid #e4edf8;
+}
+
+.medical-record-dosage-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px 18px;
+}
+
+.medical-record-dosage-card .manage-section-header {
+  margin-bottom: 14px;
+}
+
+.medical-record-content-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.medical-record-content-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px 18px;
+}
+
+.medical-record-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.medical-record-field span {
+  color: #175fcb;
+  font-size: 0.98rem;
+  font-weight: 500;
+}
+
+.medical-record-field h2,
+.medical-record-subsection h2,
+.medical-record-dosage-card h2,
+.medical-record-criticality-card h2,
+.medical-record-content-card h2,
+.medical-record-hero-card h2,
+.medical-record-content-card .manage-section-header h2,
+.medical-record-dosage-card .manage-section-header h2 {
+  margin: 0;
+  font-size: 1.28rem;
+  line-height: 1.2;
+  color: #17365f;
+}
+
+.medical-record-subsection h2 {
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #5d7598;
+}
+
+.medical-record-field input,
+.medical-record-field select,
+.medical-record-toggle-field select {
+  width: 100%;
+  border: 1.5px solid #d3e5f8;
+  border-radius: 16px;
+  background: #edf6ff;
+  color: #1a3a5d;
+  padding: 12px 16px;
+  font-size: 0.96rem;
+  line-height: 1.45;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.medical-record-field input:focus,
+.medical-record-field select:focus,
+.medical-record-toggle-field select:focus {
+  outline: none;
+  border-color: #1870e8;
+  box-shadow: 0 0 0 3px rgba(24, 112, 232, 0.12);
+}
+
+.medical-record-toggle-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 280px;
+}
+
+.medical-record-toggle-field span {
+  color: #175fcb;
+  font-size: 0.98rem;
+  font-weight: 500;
+}
+
+.medical-record-field-wide {
+  grid-column: 1 / -1;
+}
+
+.medical-record-section-label {
+  font-size: 0.82rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #5d7598 !important;
+}
+
+.medical-record-time-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.medical-record-time-group > span {
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #5d7598;
+}
+
+.medical-record-time-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.medical-record-inline-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.medical-record-inline-field span {
+  color: #175fcb;
+  font-size: 0.96rem;
+  font-weight: 500;
+}
+
+.medical-record-toggle-block {
+  gap: 16px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: #f8fbff;
+  border: 1px solid #e4edf8;
+}
+
+.medical-record-toggle-field {
+  max-width: 280px;
+}
+
+.medical-record-conditional-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 18px;
+}
+
 .note-box,
 .empty-state,
 .section-copy {
@@ -590,7 +829,11 @@
 
   .manage-overview-strip,
   .manage-panel-grid,
-  .alert-modal-grid {
+  .alert-modal-grid,
+  .medical-record-content-grid,
+  .medical-record-dosage-fields,
+  .medical-record-conditional-grid,
+  .medical-record-time-grid {
     grid-template-columns: 1fr;
   }
 
@@ -609,6 +852,10 @@
   .manage-panel-card,
   .manage-feedback-card {
     padding: 18px;
+  }
+
+  .medical-record-toggle-field {
+    max-width: none;
   }
 
   .manage-hero-metrics {

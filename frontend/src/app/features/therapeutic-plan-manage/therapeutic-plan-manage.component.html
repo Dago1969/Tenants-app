@@ -262,6 +262,10 @@
 
       <!-- Contatti / patient profile -->
       <div *ngIf="activePatientFolder === 'contatti'" class="manage-panel-grid">
+        <article class="manage-panel-card manage-panel-card-wide">
+          <app-patient-contacts-search></app-patient-contacts-search>
+        </article>
+
         <article class="manage-panel-card">
           <h2>{{ translate('therapeuticPlan.manage.section.patientProfile') }}</h2>
           <dl class="detail-grid">
@@ -320,6 +324,226 @@
               <dd>{{ patient?.caregiverFullName || translate('common.notAvailable') }}</dd>
             </div>
           </dl>
+        </article>
+      </div>
+
+      <div *ngIf="activePatientFolder === 'cartella-inf'" class="manage-panel-grid manage-panel-grid-medical-record">
+        <article class="manage-panel-card manage-panel-card-wide medical-record-hero-card">
+          <span class="manage-eyebrow">{{ translate('therapeuticPlan.manage.patientFolder.medicalRecord') }}</span>
+          <h2>{{ medicalRecord.title }}</h2>
+          <p class="section-copy">{{ translate('therapeuticPlan.medicalRecord.subtitle') }}</p>
+        </article>
+
+        <article class="manage-panel-card manage-panel-card-wide">
+          <div class="manage-section-header">
+            <div>
+              <h2>{{ translate('therapeuticPlan.medicalRecord.section.general') }}</h2>
+              <p class="section-copy">{{ translate('therapeuticPlan.medicalRecord.section.general.description') }}</p>
+            </div>
+          </div>
+
+          <dl class="detail-grid medical-record-detail-grid">
+            <div>
+              <dt>{{ translate('therapeuticPlan.medicalRecord.field.title') }}</dt>
+              <dd>{{ medicalRecord.title }}</dd>
+            </div>
+            <div>
+              <dt>{{ translate('therapeuticPlan.medicalRecord.field.patient') }}</dt>
+              <dd>{{ medicalRecord.patientName }}</dd>
+            </div>
+            <div>
+              <dt>{{ translate('therapeuticPlan.medicalRecord.field.patientCriticality') }}</dt>
+              <dd>
+                <span class="criticality-badge" [ngClass]="getCriticalityBadgeClass(medicalRecord.patientCriticality)">
+                  {{ patientCriticalityLabel }}
+                </span>
+              </dd>
+            </div>
+            <div>
+              <dt>{{ translate('therapeuticPlan.medicalRecord.field.medicalCenter') }}</dt>
+              <dd>{{ medicalRecord.medicalCenter }}</dd>
+            </div>
+            <div>
+              <dt>{{ translate('therapeuticPlan.medicalRecord.field.implementationDate') }}</dt>
+              <dd>{{ formatDate(medicalRecord.implementationDate) }}</dd>
+            </div>
+            <div>
+              <dt>{{ translate('therapeuticPlan.medicalRecord.field.pegjModel') }}</dt>
+              <dd>{{ medicalRecord.pegjModel }}</dd>
+            </div>
+            <div>
+              <dt>{{ translate('therapeuticPlan.medicalRecord.field.pumpCode') }}</dt>
+              <dd>{{ medicalRecord.pumpCode }}</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article *ngFor="let criticalityCard of medicalRecord.criticalityCards" class="manage-panel-card medical-record-criticality-card">
+          <div class="manage-section-header">
+            <div>
+              <h2>{{ translate(criticalityCard.titleKey) }}</h2>
+              <p class="section-copy">{{ translate(criticalityCard.descriptionKey) }}</p>
+            </div>
+            <span class="criticality-badge" [ngClass]="getCriticalityBadgeClass(criticalityCard.level)">
+              {{ translate(getCriticalityLabelKey(criticalityCard.level)) }}
+            </span>
+          </div>
+
+          <div class="medical-record-criticality-body">
+            <span class="medical-record-criticality-label">{{ translate('therapeuticPlan.medicalRecord.field.level') }}</span>
+            <strong>{{ translate(getCriticalityLabelKey(criticalityCard.level)) }}</strong>
+          </div>
+        </article>
+
+        <article class="manage-panel-card manage-panel-card-wide medical-record-content-card">
+          <div class="manage-section-header">
+            <div>
+              <h2>{{ translate('therapeuticPlan.medicalRecord.section.contents') }}</h2>
+              <p class="section-copy">{{ translate('therapeuticPlan.medicalRecord.section.contents.description') }}</p>
+            </div>
+          </div>
+
+          <form class="medical-record-content-form" novalidate>
+            <div class="medical-record-content-grid">
+              <label class="medical-record-field medical-record-field-wide">
+                <span>{{ translate('therapeuticPlan.medicalRecord.field.dataCartella') }}</span>
+                <input type="date" name="medicalRecordDataCartella" [(ngModel)]="medicalRecordContentForm.dataCartella" />
+              </label>
+
+              <div class="medical-record-field medical-record-field-wide medical-record-subsection">
+                <h2 class="medical-record-section-label">{{ translate('therapeuticPlan.medicalRecord.section.dosages') }}</h2>
+              </div>
+
+              <article class="medical-record-dosage-card medical-record-dosage-card-f1">
+                <div class="manage-section-header">
+                  <div>
+                    <h2>{{ translate('therapeuticPlan.medicalRecord.section.infusionF1') }}</h2>
+                  </div>
+                </div>
+
+                <div class="medical-record-dosage-fields">
+                  <label class="medical-record-field">
+                    <span>{{ translate('therapeuticPlan.medicalRecord.field.doseMattutina') }}</span>
+                    <input type="number" step="0.1" min="0" name="medicalRecordDoseMattutina" [(ngModel)]="medicalRecordContentForm.doseMattutinaMl" />
+                  </label>
+
+                  <label class="medical-record-field">
+                    <span>{{ translate('therapeuticPlan.medicalRecord.field.doseContinuaF1') }}</span>
+                    <input type="number" step="0.1" min="0" name="medicalRecordDoseContinuaF1" [(ngModel)]="medicalRecordContentForm.doseContinuaF1MlH" />
+                  </label>
+
+                  <div class="medical-record-field medical-record-time-group">
+                    <span>{{ translate('therapeuticPlan.medicalRecord.field.fromTime') }} / {{ translate('therapeuticPlan.medicalRecord.field.toTime') }}</span>
+                    <div class="medical-record-time-grid">
+                      <label class="medical-record-inline-field">
+                        <span>{{ translate('therapeuticPlan.medicalRecord.field.fromTime') }}</span>
+                        <input type="time" name="medicalRecordDoseF1From" [(ngModel)]="medicalRecordContentForm.dalleOreF1" />
+                      </label>
+                      <label class="medical-record-inline-field">
+                        <span>{{ translate('therapeuticPlan.medicalRecord.field.toTime') }}</span>
+                        <input type="time" name="medicalRecordDoseF1To" [(ngModel)]="medicalRecordContentForm.alleOreF1" />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </article>
+
+              <label class="medical-record-field medical-record-field-wide">
+                <span>{{ translate('therapeuticPlan.medicalRecord.field.doseExtra') }}</span>
+                <input type="number" step="0.1" min="0" name="medicalRecordDoseExtra" [(ngModel)]="medicalRecordContentForm.doseExtraMl" />
+              </label>
+
+              <label class="medical-record-field medical-record-field-wide">
+                <span>{{ translate('therapeuticPlan.medicalRecord.field.riempimentoJTube') }}</span>
+                <input type="number" step="0.1" min="0" name="medicalRecordRiempimentoJTube" [(ngModel)]="medicalRecordContentForm.riempimentoJTubeMl" />
+              </label>
+
+              <article class="medical-record-dosage-card medical-record-dosage-card-f2">
+                <div class="manage-section-header">
+                  <div>
+                    <h2>{{ translate('therapeuticPlan.medicalRecord.section.infusionF2') }}</h2>
+                  </div>
+                  <label class="medical-record-toggle-field">
+                    <span>{{ translate('therapeuticPlan.medicalRecord.field.infusioneF2') }}</span>
+                    <select
+                      name="medicalRecordInfusioneF2"
+                      [(ngModel)]="medicalRecordContentForm.infusioneF2"
+                      (ngModelChange)="onMedicalRecordInfusionChange('F2', $event)"
+                    >
+                      <option value="yes">{{ translate('common.yes') }}</option>
+                      <option value="no">{{ translate('common.no') }}</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div *ngIf="medicalRecordContentForm.infusioneF2 === 'yes'" class="medical-record-dosage-fields">
+                  <label class="medical-record-field">
+                    <span>{{ translate('therapeuticPlan.medicalRecord.field.doseContinuaF2') }}</span>
+                    <input type="number" step="0.1" min="0" name="medicalRecordDoseContinuaF2" [(ngModel)]="medicalRecordContentForm.doseContinuaF2MlH" />
+                  </label>
+
+                  <div class="medical-record-field medical-record-time-group">
+                    <span>{{ translate('therapeuticPlan.medicalRecord.field.fromTime') }} / {{ translate('therapeuticPlan.medicalRecord.field.toTime') }}</span>
+                    <div class="medical-record-time-grid">
+                      <label class="medical-record-inline-field">
+                        <span>{{ translate('therapeuticPlan.medicalRecord.field.fromTime') }}</span>
+                        <input type="time" name="medicalRecordDoseF2From" [(ngModel)]="medicalRecordContentForm.dalleOreF2" />
+                      </label>
+                      <label class="medical-record-inline-field">
+                        <span>{{ translate('therapeuticPlan.medicalRecord.field.toTime') }}</span>
+                        <input type="time" name="medicalRecordDoseF2To" [(ngModel)]="medicalRecordContentForm.alleOreF2" />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </article>
+
+              <article class="medical-record-dosage-card medical-record-dosage-card-f3">
+                <div class="manage-section-header">
+                  <div>
+                    <h2>{{ translate('therapeuticPlan.medicalRecord.section.infusionF3') }}</h2>
+                  </div>
+                  <label class="medical-record-toggle-field">
+                    <span>{{ translate('therapeuticPlan.medicalRecord.field.infusioneF3') }}</span>
+                    <select
+                      name="medicalRecordInfusioneF3"
+                      [(ngModel)]="medicalRecordContentForm.infusioneF3"
+                      (ngModelChange)="onMedicalRecordInfusionChange('F3', $event)"
+                    >
+                      <option value="yes">{{ translate('common.yes') }}</option>
+                      <option value="no">{{ translate('common.no') }}</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div *ngIf="medicalRecordContentForm.infusioneF3 === 'yes'" class="medical-record-dosage-fields">
+                  <label class="medical-record-field">
+                    <span>{{ translate('therapeuticPlan.medicalRecord.field.doseContinuaF3') }}</span>
+                    <input type="number" step="0.1" min="0" name="medicalRecordDoseContinuaF3" [(ngModel)]="medicalRecordContentForm.doseContinuaF3MlH" />
+                  </label>
+
+                  <div class="medical-record-field medical-record-time-group">
+                    <span>{{ translate('therapeuticPlan.medicalRecord.field.fromTime') }} / {{ translate('therapeuticPlan.medicalRecord.field.toTime') }}</span>
+                    <div class="medical-record-time-grid">
+                      <label class="medical-record-inline-field">
+                        <span>{{ translate('therapeuticPlan.medicalRecord.field.fromTime') }}</span>
+                        <input type="time" name="medicalRecordDoseF3From" [(ngModel)]="medicalRecordContentForm.dalleOreF3" />
+                      </label>
+                      <label class="medical-record-inline-field">
+                        <span>{{ translate('therapeuticPlan.medicalRecord.field.toTime') }}</span>
+                        <input type="time" name="medicalRecordDoseF3To" [(ngModel)]="medicalRecordContentForm.alleOreF3" />
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </article>
+
+              <label class="medical-record-field medical-record-field-wide">
+                <span>{{ translate('therapeuticPlan.medicalRecord.field.totaleLevodopa') }}</span>
+                <input type="number" step="0.1" min="0" name="medicalRecordTotaleLevodopa" [(ngModel)]="medicalRecordContentForm.totaleLevodopaMgDie" />
+              </label>
+            </div>
+          </form>
         </article>
       </div>
     </section>

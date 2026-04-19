@@ -1,0 +1,104 @@
+<section class="patient-contacts-search-shell">
+  <div class="search-header">
+    <div>
+      <span class="search-eyebrow">{{ translate('therapeuticPlan.manage.section.patientContacts') }}</span>
+      <h2>{{ translate(titleKey) }}</h2>
+      <p class="section-copy">{{ translate(subtitleKey) }}</p>
+    </div>
+
+    <div class="search-header-actions">
+      <button class="btn btn-outline" type="button" (click)="resetFilters()">
+        {{ translate('crud.actions.reset') }}
+      </button>
+    </div>
+  </div>
+
+  <div class="search-filters-panel">
+    <form class="search-filters-form search-filters-form-inline" (ngSubmit)="applyFilters()">
+      <label class="search-filter-label search-filter-label-inline">
+        <span>{{ translate('therapeuticPlan.patientContacts.field.therapeuticPlanId') }}</span>
+        <input type="number" min="1" [(ngModel)]="filterModel.therapeuticPlanId" name="therapeuticPlanId" />
+      </label>
+
+      <label class="search-filter-label search-filter-label-inline">
+        <span>{{ translate('therapeuticPlan.patientContacts.field.date') }}</span>
+        <input type="date" [(ngModel)]="filterModel.date" name="date" />
+      </label>
+
+      <label class="search-filter-label search-filter-label-inline">
+        <span>{{ translate('therapeuticPlan.patientContacts.field.type') }}</span>
+        <select [(ngModel)]="filterModel.type" name="type">
+          <option value="">{{ translate('search.option.all') }}</option>
+          <option *ngFor="let option of typeOptions" [ngValue]="option.value">{{ translate(option.labelKey) }}</option>
+        </select>
+      </label>
+
+      <label class="search-filter-label search-filter-label-inline search-filter-label-wide">
+        <span>{{ translate('therapeuticPlan.patientContacts.field.notes') }}</span>
+        <input type="text" [(ngModel)]="filterModel.notes" name="notes" [placeholder]="translate('therapeuticPlan.patientContacts.field.notes.placeholder')" />
+      </label>
+
+      <div class="search-filters-actions search-filters-actions-inline">
+        <button type="submit" class="btn btn-primary">{{ translate('crud.actions.search') }}</button>
+      </div>
+    </form>
+
+    <div class="table-search-bar-inside patient-contacts-table-search">
+      <div class="table-search-input-wrapper">
+        <span class="search-icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="9" cy="9" r="7" stroke="#7a869a" stroke-width="2"/>
+            <line x1="14.4142" y1="14" x2="18" y2="17.5858" stroke="#7a869a" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <input
+          type="text"
+          [(ngModel)]="filterModel.tableSearch"
+          name="tableSearch"
+          [placeholder]="translate('table.search.placeholder')"
+          class="table-search-input"
+        />
+        <button class="close-btn" type="button" (click)="filterModel.tableSearch = ''" [attr.title]="translate('table.search.close')">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <line x1="4" y1="4" x2="12" y2="12" stroke="#7a869a" stroke-width="2" stroke-linecap="round"/>
+            <line x1="12" y1="4" x2="4" y2="12" stroke="#7a869a" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="search-table-container modern-table">
+    <table class="search-table patient-contacts-table">
+      <thead>
+        <tr>
+          <th>{{ translate('therapeuticPlan.patientContacts.table.therapeuticPlanId') }}</th>
+          <th>{{ translate('therapeuticPlan.patientContacts.table.date') }}</th>
+          <th>{{ translate('therapeuticPlan.patientContacts.table.type') }}</th>
+          <th>{{ translate('therapeuticPlan.patientContacts.table.notes') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let contact of filteredContacts">
+          <td>{{ contact.therapeuticPlanId }}</td>
+          <td>{{ formatDate(contact.date) }}</td>
+          <td>
+            <span class="status-badge patient-contact-type-badge" [ngClass]="'status-' + contact.type">
+              {{ getContactTypeLabel(contact.type) }}
+            </span>
+          </td>
+          <td>{{ getContactNotes(contact) }}</td>
+        </tr>
+        <tr *ngIf="filteredContacts.length === 0">
+          <td colspan="4">
+            <p class="empty-state">{{ translate('therapeuticPlan.patientContacts.search.empty') }}</p>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="search-pagination" *ngIf="filteredContacts.length > 0">
+      <span>{{ filteredContacts.length }} {{ translate('therapeuticPlan.patientContacts.search.results') }}</span>
+    </div>
+  </div>
+</section>

@@ -9,6 +9,7 @@ import { catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { StructureApiService, StructureDto } from '../../core/structure-api.service';
 import { MessageKey, t } from '../../i18n/messages';
+import { PatientContactsSearchComponent } from '../patient-contacts-search/patient-contacts-search.component';
 import { QtmStepModalComponent } from '../../shared/qtm-step-modal.component';
 
 interface TherapeuticPlanManageResponse {
@@ -116,13 +117,51 @@ interface TherapeuticPlanNotificationForm {
   notes: string;
 }
 
+type TherapeuticPlanCriticalityLevel = 'high' | 'medium' | 'low';
+
+interface TherapeuticPlanCriticalityCard {
+  titleKey: MessageKey;
+  level: TherapeuticPlanCriticalityLevel;
+  descriptionKey: MessageKey;
+}
+
+interface TherapeuticPlanMedicalRecordMock {
+  title: string;
+  patientName: string;
+  patientCriticality: TherapeuticPlanCriticalityLevel;
+  medicalCenter: string;
+  implementationDate: string;
+  pegjModel: string;
+  pumpCode: string;
+  criticalityCards: TherapeuticPlanCriticalityCard[];
+}
+
+interface TherapeuticPlanMedicalRecordContentForm {
+  dataCartella: string;
+  doseMattutinaMl: string;
+  doseContinuaF1MlH: string;
+  dalleOreF1: string;
+  alleOreF1: string;
+  doseExtraMl: string;
+  riempimentoJTubeMl: string;
+  infusioneF2: 'yes' | 'no';
+  doseContinuaF2MlH: string;
+  dalleOreF2: string;
+  alleOreF2: string;
+  infusioneF3: 'yes' | 'no';
+  doseContinuaF3MlH: string;
+  dalleOreF3: string;
+  alleOreF3: string;
+  totaleLevodopaMgDie: string;
+}
+
 /**
  * Pagina di gestione del piano terapeutico con tab dedicati per riepilogo, paziente e aree operative collegate.
  */
 @Component({
   selector: 'app-therapeutic-plan-manage',
   standalone: true,
-  imports: [CommonModule, FormsModule, QtmStepModalComponent],
+  imports: [CommonModule, FormsModule, PatientContactsSearchComponent, QtmStepModalComponent],
   templateUrl: './therapeutic-plan-manage.component.html',
   styleUrl: './therapeutic-plan-manage.component.css'
 })
@@ -159,6 +198,13 @@ export class TherapeuticPlanManageComponent implements OnInit {
     if (!this.patient?.birthDate) return this.translate('common.notAvailable');
     return this.formatDate(this.patient.birthDate);
   }
+  readonly medicalRecordCriticalityCards: TherapeuticPlanCriticalityCard[] = [
+    { titleKey: 'therapeuticPlan.medicalRecord.criticality.general', level: 'high', descriptionKey: 'therapeuticPlan.medicalRecord.criticality.general.description' },
+    { titleKey: 'therapeuticPlan.medicalRecord.criticality.patient', level: 'medium', descriptionKey: 'therapeuticPlan.medicalRecord.criticality.patient.description' },
+    { titleKey: 'therapeuticPlan.medicalRecord.criticality.reported', level: 'low', descriptionKey: 'therapeuticPlan.medicalRecord.criticality.reported.description' }
+  ];
+
+  readonly medicalRecordContentForm: TherapeuticPlanMedicalRecordContentForm = this.createEmptyMedicalRecordContentForm();
 
   readonly tabs: TherapeuticPlanManageTab[] = [
     { key: 'summary', titleKey: 'therapeuticPlan.manage.tab.summary' },
@@ -179,7 +225,6 @@ export class TherapeuticPlanManageComponent implements OnInit {
   readonly patientFolders = [
     { key: 'followup', titleKey: 'therapeuticPlan.manage.patientFolder.followup' },
     { key: 'contatti', titleKey: 'therapeuticPlan.manage.patientFolder.contacts' },
-    { key: 'visite', titleKey: 'therapeuticPlan.manage.patientFolder.visits' },
     { key: 'cartella-inf', titleKey: 'therapeuticPlan.manage.patientFolder.medicalRecord' },
     { key: 'storico-peg', titleKey: 'therapeuticPlan.manage.patientFolder.pegHistory' },
     { key: 'manutenzione', titleKey: 'therapeuticPlan.manage.patientFolder.maintenance' },
@@ -304,6 +349,23 @@ export class TherapeuticPlanManageComponent implements OnInit {
 
   get doctorLabel(): string {
     return this.doctor?.fullName?.trim() || this.translate('common.notAvailable');
+  }
+
+  get medicalCenterLabel(): string {
+    return this.structureLabel;
+  }
+
+  get patientCriticalityLabel(): string {
+    return this.translate(this.getCriticalityLabelKey(this.getMockMedicalRecord().patientCriticality));
+  }
+
+  get medicalRecord(): TherapeuticPlanMedicalRecordMock {
+    return this.getMockMedicalRecord();
+  }
+
+  get medicalRecordTitle(): string {
+    const implementationDate = this.formatDate(this.plan?.startDate || this.getTodayDateInputValue());
+    return this.translate('therapeuticPlan.medicalRecord.title').replace('{0}', implementationDate);
   }
 
   get statusLabelKey(): string {
@@ -518,6 +580,21 @@ export class TherapeuticPlanManageComponent implements OnInit {
       default:
         return this.translate('therapeuticPlan.alert.confirmationSent.na');
     }
+  }
+
+  getCriticalityLabelKey(level: TherapeuticPlanCriticalityLevel): MessageKey {
+    switch (level) {
+      case 'high':
+        return 'therapeuticPlan.medicalRecord.level.high';
+      case 'medium':
+        return 'therapeuticPlan.medicalRecord.level.medium';
+      default:
+        return 'therapeuticPlan.medicalRecord.level.low';
+    }
+  }
+
+  getCriticalityBadgeClass(level: TherapeuticPlanCriticalityLevel): string {
+    return `criticality-badge criticality-${level}`;
   }
 
   openNotificationModal(): void {
@@ -758,5 +835,62 @@ export class TherapeuticPlanManageComponent implements OnInit {
       const rightDate = right.date ?? '';
       return rightDate.localeCompare(leftDate) || (right.id ?? 0) - (left.id ?? 0);
     });
+  }
+
+  private getMockMedicalRecord(): TherapeuticPlanMedicalRecordMock {
+    const implementationDate = this.plan?.startDate || this.getTodayDateInputValue();
+    const patientName = this.patientDisplayName;
+    const centerLabel = this.medicalCenterLabel;
+    return {
+      title: this.medicalRecordTitle,
+      patientName,
+      patientCriticality: 'high',
+      medicalCenter: centerLabel,
+      implementationDate,
+      pegjModel: 'PEGJ 20 Fr - standard',
+      pumpCode: this.selectedEquipment[0]?.code || this.translate('common.notAvailable'),
+      criticalityCards: this.medicalRecordCriticalityCards
+    };
+  }
+
+  /**
+   * Inizializza i campi editabili della cartella infermieristica con valori mock coerenti per la UI.
+   */
+  private createEmptyMedicalRecordContentForm(): TherapeuticPlanMedicalRecordContentForm {
+    return {
+      dataCartella: this.getTodayDateInputValue(),
+      doseMattutinaMl: '5',
+      doseContinuaF1MlH: '1.5',
+      dalleOreF1: '08:00',
+      alleOreF1: '12:00',
+      doseExtraMl: '2',
+      riempimentoJTubeMl: '15',
+      infusioneF2: 'yes',
+      doseContinuaF2MlH: '1.2',
+      dalleOreF2: '13:00',
+      alleOreF2: '18:00',
+      infusioneF3: 'no',
+      doseContinuaF3MlH: '',
+      dalleOreF3: '',
+      alleOreF3: '',
+      totaleLevodopaMgDie: '650'
+    };
+  }
+
+  onMedicalRecordInfusionChange(section: 'F2' | 'F3', value: 'yes' | 'no'): void {
+    if (value === 'yes') {
+      return;
+    }
+
+    if (section === 'F2') {
+      this.medicalRecordContentForm.doseContinuaF2MlH = '';
+      this.medicalRecordContentForm.dalleOreF2 = '';
+      this.medicalRecordContentForm.alleOreF2 = '';
+      return;
+    }
+
+    this.medicalRecordContentForm.doseContinuaF3MlH = '';
+    this.medicalRecordContentForm.dalleOreF3 = '';
+    this.medicalRecordContentForm.alleOreF3 = '';
   }
 }
