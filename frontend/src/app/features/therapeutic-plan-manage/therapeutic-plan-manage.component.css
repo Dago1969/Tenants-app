@@ -179,6 +179,10 @@
   margin-top: 20px;
 }
 
+.manage-patient-shell {
+  margin-top: 20px;
+}
+
 .manage-subtabs {
   display: flex;
   flex-wrap: wrap;
@@ -204,38 +208,8 @@
   padding: 24px;
 }
 
-.manage-panel-card h2 {
-  margin: 0 0 16px;
-  color: #17365f;
-}
-
 .manage-panel-card-wide {
   grid-column: 1 / -1;
-}
-
-.detail-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-  margin: 0;
-}
-
-.detail-grid div {
-  padding: 14px 16px;
-  border-radius: 18px;
-  background: #f8fbff;
-  border: 1px solid #e4edf8;
-}
-
-.detail-grid dt {
-  margin-bottom: 8px;
-  color: #5d7598;
-}
-
-.detail-grid dd {
-  margin: 0;
-  color: #17365f;
-  font-weight: 600;
 }
 
 .note-box,
@@ -616,7 +590,6 @@
 
   .manage-overview-strip,
   .manage-panel-grid,
-  .detail-grid,
   .alert-modal-grid {
     grid-template-columns: 1fr;
   }

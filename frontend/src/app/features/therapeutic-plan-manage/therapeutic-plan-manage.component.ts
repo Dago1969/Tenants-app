@@ -175,6 +175,21 @@ export class TherapeuticPlanManageComponent implements OnInit {
     { key: 'alerts', titleKey: 'therapeuticPlan.manage.subtab.alerts' }
   ];
 
+  // Cartelle disponibili sotto il folder "Paziente"
+  readonly patientFolders = [
+    { key: 'followup', titleKey: 'therapeuticPlan.manage.patientFolder.followup' },
+    { key: 'contatti', titleKey: 'therapeuticPlan.manage.patientFolder.contacts' },
+    { key: 'visite', titleKey: 'therapeuticPlan.manage.patientFolder.visits' },
+    { key: 'cartella-inf', titleKey: 'therapeuticPlan.manage.patientFolder.medicalRecord' },
+    { key: 'storico-peg', titleKey: 'therapeuticPlan.manage.patientFolder.pegHistory' },
+    { key: 'manutenzione', titleKey: 'therapeuticPlan.manage.patientFolder.maintenance' },
+    { key: 'moduli', titleKey: 'therapeuticPlan.manage.patientFolder.modules' },
+    { key: 'documenti', titleKey: 'therapeuticPlan.manage.patientFolder.documents' }
+  ];
+
+  // cartella attiva dentro il tab paziente
+  activePatientFolder: string = 'followup';
+
   loading = true;
   errorMessage = '';
   activeTab: TherapeuticPlanManageTab['key'] = 'summary';
@@ -238,6 +253,28 @@ export class TherapeuticPlanManageComponent implements OnInit {
 
   goBack(): void {
     void this.router.navigateByUrl('/therapeutic-plans/search');
+  }
+
+  setActivePatientFolder(folderKey: string): void {
+    this.activePatientFolder = folderKey;
+    // se l'utente seleziona "visite" come cartella, apriamo il tab visite
+    if (folderKey === 'visite') {
+      this.setActiveTab('visits');
+    }
+  }
+
+  /**
+   * Restituisce l'età del paziente alla data fornita (yyyy-mm-dd) oppure 'not available'.
+   */
+  getAgeAt(dateIso?: string): string {
+    if (!this.patient || !(this.patient as any).birthDate || !dateIso) return this.translate('common.notAvailable');
+    const birth = new Date((this.patient as any).birthDate);
+    const when = new Date(dateIso);
+    if (Number.isNaN(birth.getTime()) || Number.isNaN(when.getTime())) return this.translate('common.notAvailable');
+    let age = when.getFullYear() - birth.getFullYear();
+    const m = when.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && when.getDate() < birth.getDate())) age--;
+    return String(age);
   }
 
   get patientDisplayName(): string {

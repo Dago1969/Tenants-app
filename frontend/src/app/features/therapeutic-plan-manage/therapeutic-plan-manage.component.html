@@ -195,66 +195,133 @@
       </div>
     </section>
 
-    <section *ngIf="activeTab === 'patient'" class="manage-panel-grid">
-      <article class="manage-panel-card">
-        <h2>{{ translate('therapeuticPlan.manage.section.patientProfile') }}</h2>
-        <dl class="detail-grid">
-          <div>
-            <dt>{{ translate('patients.field.firstName') }}</dt>
-            <dd>{{ patient?.firstName || translate('common.notAvailable') }}</dd>
-          </div>
-          <div>
-            <dt>{{ translate('patients.field.lastName') }}</dt>
-            <dd>{{ patient?.lastName || translate('common.notAvailable') }}</dd>
-          </div>
-          <div>
-            <dt>{{ translate('patients.field.fiscalCode') }}</dt>
-            <dd>{{ patient?.fiscalCode || translate('common.notAvailable') }}</dd>
-          </div>
-          <div>
-            <dt>{{ translate('patients.field.assistedId') }}</dt>
-            <dd>{{ patientCode }}</dd>
-          </div>
-          <div>
-            <dt>{{ translate('patients.field.prescribingSpecialist') }}</dt>
-            <dd>{{ patient?.prescribingSpecialist || translate('common.notAvailable') }}</dd>
-          </div>
-          <div>
-            <dt>{{ translate('patients.field.preferredContact') }}</dt>
-            <dd>{{ patient?.preferredContact || translate('common.notAvailable') }}</dd>
-          </div>
-        </dl>
-      </article>
+    <section *ngIf="activeTab === 'patient'" class="manage-patient-shell">
+      <nav class="manage-subtabs patient-folders" [attr.aria-label]="translate('therapeuticPlan.manage.patientFolders.aria')">
+        <button
+          *ngFor="let f of patientFolders"
+          type="button"
+          class="manage-subtab patient-folder-tab"
+          [class.manage-subtab-active]="activePatientFolder === f.key"
+          (click)="setActivePatientFolder(f.key)">
+          {{ translate(f.titleKey) }}
+        </button>
+      </nav>
 
-      <article class="manage-panel-card">
-        <h2>{{ translate('therapeuticPlan.manage.section.patientContacts') }}</h2>
-        <dl class="detail-grid">
-          <div>
-            <dt>{{ translate('patients.field.email') }}</dt>
-            <dd>{{ patient?.email || translate('common.notAvailable') }}</dd>
-          </div>
-          <div>
-            <dt>{{ translate('patients.field.primaryPhone') }}</dt>
-            <dd>{{ patient?.primaryPhone || translate('common.notAvailable') }}</dd>
-          </div>
-          <div>
-            <dt>{{ translate('patients.field.deliveryAddress') }}</dt>
-            <dd>{{ patient?.deliveryAddress || translate('common.notAvailable') }}</dd>
-          </div>
-          <div>
-            <dt>{{ translate('patients.field.city') }}</dt>
-            <dd>{{ patient?.city || translate('common.notAvailable') }}</dd>
-          </div>
-          <div>
-            <dt>{{ translate('patients.field.province') }}</dt>
-            <dd>{{ patient?.province || translate('common.notAvailable') }}</dd>
-          </div>
-          <div>
-            <dt>{{ translate('patients.field.caregiverFullName') }}</dt>
-            <dd>{{ patient?.caregiverFullName || translate('common.notAvailable') }}</dd>
-          </div>
-        </dl>
-      </article>
+      <!-- Followup folder -->
+      <div *ngIf="activePatientFolder === 'followup'" class="manage-panel-grid">
+        <article class="manage-panel-card manage-panel-card-wide">
+          <h2>{{ translate('therapeuticPlan.manage.followup.main.title') }}</h2>
+          <dl class="detail-grid">
+            <div><dt>{{ translate('therapeuticPlan.manage.followup.field.patient') }}</dt><dd>{{ patientDisplayName }}</dd></div>
+            <div><dt>{{ translate('therapeuticPlan.manage.followup.field.medicine') }}</dt><dd>{{ plan?.drugCode || translate('common.notAvailable') }}</dd></div>
+            <div><dt>{{ translate('therapeuticPlan.manage.followup.field.structure') }}</dt><dd>{{ structureLabel }}</dd></div>
+            <div><dt>{{ translate('therapeuticPlan.manage.followup.field.status') }}</dt><dd>{{ translate(statusLabelKey) }}</dd></div>
+            <div><dt>{{ translate('therapeuticPlan.manage.followup.field.lastReactivationDate') }}</dt><dd>{{ translate('common.notAvailable') }}</dd></div>
+            <div><dt>{{ translate('therapeuticPlan.manage.followup.field.ageAtImplementation') }}</dt><dd>{{ getAgeAt(plan?.startDate) }}</dd></div>
+            <div><dt>{{ translate('therapeuticPlan.manage.followup.field.currentAgeOrTermination') }}</dt><dd>{{ patientAge }}</dd></div>
+            <div><dt>{{ translate('therapeuticPlan.manage.followup.field.lastCheck') }}</dt><dd>{{ translate('common.notAvailable') }}</dd></div>
+            <div><dt>{{ translate('therapeuticPlan.manage.followup.field.nextCheck') }}</dt><dd>{{ translate('common.notAvailable') }}</dd></div>
+            <div><dt>{{ translate('therapeuticPlan.manage.followup.field.defaultClinic') }}</dt><dd>{{ structureLabel }}</dd></div>
+          </dl>
+        </article>
+
+        <article class="manage-panel-card">
+          <h3>{{ translate('therapeuticPlan.manage.followup.implementation.title') }}</h3>
+          <dl class="detail-grid">
+            <div><dt>{{ translate('therapeuticPlan.manage.followup.implementation.field.referenceCenter') }}</dt><dd>{{ structureLabel }}</dd></div>
+            <div><dt>{{ translate('therapeuticPlan.manage.followup.implementation.field.autonomous') }}</dt><dd>{{ translate('common.notAvailable') }}</dd></div>
+            <div><dt>{{ translate('therapeuticPlan.manage.followup.implementation.field.mode') }}</dt><dd>{{ translate('common.notAvailable') }}</dd></div>
+            <div><dt>{{ translate('therapeuticPlan.manage.followup.implementation.field.implementationDate') }}</dt><dd>{{ formatDate(plan?.startDate) }}</dd></div>
+            <div><dt>{{ translate('therapeuticPlan.manage.followup.implementation.field.firstPegDate') }}</dt><dd>{{ translate('common.notAvailable') }}</dd></div>
+            <div><dt>{{ translate('therapeuticPlan.manage.followup.implementation.field.testPhase') }}</dt><dd>{{ translate('common.notAvailable') }}</dd></div>
+            <div><dt>{{ translate('therapeuticPlan.manage.followup.implementation.field.fromX') }}</dt><dd>{{ translate('common.notAvailable') }}</dd></div>
+            <div><dt>{{ translate('therapeuticPlan.manage.followup.implementation.field.dateX') }}</dt><dd>{{ translate('common.notAvailable') }}</dd></div>
+          </dl>
+        </article>
+
+        <article class="manage-panel-card">
+          <h3>{{ translate('therapeuticPlan.manage.followup.peg.title') }}</h3>
+          <dl class="detail-grid">
+            <div><dt>{{ translate('therapeuticPlan.manage.followup.peg.field.model') }}</dt><dd>{{ translate('common.notAvailable') }}</dd></div>
+            <div><dt>{{ translate('therapeuticPlan.manage.followup.peg.field.implementationDate') }}</dt><dd>{{ translate('common.notAvailable') }}</dd></div>
+            <div><dt>{{ translate('therapeuticPlan.manage.followup.peg.field.replacement') }}</dt><dd>{{ translate('common.notAvailable') }}</dd></div>
+            <div><dt>{{ translate('therapeuticPlan.manage.followup.peg.field.medical') }}</dt><dd>{{ doctorLabel }}</dd></div>
+          </dl>
+        </article>
+
+        <article class="manage-panel-card">
+          <h3>{{ translate('therapeuticPlan.manage.followup.pump.title') }}</h3>
+          <dl class="detail-grid">
+            <div><dt>{{ translate('therapeuticPlan.manage.followup.pump.field.serial') }}</dt><dd>{{ selectedEquipment.length>0? selectedEquipment[0].serialNumber || translate('common.notAvailable') : translate('common.notAvailable') }}</dd></div>
+            <div><dt>{{ translate('therapeuticPlan.manage.followup.pump.field.date') }}</dt><dd>{{ translate('common.notAvailable') }}</dd></div>
+            <div><dt>{{ translate('therapeuticPlan.manage.followup.pump.field.x1') }}</dt><dd>{{ translate('common.notAvailable') }}</dd></div>
+            <div><dt>{{ translate('therapeuticPlan.manage.followup.pump.field.x2') }}</dt><dd>{{ translate('common.notAvailable') }}</dd></div>
+          </dl>
+        </article>
+      </div>
+
+      <!-- Contatti / patient profile -->
+      <div *ngIf="activePatientFolder === 'contatti'" class="manage-panel-grid">
+        <article class="manage-panel-card">
+          <h2>{{ translate('therapeuticPlan.manage.section.patientProfile') }}</h2>
+          <dl class="detail-grid">
+            <div>
+              <dt>{{ translate('patients.field.firstName') }}</dt>
+              <dd>{{ patient?.firstName || translate('common.notAvailable') }}</dd>
+            </div>
+            <div>
+              <dt>{{ translate('patients.field.lastName') }}</dt>
+              <dd>{{ patient?.lastName || translate('common.notAvailable') }}</dd>
+            </div>
+            <div>
+              <dt>{{ translate('patients.field.fiscalCode') }}</dt>
+              <dd>{{ patient?.fiscalCode || translate('common.notAvailable') }}</dd>
+            </div>
+            <div>
+              <dt>{{ translate('patients.field.assistedId') }}</dt>
+              <dd>{{ patientCode }}</dd>
+            </div>
+            <div>
+              <dt>{{ translate('patients.field.prescribingSpecialist') }}</dt>
+              <dd>{{ patient?.prescribingSpecialist || translate('common.notAvailable') }}</dd>
+            </div>
+            <div>
+              <dt>{{ translate('patients.field.preferredContact') }}</dt>
+              <dd>{{ patient?.preferredContact || translate('common.notAvailable') }}</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="manage-panel-card">
+          <h2>{{ translate('therapeuticPlan.manage.section.patientContacts') }}</h2>
+          <dl class="detail-grid">
+            <div>
+              <dt>{{ translate('patients.field.email') }}</dt>
+              <dd>{{ patient?.email || translate('common.notAvailable') }}</dd>
+            </div>
+            <div>
+              <dt>{{ translate('patients.field.primaryPhone') }}</dt>
+              <dd>{{ patient?.primaryPhone || translate('common.notAvailable') }}</dd>
+            </div>
+            <div>
+              <dt>{{ translate('patients.field.deliveryAddress') }}</dt>
+              <dd>{{ patient?.deliveryAddress || translate('common.notAvailable') }}</dd>
+            </div>
+            <div>
+              <dt>{{ translate('patients.field.city') }}</dt>
+              <dd>{{ patient?.city || translate('common.notAvailable') }}</dd>
+            </div>
+            <div>
+              <dt>{{ translate('patients.field.province') }}</dt>
+              <dd>{{ patient?.province || translate('common.notAvailable') }}</dd>
+            </div>
+            <div>
+              <dt>{{ translate('patients.field.caregiverFullName') }}</dt>
+              <dd>{{ patient?.caregiverFullName || translate('common.notAvailable') }}</dd>
+            </div>
+          </dl>
+        </article>
+      </div>
     </section>
 
     <section *ngIf="activeTab === 'modules'" class="manage-panel-grid">
