@@ -10,28 +10,26 @@
         <h1>{{ translate('therapeuticPlan.manage.title') }}</h1>
         <p>{{ translate('therapeuticPlan.manage.subtitle') }}</p>
       </div>
-
-      <div class="manage-hero-metrics">
-        <div class="metric-card">
-          <span class="metric-label">{{ translate('therapeuticPlan.field.patient') }}</span>
-          <strong class="metric-value">{{ patientDisplayName }}</strong>
-        </div>
-        <div class="metric-card">
-          <span class="metric-label">{{ translate('therapeuticPlan.field.status') }}</span>
-          <span class="status-badge status-badge-black" [ngClass]="statusClass">{{ translate(statusLabelKey) }}</span>
-        </div>
-        <div class="metric-card">
-          <span class="metric-label">{{ translate('patients.field.gender') }}</span>
-          <strong class="metric-value">{{ patientGenderLabel }}</strong>
-        </div>
-        <div class="metric-card">
-          <span class="metric-label">{{ translate('patients.field.age') }}</span>
-          <strong class="metric-value">{{ patientAge }} <span *ngIf="patientBirthDate !== translate('common.notAvailable')">({{ patientBirthDate }})</span></strong>
-        </div>
-      </div>
+        <!-- metric-card blocks spostati nella sezione overview -->
     </header>
 
     <section class="manage-overview-strip">
+      <article class="overview-card">
+        <span class="overview-label">{{ translate('therapeuticPlan.field.patient') }}</span>
+        <strong>{{ patientDisplayName }}</strong>
+      </article>
+      <article class="overview-card">
+        <span class="overview-label">{{ translate('therapeuticPlan.field.status') }}</span>
+        <span class="status-badge status-badge-black" [ngClass]="statusClass">{{ translate(statusLabelKey) }}</span>
+      </article>
+      <article class="overview-card">
+        <span class="overview-label">{{ translate('patients.field.gender') }}</span>
+        <strong>{{ patientGenderLabel }}</strong>
+      </article>
+      <article class="overview-card">
+        <span class="overview-label">{{ translate('patients.field.age') }}</span>
+        <strong>{{ patientAge }} <span *ngIf="patientBirthDate !== translate('common.notAvailable')">({{ patientBirthDate }})</span></strong>
+      </article>
       <article class="overview-card">
         <span class="overview-label">{{ translate('common.project') }}</span>
         <strong>{{ plan?.projectCode || translate('common.notAvailable') }}</strong>
