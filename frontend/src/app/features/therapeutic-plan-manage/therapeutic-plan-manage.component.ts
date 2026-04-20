@@ -724,31 +724,58 @@ export class TherapeuticPlanManageComponent implements OnInit {
   private fetchVisits(planId: number): void {
     const url = `${environment.apiBaseUrl}/therapeutic-plans/${planId}/visits`;
     this.http.get<any[]>(url).pipe(catchError(() => of([]))).subscribe((list) => {
-      // Map backend DTO to frontend record shape (best-effort)
-      const mapped: TherapeuticPlanVisitRecord[] = (list || []).map((v, idx) => ({
-        id: idx + 1,
-        patientFirstName: v.patientFirstName ?? (this.patient?.firstName ?? ''),
-        patientLastName: v.patientLastName ?? (this.patient?.lastName ?? ''),
-        duodopaTherapyStartDate: v.startTherapy ?? '',
-        caregiver: v.caregiver ?? 'other',
-        clinicalCenter: v.clinicalCenter ?? '',
-        neurologist: v.neurologist ?? '',
-        gastroenterologist: v.gastroenterologist ?? '',
-        date: v.date ?? '',
-        type: v.type ?? 'outpatient',
-        priority: v.priority ?? 'none',
-        nurse: v.nurse ?? '',
-        nurseSignature: v.nurseSignature ?? '',
-        stomiaStatus: v.stomiaStatus ?? this.createEmptyVisitForm().stomiaStatus,
-        stomiaActions: v.stomiaActions ?? this.createEmptyVisitForm().stomiaActions,
-        pegjStatus: v.pegjStatus ?? this.createEmptyVisitForm().pegjStatus,
-        pegjActions: v.pegjActions ?? this.createEmptyVisitForm().pegjActions,
-        autonomyStatus: v.autonomyStatus ?? this.createEmptyVisitForm().autonomyStatus,
-        autonomyActions: v.autonomyActions ?? this.createEmptyVisitForm().autonomyActions
-      }));
+      const mapped: TherapeuticPlanVisitRecord[] = (list || []).map((visitDto, index) =>
+        this.mapVisitDtoToRecord(visitDto, index)
+      );
 
       this.visitEntries = this.sortVisitEntries(mapped);
     });
+  }
+
+  private mapVisitDtoToRecord(visitDto: any, index: number): TherapeuticPlanVisitRecord {
+    const emptyVisitForm = this.createEmptyVisitForm();
+    const parsedVisit = this.parseVisitJsonVisit(visitDto?.jsonVisit);
+    const operatorLabel = this.getCurrentOperatorDisplayLabel();
+
+    return {
+      id: index + 1,
+      patientFirstName: this.getFirstNonBlankString(parsedVisit?.['patientFirstName'], visitDto?.patientFirstName, this.patient?.firstName),
+      patientLastName: this.getFirstNonBlankString(parsedVisit?.['patientLastName'], visitDto?.patientLastName, this.patient?.lastName),
+      duodopaTherapyStartDate: this.getFirstNonBlankString(parsedVisit?.['duodopaTherapyStartDate'], visitDto?.startTherapy),
+      caregiver: (this.getFirstNonBlankString(parsedVisit?.['caregiver'], visitDto?.caregiver, 'other') as TherapeuticPlanVisitCaregiver),
+      clinicalCenter: this.getFirstNonBlankString(parsedVisit?.['clinicalCenter'], visitDto?.clinicalCenter),
+      neurologist: this.getFirstNonBlankString(parsedVisit?.['neurologist'], visitDto?.neurologist),
+      gastroenterologist: this.getFirstNonBlankString(parsedVisit?.['gastroenterologist'], visitDto?.gastroenterologist),
+      date: this.getFirstNonBlankString(parsedVisit?.['date'], visitDto?.date),
+      type: (this.getFirstNonBlankString(parsedVisit?.['type'], visitDto?.type, 'outpatient') as TherapeuticPlanVisitType),
+      priority: (this.getFirstNonBlankString(parsedVisit?.['priority'], visitDto?.priority, 'none') as TherapeuticPlanVisitPriority),
+      nurse: this.getFirstNonBlankString(parsedVisit?.['nurse'], operatorLabel),
+      nurseSignature: this.getFirstNonBlankString(parsedVisit?.['nurseSignature'], this.buildOperatorSignature(operatorLabel)),
+      stomiaStatus: {
+        ...emptyVisitForm.stomiaStatus,
+        ...(this.isVisitObject(parsedVisit?.['stomiaStatus']) ? parsedVisit['stomiaStatus'] : {})
+      },
+      stomiaActions: {
+        ...emptyVisitForm.stomiaActions,
+        ...(this.isVisitObject(parsedVisit?.['stomiaActions']) ? parsedVisit['stomiaActions'] : {})
+      },
+      pegjStatus: {
+        ...emptyVisitForm.pegjStatus,
+        ...(this.isVisitObject(parsedVisit?.['pegjStatus']) ? parsedVisit['pegjStatus'] : {})
+      },
+      pegjActions: {
+        ...emptyVisitForm.pegjActions,
+        ...(this.isVisitObject(parsedVisit?.['pegjActions']) ? parsedVisit['pegjActions'] : {})
+      },
+      autonomyStatus: {
+        ...emptyVisitForm.autonomyStatus,
+        ...(this.isVisitObject(parsedVisit?.['autonomyStatus']) ? parsedVisit['autonomyStatus'] : {})
+      },
+      autonomyActions: {
+        ...emptyVisitForm.autonomyActions,
+        ...(this.isVisitObject(parsedVisit?.['autonomyActions']) ? parsedVisit['autonomyActions'] : {})
+      }
+    };
   }
 
   translate(key: MessageKey | string): string {
@@ -1343,6 +1370,8 @@ export class TherapeuticPlanManageComponent implements OnInit {
       return;
     }
 
+    const visitRecord = this.createVisitRecordFromForm();
+
     const payload = {
       therapeuticPlanId: this.planId,
       date: this.visitForm.date,
@@ -1355,7 +1384,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
       gastroenterologist: this.visitForm.gastroenterologist.trim(),
       type: this.visitForm.type,
       priority: this.visitForm.priority,
-      jsonVisit: null
+      jsonVisit: JSON.stringify(visitRecord)
     };
 
     const url = `${environment.apiBaseUrl}/therapeutic-plans/${this.planId}/visits`;
@@ -1793,6 +1822,32 @@ export class TherapeuticPlanManageComponent implements OnInit {
       pegjActions: this.createMockVisitPegjActions(),
       autonomyStatus: this.createMockVisitAutonomyStatus(),
       autonomyActions: this.createMockVisitAutonomyActions()
+    };
+  }
+
+  private createVisitRecordFromForm(): TherapeuticPlanVisitRecord {
+    const operatorLabel = this.getCurrentOperatorDisplayLabel();
+
+    return {
+      id: 0,
+      patientFirstName: this.visitForm.patientFirstName.trim(),
+      patientLastName: this.visitForm.patientLastName.trim(),
+      duodopaTherapyStartDate: this.visitForm.duodopaTherapyStartDate.trim(),
+      caregiver: this.visitForm.caregiver,
+      clinicalCenter: this.visitForm.clinicalCenter.trim(),
+      neurologist: this.visitForm.neurologist.trim(),
+      gastroenterologist: this.visitForm.gastroenterologist.trim(),
+      date: this.visitForm.date,
+      type: this.visitForm.type,
+      priority: this.visitForm.priority,
+      nurse: operatorLabel,
+      nurseSignature: this.buildOperatorSignature(operatorLabel),
+      stomiaStatus: { ...this.visitForm.stomiaStatus },
+      stomiaActions: { ...this.visitForm.stomiaActions },
+      pegjStatus: { ...this.visitForm.pegjStatus },
+      pegjActions: { ...this.visitForm.pegjActions },
+      autonomyStatus: { ...this.visitForm.autonomyStatus },
+      autonomyActions: { ...this.visitForm.autonomyActions }
     };
   }
 
@@ -2468,6 +2523,63 @@ export class TherapeuticPlanManageComponent implements OnInit {
 
   private getCurrentOperatorDisplayLabel(): string {
     return this.authService.getUsername()?.trim() || this.translate('common.notAvailable');
+  }
+
+  private buildOperatorSignature(operatorLabel: string): string {
+    const trimmedOperatorLabel = operatorLabel.trim();
+    if (!trimmedOperatorLabel || trimmedOperatorLabel === this.translate('common.notAvailable')) {
+      return trimmedOperatorLabel;
+    }
+
+    const initials = trimmedOperatorLabel
+      .split(/\s+/)
+      .filter((part) => part.length > 0)
+      .slice(0, 2)
+      .map((part) => part.charAt(0).toUpperCase());
+
+    return initials.length > 0 ? `${initials.join('. ')}.` : trimmedOperatorLabel;
+  }
+
+  private parseVisitJsonVisit(jsonVisit?: string): Record<string, any> | null {
+    if (typeof jsonVisit !== 'string' || jsonVisit.trim().length === 0) {
+      return null;
+    }
+
+    try {
+      const parsed = JSON.parse(jsonVisit);
+      if (!this.isVisitObject(parsed)) {
+        return null;
+      }
+
+      if (typeof parsed['jsonVisit'] === 'string' && parsed['jsonVisit'].trim().length > 0) {
+        try {
+          const nestedParsed = JSON.parse(parsed['jsonVisit']);
+          if (this.isVisitObject(nestedParsed)) {
+            return { ...parsed, ...nestedParsed };
+          }
+        } catch {
+          return parsed;
+        }
+      }
+
+      return parsed;
+    } catch {
+      return null;
+    }
+  }
+
+  private isVisitObject(value: unknown): value is Record<string, any> {
+    return typeof value === 'object' && value !== null && !Array.isArray(value);
+  }
+
+  private getFirstNonBlankString(...values: Array<unknown>): string {
+    for (const value of values) {
+      if (typeof value === 'string' && value.trim().length > 0) {
+        return value.trim();
+      }
+    }
+
+    return '';
   }
 
   private sortNotifications(notifications: TherapeuticPlanNotification[]): TherapeuticPlanNotification[] {

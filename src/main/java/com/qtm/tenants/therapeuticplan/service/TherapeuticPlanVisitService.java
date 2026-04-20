@@ -52,6 +52,15 @@ public class TherapeuticPlanVisitService {
 
             // convert DTO to ObjectNode and merge/overwrite baseNode
             ObjectNode dtoNode = objectMapper.valueToTree(dto);
+            if (dto.getJsonVisit() != null && !dto.getJsonVisit().isBlank()) {
+                try {
+                    ObjectNode generatedVisitNode = (ObjectNode) objectMapper.readTree(dto.getJsonVisit());
+                    baseNode.setAll(generatedVisitNode);
+                } catch (Exception ignored) {
+                }
+            }
+
+            dtoNode.remove("jsonVisit");
             // Remove null fields from dtoNode to avoid overwriting base with nulls
             dtoNode.fieldNames().forEachRemaining(field -> {
                 if (dtoNode.get(field).isNull()) dtoNode.remove(field);
