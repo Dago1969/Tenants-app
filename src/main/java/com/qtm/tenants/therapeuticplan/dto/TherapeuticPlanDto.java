@@ -34,4 +34,9 @@ public class TherapeuticPlanDto {
     private LocalDate endDate;
     private String status;
     private String notes;
+    /**
+     * Campo per contenere un JSON potenzialmente molto grande associato al piano terapeutico.
+     * Memorizzato come String per semplicità; lato DB usare CLOB/TEXT tramite @Lob in Entity.
+     */
+    private String jsonVisit;
 }

@@ -941,3 +941,94 @@ databaseChangeLog:
               CREATE INDEX idx_therapeutic_plan_notification_plan_id ON therapeutic_plan_notification (therapeutic_plan_id);
               CREATE INDEX idx_therapeutic_plan_notification_sent_date ON therapeutic_plan_notification (sent_date);
               CREATE INDEX idx_therapeutic_plan_notification_confirmed ON therapeutic_plan_notification (confirmed);
+  - changeSet:
+      id: 2026-04-20-add-json-visit-to-therapeutic-plan
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: therapeutic_plan
+        - not:
+            columnExists:
+              tableName: therapeutic_plan
+              columnName: json_visit
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE therapeutic_plan
+                ADD COLUMN json_visit TEXT NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE therapeutic_plan
+                DROP COLUMN IF EXISTS json_visit;
+  - changeSet:
+      id: 2026-04-20-create-therapeutic-plan-visit-table
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            tableExists:
+              tableName: therapeutic_plan_visit
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              CREATE TABLE IF NOT EXISTS therapeutic_plan_visit (
+                therapeutic_plan_id BIGINT NOT NULL,
+                visit_date DATE NOT NULL,
+                start_therapy VARCHAR(64),
+                duodopa VARCHAR(64),
+                caregiver VARCHAR(255),
+                clinical_center VARCHAR(255),
+                neurologist VARCHAR(255),
+                gastroenterologist VARCHAR(255),
+                visit_type VARCHAR(64),
+                visit_priority VARCHAR(32),
+                json_visit TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (therapeutic_plan_id, visit_date)
+              );
+
+              CREATE INDEX idx_therapeutic_plan_visit_plan_id ON therapeutic_plan_visit (therapeutic_plan_id);
+              CREATE INDEX idx_therapeutic_plan_visit_date ON therapeutic_plan_visit (visit_date);
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              DROP TABLE IF EXISTS therapeutic_plan_visit;
+  - changeSet:
+      id: 2026-04-20-add-json-visit-to-therapeutic-plan-visit
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: therapeutic_plan_visit
+        - not:
+            columnExists:
+              tableName: therapeutic_plan_visit
+              columnName: json_visit
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE therapeutic_plan_visit
+                ADD COLUMN json_visit TEXT NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE therapeutic_plan_visit
+                DROP COLUMN IF EXISTS json_visit;

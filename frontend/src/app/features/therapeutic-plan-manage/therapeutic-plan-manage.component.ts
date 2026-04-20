@@ -25,6 +25,8 @@ interface TherapeuticPlanManageResponse {
   endDate: string;
   status: string;
   notes: string;
+  // Campo che può contenere un JSON di grandi dimensioni associato al piano terapeutico
+  jsonVisit?: string | null;
 }
 
 interface TherapeuticPlanPatient {
@@ -719,6 +721,36 @@ export class TherapeuticPlanManageComponent implements OnInit {
     this.loadManageData(normalizedId);
   }
 
+  private fetchVisits(planId: number): void {
+    const url = `${environment.apiBaseUrl}/therapeutic-plans/${planId}/visits`;
+    this.http.get<any[]>(url).pipe(catchError(() => of([]))).subscribe((list) => {
+      // Map backend DTO to frontend record shape (best-effort)
+      const mapped: TherapeuticPlanVisitRecord[] = (list || []).map((v, idx) => ({
+        id: idx + 1,
+        patientFirstName: v.patientFirstName ?? (this.patient?.firstName ?? ''),
+        patientLastName: v.patientLastName ?? (this.patient?.lastName ?? ''),
+        duodopaTherapyStartDate: v.startTherapy ?? '',
+        caregiver: v.caregiver ?? 'other',
+        clinicalCenter: v.clinicalCenter ?? '',
+        neurologist: v.neurologist ?? '',
+        gastroenterologist: v.gastroenterologist ?? '',
+        date: v.date ?? '',
+        type: v.type ?? 'outpatient',
+        priority: v.priority ?? 'none',
+        nurse: v.nurse ?? '',
+        nurseSignature: v.nurseSignature ?? '',
+        stomiaStatus: v.stomiaStatus ?? this.createEmptyVisitForm().stomiaStatus,
+        stomiaActions: v.stomiaActions ?? this.createEmptyVisitForm().stomiaActions,
+        pegjStatus: v.pegjStatus ?? this.createEmptyVisitForm().pegjStatus,
+        pegjActions: v.pegjActions ?? this.createEmptyVisitForm().pegjActions,
+        autonomyStatus: v.autonomyStatus ?? this.createEmptyVisitForm().autonomyStatus,
+        autonomyActions: v.autonomyActions ?? this.createEmptyVisitForm().autonomyActions
+      }));
+
+      this.visitEntries = this.sortVisitEntries(mapped);
+    });
+  }
+
   translate(key: MessageKey | string): string {
     try {
       return t(key as MessageKey);
@@ -1311,30 +1343,34 @@ export class TherapeuticPlanManageComponent implements OnInit {
       return;
     }
 
-    const newEntry: TherapeuticPlanVisitRecord = {
-      id: this.getNextVisitId(),
-      patientFirstName: this.visitForm.patientFirstName.trim(),
-      patientLastName: this.visitForm.patientLastName.trim(),
-      duodopaTherapyStartDate: this.visitForm.duodopaTherapyStartDate,
+    const payload = {
+      therapeuticPlanId: this.planId,
+      date: this.visitForm.date,
+      startTherapy: this.visitForm.duodopaTherapyStartDate,
+      // duodopa not present in visitForm; leave null so backend template controls it
+      duodopa: null,
       caregiver: this.visitForm.caregiver,
       clinicalCenter: this.visitForm.clinicalCenter.trim(),
       neurologist: this.visitForm.neurologist.trim(),
       gastroenterologist: this.visitForm.gastroenterologist.trim(),
-      date: this.visitForm.date,
       type: this.visitForm.type,
       priority: this.visitForm.priority,
-      nurse: this.nurseLabel,
-      nurseSignature: this.translate('common.notAvailable'),
-      stomiaStatus: { ...this.visitForm.stomiaStatus },
-      stomiaActions: { ...this.visitForm.stomiaActions },
-      pegjStatus: { ...this.visitForm.pegjStatus },
-      pegjActions: { ...this.visitForm.pegjActions },
-      autonomyStatus: { ...this.visitForm.autonomyStatus },
-      autonomyActions: { ...this.visitForm.autonomyActions }
+      jsonVisit: null
     };
 
-    this.visitEntries = this.sortVisitEntries([newEntry, ...this.visitEntries]);
-    this.closeVisitModal();
+    const url = `${environment.apiBaseUrl}/therapeutic-plans/${this.planId}/visits`;
+    this.http.post<any>(url, payload).subscribe({
+      next: (saved) => {
+        // after successful persist, reload visits from DB
+        if (this.planId != null) {
+          this.fetchVisits(this.planId);
+        }
+        this.closeVisitModal();
+      },
+      error: (err) => {
+        this.visitErrorMessage = this.translate('therapeuticPlan.visits.saveError') || 'Errore durante il salvataggio della visita';
+      }
+    });
   }
 
   getVisitTypeLabel(value: TherapeuticPlanVisitType): string {
@@ -1491,6 +1527,8 @@ export class TherapeuticPlanManageComponent implements OnInit {
         this.notifications = this.sortNotifications(notifications ?? []);
         this.alerts = this.sortAlerts(alerts ?? []);
         this.loading = false;
+        // load visits from backend
+        this.fetchVisits(planId);
       },
       error: (error: HttpErrorResponse) => {
         this.loading = false;

@@ -6,6 +6,7 @@ import com.qtm.tenants.nurse.entity.NurseEntity;
 import com.qtm.tenants.structure.entity.StructureEntity;
 import jakarta.persistence.ConstraintMode;
 import jakarta.persistence.Column;
+import jakarta.persistence.Lob;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
@@ -84,6 +85,13 @@ public class TherapeuticPlanEntity {
 
     @Column(name = "notes", length = 1000)
     private String notes;
+
+    /**
+     * Campo LOB per memorizzare un JSON molto grande relativo al piano terapeutico.
+     */
+    @Lob
+    @Column(name = "json_visit", columnDefinition = "text")
+    private String jsonVisit;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
