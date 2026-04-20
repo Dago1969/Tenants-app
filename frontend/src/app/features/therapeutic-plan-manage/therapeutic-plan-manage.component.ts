@@ -75,6 +75,11 @@ interface TherapeuticPlanSummarySubTab {
   titleKey: MessageKey;
 }
 
+interface TherapeuticPlanManageOption {
+  value: string;
+  titleKey: MessageKey;
+}
+
 interface TherapeuticPlanAlert {
   id?: number;
   therapeuticPlanId: number;
@@ -91,6 +96,210 @@ interface TherapeuticPlanAlertForm {
   subject: string;
   confirmationRequired: boolean;
   confirmationSent: 'yes' | 'no' | 'na';
+}
+
+type TherapeuticPlanPegReplacementReason = 'complaint' | 'planned';
+
+interface TherapeuticPlanPegHistoryRecord {
+  id: number;
+  model: string;
+  insertionDate: string;
+  firstPeg: boolean;
+  replacementReason: TherapeuticPlanPegReplacementReason | null;
+}
+
+interface TherapeuticPlanPegHistoryForm {
+  model: string;
+  insertionDate: string;
+  firstPeg: boolean;
+  replacementReason: '' | TherapeuticPlanPegReplacementReason;
+}
+
+type TherapeuticPlanMovementOperation = 'atPatient' | 'pickupFromPatient';
+
+interface TherapeuticPlanMovementRecord {
+  id: number;
+  pumpNumber: string;
+  medicine: string;
+  movementDate: string;
+  operation: TherapeuticPlanMovementOperation;
+  note: string;
+  expiryDate: string;
+  broken: boolean;
+}
+
+interface TherapeuticPlanMovementForm {
+  pumpNumber: string;
+  medicine: string;
+  movementDate: string;
+  operation: TherapeuticPlanMovementOperation;
+  note: string;
+  expiryDate: string;
+  broken: boolean;
+}
+
+type TherapeuticPlanVisitType = 'outpatient' | 'remote' | 'home' | 'followUpCenter' | 'trainingCenter';
+
+type TherapeuticPlanVisitCaregiver = 'child' | 'spouse' | 'relative' | 'other';
+
+type TherapeuticPlanVisitPriority = 'none' | 'low' | 'medium' | 'high';
+
+interface TherapeuticPlanVisitRecord {
+  id: number;
+  patientFirstName: string;
+  patientLastName: string;
+  duodopaTherapyStartDate: string;
+  caregiver: TherapeuticPlanVisitCaregiver;
+  clinicalCenter: string;
+  neurologist: string;
+  gastroenterologist: string;
+  date: string;
+  type: TherapeuticPlanVisitType;
+  priority: TherapeuticPlanVisitPriority;
+  nurse: string;
+  nurseSignature: string;
+  stomiaStatus: TherapeuticPlanVisitStomiaStatus;
+  stomiaActions: TherapeuticPlanVisitStomiaActions;
+  pegjStatus: TherapeuticPlanVisitPegjStatus;
+  pegjActions: TherapeuticPlanVisitPegjActions;
+  autonomyStatus: TherapeuticPlanVisitAutonomyStatus;
+  autonomyActions: TherapeuticPlanVisitAutonomyActions;
+}
+
+interface TherapeuticPlanVisitForm {
+  patientFirstName: string;
+  patientLastName: string;
+  duodopaTherapyStartDate: string;
+  caregiver: TherapeuticPlanVisitCaregiver;
+  clinicalCenter: string;
+  neurologist: string;
+  gastroenterologist: string;
+  date: string;
+  type: TherapeuticPlanVisitType;
+  priority: TherapeuticPlanVisitPriority;
+  stomiaStatus: TherapeuticPlanVisitStomiaStatus;
+  stomiaActions: TherapeuticPlanVisitStomiaActions;
+  pegjStatus: TherapeuticPlanVisitPegjStatus;
+  pegjActions: TherapeuticPlanVisitPegjActions;
+  autonomyStatus: TherapeuticPlanVisitAutonomyStatus;
+  autonomyActions: TherapeuticPlanVisitAutonomyActions;
+}
+
+interface TherapeuticPlanVisitPatientHeader {
+  patientFirstName: string;
+  patientLastName: string;
+  duodopaTherapyStartDate: string;
+  caregiver: TherapeuticPlanVisitCaregiver;
+  clinicalCenter: string;
+  neurologist: string;
+  gastroenterologist: string;
+}
+
+type TherapeuticPlanVisitStomiaBumperMobilization = 'eq0_5cm' | 'gt1cm' | 'lt0_5cm';
+
+type TherapeuticPlanVisitStomiaSecretionAmount = 'absent' | 'light' | 'abundant';
+
+type TherapeuticPlanVisitStomiaSecretionType = 'clear' | 'purulent' | 'otherMaterial';
+
+type TherapeuticPlanVisitStomiaSkinVisualization = 'normal' | 'l1' | 'l2' | 'l3' | 'l4' | 'lx';
+
+interface TherapeuticPlanVisitStomiaStatus {
+  bumperMobilization: TherapeuticPlanVisitStomiaBumperMobilization;
+  secretionAmount: TherapeuticPlanVisitStomiaSecretionAmount;
+  secretionType: TherapeuticPlanVisitStomiaSecretionType;
+  skinVisualization: TherapeuticPlanVisitStomiaSkinVisualization;
+  skinPointX: number | null;
+  skinPointY: number | null;
+  continuousInfusion: string;
+  extraDose: string;
+  morningDose: string;
+  infusion24Hours: boolean;
+}
+
+type TherapeuticPlanVisitStomiaBumperAction = 'none' | 'guideBumperReposition' | 'contactCenter';
+
+type TherapeuticPlanVisitStomiaCareAction = 'none' | 'dressingTraining' | 'contactCenter';
+
+interface TherapeuticPlanVisitStomiaActions {
+  bumperMobilization: TherapeuticPlanVisitStomiaBumperAction;
+  secretionLoss: TherapeuticPlanVisitStomiaCareAction;
+  skinVisualization: TherapeuticPlanVisitStomiaCareAction;
+}
+
+type TherapeuticPlanVisitPegUsageDuration = '0to6' | '6to12' | 'over12';
+
+type TherapeuticPlanVisitPegType = 'boston' | 'abbvie15' | 'abbvie20' | 'other';
+
+type TherapeuticPlanVisitPegIntegrity = 'normal' | 'swelling' | 'cracks';
+
+type TherapeuticPlanVisitPegColor = 'normal' | 'darkSpots';
+
+type TherapeuticPlanVisitPegPatency = 'normal' | 'partial' | 'total';
+
+type TherapeuticPlanVisitPegConnectorStatus = 'normal' | 'damaged' | 'broken';
+
+type TherapeuticPlanVisitPegExternalBumperStatus = 'normal' | 'broken' | 'missing';
+
+interface TherapeuticPlanVisitPegjStatus {
+  usageDuration: TherapeuticPlanVisitPegUsageDuration;
+  replacementDate: string;
+  pegType: TherapeuticPlanVisitPegType;
+  pegTypeOtherDetail: string;
+  mobilization: boolean;
+  integrity: TherapeuticPlanVisitPegIntegrity;
+  color: TherapeuticPlanVisitPegColor;
+  pegPatency: TherapeuticPlanVisitPegPatency;
+  pejPatency: TherapeuticPlanVisitPegPatency;
+  connectorStatus: TherapeuticPlanVisitPegConnectorStatus;
+  externalBumperStatus: TherapeuticPlanVisitPegExternalBumperStatus;
+}
+
+type TherapeuticPlanVisitPegjSimpleAction = 'none' | 'contactCenter';
+
+type TherapeuticPlanVisitPegjPatencyAction = 'none' | 'washTraining' | 'contactCenter';
+
+type TherapeuticPlanVisitPegjConnectorAction = 'none' | 'tapeMonitoring' | 'supportReplacement';
+
+type TherapeuticPlanVisitPegjBumperAction = 'none' | 'guideBumperReposition' | 'contactCenter';
+
+interface TherapeuticPlanVisitPegjActions {
+  mobilization: TherapeuticPlanVisitPegjSimpleAction;
+  integrity: TherapeuticPlanVisitPegjSimpleAction;
+  color: TherapeuticPlanVisitPegjSimpleAction;
+  patency: TherapeuticPlanVisitPegjPatencyAction;
+  connectors: TherapeuticPlanVisitPegjConnectorAction;
+  externalBumper: TherapeuticPlanVisitPegjBumperAction;
+}
+
+type TherapeuticPlanVisitAutonomyLevel = 'insufficient' | 'caregiver' | 'autonomous';
+
+interface TherapeuticPlanVisitAutonomyStatus {
+  pumpCassetteConnection: TherapeuticPlanVisitAutonomyLevel;
+  pumpPegConnection: TherapeuticPlanVisitAutonomyLevel;
+  pumpSwitchOn: TherapeuticPlanVisitAutonomyLevel;
+  morningDoseAdministration: TherapeuticPlanVisitAutonomyLevel;
+  continuousDoseAdministration: TherapeuticPlanVisitAutonomyLevel;
+  extraDoseAdministration: TherapeuticPlanVisitAutonomyLevel;
+  pumpSwitchOff: TherapeuticPlanVisitAutonomyLevel;
+  pumpPegDisconnection: TherapeuticPlanVisitAutonomyLevel;
+  pegCleaning: TherapeuticPlanVisitAutonomyLevel;
+  pejCleaning: TherapeuticPlanVisitAutonomyLevel;
+  pumpCassetteDisconnection: TherapeuticPlanVisitAutonomyLevel;
+}
+
+interface TherapeuticPlanVisitAutonomyActions {
+  pumpUsageTraining: boolean;
+  pegjWashingTraining: boolean;
+}
+
+interface TherapeuticPlanVisitAutonomyItem {
+  key: keyof TherapeuticPlanVisitAutonomyStatus;
+  titleKey: MessageKey;
+}
+
+interface TherapeuticPlanVisitAutonomyActionItem {
+  key: keyof TherapeuticPlanVisitAutonomyActions;
+  titleKey: MessageKey;
 }
 
 interface TherapeuticPlanNotification {
@@ -123,6 +332,7 @@ interface TherapeuticPlanCriticalityCard {
   titleKey: MessageKey;
   level: TherapeuticPlanCriticalityLevel;
   descriptionKey: MessageKey;
+  manual?: boolean;
 }
 
 interface TherapeuticPlanMedicalRecordMock {
@@ -153,6 +363,22 @@ interface TherapeuticPlanMedicalRecordContentForm {
   dalleOreF3: string;
   alleOreF3: string;
   totaleLevodopaMgDie: string;
+  reportedCriticality: TherapeuticPlanCriticalityLevel;
+  patientConditionCriticality: TherapeuticPlanCriticalityLevel;
+  patientWeightKg: string;
+  patientHeightCm: string;
+  patientAgeYears: string;
+  wakeMotorCondition: string;
+  currentAgeYears: string;
+  diagnosisYear: string;
+  patientLivesMode: string;
+  caregivers: string[];
+  travelAutonomy: string;
+  clinicalCenterContactEase: string;
+  referenceGastroenterologist: string;
+  referenceGastroenterologistName: string;
+  clinicalCenterDistanceKm: string;
+  gastroenterologistContactEase: string;
 }
 
 /**
@@ -201,7 +427,206 @@ export class TherapeuticPlanManageComponent implements OnInit {
   readonly medicalRecordCriticalityCards: TherapeuticPlanCriticalityCard[] = [
     { titleKey: 'therapeuticPlan.medicalRecord.criticality.general', level: 'high', descriptionKey: 'therapeuticPlan.medicalRecord.criticality.general.description' },
     { titleKey: 'therapeuticPlan.medicalRecord.criticality.patient', level: 'medium', descriptionKey: 'therapeuticPlan.medicalRecord.criticality.patient.description' },
-    { titleKey: 'therapeuticPlan.medicalRecord.criticality.reported', level: 'low', descriptionKey: 'therapeuticPlan.medicalRecord.criticality.reported.description' }
+    { titleKey: 'therapeuticPlan.medicalRecord.criticality.reported', level: 'low', descriptionKey: 'therapeuticPlan.medicalRecord.criticality.reported.description', manual: true }
+  ];
+
+  // Opzioni statiche per le nuove card informative della cartella infermieristica.
+  readonly wakeMotorConditionOptions: TherapeuticPlanManageOption[] = [
+    { value: 'inactive', titleKey: 'therapeuticPlan.medicalRecord.option.wakeMotorCondition.inactive' },
+    { value: 'partiallyInactive', titleKey: 'therapeuticPlan.medicalRecord.option.wakeMotorCondition.partiallyInactive' },
+    { value: 'partiallyActive', titleKey: 'therapeuticPlan.medicalRecord.option.wakeMotorCondition.partiallyActive' },
+    { value: 'active', titleKey: 'therapeuticPlan.medicalRecord.option.wakeMotorCondition.active' }
+  ];
+
+  readonly patientLivesOptions: TherapeuticPlanManageOption[] = [
+    { value: 'homeAlone', titleKey: 'therapeuticPlan.medicalRecord.option.patientLives.homeAlone' },
+    { value: 'homeWithCaregiver', titleKey: 'therapeuticPlan.medicalRecord.option.patientLives.homeWithCaregiver' },
+    { value: 'rsa', titleKey: 'therapeuticPlan.medicalRecord.option.patientLives.rsa' }
+  ];
+
+  readonly caregiverOptions: TherapeuticPlanManageOption[] = [
+    { value: 'familyMember', titleKey: 'therapeuticPlan.medicalRecord.option.caregiver.familyMember' },
+    { value: 'partner', titleKey: 'therapeuticPlan.medicalRecord.option.caregiver.partner' },
+    { value: 'professionalCaregiver', titleKey: 'therapeuticPlan.medicalRecord.option.caregiver.professionalCaregiver' },
+    { value: 'nurse', titleKey: 'therapeuticPlan.medicalRecord.option.caregiver.nurse' }
+  ];
+
+  readonly travelAutonomyOptions: TherapeuticPlanManageOption[] = [
+    { value: 'autonomous', titleKey: 'therapeuticPlan.medicalRecord.option.travelAutonomy.autonomous' },
+    { value: 'familyManaged', titleKey: 'therapeuticPlan.medicalRecord.option.travelAutonomy.familyManaged' },
+    { value: 'ambulanceOther', titleKey: 'therapeuticPlan.medicalRecord.option.travelAutonomy.ambulanceOther' }
+  ];
+
+  readonly contactEaseOptions: TherapeuticPlanManageOption[] = [
+    { value: 'easy', titleKey: 'therapeuticPlan.medicalRecord.option.contactEase.easy' },
+    { value: 'medium', titleKey: 'therapeuticPlan.medicalRecord.option.contactEase.medium' },
+    { value: 'difficult', titleKey: 'therapeuticPlan.medicalRecord.option.contactEase.difficult' }
+  ];
+
+  readonly referenceGastroenterologistOptions: TherapeuticPlanManageOption[] = [
+    { value: 'center', titleKey: 'therapeuticPlan.medicalRecord.option.referenceGastroenterologist.center' },
+    { value: 'other', titleKey: 'therapeuticPlan.medicalRecord.option.referenceGastroenterologist.other' }
+  ];
+
+  readonly pegHistoryReasonOptions: TherapeuticPlanManageOption[] = [
+    { value: 'complaint', titleKey: 'therapeuticPlan.pegHistory.reason.complaint' },
+    { value: 'planned', titleKey: 'therapeuticPlan.pegHistory.reason.planned' }
+  ];
+
+  readonly movementOperationOptions: TherapeuticPlanManageOption[] = [
+    { value: 'atPatient', titleKey: 'therapeuticPlan.movements.operation.atPatient' },
+    { value: 'pickupFromPatient', titleKey: 'therapeuticPlan.movements.operation.pickupFromPatient' }
+  ];
+
+  readonly visitTypeOptions: TherapeuticPlanManageOption[] = [
+    { value: 'outpatient', titleKey: 'therapeuticPlan.visits.type.outpatient' },
+    { value: 'remote', titleKey: 'therapeuticPlan.visits.type.remote' },
+    { value: 'home', titleKey: 'therapeuticPlan.visits.type.home' },
+    { value: 'followUpCenter', titleKey: 'therapeuticPlan.visits.type.followUpCenter' },
+    { value: 'trainingCenter', titleKey: 'therapeuticPlan.visits.type.trainingCenter' }
+  ];
+
+  readonly visitCaregiverOptions: TherapeuticPlanManageOption[] = [
+    { value: 'child', titleKey: 'therapeuticPlan.visits.caregiver.child' },
+    { value: 'spouse', titleKey: 'therapeuticPlan.visits.caregiver.spouse' },
+    { value: 'relative', titleKey: 'therapeuticPlan.visits.caregiver.relative' },
+    { value: 'other', titleKey: 'therapeuticPlan.visits.caregiver.other' }
+  ];
+
+  readonly visitPriorityOptions: TherapeuticPlanManageOption[] = [
+    { value: 'none', titleKey: 'therapeuticPlan.visits.priority.none' },
+    { value: 'low', titleKey: 'therapeuticPlan.visits.priority.low' },
+    { value: 'medium', titleKey: 'therapeuticPlan.visits.priority.medium' },
+    { value: 'high', titleKey: 'therapeuticPlan.visits.priority.high' }
+  ];
+
+  readonly visitStomiaBumperOptions: TherapeuticPlanManageOption[] = [
+    { value: 'eq0_5cm', titleKey: 'therapeuticPlan.visits.status.stomia.bumper.eq0_5cm' },
+    { value: 'gt1cm', titleKey: 'therapeuticPlan.visits.status.stomia.bumper.gt1cm' },
+    { value: 'lt0_5cm', titleKey: 'therapeuticPlan.visits.status.stomia.bumper.lt0_5cm' }
+  ];
+
+  readonly visitStomiaSecretionAmountOptions: TherapeuticPlanManageOption[] = [
+    { value: 'absent', titleKey: 'therapeuticPlan.visits.status.stomia.secretionAmount.absent' },
+    { value: 'light', titleKey: 'therapeuticPlan.visits.status.stomia.secretionAmount.light' },
+    { value: 'abundant', titleKey: 'therapeuticPlan.visits.status.stomia.secretionAmount.abundant' }
+  ];
+
+  readonly visitStomiaSecretionTypeOptions: TherapeuticPlanManageOption[] = [
+    { value: 'clear', titleKey: 'therapeuticPlan.visits.status.stomia.secretionType.clear' },
+    { value: 'purulent', titleKey: 'therapeuticPlan.visits.status.stomia.secretionType.purulent' },
+    { value: 'otherMaterial', titleKey: 'therapeuticPlan.visits.status.stomia.secretionType.otherMaterial' }
+  ];
+
+  readonly visitStomiaSkinOptions: TherapeuticPlanManageOption[] = [
+    { value: 'normal', titleKey: 'therapeuticPlan.visits.status.stomia.skin.normal' },
+    { value: 'l1', titleKey: 'therapeuticPlan.visits.status.stomia.skin.l1' },
+    { value: 'l2', titleKey: 'therapeuticPlan.visits.status.stomia.skin.l2' },
+    { value: 'l3', titleKey: 'therapeuticPlan.visits.status.stomia.skin.l3' },
+    { value: 'l4', titleKey: 'therapeuticPlan.visits.status.stomia.skin.l4' },
+    { value: 'lx', titleKey: 'therapeuticPlan.visits.status.stomia.skin.lx' }
+  ];
+
+  readonly visitPegUsageOptions: TherapeuticPlanManageOption[] = [
+    { value: '0to6', titleKey: 'therapeuticPlan.visits.status.pegj.usage.0to6' },
+    { value: '6to12', titleKey: 'therapeuticPlan.visits.status.pegj.usage.6to12' },
+    { value: 'over12', titleKey: 'therapeuticPlan.visits.status.pegj.usage.over12' }
+  ];
+
+  readonly visitPegTypeOptions: TherapeuticPlanManageOption[] = [
+    { value: 'boston', titleKey: 'therapeuticPlan.visits.status.pegj.type.boston' },
+    { value: 'abbvie15', titleKey: 'therapeuticPlan.visits.status.pegj.type.abbvie15' },
+    { value: 'abbvie20', titleKey: 'therapeuticPlan.visits.status.pegj.type.abbvie20' },
+    { value: 'other', titleKey: 'therapeuticPlan.visits.status.pegj.type.other' }
+  ];
+
+  readonly visitPegIntegrityOptions: TherapeuticPlanManageOption[] = [
+    { value: 'normal', titleKey: 'therapeuticPlan.visits.status.pegj.integrity.normal' },
+    { value: 'swelling', titleKey: 'therapeuticPlan.visits.status.pegj.integrity.swelling' },
+    { value: 'cracks', titleKey: 'therapeuticPlan.visits.status.pegj.integrity.cracks' }
+  ];
+
+  readonly visitPegColorOptions: TherapeuticPlanManageOption[] = [
+    { value: 'normal', titleKey: 'therapeuticPlan.visits.status.pegj.color.normal' },
+    { value: 'darkSpots', titleKey: 'therapeuticPlan.visits.status.pegj.color.darkSpots' }
+  ];
+
+  readonly visitPegPatencyOptions: TherapeuticPlanManageOption[] = [
+    { value: 'normal', titleKey: 'therapeuticPlan.visits.status.pegj.patency.normal' },
+    { value: 'partial', titleKey: 'therapeuticPlan.visits.status.pegj.patency.partial' },
+    { value: 'total', titleKey: 'therapeuticPlan.visits.status.pegj.patency.total' }
+  ];
+
+  readonly visitPegConnectorOptions: TherapeuticPlanManageOption[] = [
+    { value: 'normal', titleKey: 'therapeuticPlan.visits.status.pegj.connector.normal' },
+    { value: 'damaged', titleKey: 'therapeuticPlan.visits.status.pegj.connector.damaged' },
+    { value: 'broken', titleKey: 'therapeuticPlan.visits.status.pegj.connector.broken' }
+  ];
+
+  readonly visitPegExternalBumperOptions: TherapeuticPlanManageOption[] = [
+    { value: 'normal', titleKey: 'therapeuticPlan.visits.status.pegj.externalBumper.normal' },
+    { value: 'broken', titleKey: 'therapeuticPlan.visits.status.pegj.externalBumper.broken' },
+    { value: 'missing', titleKey: 'therapeuticPlan.visits.status.pegj.externalBumper.missing' }
+  ];
+
+  readonly visitAutonomyLevelOptions: TherapeuticPlanManageOption[] = [
+    { value: 'insufficient', titleKey: 'therapeuticPlan.visits.status.autonomy.level.insufficient' },
+    { value: 'caregiver', titleKey: 'therapeuticPlan.visits.status.autonomy.level.caregiver' },
+    { value: 'autonomous', titleKey: 'therapeuticPlan.visits.status.autonomy.level.autonomous' }
+  ];
+
+  readonly visitActionNoneOrContactOptions: TherapeuticPlanManageOption[] = [
+    { value: 'none', titleKey: 'therapeuticPlan.visits.actionsTaken.none' },
+    { value: 'contactCenter', titleKey: 'therapeuticPlan.visits.actionsTaken.contactCenter' }
+  ];
+
+  readonly visitStomiaBumperActionOptions: TherapeuticPlanManageOption[] = [
+    { value: 'none', titleKey: 'therapeuticPlan.visits.actionsTaken.none' },
+    { value: 'guideBumperReposition', titleKey: 'therapeuticPlan.visits.actionsTaken.stomia.bumper.guideReposition' },
+    { value: 'contactCenter', titleKey: 'therapeuticPlan.visits.actionsTaken.contactCenter' }
+  ];
+
+  readonly visitStomiaCareActionOptions: TherapeuticPlanManageOption[] = [
+    { value: 'none', titleKey: 'therapeuticPlan.visits.actionsTaken.none' },
+    { value: 'dressingTraining', titleKey: 'therapeuticPlan.visits.actionsTaken.stomia.dressingTraining' },
+    { value: 'contactCenter', titleKey: 'therapeuticPlan.visits.actionsTaken.contactCenter' }
+  ];
+
+  readonly visitPegjPatencyActionOptions: TherapeuticPlanManageOption[] = [
+    { value: 'none', titleKey: 'therapeuticPlan.visits.actionsTaken.none' },
+    { value: 'washTraining', titleKey: 'therapeuticPlan.visits.actionsTaken.pegj.patency.washTraining' },
+    { value: 'contactCenter', titleKey: 'therapeuticPlan.visits.actionsTaken.contactCenter' }
+  ];
+
+  readonly visitPegjConnectorActionOptions: TherapeuticPlanManageOption[] = [
+    { value: 'none', titleKey: 'therapeuticPlan.visits.actionsTaken.none' },
+    { value: 'tapeMonitoring', titleKey: 'therapeuticPlan.visits.actionsTaken.pegj.connector.tapeMonitoring' },
+    { value: 'supportReplacement', titleKey: 'therapeuticPlan.visits.actionsTaken.pegj.connector.supportReplacement' }
+  ];
+
+  readonly visitPegjBumperActionOptions: TherapeuticPlanManageOption[] = [
+    { value: 'none', titleKey: 'therapeuticPlan.visits.actionsTaken.none' },
+    { value: 'guideBumperReposition', titleKey: 'therapeuticPlan.visits.actionsTaken.stomia.bumper.guideReposition' },
+    { value: 'contactCenter', titleKey: 'therapeuticPlan.visits.actionsTaken.contactCenter' }
+  ];
+
+  readonly visitAutonomyItems: TherapeuticPlanVisitAutonomyItem[] = [
+    { key: 'pumpCassetteConnection', titleKey: 'therapeuticPlan.visits.status.autonomy.item.pumpCassetteConnection' },
+    { key: 'pumpPegConnection', titleKey: 'therapeuticPlan.visits.status.autonomy.item.pumpPegConnection' },
+    { key: 'pumpSwitchOn', titleKey: 'therapeuticPlan.visits.status.autonomy.item.pumpSwitchOn' },
+    { key: 'morningDoseAdministration', titleKey: 'therapeuticPlan.visits.status.autonomy.item.morningDoseAdministration' },
+    { key: 'continuousDoseAdministration', titleKey: 'therapeuticPlan.visits.status.autonomy.item.continuousDoseAdministration' },
+    { key: 'extraDoseAdministration', titleKey: 'therapeuticPlan.visits.status.autonomy.item.extraDoseAdministration' },
+    { key: 'pumpSwitchOff', titleKey: 'therapeuticPlan.visits.status.autonomy.item.pumpSwitchOff' },
+    { key: 'pumpPegDisconnection', titleKey: 'therapeuticPlan.visits.status.autonomy.item.pumpPegDisconnection' },
+    { key: 'pegCleaning', titleKey: 'therapeuticPlan.visits.status.autonomy.item.pegCleaning' },
+    { key: 'pejCleaning', titleKey: 'therapeuticPlan.visits.status.autonomy.item.pejCleaning' },
+    { key: 'pumpCassetteDisconnection', titleKey: 'therapeuticPlan.visits.status.autonomy.item.pumpCassetteDisconnection' }
+  ];
+
+  readonly visitAutonomyActionItems: TherapeuticPlanVisitAutonomyActionItem[] = [
+    { key: 'pumpUsageTraining', titleKey: 'therapeuticPlan.visits.actionsTaken.autonomy.pumpUsage' },
+    { key: 'pegjWashingTraining', titleKey: 'therapeuticPlan.visits.actionsTaken.autonomy.pegjWashing' }
   ];
 
   readonly medicalRecordContentForm: TherapeuticPlanMedicalRecordContentForm = this.createEmptyMedicalRecordContentForm();
@@ -227,6 +652,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
     { key: 'contatti', titleKey: 'therapeuticPlan.manage.patientFolder.contacts' },
     { key: 'cartella-inf', titleKey: 'therapeuticPlan.manage.patientFolder.medicalRecord' },
     { key: 'storico-peg', titleKey: 'therapeuticPlan.manage.patientFolder.pegHistory' },
+    { key: 'movimentazioni', titleKey: 'therapeuticPlan.manage.patientFolder.movements' },
     { key: 'manutenzione', titleKey: 'therapeuticPlan.manage.patientFolder.maintenance' },
     { key: 'moduli', titleKey: 'therapeuticPlan.manage.patientFolder.modules' },
     { key: 'documenti', titleKey: 'therapeuticPlan.manage.patientFolder.documents' }
@@ -258,6 +684,19 @@ export class TherapeuticPlanManageComponent implements OnInit {
   alertErrorMessage = '';
   editingAlertId: number | null = null;
   alertForm: TherapeuticPlanAlertForm = this.createEmptyAlertForm();
+  pegHistoryEntries: TherapeuticPlanPegHistoryRecord[] = this.createMockPegHistoryEntries();
+  pegHistoryModalOpen = false;
+  pegHistoryErrorMessage = '';
+  pegHistoryForm: TherapeuticPlanPegHistoryForm = this.createEmptyPegHistoryForm();
+  movementEntries: TherapeuticPlanMovementRecord[] = this.createMockMovementEntries();
+  movementModalOpen = false;
+  movementErrorMessage = '';
+  movementForm: TherapeuticPlanMovementForm = this.createEmptyMovementForm();
+  visitEntries: TherapeuticPlanVisitRecord[] = this.createMockVisitEntries();
+  visitModalOpen = false;
+  visitModalStep = 1;
+  visitErrorMessage = '';
+  visitForm: TherapeuticPlanVisitForm = this.createEmptyVisitForm();
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -422,6 +861,76 @@ export class TherapeuticPlanManageComponent implements OnInit {
 
   get alertSubmitLabelKey(): MessageKey {
     return this.isEditingAlert ? 'crud.actions.update' : 'crud.actions.create';
+  }
+
+  get pegHistoryResultCountLabel(): string {
+    return `${this.pegHistoryEntries.length} ${this.translate('therapeuticPlan.pegHistory.results')}`;
+  }
+
+  get movementResultCountLabel(): string {
+    return `${this.movementEntries.length} ${this.translate('therapeuticPlan.movements.results')}`;
+  }
+
+  get visitResultCountLabel(): string {
+    return `${this.visitEntries.length} ${this.translate('therapeuticPlan.visits.results')}`;
+  }
+
+  get visitPatientHeader(): TherapeuticPlanVisitPatientHeader {
+    return {
+      patientFirstName: this.patient?.firstName?.trim() || 'Mario',
+      patientLastName: this.patient?.lastName?.trim() || 'Rossi',
+      duodopaTherapyStartDate: this.plan?.startDate || '2018-11-26',
+      caregiver: this.patient?.caregiverFullName?.trim() ? 'relative' : 'other',
+      clinicalCenter: this.structureLabel,
+      neurologist: this.doctorLabel,
+      gastroenterologist: 'Dr. Stefano Conti'
+    };
+  }
+
+  get visitPatientFullName(): string {
+    return `${this.visitPatientHeader.patientFirstName} ${this.visitPatientHeader.patientLastName}`.trim() || this.translate('common.notAvailable');
+  }
+
+  get visitModalStepTitleKey(): MessageKey {
+    switch (this.visitModalStep) {
+      case 2:
+        return 'therapeuticPlan.visits.modal.step2.title';
+      case 3:
+        return 'therapeuticPlan.visits.modal.step3.title';
+      case 4:
+        return 'therapeuticPlan.visits.modal.step4.title';
+      case 5:
+        return 'therapeuticPlan.visits.modal.step5.title';
+      case 6:
+        return 'therapeuticPlan.visits.modal.step6.title';
+      case 7:
+        return 'therapeuticPlan.visits.modal.step7.title';
+      default:
+        return 'therapeuticPlan.visits.modal.step1.title';
+    }
+  }
+
+  get visitModalStepDescriptionKey(): MessageKey {
+    switch (this.visitModalStep) {
+      case 2:
+        return 'therapeuticPlan.visits.modal.step2.description';
+      case 3:
+        return 'therapeuticPlan.visits.modal.step3.description';
+      case 4:
+        return 'therapeuticPlan.visits.modal.step4.description';
+      case 5:
+        return 'therapeuticPlan.visits.modal.step5.description';
+      case 6:
+        return 'therapeuticPlan.visits.modal.step6.description';
+      case 7:
+        return 'therapeuticPlan.visits.modal.step7.description';
+      default:
+        return 'therapeuticPlan.visits.modal.step1.description';
+    }
+  }
+
+  get isLastVisitModalStep(): boolean {
+    return this.visitModalStep === 7;
   }
 
   get confirmationSentLabel(): string {
@@ -597,6 +1106,10 @@ export class TherapeuticPlanManageComponent implements OnInit {
     return `criticality-badge criticality-${level}`;
   }
 
+  getCriticalityCardLevel(card: TherapeuticPlanCriticalityCard): TherapeuticPlanCriticalityLevel {
+    return card.manual ? this.medicalRecordContentForm.reportedCriticality : card.level;
+  }
+
   openNotificationModal(): void {
     if (!this.planId || this.notificationSaving) {
       return;
@@ -649,6 +1162,240 @@ export class TherapeuticPlanManageComponent implements OnInit {
     if (this.notificationForm.confirmedChoice === 'yes') {
       this.notificationForm.notes = '';
     }
+  }
+
+  openPegHistoryModal(): void {
+    this.pegHistoryErrorMessage = '';
+    this.pegHistoryForm = this.createEmptyPegHistoryForm();
+    this.pegHistoryModalOpen = true;
+  }
+
+  closePegHistoryModal(): void {
+    this.pegHistoryModalOpen = false;
+    this.pegHistoryErrorMessage = '';
+    this.pegHistoryForm = this.createEmptyPegHistoryForm();
+  }
+
+  onPegHistoryFirstPegChange(value: boolean): void {
+    if (value) {
+      this.pegHistoryForm.replacementReason = '';
+    }
+  }
+
+  savePegHistory(): void {
+    this.pegHistoryErrorMessage = '';
+
+    if (!this.pegHistoryForm.model.trim()) {
+      this.pegHistoryErrorMessage = this.translate('therapeuticPlan.pegHistory.validation.modelRequired');
+      return;
+    }
+
+    if (!this.pegHistoryForm.insertionDate.trim()) {
+      this.pegHistoryErrorMessage = this.translate('therapeuticPlan.pegHistory.validation.insertionDateRequired');
+      return;
+    }
+
+    if (!this.pegHistoryForm.firstPeg && !this.pegHistoryForm.replacementReason) {
+      this.pegHistoryErrorMessage = this.translate('therapeuticPlan.pegHistory.validation.replacementReasonRequired');
+      return;
+    }
+
+    const newEntry: TherapeuticPlanPegHistoryRecord = {
+      id: this.getNextPegHistoryId(),
+      model: this.pegHistoryForm.model.trim(),
+      insertionDate: this.pegHistoryForm.insertionDate,
+      firstPeg: this.pegHistoryForm.firstPeg,
+      replacementReason: this.pegHistoryForm.firstPeg ? null : this.pegHistoryForm.replacementReason || null
+    };
+
+    this.pegHistoryEntries = this.sortPegHistoryEntries([newEntry, ...this.pegHistoryEntries]);
+    this.closePegHistoryModal();
+  }
+
+  getPegHistoryFirstPegLabel(value: boolean): string {
+    return this.translate(value ? 'common.yes' : 'common.no');
+  }
+
+  getPegHistoryReplacementReasonLabel(value: TherapeuticPlanPegReplacementReason | null): string {
+    if (!value) {
+      return this.translate('common.notAvailable');
+    }
+
+    return this.translate(`therapeuticPlan.pegHistory.reason.${value}`);
+  }
+
+  openMovementModal(): void {
+    this.movementErrorMessage = '';
+    this.movementForm = this.createEmptyMovementForm();
+    this.movementModalOpen = true;
+  }
+
+  closeMovementModal(): void {
+    this.movementModalOpen = false;
+    this.movementErrorMessage = '';
+    this.movementForm = this.createEmptyMovementForm();
+  }
+
+  saveMovement(): void {
+    this.movementErrorMessage = '';
+
+    if (!this.movementForm.pumpNumber.trim()) {
+      this.movementErrorMessage = this.translate('therapeuticPlan.movements.validation.pumpNumberRequired');
+      return;
+    }
+
+    if (!this.movementForm.movementDate.trim()) {
+      this.movementErrorMessage = this.translate('therapeuticPlan.movements.validation.movementDateRequired');
+      return;
+    }
+
+    if (!this.movementForm.expiryDate.trim()) {
+      this.movementErrorMessage = this.translate('therapeuticPlan.movements.validation.expiryDateRequired');
+      return;
+    }
+
+    const newEntry: TherapeuticPlanMovementRecord = {
+      id: this.getNextMovementId(),
+      pumpNumber: this.movementForm.pumpNumber.trim(),
+      medicine: this.movementForm.medicine.trim() || this.plan?.drugCode || this.translate('common.notAvailable'),
+      movementDate: this.movementForm.movementDate,
+      operation: this.movementForm.operation,
+      note: this.movementForm.note.trim(),
+      expiryDate: this.movementForm.expiryDate,
+      broken: this.movementForm.broken
+    };
+
+    this.movementEntries = this.sortMovementEntries([newEntry, ...this.movementEntries]);
+    this.closeMovementModal();
+  }
+
+  getMovementOperationLabel(value: TherapeuticPlanMovementOperation): string {
+    return this.translate(`therapeuticPlan.movements.operation.${value}`);
+  }
+
+  getMovementBrokenLabel(value: boolean): string {
+    return this.translate(value ? 'common.yes' : 'common.no');
+  }
+
+  openVisitModal(): void {
+    this.visitErrorMessage = '';
+    this.visitModalStep = 1;
+    this.visitForm = this.createEmptyVisitForm();
+    this.visitModalOpen = true;
+  }
+
+  closeVisitModal(): void {
+    this.visitModalOpen = false;
+    this.visitModalStep = 1;
+    this.visitErrorMessage = '';
+    this.visitForm = this.createEmptyVisitForm();
+  }
+
+  goToNextVisitModalStep(): void {
+    this.visitErrorMessage = '';
+    if (this.visitModalStep === 1 && !this.validateVisitBaseStep()) {
+      return;
+    }
+
+    this.visitModalStep = Math.min(7, this.visitModalStep + 1);
+  }
+
+  goToPreviousVisitModalStep(): void {
+    this.visitErrorMessage = '';
+    this.visitModalStep = Math.max(1, this.visitModalStep - 1);
+  }
+
+  saveVisit(): void {
+    this.visitErrorMessage = '';
+    if (!this.validateVisitBaseStep()) {
+      return;
+    }
+
+    const newEntry: TherapeuticPlanVisitRecord = {
+      id: this.getNextVisitId(),
+      patientFirstName: this.visitForm.patientFirstName.trim(),
+      patientLastName: this.visitForm.patientLastName.trim(),
+      duodopaTherapyStartDate: this.visitForm.duodopaTherapyStartDate,
+      caregiver: this.visitForm.caregiver,
+      clinicalCenter: this.visitForm.clinicalCenter.trim(),
+      neurologist: this.visitForm.neurologist.trim(),
+      gastroenterologist: this.visitForm.gastroenterologist.trim(),
+      date: this.visitForm.date,
+      type: this.visitForm.type,
+      priority: this.visitForm.priority,
+      nurse: this.nurseLabel,
+      nurseSignature: this.translate('common.notAvailable'),
+      stomiaStatus: { ...this.visitForm.stomiaStatus },
+      stomiaActions: { ...this.visitForm.stomiaActions },
+      pegjStatus: { ...this.visitForm.pegjStatus },
+      pegjActions: { ...this.visitForm.pegjActions },
+      autonomyStatus: { ...this.visitForm.autonomyStatus },
+      autonomyActions: { ...this.visitForm.autonomyActions }
+    };
+
+    this.visitEntries = this.sortVisitEntries([newEntry, ...this.visitEntries]);
+    this.closeVisitModal();
+  }
+
+  getVisitTypeLabel(value: TherapeuticPlanVisitType): string {
+    return this.translate(`therapeuticPlan.visits.type.${value}`);
+  }
+
+  getVisitPatientFullName(visit: TherapeuticPlanVisitRecord): string {
+    return `${visit.patientFirstName} ${visit.patientLastName}`.trim() || this.visitPatientFullName;
+  }
+
+  getVisitCaregiverLabel(value: TherapeuticPlanVisitCaregiver): string {
+    return this.translate(`therapeuticPlan.visits.caregiver.${value}`);
+  }
+
+  getVisitPriorityLabel(value: TherapeuticPlanVisitPriority): string {
+    return this.translate(`therapeuticPlan.visits.priority.${value}`);
+  }
+
+  getVisitAutonomyLevelLabel(value: TherapeuticPlanVisitAutonomyLevel): string {
+    return this.translate(`therapeuticPlan.visits.status.autonomy.level.${value}`);
+  }
+
+  printVisitDocument(visit?: TherapeuticPlanVisitRecord): void {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const visitsToPrint = visit ? [visit] : this.visitEntries;
+    if (visitsToPrint.length === 0) {
+      return;
+    }
+
+    const iframe = window.document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.opacity = '0';
+    iframe.style.pointerEvents = 'none';
+    iframe.style.border = '0';
+    iframe.setAttribute('aria-hidden', 'true');
+    window.document.body.appendChild(iframe);
+
+    const iframeWindow = iframe.contentWindow;
+    if (!iframeWindow) {
+      iframe.remove();
+      return;
+    }
+
+    const cleanup = (): void => {
+      window.setTimeout(() => iframe.remove(), 0);
+    };
+
+    iframeWindow.onafterprint = cleanup;
+    iframeWindow.document.open();
+    iframeWindow.document.write(this.buildVisitPrintDocument(visitsToPrint));
+    iframeWindow.document.close();
+
+    window.setTimeout(() => {
+      iframeWindow.focus();
+      iframeWindow.print();
+    }, 300);
   }
 
   saveNotification(): void {
@@ -788,6 +1535,870 @@ export class TherapeuticPlanManageComponent implements OnInit {
     };
   }
 
+  /**
+   * Inizializza uno storico PEG mockato per popolare la sottocartella paziente in assenza di backend dedicato.
+   */
+  private createMockPegHistoryEntries(): TherapeuticPlanPegHistoryRecord[] {
+    return this.sortPegHistoryEntries([
+      {
+        id: 1,
+        model: 'PEG 20 Fr - Standard',
+        insertionDate: '2026-04-14',
+        firstPeg: false,
+        replacementReason: 'planned'
+      },
+      {
+        id: 2,
+        model: 'PEG 20 Fr - Balloon',
+        insertionDate: '2025-11-03',
+        firstPeg: false,
+        replacementReason: 'complaint'
+      },
+      {
+        id: 3,
+        model: 'PEG 15 Fr - Initial kit',
+        insertionDate: '2025-02-18',
+        firstPeg: true,
+        replacementReason: null
+      }
+    ]);
+  }
+
+  private createEmptyPegHistoryForm(): TherapeuticPlanPegHistoryForm {
+    return {
+      model: '',
+      insertionDate: this.getTodayDateInputValue(),
+      firstPeg: false,
+      replacementReason: ''
+    };
+  }
+
+  /**
+   * Prepara una cronistoria mockata delle movimentazioni pompa per la nuova tab Movimentazioni.
+   */
+  private createMockMovementEntries(): TherapeuticPlanMovementRecord[] {
+    const medicine = this.plan?.drugCode || 'Duodopa';
+    return this.sortMovementEntries([
+      {
+        id: 1,
+        pumpNumber: 'PMP-2026-0148',
+        medicine,
+        movementDate: '2026-04-16',
+        operation: 'atPatient',
+        note: 'Nuova pompa consegnata durante visita domiciliare.',
+        expiryDate: '2027-04-16',
+        broken: false
+      },
+      {
+        id: 2,
+        pumpNumber: 'PMP-2025-0987',
+        medicine,
+        movementDate: '2026-04-16',
+        operation: 'pickupFromPatient',
+        note: 'Pompa precedente ritirata per sostituzione programmata.',
+        expiryDate: '2026-05-01',
+        broken: false
+      },
+      {
+        id: 3,
+        pumpNumber: 'PMP-2024-0312',
+        medicine,
+        movementDate: '2026-01-09',
+        operation: 'pickupFromPatient',
+        note: 'Ritiro urgente per segnalazione guasto motore.',
+        expiryDate: '2026-01-31',
+        broken: true
+      }
+    ]);
+  }
+
+  private createEmptyMovementForm(): TherapeuticPlanMovementForm {
+    return {
+      pumpNumber: '',
+      medicine: this.plan?.drugCode || '',
+      movementDate: this.getTodayDateInputValue(),
+      operation: 'atPatient',
+      note: '',
+      expiryDate: '',
+      broken: false
+    };
+  }
+
+  /**
+   * Inizializza un riepilogo mockato delle visite del centro per popolare il tab Visite.
+   */
+  private createMockVisitEntries(): TherapeuticPlanVisitRecord[] {
+    return this.sortVisitEntries([
+      {
+        id: 1,
+        patientFirstName: this.patient?.firstName || 'Mario',
+        patientLastName: this.patient?.lastName || 'Rossi',
+        duodopaTherapyStartDate: '2018-11-26',
+        caregiver: 'child',
+        clinicalCenter: this.structureLabel,
+        neurologist: this.doctorLabel,
+        gastroenterologist: 'Dr. Stefano Conti',
+        date: '2026-04-18',
+        type: 'home',
+        priority: 'medium',
+        nurse: this.nurseLabel,
+        nurseSignature: 'Firma Paziente',
+        stomiaStatus: this.createMockVisitStomiaStatus({ skinPointX: 67, skinPointY: 36 }),
+        stomiaActions: this.createMockVisitStomiaActions(),
+        pegjStatus: this.createMockVisitPegjStatus(),
+        pegjActions: this.createMockVisitPegjActions(),
+        autonomyStatus: this.createMockVisitAutonomyStatus(),
+        autonomyActions: this.createMockVisitAutonomyActions()
+      },
+      {
+        id: 2,
+        patientFirstName: 'Giulia',
+        patientLastName: 'Bernardi',
+        duodopaTherapyStartDate: '2019-09-14',
+        caregiver: 'spouse',
+        clinicalCenter: 'Centro Clinico Milano Nord',
+        neurologist: 'Dr.ssa Elena Valli',
+        gastroenterologist: 'Dr. Marco Bruni',
+        date: '2026-04-15',
+        type: 'followUpCenter',
+        priority: 'low',
+        nurse: 'Infermiera Carla Bianchi',
+        nurseSignature: 'C. Bianchi',
+        stomiaStatus: this.createMockVisitStomiaStatus({ skinVisualization: 'l1', secretionAmount: 'light', skinPointX: 41, skinPointY: 62 }),
+        stomiaActions: this.createMockVisitStomiaActions({ secretionLoss: 'dressingTraining' }),
+        pegjStatus: this.createMockVisitPegjStatus({ usageDuration: '6to12', mobilization: false, color: 'darkSpots' }),
+        pegjActions: this.createMockVisitPegjActions({ mobilization: 'contactCenter', color: 'contactCenter' }),
+        autonomyStatus: this.createMockVisitAutonomyStatus({ morningDoseAdministration: 'caregiver', extraDoseAdministration: 'autonomous' }),
+        autonomyActions: this.createMockVisitAutonomyActions({ pumpUsageTraining: true })
+      },
+      {
+        id: 3,
+        patientFirstName: 'Matteo',
+        patientLastName: 'De Luca',
+        duodopaTherapyStartDate: '2020-02-03',
+        caregiver: 'relative',
+        clinicalCenter: 'Centro Clinico Monza',
+        neurologist: 'Dr. Paolo Ricci',
+        gastroenterologist: 'Dr.ssa Chiara Magri',
+        date: '2026-04-12',
+        type: 'remote',
+        priority: 'none',
+        nurse: 'Infermiera Marta Fusi',
+        nurseSignature: 'M. Fusi',
+        stomiaStatus: this.createMockVisitStomiaStatus({ secretionType: 'clear', skinPointX: 24, skinPointY: 28 }),
+        stomiaActions: this.createMockVisitStomiaActions({ bumperMobilization: 'guideBumperReposition' }),
+        pegjStatus: this.createMockVisitPegjStatus({ pegPatency: 'partial', pejPatency: 'partial', connectorStatus: 'damaged' }),
+        pegjActions: this.createMockVisitPegjActions({ patency: 'washTraining', connectors: 'tapeMonitoring' }),
+        autonomyStatus: this.createMockVisitAutonomyStatus({ pumpSwitchOn: 'autonomous', continuousDoseAdministration: 'autonomous' }),
+        autonomyActions: this.createMockVisitAutonomyActions({ pegjWashingTraining: true })
+      },
+      {
+        id: 4,
+        patientFirstName: 'Lucia',
+        patientLastName: 'Ferri',
+        duodopaTherapyStartDate: '2017-06-21',
+        caregiver: 'other',
+        clinicalCenter: 'Centro Clinico Bergamo',
+        neurologist: 'Dr. Luca Vitali',
+        gastroenterologist: 'Dr. Davide Sala',
+        date: '2026-04-08',
+        type: 'trainingCenter',
+        priority: 'high',
+        nurse: 'Infermiera Elena Bassi',
+        nurseSignature: 'E. Bassi',
+        stomiaStatus: this.createMockVisitStomiaStatus({ skinVisualization: 'l2', secretionAmount: 'abundant', secretionType: 'purulent', skinPointX: 53, skinPointY: 74 }),
+        stomiaActions: this.createMockVisitStomiaActions({ secretionLoss: 'contactCenter', skinVisualization: 'contactCenter' }),
+        pegjStatus: this.createMockVisitPegjStatus({ integrity: 'swelling', externalBumperStatus: 'broken' }),
+        pegjActions: this.createMockVisitPegjActions({ integrity: 'contactCenter', externalBumper: 'guideBumperReposition' }),
+        autonomyStatus: this.createMockVisitAutonomyStatus({ pumpCassetteConnection: 'caregiver', pumpPegConnection: 'caregiver', pumpCassetteDisconnection: 'caregiver' }),
+        autonomyActions: this.createMockVisitAutonomyActions({ pumpUsageTraining: true, pegjWashingTraining: true })
+      },
+      {
+        id: 5,
+        patientFirstName: 'Andrea',
+        patientLastName: 'Rinaldi',
+        duodopaTherapyStartDate: '2021-01-10',
+        caregiver: 'child',
+        clinicalCenter: 'Centro Clinico Brescia',
+        neurologist: 'Dr.ssa Laura Neri',
+        gastroenterologist: 'Dr. Pietro Galli',
+        date: '2026-04-03',
+        type: 'outpatient',
+        priority: 'medium',
+        nurse: 'Infermiera Sonia Riva',
+        nurseSignature: 'S. Riva',
+        stomiaStatus: this.createMockVisitStomiaStatus({ bumperMobilization: 'lt0_5cm', skinVisualization: 'normal', skinPointX: 79, skinPointY: 57 }),
+        stomiaActions: this.createMockVisitStomiaActions(),
+        pegjStatus: this.createMockVisitPegjStatus({ usageDuration: '0to6', pegType: 'boston' }),
+        pegjActions: this.createMockVisitPegjActions(),
+        autonomyStatus: this.createMockVisitAutonomyStatus({ pegCleaning: 'autonomous', pejCleaning: 'autonomous' }),
+        autonomyActions: this.createMockVisitAutonomyActions()
+      }
+    ]);
+  }
+
+  private createEmptyVisitForm(): TherapeuticPlanVisitForm {
+    return {
+      patientFirstName: this.patient?.firstName || '',
+      patientLastName: this.patient?.lastName || '',
+      duodopaTherapyStartDate: this.plan?.startDate || '',
+      caregiver: this.patient?.caregiverFullName?.trim() ? 'relative' : 'other',
+      clinicalCenter: this.structureLabel === this.translate('common.notAvailable') ? '' : this.structureLabel,
+      neurologist: this.doctorLabel === this.translate('common.notAvailable') ? '' : this.doctorLabel,
+      gastroenterologist: 'Dr. Stefano Conti',
+      date: this.getTodayDateInputValue(),
+      type: 'outpatient',
+      priority: 'none',
+      stomiaStatus: this.createMockVisitStomiaStatus(),
+      stomiaActions: this.createMockVisitStomiaActions(),
+      pegjStatus: this.createMockVisitPegjStatus(),
+      pegjActions: this.createMockVisitPegjActions(),
+      autonomyStatus: this.createMockVisitAutonomyStatus(),
+      autonomyActions: this.createMockVisitAutonomyActions()
+    };
+  }
+
+  private validateVisitBaseStep(): boolean {
+    if (!this.visitForm.patientFirstName.trim()) {
+      this.visitErrorMessage = this.translate('therapeuticPlan.visits.validation.patientFirstNameRequired');
+      return false;
+    }
+
+    if (!this.visitForm.patientLastName.trim()) {
+      this.visitErrorMessage = this.translate('therapeuticPlan.visits.validation.patientLastNameRequired');
+      return false;
+    }
+
+    if (!this.visitForm.duodopaTherapyStartDate.trim()) {
+      this.visitErrorMessage = this.translate('therapeuticPlan.visits.validation.duodopaTherapyStartDateRequired');
+      return false;
+    }
+
+    if (!this.visitForm.clinicalCenter.trim()) {
+      this.visitErrorMessage = this.translate('therapeuticPlan.visits.validation.clinicalCenterRequired');
+      return false;
+    }
+
+    if (!this.visitForm.neurologist.trim()) {
+      this.visitErrorMessage = this.translate('therapeuticPlan.visits.validation.neurologistRequired');
+      return false;
+    }
+
+    if (!this.visitForm.gastroenterologist.trim()) {
+      this.visitErrorMessage = this.translate('therapeuticPlan.visits.validation.gastroenterologistRequired');
+      return false;
+    }
+
+    if (!this.visitForm.date.trim()) {
+      this.visitErrorMessage = this.translate('therapeuticPlan.visits.validation.dateRequired');
+      return false;
+    }
+
+    return true;
+  }
+
+  private createMockVisitStomiaStatus(overrides: Partial<TherapeuticPlanVisitStomiaStatus> = {}): TherapeuticPlanVisitStomiaStatus {
+    return {
+      bumperMobilization: 'gt1cm',
+      secretionAmount: 'absent',
+      secretionType: 'otherMaterial',
+      skinVisualization: 'normal',
+      skinPointX: null,
+      skinPointY: null,
+      continuousInfusion: '1,1 (14h)',
+      extraDose: '1,3',
+      morningDose: '4,1',
+      infusion24Hours: false,
+      ...overrides
+    };
+  }
+
+  private createMockVisitStomiaActions(overrides: Partial<TherapeuticPlanVisitStomiaActions> = {}): TherapeuticPlanVisitStomiaActions {
+    return {
+      bumperMobilization: 'none',
+      secretionLoss: 'none',
+      skinVisualization: 'none',
+      ...overrides
+    };
+  }
+
+  private createMockVisitPegjStatus(overrides: Partial<TherapeuticPlanVisitPegjStatus> = {}): TherapeuticPlanVisitPegjStatus {
+    return {
+      usageDuration: 'over12',
+      replacementDate: '2023-06-16',
+      pegType: 'abbvie15',
+      pegTypeOtherDetail: '',
+      mobilization: true,
+      integrity: 'normal',
+      color: 'normal',
+      pegPatency: 'normal',
+      pejPatency: 'normal',
+      connectorStatus: 'normal',
+      externalBumperStatus: 'normal',
+      ...overrides
+    };
+  }
+
+  private createMockVisitPegjActions(overrides: Partial<TherapeuticPlanVisitPegjActions> = {}): TherapeuticPlanVisitPegjActions {
+    return {
+      mobilization: 'none',
+      integrity: 'none',
+      color: 'none',
+      patency: 'none',
+      connectors: 'none',
+      externalBumper: 'none',
+      ...overrides
+    };
+  }
+
+  setVisitStomiaSkinPoint(event: MouseEvent): void {
+    const target = event.currentTarget;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+
+    const bounds = target.getBoundingClientRect();
+    if (!bounds.width || !bounds.height) {
+      return;
+    }
+
+    const x = ((event.clientX - bounds.left) / bounds.width) * 100;
+    const y = ((event.clientY - bounds.top) / bounds.height) * 100;
+
+    this.visitForm.stomiaStatus.skinPointX = Math.min(100, Math.max(0, Number(x.toFixed(2))));
+    this.visitForm.stomiaStatus.skinPointY = Math.min(100, Math.max(0, Number(y.toFixed(2))));
+  }
+
+  private createMockVisitAutonomyStatus(overrides: Partial<TherapeuticPlanVisitAutonomyStatus> = {}): TherapeuticPlanVisitAutonomyStatus {
+    return {
+      pumpCassetteConnection: 'caregiver',
+      pumpPegConnection: 'caregiver',
+      pumpSwitchOn: 'caregiver',
+      morningDoseAdministration: 'caregiver',
+      continuousDoseAdministration: 'caregiver',
+      extraDoseAdministration: 'caregiver',
+      pumpSwitchOff: 'caregiver',
+      pumpPegDisconnection: 'caregiver',
+      pegCleaning: 'caregiver',
+      pejCleaning: 'caregiver',
+      pumpCassetteDisconnection: 'caregiver',
+      ...overrides
+    };
+  }
+
+  private createMockVisitAutonomyActions(overrides: Partial<TherapeuticPlanVisitAutonomyActions> = {}): TherapeuticPlanVisitAutonomyActions {
+    return {
+      pumpUsageTraining: false,
+      pegjWashingTraining: false,
+      ...overrides
+    };
+  }
+
+  private buildVisitPrintDocument(visits: TherapeuticPlanVisitRecord[]): string {
+    const coverPages = this.paginateVisitPrintPages(visits);
+    const patientHeader = this.visitPatientHeader;
+    const detailVisit = visits[0] ?? null;
+    const detailPagesCount = detailVisit ? 6 : 0;
+    const totalPages = coverPages.length + detailPagesCount;
+    const coverMarkup = coverPages
+      .map((pageVisits, pageIndex) => this.buildVisitPrintPage(pageVisits, patientHeader, pageIndex + 1, totalPages, pageIndex === 0))
+      .join('');
+    const statusMarkup = detailVisit
+      ? [
+          this.buildVisitStomiaStatusPrintPage(detailVisit, coverPages.length + 1, totalPages),
+          this.buildVisitPegjStatusPrintPage(detailVisit, coverPages.length + 2, totalPages),
+          this.buildVisitAutonomyStatusPrintPage(detailVisit, coverPages.length + 3, totalPages),
+          this.buildVisitStomiaActionsPrintPage(detailVisit, coverPages.length + 4, totalPages),
+          this.buildVisitPegjActionsPrintPage(detailVisit, coverPages.length + 5, totalPages),
+          this.buildVisitAutonomyActionsPrintPage(detailVisit, coverPages.length + 6, totalPages)
+        ].join('')
+      : '';
+    const printMarkup = `${coverMarkup}${statusMarkup}`;
+
+    return `<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8" />
+    <title>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.documentTitle'))}</title>
+    <style>
+      @page { size: A4; margin: 12mm; }
+      * { box-sizing: border-box; }
+      body { font-family: Arial, sans-serif; color: #111; margin: 0; }
+      .page { min-height: 272mm; page-break-after: always; padding: 7mm; border: 1px solid #d7d7d7; }
+      .page:last-child { page-break-after: auto; }
+      .title { font-size: 30px; font-weight: 700; margin: 0 0 14px; }
+      .subtitle { font-size: 17px; color: #444; margin: 0 0 20px; }
+      .page-meta { display: flex; justify-content: space-between; gap: 12px; margin: 0 0 20px; color: #4a4a4a; font-size: 14px; }
+      .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 18px; }
+      .field { border: 1px solid #cfcfcf; padding: 12px 14px; min-height: 80px; }
+      .field-label { display: block; font-size: 12px; text-transform: uppercase; color: #666; margin-bottom: 8px; }
+      .field-value { font-size: 20px; font-weight: 600; }
+      .full { grid-column: 1 / -1; }
+      .visit-patient-card { border: 1px solid #d89a9a; padding: 16px 18px; margin-bottom: 20px; }
+      .visit-patient-row { display: grid; grid-template-columns: minmax(240px, 1.3fr) minmax(180px, 0.8fr) minmax(200px, 0.9fr); gap: 12px; align-items: end; margin-bottom: 10px; }
+      .visit-patient-row:last-child { margin-bottom: 0; }
+      .visit-patient-field { min-height: 36px; }
+      .visit-patient-field-full { grid-column: 1 / -1; }
+      .visit-patient-label { display: inline-block; font-size: 14px; font-weight: 700; text-transform: uppercase; margin-right: 6px; }
+      .visit-patient-value { display: inline-block; min-width: 90px; border-bottom: 1px solid #111; padding: 0 4px 2px; font-size: 15px; }
+      .visit-caregiver-group { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+      .visit-caregiver-option { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
+      .visit-caregiver-box { width: 14px; height: 14px; border: 1px solid #111; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; line-height: 1; }
+      .visit-list-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+      .visit-list-table th, .visit-list-table td { border: 1px solid #cfcfcf; padding: 12px 14px; text-align: left; vertical-align: top; font-size: 14px; }
+      .visit-list-table th { background: #f3f3f3; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; }
+      .status-page-title { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin: 0 0 16px; }
+      .status-page-title h2 { margin: 0; font-size: 30px; font-weight: 800; }
+      .status-page-subtitle { margin: 0 0 4px; color: #444; font-size: 15px; }
+      .status-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+      .status-panel { border: 2px solid #de9090; min-height: 100%; }
+      .status-panel-header { padding: 10px 12px; color: #fff; font-size: 15px; font-weight: 800; text-align: center; text-transform: uppercase; }
+      .status-panel-header.blue { background: #2d4f91; }
+      .status-panel-header.red { background: #d85d5d; }
+      .status-panel-body { padding: 10px 12px 12px; }
+      .status-group { margin-bottom: 14px; }
+      .status-group:last-child { margin-bottom: 0; }
+      .status-group-title { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 800; text-align: center; }
+      .status-options { display: grid; gap: 8px; }
+      .status-options.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .status-options.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .status-options.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .status-skin-layout { display: grid; grid-template-columns: minmax(0, 1.35fr) 120px; gap: 16px; align-items: start; }
+      .status-skin-figure { position: relative; width: 120px; height: 120px; border: 1.5px solid #d2c5a2; border-radius: 16px; background:
+        radial-gradient(circle at center, transparent 0 42%, rgba(196, 171, 123, 0.18) 42% 44%, transparent 44% 100%),
+        linear-gradient(90deg, transparent calc(50% - 0.5px), rgba(196, 171, 123, 0.72) calc(50% - 0.5px), rgba(196, 171, 123, 0.72) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+        linear-gradient(transparent calc(50% - 0.5px), rgba(196, 171, 123, 0.72) calc(50% - 0.5px), rgba(196, 171, 123, 0.72) calc(50% + 0.5px), transparent calc(50% + 0.5px)); }
+      .status-skin-point { display: block; position: absolute; width: 10px; height: 10px; border-radius: 999px; background: #d84d4d; border: 1px solid #fff; transform: translate(-50%, -50%); box-shadow: 0 0 0 1px rgba(216, 77, 77, 0.35); }
+      .status-option { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+      .status-action-block { margin-top: 0; }
+      .status-action-title { display: block; margin-bottom: 10px; color: #284983; font-size: 14px; font-weight: 800; text-align: center; text-transform: uppercase; }
+      .status-box { width: 17px; height: 17px; border: 1px solid #777; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; line-height: 1; }
+      .status-line-field { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; }
+      .status-line-field:last-child { margin-bottom: 0; }
+      .status-line-label { font-weight: 700; white-space: nowrap; }
+      .status-line-value { flex: 1; border-bottom: 1px solid #666; min-height: 18px; padding-bottom: 2px; }
+      .status-autonomy-row { display: flex; flex-direction: column; gap: 5px; margin-bottom: 8px; }
+      .status-autonomy-row:last-child { margin-bottom: 0; }
+      .status-autonomy-label { display: block; width: 100%; padding: 5px 0 0; color: #1d3158; font-weight: 800; font-size: 13px; line-height: 1.2; text-align: center; white-space: normal; overflow-wrap: anywhere; }
+      .status-autonomy-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; width: 100%; }
+      .status-autonomy-choice { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 2px; min-height: 34px; padding: 2px 4px; font-size: 11px; text-align: center; white-space: normal; overflow-wrap: anywhere; }
+      .status-autonomy-choice-label { line-height: 1.1; }
+      @media print {
+        .page { border: none; }
+      }
+    </style>
+  </head>
+  <body>
+    ${printMarkup}
+  </body>
+</html>`;
+  }
+
+  private buildVisitPrintPage(
+    visits: TherapeuticPlanVisitRecord[],
+    patientHeader: TherapeuticPlanVisitPatientHeader,
+    pageNumber: number,
+    totalPages: number,
+    includePatientHeader: boolean
+  ): string {
+    return `<section class="page">
+      <h1 class="title">${this.escapeHtml(this.translate('therapeuticPlan.visits.print.coverTitle'))}</h1>
+      <div class="page-meta">
+        <span>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.pageLabel'))} ${pageNumber} / ${totalPages}</span>
+        <span>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.generatedOn'))}: ${this.escapeHtml(this.formatDate(this.getTodayDateInputValue()))}</span>
+      </div>
+      <p class="subtitle">${this.escapeHtml(this.translate('therapeuticPlan.visits.print.coverSubtitle'))}</p>
+      ${includePatientHeader ? this.buildVisitPatientPrintHeader(patientHeader) : ''}
+      <table class="visit-list-table">
+        <thead>
+          <tr>
+            <th>${this.escapeHtml(this.translate('therapeuticPlan.visits.field.date'))}</th>
+            <th>${this.escapeHtml(this.translate('therapeuticPlan.visits.field.type'))}</th>
+            <th>${this.escapeHtml(this.translate('therapeuticPlan.visits.field.priority'))}</th>
+            <th>${this.escapeHtml(this.translate('therapeuticPlan.visits.field.nurse'))}</th>
+            <th>${this.escapeHtml(this.translate('therapeuticPlan.visits.field.nurseSignature'))}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${visits.map((visit) => this.buildVisitPrintRow(visit)).join('')}
+        </tbody>
+      </table>
+    </section>`;
+  }
+
+  private buildVisitStomiaStatusPrintPage(visit: TherapeuticPlanVisitRecord, pageNumber: number, totalPages: number): string {
+    return `<section class="page">
+      <div class="status-page-title">
+        <h2>${this.escapeHtml(this.translate('therapeuticPlan.visits.status.reportTitle'))}</h2>
+        <span>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.pageLabel'))} ${pageNumber} / ${totalPages}</span>
+      </div>
+      <p class="status-page-subtitle">${this.escapeHtml(this.getVisitPatientFullName(visit))} - ${this.escapeHtml(this.formatDate(visit.date))} - ${this.escapeHtml(this.getVisitTypeLabel(visit.type))}</p>
+      ${this.buildVisitStatusStomiaPrintPanel(visit.stomiaStatus)}
+    </section>`;
+  }
+
+  private buildVisitStomiaActionsPrintPage(visit: TherapeuticPlanVisitRecord, pageNumber: number, totalPages: number): string {
+    return `<section class="page">
+      <div class="status-page-title">
+        <h2>${this.escapeHtml(this.translate('therapeuticPlan.visits.actionsTaken.title'))}</h2>
+        <span>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.pageLabel'))} ${pageNumber} / ${totalPages}</span>
+      </div>
+      <p class="status-page-subtitle">${this.escapeHtml(this.getVisitPatientFullName(visit))} - ${this.escapeHtml(this.formatDate(visit.date))} - ${this.escapeHtml(this.getVisitTypeLabel(visit.type))}</p>
+      ${this.buildVisitStomiaActionsPanel(visit.stomiaActions)}
+    </section>`;
+  }
+
+  private buildVisitPegjStatusPrintPage(visit: TherapeuticPlanVisitRecord, pageNumber: number, totalPages: number): string {
+    return `<section class="page">
+      <div class="status-page-title">
+        <h2>${this.escapeHtml(this.translate('therapeuticPlan.visits.status.reportTitle'))}</h2>
+        <span>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.pageLabel'))} ${pageNumber} / ${totalPages}</span>
+      </div>
+      <p class="status-page-subtitle">${this.escapeHtml(this.getVisitPatientFullName(visit))} - ${this.escapeHtml(this.formatDate(visit.date))} - ${this.escapeHtml(this.getVisitTypeLabel(visit.type))}</p>
+      ${this.buildVisitStatusPegjPrintPanel(visit.pegjStatus)}
+    </section>`;
+  }
+
+  private buildVisitPegjActionsPrintPage(visit: TherapeuticPlanVisitRecord, pageNumber: number, totalPages: number): string {
+    return `<section class="page">
+      <div class="status-page-title">
+        <h2>${this.escapeHtml(this.translate('therapeuticPlan.visits.actionsTaken.title'))}</h2>
+        <span>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.pageLabel'))} ${pageNumber} / ${totalPages}</span>
+      </div>
+      <p class="status-page-subtitle">${this.escapeHtml(this.getVisitPatientFullName(visit))} - ${this.escapeHtml(this.formatDate(visit.date))} - ${this.escapeHtml(this.getVisitTypeLabel(visit.type))}</p>
+      ${this.buildVisitPegjActionsPanel(visit.pegjActions)}
+    </section>`;
+  }
+
+  private buildVisitAutonomyStatusPrintPage(visit: TherapeuticPlanVisitRecord, pageNumber: number, totalPages: number): string {
+    return `<section class="page">
+      <div class="status-page-title">
+        <h2>${this.escapeHtml(this.translate('therapeuticPlan.visits.status.reportTitle'))}</h2>
+        <span>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.pageLabel'))} ${pageNumber} / ${totalPages}</span>
+      </div>
+      <p class="status-page-subtitle">${this.escapeHtml(this.getVisitPatientFullName(visit))} - ${this.escapeHtml(this.formatDate(visit.date))} - ${this.escapeHtml(this.getVisitTypeLabel(visit.type))}</p>
+      ${this.buildVisitStatusAutonomyPrintPanel(visit.autonomyStatus)}
+    </section>`;
+  }
+
+  private buildVisitAutonomyActionsPrintPage(visit: TherapeuticPlanVisitRecord, pageNumber: number, totalPages: number): string {
+    return `<section class="page">
+      <div class="status-page-title">
+        <h2>${this.escapeHtml(this.translate('therapeuticPlan.visits.actionsTaken.title'))}</h2>
+        <span>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.pageLabel'))} ${pageNumber} / ${totalPages}</span>
+      </div>
+      <p class="status-page-subtitle">${this.escapeHtml(this.getVisitPatientFullName(visit))} - ${this.escapeHtml(this.formatDate(visit.date))} - ${this.escapeHtml(this.getVisitTypeLabel(visit.type))}</p>
+      ${this.buildVisitAutonomyActionsPanel(visit.autonomyActions)}
+    </section>`;
+  }
+
+  private buildVisitPatientPrintHeader(patientHeader: TherapeuticPlanVisitPatientHeader): string {
+    const caregiverOptions: TherapeuticPlanVisitCaregiver[] = ['child', 'spouse', 'relative', 'other'];
+
+    return `<section class="visit-patient-card">
+      <div class="visit-patient-row">
+        ${this.buildVisitInlinePrintField('therapeuticPlan.visits.field.patientFirstName', patientHeader.patientFirstName)}
+        ${this.buildVisitInlinePrintField('therapeuticPlan.visits.field.patientLastName', patientHeader.patientLastName)}
+        ${this.buildVisitInlinePrintField('therapeuticPlan.visits.field.duodopaTherapyStartDate', this.formatDate(patientHeader.duodopaTherapyStartDate))}
+      </div>
+      <div class="visit-patient-row">
+        <div class="visit-patient-field visit-patient-field-full">
+          <span class="visit-patient-label">${this.escapeHtml(this.translate('therapeuticPlan.visits.field.caregiver'))}</span>
+          <span class="visit-caregiver-group">
+            ${caregiverOptions.map((option) => this.buildVisitCaregiverPrintOption(option, patientHeader.caregiver)).join('')}
+          </span>
+        </div>
+      </div>
+      <div class="visit-patient-row">
+        ${this.buildVisitInlinePrintField('therapeuticPlan.visits.field.clinicalCenter', patientHeader.clinicalCenter, true)}
+      </div>
+      <div class="visit-patient-row">
+        ${this.buildVisitInlinePrintField('therapeuticPlan.visits.field.neurologist', patientHeader.neurologist, true)}
+      </div>
+      <div class="visit-patient-row">
+        ${this.buildVisitInlinePrintField('therapeuticPlan.visits.field.gastroenterologist', patientHeader.gastroenterologist, true)}
+      </div>
+    </section>`;
+  }
+
+  private buildVisitInlinePrintField(labelKey: MessageKey | string, value: string, fullWidth = false): string {
+    return `<div class="visit-patient-field${fullWidth ? ' visit-patient-field-full' : ''}">
+      <span class="visit-patient-label">${this.escapeHtml(this.translate(labelKey))}</span>
+      <span class="visit-patient-value">${this.escapeHtml(value || this.translate('common.notAvailable'))}</span>
+    </div>`;
+  }
+
+  private buildVisitCaregiverPrintOption(
+    option: TherapeuticPlanVisitCaregiver,
+    selected: TherapeuticPlanVisitCaregiver
+  ): string {
+    const marker = option === selected ? 'X' : '&nbsp;';
+    return `<span class="visit-caregiver-option">
+      <span class="visit-caregiver-box">${marker}</span>
+      <span>${this.escapeHtml(this.getVisitCaregiverLabel(option))}</span>
+    </span>`;
+  }
+
+  private buildVisitPrintRow(visit: TherapeuticPlanVisitRecord): string {
+    const signatureLabel = visit.type === 'home'
+      ? this.translate('therapeuticPlan.visits.field.patientSignature')
+      : this.translate('therapeuticPlan.visits.field.nurseSignature');
+
+    return `<tr>
+      <td>${this.escapeHtml(this.formatDate(visit.date))}</td>
+      <td>${this.escapeHtml(this.getVisitTypeLabel(visit.type))}</td>
+      <td>${this.escapeHtml(this.getVisitPriorityLabel(visit.priority))}</td>
+      <td>${this.escapeHtml(visit.nurse)}</td>
+      <td>${this.escapeHtml(`${signatureLabel}: ${visit.nurseSignature}`)}</td>
+    </tr>`;
+  }
+
+  private buildVisitStatusStomiaPrintPanel(status: TherapeuticPlanVisitStomiaStatus): string {
+    return `<section class="status-panel">
+      <div class="status-panel-header blue">${this.escapeHtml(this.translate('therapeuticPlan.visits.status.stomia.title'))}</div>
+      <div class="status-panel-body">
+        <div class="status-group">
+          <span class="status-group-title">${this.escapeHtml(this.translate('therapeuticPlan.visits.status.stomia.bumperMobilization'))}</span>
+          <div class="status-options cols-3">
+            ${this.buildVisitStatusOption(status.bumperMobilization === 'eq0_5cm', 'therapeuticPlan.visits.status.stomia.bumper.eq0_5cm')}
+            ${this.buildVisitStatusOption(status.bumperMobilization === 'gt1cm', 'therapeuticPlan.visits.status.stomia.bumper.gt1cm')}
+            ${this.buildVisitStatusOption(status.bumperMobilization === 'lt0_5cm', 'therapeuticPlan.visits.status.stomia.bumper.lt0_5cm')}
+          </div>
+        </div>
+        <div class="status-group">
+          <span class="status-group-title">${this.escapeHtml(this.translate('therapeuticPlan.visits.status.stomia.secretionLoss'))}</span>
+          <div class="status-options cols-3">
+            ${this.buildVisitStatusOption(status.secretionAmount === 'absent', 'therapeuticPlan.visits.status.stomia.secretionAmount.absent')}
+            ${this.buildVisitStatusOption(status.secretionAmount === 'light', 'therapeuticPlan.visits.status.stomia.secretionAmount.light')}
+            ${this.buildVisitStatusOption(status.secretionAmount === 'abundant', 'therapeuticPlan.visits.status.stomia.secretionAmount.abundant')}
+          </div>
+          <div class="status-options cols-3" style="margin-top: 8px;">
+            ${this.buildVisitStatusOption(status.secretionType === 'clear', 'therapeuticPlan.visits.status.stomia.secretionType.clear')}
+            ${this.buildVisitStatusOption(status.secretionType === 'purulent', 'therapeuticPlan.visits.status.stomia.secretionType.purulent')}
+            ${this.buildVisitStatusOption(status.secretionType === 'otherMaterial', 'therapeuticPlan.visits.status.stomia.secretionType.otherMaterial')}
+          </div>
+        </div>
+        <div class="status-group">
+          <span class="status-group-title">${this.escapeHtml(this.translate('therapeuticPlan.visits.status.stomia.skinVisualization'))}</span>
+          <div class="status-skin-layout">
+            <div class="status-options">
+              ${this.buildVisitStatusOption(status.skinVisualization === 'normal', 'therapeuticPlan.visits.status.stomia.skin.normal')}
+              ${this.buildVisitStatusOption(status.skinVisualization === 'l1', 'therapeuticPlan.visits.status.stomia.skin.l1')}
+              ${this.buildVisitStatusOption(status.skinVisualization === 'l2', 'therapeuticPlan.visits.status.stomia.skin.l2')}
+              ${this.buildVisitStatusOption(status.skinVisualization === 'l3', 'therapeuticPlan.visits.status.stomia.skin.l3')}
+              ${this.buildVisitStatusOption(status.skinVisualization === 'l4', 'therapeuticPlan.visits.status.stomia.skin.l4')}
+              ${this.buildVisitStatusOption(status.skinVisualization === 'lx', 'therapeuticPlan.visits.status.stomia.skin.lx')}
+            </div>
+            <div class="status-skin-figure">${this.buildVisitStatusSkinPoint(status.skinPointX, status.skinPointY)}</div>
+          </div>
+        </div>
+        <div class="status-group" style="margin-top: 16px;">
+          <div class="status-panel-header red">${this.escapeHtml(this.translate('therapeuticPlan.visits.status.stomia.infusionalDosages'))}</div>
+          <div style="padding-top: 12px;">
+            ${this.buildVisitStatusLineField('therapeuticPlan.visits.status.stomia.continuousInfusion', status.continuousInfusion)}
+            ${this.buildVisitStatusLineField('therapeuticPlan.visits.status.stomia.extraDose', status.extraDose)}
+            ${this.buildVisitStatusLineField('therapeuticPlan.visits.status.stomia.morningDose', status.morningDose)}
+            <div class="status-line-field">
+              <span class="status-line-label">${this.escapeHtml(this.translate('therapeuticPlan.visits.status.stomia.infusion24Hours'))}</span>
+              <span class="status-options cols-2" style="flex: 1;">
+                ${this.buildVisitStatusOption(status.infusion24Hours, 'common.yes')}
+                ${this.buildVisitStatusOption(!status.infusion24Hours, 'common.no')}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>`;
+  }
+
+  private buildVisitStatusPegjPrintPanel(status: TherapeuticPlanVisitPegjStatus): string {
+    return `<section class="status-panel">
+      <div class="status-panel-header red">${this.escapeHtml(this.translate('therapeuticPlan.visits.status.pegj.title'))}</div>
+      <div class="status-panel-body">
+        <div class="status-group">
+          <span class="status-group-title">${this.escapeHtml(this.translate('therapeuticPlan.visits.status.pegj.usageDuration'))}</span>
+          <div class="status-options cols-3">
+            ${this.buildVisitStatusOption(status.usageDuration === '0to6', 'therapeuticPlan.visits.status.pegj.usage.0to6')}
+            ${this.buildVisitStatusOption(status.usageDuration === '6to12', 'therapeuticPlan.visits.status.pegj.usage.6to12')}
+            ${this.buildVisitStatusOption(status.usageDuration === 'over12', 'therapeuticPlan.visits.status.pegj.usage.over12')}
+          </div>
+        </div>
+        ${this.buildVisitStatusLineField('therapeuticPlan.visits.status.pegj.replacementDate', this.formatDate(status.replacementDate))}
+        <div class="status-group">
+          <span class="status-group-title">${this.escapeHtml(this.translate('therapeuticPlan.visits.status.pegj.typeLabel'))}</span>
+          <div class="status-options cols-4">
+            ${this.buildVisitStatusOption(status.pegType === 'boston', 'therapeuticPlan.visits.status.pegj.type.boston')}
+            ${this.buildVisitStatusOption(status.pegType === 'abbvie15', 'therapeuticPlan.visits.status.pegj.type.abbvie15')}
+            ${this.buildVisitStatusOption(status.pegType === 'abbvie20', 'therapeuticPlan.visits.status.pegj.type.abbvie20')}
+            ${this.buildVisitStatusOption(status.pegType === 'other', 'therapeuticPlan.visits.status.pegj.type.other')}
+          </div>
+          ${status.pegType === 'other'
+            ? this.buildVisitStatusLineField('therapeuticPlan.visits.status.pegj.type.otherDetail', status.pegTypeOtherDetail)
+            : ''}
+        </div>
+        <div class="status-group">
+          <span class="status-group-title">${this.escapeHtml(this.translate('therapeuticPlan.visits.status.pegj.mobilization'))}</span>
+          <div class="status-options cols-2">
+            ${this.buildVisitStatusOption(status.mobilization, 'common.yes')}
+            ${this.buildVisitStatusOption(!status.mobilization, 'common.no')}
+          </div>
+        </div>
+        ${this.buildVisitStatusOptionGroup('therapeuticPlan.visits.status.pegj.integrity', status.integrity, this.visitPegIntegrityOptions)}
+        ${this.buildVisitStatusOptionGroup('therapeuticPlan.visits.status.pegj.colorLabel', status.color, this.visitPegColorOptions)}
+        ${this.buildVisitStatusOptionGroup('therapeuticPlan.visits.status.pegj.pegPatency', status.pegPatency, this.visitPegPatencyOptions)}
+        ${this.buildVisitStatusOptionGroup('therapeuticPlan.visits.status.pegj.pejPatency', status.pejPatency, this.visitPegPatencyOptions)}
+        ${this.buildVisitStatusOptionGroup('therapeuticPlan.visits.status.pegj.connectorStatus', status.connectorStatus, this.visitPegConnectorOptions)}
+        ${this.buildVisitStatusOptionGroup('therapeuticPlan.visits.status.pegj.externalBumperStatus', status.externalBumperStatus, this.visitPegExternalBumperOptions)}
+      </div>
+    </section>`;
+  }
+
+  private buildVisitStatusAutonomyPrintPanel(status: TherapeuticPlanVisitAutonomyStatus): string {
+    return `<section class="status-panel">
+      <div class="status-panel-header blue">${this.escapeHtml(this.translate('therapeuticPlan.visits.status.autonomy.title'))}</div>
+      <div class="status-panel-body">
+        ${this.visitAutonomyItems.map((item) => this.buildVisitStatusAutonomyRow(item, status[item.key])).join('')}
+      </div>
+    </section>`;
+  }
+
+  private buildVisitStomiaActionsPanel(actions: TherapeuticPlanVisitStomiaActions): string {
+    return `<section class="status-panel">
+      <div class="status-panel-header blue">${this.escapeHtml(this.translate('therapeuticPlan.visits.status.stomia.title'))}</div>
+      <div class="status-panel-body">
+      <section class="status-action-block">
+      ${this.buildVisitStatusActionGroup('therapeuticPlan.visits.status.stomia.bumperMobilization', actions.bumperMobilization, this.visitStomiaBumperActionOptions)}
+      ${this.buildVisitStatusActionGroup('therapeuticPlan.visits.status.stomia.secretionLoss', actions.secretionLoss, this.visitStomiaCareActionOptions)}
+      ${this.buildVisitStatusActionGroup('therapeuticPlan.visits.status.stomia.skinVisualization', actions.skinVisualization, this.visitStomiaCareActionOptions)}
+    </section>
+    </div>
+    </section>`;
+  }
+
+  private buildVisitPegjActionsPanel(actions: TherapeuticPlanVisitPegjActions): string {
+    return `<section class="status-panel">
+      <div class="status-panel-header red">${this.escapeHtml(this.translate('therapeuticPlan.visits.status.pegj.title'))}</div>
+      <div class="status-panel-body">
+      <section class="status-action-block">
+      ${this.buildVisitStatusActionGroup('therapeuticPlan.visits.status.pegj.mobilization', actions.mobilization, this.visitActionNoneOrContactOptions)}
+      ${this.buildVisitStatusActionGroup('therapeuticPlan.visits.status.pegj.integrity', actions.integrity, this.visitActionNoneOrContactOptions)}
+      ${this.buildVisitStatusActionGroup('therapeuticPlan.visits.status.pegj.colorLabel', actions.color, this.visitActionNoneOrContactOptions)}
+      ${this.buildVisitStatusActionGroup('therapeuticPlan.visits.status.pegj.pegPatency', actions.patency, this.visitPegjPatencyActionOptions)}
+      ${this.buildVisitStatusActionGroup('therapeuticPlan.visits.status.pegj.connectorStatus', actions.connectors, this.visitPegjConnectorActionOptions)}
+      ${this.buildVisitStatusActionGroup('therapeuticPlan.visits.status.pegj.externalBumperStatus', actions.externalBumper, this.visitPegjBumperActionOptions)}
+    </section>
+    </div>
+    </section>`;
+  }
+
+  private buildVisitAutonomyActionsPanel(actions: TherapeuticPlanVisitAutonomyActions): string {
+    return `<section class="status-panel">
+      <div class="status-panel-header blue">${this.escapeHtml(this.translate('therapeuticPlan.visits.status.autonomy.title'))}</div>
+      <div class="status-panel-body">
+      <section class="status-action-block">
+      <div class="status-group">
+        <span class="status-group-title">${this.escapeHtml(this.translate('therapeuticPlan.visits.actionsTaken.autonomy.training'))}</span>
+        <div class="status-options">
+          ${this.visitAutonomyActionItems.map((item) => this.buildVisitStatusOption(actions[item.key], item.titleKey)).join('')}
+        </div>
+      </div>
+    </section>
+    </div>
+    </section>`;
+  }
+
+  private buildVisitStatusActionGroup(labelKey: MessageKey | string, selectedValue: string, options: TherapeuticPlanManageOption[]): string {
+    return `<div class="status-group">
+      <span class="status-group-title">${this.escapeHtml(this.translate(labelKey))}</span>
+      <div class="status-options">
+        ${options.map((option) => this.buildVisitStatusOption(selectedValue === option.value, option.titleKey)).join('')}
+      </div>
+    </div>`;
+  }
+
+  private buildVisitStatusSkinPoint(x: number | null, y: number | null): string {
+    if (x == null || y == null) {
+      return '';
+    }
+
+    return `<span class="status-skin-point" style="left:${x}%; top:${y}%;"></span>`;
+  }
+
+  private buildVisitStatusAutonomyRow(item: TherapeuticPlanVisitAutonomyItem, selected: TherapeuticPlanVisitAutonomyLevel): string {
+    return `<div class="status-autonomy-row">
+      <span class="status-autonomy-label">${this.escapeHtml(this.translate(item.titleKey))}</span>
+      <div class="status-autonomy-options">
+        ${this.visitAutonomyLevelOptions.map((option) => `<span class="status-autonomy-choice">${this.buildVisitStatusBox(selected === option.value)}<span class="status-autonomy-choice-label">${this.escapeHtml(this.translate(option.titleKey))}</span></span>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  private buildVisitStatusOptionGroup(labelKey: MessageKey | string, selectedValue: string, options: TherapeuticPlanManageOption[]): string {
+    const columnClass = options.length > 2 ? 'cols-3' : 'cols-2';
+    return `<div class="status-group">
+      <span class="status-group-title">${this.escapeHtml(this.translate(labelKey))}</span>
+      <div class="status-options ${columnClass}">
+        ${options.map((option) => this.buildVisitStatusOption(selectedValue === option.value, option.titleKey)).join('')}
+      </div>
+    </div>`;
+  }
+
+  private buildVisitStatusLineField(labelKey: MessageKey | string, value: string): string {
+    return `<div class="status-line-field">
+      <span class="status-line-label">${this.escapeHtml(this.translate(labelKey))}</span>
+      <span class="status-line-value">${this.escapeHtml(value || this.translate('common.notAvailable'))}</span>
+    </div>`;
+  }
+
+  private buildVisitStatusOption(selected: boolean, labelKey: MessageKey | string): string {
+    return `<span class="status-option">${this.buildVisitStatusBox(selected)}<span>${this.escapeHtml(this.translate(labelKey))}</span></span>`;
+  }
+
+  private buildVisitStatusBox(selected: boolean): string {
+    return `<span class="status-box">${selected ? 'X' : '&nbsp;'}</span>`;
+  }
+
+  private chunkArray<T>(items: T[], size: number): T[][] {
+    if (size <= 0) {
+      return [items];
+    }
+
+    const chunks: T[][] = [];
+    for (let index = 0; index < items.length; index += size) {
+      chunks.push(items.slice(index, index + size));
+    }
+
+    return chunks;
+  }
+
+  private paginateVisitPrintPages(items: TherapeuticPlanVisitRecord[]): TherapeuticPlanVisitRecord[][] {
+    if (items.length === 0) {
+      return [];
+    }
+
+    const firstPageSize = 8;
+    const otherPagesSize = 12;
+    const pages: TherapeuticPlanVisitRecord[][] = [];
+    const firstPage = items.slice(0, firstPageSize);
+    pages.push(firstPage);
+
+    const remainingItems = items.slice(firstPageSize);
+    if (remainingItems.length > 0) {
+      pages.push(...this.chunkArray(remainingItems, otherPagesSize));
+    }
+
+    return pages;
+  }
+
+  private escapeHtml(value: string): string {
+    return value
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
+  }
+
   private getTodayDateInputValue(): string {
     const today = new Date();
     const timezoneOffset = today.getTimezoneOffset() * 60_000;
@@ -837,6 +2448,42 @@ export class TherapeuticPlanManageComponent implements OnInit {
     });
   }
 
+  private sortPegHistoryEntries(entries: TherapeuticPlanPegHistoryRecord[]): TherapeuticPlanPegHistoryRecord[] {
+    return [...entries].sort((left, right) => {
+      const leftDate = left.insertionDate ?? '';
+      const rightDate = right.insertionDate ?? '';
+      return rightDate.localeCompare(leftDate) || right.id - left.id;
+    });
+  }
+
+  private getNextPegHistoryId(): number {
+    return this.pegHistoryEntries.reduce((maxId, entry) => Math.max(maxId, entry.id), 0) + 1;
+  }
+
+  private sortMovementEntries(entries: TherapeuticPlanMovementRecord[]): TherapeuticPlanMovementRecord[] {
+    return [...entries].sort((left, right) => {
+      const leftDate = left.movementDate ?? '';
+      const rightDate = right.movementDate ?? '';
+      return rightDate.localeCompare(leftDate) || right.id - left.id;
+    });
+  }
+
+  private getNextMovementId(): number {
+    return this.movementEntries.reduce((maxId, entry) => Math.max(maxId, entry.id), 0) + 1;
+  }
+
+  private sortVisitEntries(entries: TherapeuticPlanVisitRecord[]): TherapeuticPlanVisitRecord[] {
+    return [...entries].sort((left, right) => {
+      const leftDate = left.date ?? '';
+      const rightDate = right.date ?? '';
+      return rightDate.localeCompare(leftDate) || right.id - left.id;
+    });
+  }
+
+  private getNextVisitId(): number {
+    return this.visitEntries.reduce((maxId, entry) => Math.max(maxId, entry.id), 0) + 1;
+  }
+
   private getMockMedicalRecord(): TherapeuticPlanMedicalRecordMock {
     const implementationDate = this.plan?.startDate || this.getTodayDateInputValue();
     const patientName = this.patientDisplayName;
@@ -873,7 +2520,23 @@ export class TherapeuticPlanManageComponent implements OnInit {
       doseContinuaF3MlH: '',
       dalleOreF3: '',
       alleOreF3: '',
-      totaleLevodopaMgDie: '650'
+      totaleLevodopaMgDie: '650',
+      reportedCriticality: 'low',
+      patientConditionCriticality: 'medium',
+      patientWeightKg: '72',
+      patientHeightCm: '175',
+      patientAgeYears: '68',
+      wakeMotorCondition: 'partiallyActive',
+      currentAgeYears: '69',
+      diagnosisYear: '2018',
+      patientLivesMode: 'homeWithCaregiver',
+      caregivers: ['familyMember', 'professionalCaregiver'],
+      travelAutonomy: 'familyManaged',
+      clinicalCenterContactEase: 'medium',
+      referenceGastroenterologist: 'center',
+      referenceGastroenterologistName: this.doctorLabel === this.translate('common.notAvailable') ? '' : this.doctorLabel,
+      clinicalCenterDistanceKm: '28',
+      gastroenterologistContactEase: 'easy'
     };
   }
 

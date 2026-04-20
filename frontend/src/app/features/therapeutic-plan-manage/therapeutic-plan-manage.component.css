@@ -212,6 +212,10 @@
   grid-column: 1 / -1;
 }
 
+.detail-grid-full-width {
+  grid-column: 1 / -1;
+}
+
 .manage-panel-grid-medical-record {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
@@ -303,6 +307,10 @@
   gap: 16px 18px;
 }
 
+.medical-record-dosage-fields-two-columns {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .medical-record-dosage-card .manage-section-header {
   margin-bottom: 14px;
 }
@@ -319,19 +327,19 @@
   gap: 16px 18px;
 }
 
+.medical-record-dosage-summary-grid {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px 18px;
+}
+
 .medical-record-field {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.medical-record-field span {
-  color: #175fcb;
-  font-size: 0.98rem;
-  font-weight: 500;
-}
-
-.medical-record-field h2,
 .medical-record-subsection h2,
 .medical-record-dosage-card h2,
 .medical-record-criticality-card h2,
@@ -353,6 +361,18 @@
   color: #5d7598;
 }
 
+.medical-record-field > h2,
+.medical-record-inline-field > h2,
+.medical-record-toggle-field > h2,
+.medical-record-dosage-card .manage-section-header .medical-record-toggle-field > h2,
+.medical-record-time-group > h2 {
+  margin: 0;
+  color: #454f78;
+  font-weight: 800;
+  font-size: 0.82rem;
+  line-height: 1.25;
+}
+
 .medical-record-field input,
 .medical-record-field select,
 .medical-record-toggle-field select {
@@ -360,12 +380,24 @@
   border: 1.5px solid #d3e5f8;
   border-radius: 16px;
   background: #edf6ff;
-  color: #1a3a5d;
+  color: #111111;
   padding: 12px 16px;
   font-size: 0.96rem;
   line-height: 1.45;
   box-sizing: border-box;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.medical-record-field select,
+.medical-record-toggle-field select,
+.medical-record-field select option,
+.medical-record-toggle-field select option {
+  color: #111111 !important;
+}
+
+.medical-record-field select[multiple] {
+  min-height: 132px;
+  padding: 12px 16px;
 }
 
 .medical-record-field input:focus,
@@ -381,12 +413,6 @@
   flex-direction: column;
   gap: 8px;
   max-width: 280px;
-}
-
-.medical-record-toggle-field span {
-  color: #175fcb;
-  font-size: 0.98rem;
-  font-weight: 500;
 }
 
 .medical-record-field-wide {
@@ -407,14 +433,6 @@
   gap: 10px;
 }
 
-.medical-record-time-group > span {
-  font-size: 0.82rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #5d7598;
-}
-
 .medical-record-time-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -425,12 +443,6 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
-
-.medical-record-inline-field span {
-  color: #175fcb;
-  font-size: 0.96rem;
-  font-weight: 500;
 }
 
 .medical-record-toggle-block {
@@ -478,6 +490,7 @@
 
 .resource-list-item {
   display: flex;
+  margin: 0;
   justify-content: space-between;
   gap: 16px;
   align-items: center;
@@ -508,6 +521,13 @@
   margin-bottom: 18px;
 }
 
+.manage-section-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
 .manage-add-button {
   border: none;
   border-radius: 999px;
@@ -518,6 +538,12 @@
   color: #fff;
   background: linear-gradient(90deg, #1870e8 0%, #1fc4ff 100%);
   box-shadow: 0 10px 24px rgba(24, 112, 232, 0.22);
+}
+
+.manage-add-button-secondary {
+  color: #21406d;
+  background: #edf4fb;
+  box-shadow: none;
 }
 
 .manage-add-button:disabled {
@@ -548,6 +574,7 @@
 
 .summary-notification-list {
   margin-top: 18px;
+  margin: 0;
 }
 
 .summary-notification-item,
@@ -567,12 +594,14 @@
 }
 
 .alert-list-table-wrapper,
-.notification-list-table-wrapper {
+.notification-list-table-wrapper,
+.peg-history-list-table-wrapper {
   overflow-x: auto;
 }
 
 .alert-list-table,
-.notification-list-table {
+.notification-list-table,
+.peg-history-list-table {
   width: 100%;
   border-collapse: collapse;
 }
@@ -580,7 +609,9 @@
 .alert-list-table th,
 .alert-list-table td,
 .notification-list-table th,
-.notification-list-table td {
+.notification-list-table td,
+.peg-history-list-table th,
+.peg-history-list-table td {
   padding: 12px;
   border-bottom: 1px solid #dce6f3;
   text-align: left;
@@ -588,7 +619,8 @@
 }
 
 .alert-list-table th,
-.notification-list-table th {
+.notification-list-table th,
+.peg-history-list-table th {
   color: #5d7598;
   font-size: 0.78rem;
   text-transform: uppercase;
@@ -597,7 +629,8 @@
 }
 
 .alert-list-table td,
-.notification-list-table td {
+.notification-list-table td,
+.peg-history-list-table td {
   font-weight: 600;
   vertical-align: middle;
 }
@@ -625,6 +658,24 @@
   min-width: 260px;
   overflow-wrap: anywhere;
   white-space: pre-wrap;
+}
+
+.peg-history-list-model {
+  min-width: 260px;
+  overflow-wrap: anywhere;
+}
+
+.peg-history-list-date {
+  white-space: nowrap;
+}
+
+.peg-history-list-footer {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+  color: #5d7598;
+  font-size: 0.92rem;
+  font-weight: 700;
 }
 
 .alert-list-actions-cell {
@@ -759,6 +810,191 @@
   box-shadow: 0 0 0 3px rgba(24, 112, 232, 0.12);
 }
 
+.visit-status-step-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.visit-status-panel {
+  border: 2px solid #de9a9a;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #fffdfd;
+}
+
+.visit-status-panel-blue .visit-status-panel-header {
+  background: linear-gradient(180deg, #3a5fa2 0%, #284983 100%);
+}
+
+.visit-status-panel-red .visit-status-panel-header,
+.visit-status-subpanel-red .visit-status-subpanel-header {
+  background: linear-gradient(180deg, #e06f6f 0%, #cb5454 100%);
+}
+
+.visit-status-panel-header,
+.visit-status-subpanel-header {
+  color: #fff;
+  text-align: center;
+  font-size: 1.28rem;
+  font-weight: 800;
+  padding: 10px 14px;
+}
+
+.visit-status-panel-body {
+  padding: 18px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.visit-status-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.visit-status-group h3 {
+  margin: 0;
+  text-align: center;
+  color: #203c66;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.visit-status-group-suboptions {
+  margin-top: 4px;
+}
+
+.visit-status-options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+}
+
+.visit-status-options-grid-three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.visit-status-options-grid-four {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.visit-status-choice,
+.visit-status-choice-inline,
+.visit-autonomy-choice {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #24456f;
+  font-size: 0.96rem;
+}
+
+.visit-status-choice input,
+.visit-status-choice-inline input,
+.visit-autonomy-choice input {
+  width: 18px;
+  height: 18px;
+  accent-color: #2368cc;
+  margin: 0;
+}
+
+.visit-status-skin-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) 140px;
+  gap: 18px;
+  align-items: start;
+}
+
+.visit-status-options-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.visit-status-skin-figure {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  border: 1.5px solid #d2c5a2;
+  border-radius: 18px;
+  padding: 0;
+  cursor: crosshair;
+  background:
+    radial-gradient(circle at center, transparent 0 42%, rgba(196, 171, 123, 0.18) 42% 44%, transparent 44% 100%),
+    linear-gradient(90deg, transparent calc(50% - 0.5px), rgba(196, 171, 123, 0.72) calc(50% - 0.5px), rgba(196, 171, 123, 0.72) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    linear-gradient(transparent calc(50% - 0.5px), rgba(196, 171, 123, 0.72) calc(50% - 0.5px), rgba(196, 171, 123, 0.72) calc(50% + 0.5px), transparent calc(50% + 0.5px));
+}
+
+.visit-status-skin-point {
+  display: block;
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: #d84d4d;
+  border: 2px solid #ffffff;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 1px rgba(216, 77, 77, 0.35);
+  pointer-events: none;
+}
+
+.visit-status-subpanel {
+  border: 1.5px solid #dfb0b0;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.visit-status-subpanel-actions {
+  border-color: #c4d5f0;
+  background: #f8fbff;
+}
+
+.visit-status-subpanel-actions .visit-status-subpanel-header {
+  background: linear-gradient(180deg, #6b88bf 0%, #4c6fa8 100%);
+}
+
+.visit-status-subpanel-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+  padding: 16px 18px 18px;
+}
+
+.visit-status-subpanel-body-plain {
+  padding: 0;
+}
+
+.visit-status-inline-choice-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding-top: 30px;
+  color: #175fcb;
+  font-size: 0.98rem;
+  font-weight: 500;
+}
+
+.visit-autonomy-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.visit-autonomy-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(160px, 1fr));
+  gap: 12px 14px;
+  align-items: center;
+}
+
+.visit-autonomy-row-label {
+  color: #203c66;
+  font-size: 0.96rem;
+  font-weight: 700;
+}
+
 .manage-feedback-card {
   padding: 28px;
   margin-top: 20px;
@@ -830,15 +1066,25 @@
   .manage-overview-strip,
   .manage-panel-grid,
   .alert-modal-grid,
+  .visit-status-subpanel-body,
   .medical-record-content-grid,
+  .medical-record-dosage-summary-grid,
   .medical-record-dosage-fields,
   .medical-record-conditional-grid,
   .medical-record-time-grid {
     grid-template-columns: 1fr;
   }
 
+  .visit-status-options-grid-three,
+  .visit-status-options-grid-four,
+  .visit-autonomy-row,
+  .visit-status-skin-layout {
+    grid-template-columns: 1fr;
+  }
+
   .alert-list-table,
-  .notification-list-table {
+  .notification-list-table,
+  .peg-history-list-table {
     min-width: 760px;
   }
 }
@@ -867,6 +1113,15 @@
     flex-direction: column;
   }
 
+  .manage-section-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .manage-section-actions .manage-add-button {
+    width: 100%;
+  }
+
   .resource-list-item {
     flex-direction: column;
     align-items: flex-start;
@@ -883,7 +1138,14 @@
   .alert-list-table th,
   .alert-list-table td,
   .notification-list-table th,
-  .notification-list-table td {
+  .notification-list-table td,
+  .peg-history-list-table th,
+  .peg-history-list-table td {
     padding: 10px;
   }
+}
+
+.visit-status-panel-body-compact {
+  gap: 14px;
+  padding: 16px 18px 18px;
 }
