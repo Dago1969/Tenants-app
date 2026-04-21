@@ -80,16 +80,60 @@
               <h2>{{ translate('therapeuticPlan.manage.section.notifications') }}</h2>
               <p class="section-copy">{{ translate('therapeuticPlan.notification.section.description') }}</p>
             </div>
-            <button
-              type="button"
-              class="manage-add-button"
-              (click)="openNotificationModal()"
-            >
-              {{ translate('therapeuticPlan.notification.actions.add') }}
-            </button>
+            <div class="manage-section-actions">
+              <button
+                type="button"
+                class="btn btn-primary"
+                (click)="showNotificationFilters = !showNotificationFilters"
+              >
+                <span class="icon">☰</span> <span class="manage-btn-label">{{ translate('search.filters') }}</span>
+              </button>
+              <button
+                type="button"
+                class="manage-add-button"
+                (click)="openNotificationModal()"
+              >
+                {{ translate('therapeuticPlan.notification.actions.add') }}
+              </button>
+            </div>
           </div>
 
-          <div *ngIf="notifications.length > 0; else notificationsEmpty" class="notification-list-table-wrapper">
+          <div *ngIf="showNotificationFilters" class="contact-request-filters-panel">
+            <div class="alert-modal-grid">
+              <label class="alert-modal-field">
+                <span>{{ translate('therapeuticPlan.notification.filters.sentDateFrom') }}</span>
+                <input [(ngModel)]="notificationFilters.sentDateFrom" type="date" />
+              </label>
+
+              <label class="alert-modal-field">
+                <span>{{ translate('therapeuticPlan.notification.filters.sentDateTo') }}</span>
+                <input [(ngModel)]="notificationFilters.sentDateTo" type="date" />
+              </label>
+
+              <label class="alert-modal-field">
+                <span>{{ translate('therapeuticPlan.notification.field.confirmed') }}</span>
+                <select [(ngModel)]="notificationFilters.confirmed">
+                  <option value="">{{ translate('therapeuticPlan.notification.filters.allConfirmedStates') }}</option>
+                  <option value="yes">{{ translate('common.yes') }}</option>
+                  <option value="no">{{ translate('common.no') }}</option>
+                  <option value="na">{{ translate('common.notAvailable') }}</option>
+                </select>
+              </label>
+
+              <label class="alert-modal-field">
+                <span>{{ translate('therapeuticPlan.notification.field.subject') }}</span>
+                <input [(ngModel)]="notificationFilters.subject" type="text" />
+              </label>
+            </div>
+
+            <div class="therapeutic-plan-actions" *ngIf="hasActiveNotificationFilters">
+              <button type="button" class="therapeutic-plan-btn therapeutic-plan-btn-secondary" (click)="resetNotificationFilters()">
+                {{ translate('therapeuticPlan.notification.filters.reset') }}
+              </button>
+            </div>
+          </div>
+
+          <div *ngIf="filteredNotifications.length > 0; else notificationsEmpty" class="notification-list-table-wrapper">
             <table class="notification-list-table">
               <thead>
                 <tr>
@@ -105,7 +149,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let notification of notifications">
+                <tr *ngFor="let notification of filteredNotifications">
                   <td class="notification-list-date">{{ formatDate(notification.sentDate) }}</td>
                   <td>{{ notification.sentByOperator || translate('common.notAvailable') }}</td>
                   <td class="notification-list-subject">{{ notification.subject }}</td>
@@ -130,7 +174,7 @@
           </div>
 
           <ng-template #notificationsEmpty>
-            <p class="empty-state">{{ translate('therapeuticPlan.manage.empty.notifications') }}</p>
+            <p class="empty-state">{{ translate(hasActiveNotificationFilters ? 'therapeuticPlan.notification.empty.filtered' : 'therapeuticPlan.manage.empty.notifications') }}</p>
           </ng-template>
         </article>
       </div>
@@ -142,21 +186,74 @@
               <h2>{{ translate('therapeuticPlan.manage.section.alerts') }}</h2>
               <p class="section-copy">{{ translate('therapeuticPlan.alert.section.description') }}</p>
             </div>
-            <button
-              type="button"
-              class="manage-add-button"
-              (click)="openAlertModal()"
-              [disabled]="!canCreateAlert"
-            >
-              {{ translate('therapeuticPlan.alert.actions.add') }}
-            </button>
+            <div class="manage-section-actions">
+              <button
+                type="button"
+                class="btn btn-primary"
+                (click)="showAlertFilters = !showAlertFilters"
+              >
+                <span class="icon">☰</span> <span class="manage-btn-label">{{ translate('search.filters') }}</span>
+              </button>
+              <button
+                type="button"
+                class="manage-add-button"
+                (click)="openAlertModal()"
+                [disabled]="!canCreateAlert"
+              >
+                {{ translate('therapeuticPlan.alert.actions.add') }}
+              </button>
+            </div>
           </div>
 
           <p *ngIf="!canCreateAlert" class="inline-info-box">
             {{ translate('therapeuticPlan.alert.info.doctorRequired') }}
           </p>
 
-          <div *ngIf="alerts.length > 0; else alertsEmpty" class="alert-list-table-wrapper">
+          <div *ngIf="showAlertFilters" class="contact-request-filters-panel">
+            <div class="alert-modal-grid">
+              <label class="alert-modal-field">
+                <span>{{ translate('therapeuticPlan.alert.filters.dateFrom') }}</span>
+                <input [(ngModel)]="alertFilters.dateFrom" type="date" />
+              </label>
+
+              <label class="alert-modal-field">
+                <span>{{ translate('therapeuticPlan.alert.filters.dateTo') }}</span>
+                <input [(ngModel)]="alertFilters.dateTo" type="date" />
+              </label>
+
+              <label class="alert-modal-field">
+                <span>{{ translate('therapeuticPlan.alert.field.confirmationRequired') }}</span>
+                <select [(ngModel)]="alertFilters.confirmationRequired">
+                  <option value="">{{ translate('therapeuticPlan.alert.filters.allConfirmationRequiredStates') }}</option>
+                  <option value="true">{{ translate('common.yes') }}</option>
+                  <option value="false">{{ translate('common.no') }}</option>
+                </select>
+              </label>
+
+              <label class="alert-modal-field">
+                <span>{{ translate('therapeuticPlan.alert.field.confirmationSent') }}</span>
+                <select [(ngModel)]="alertFilters.confirmationSent">
+                  <option value="">{{ translate('therapeuticPlan.alert.filters.allConfirmationSentStates') }}</option>
+                  <option value="yes">{{ translate('common.yes') }}</option>
+                  <option value="no">{{ translate('common.no') }}</option>
+                  <option value="na">{{ translate('common.notAvailable') }}</option>
+                </select>
+              </label>
+
+              <label class="alert-modal-field">
+                <span>{{ translate('therapeuticPlan.alert.field.subject') }}</span>
+                <input [(ngModel)]="alertFilters.subject" type="text" />
+              </label>
+            </div>
+
+            <div class="therapeutic-plan-actions" *ngIf="hasActiveAlertFilters">
+              <button type="button" class="therapeutic-plan-btn therapeutic-plan-btn-secondary" (click)="resetAlertFilters()">
+                {{ translate('therapeuticPlan.alert.filters.reset') }}
+              </button>
+            </div>
+          </div>
+
+          <div *ngIf="filteredAlerts.length > 0; else alertsEmpty" class="alert-list-table-wrapper">
             <table class="alert-list-table">
               <thead>
                 <tr>
@@ -168,7 +265,7 @@
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let alert of alerts">
+                <tr *ngFor="let alert of filteredAlerts">
                   <td class="alert-list-date">{{ formatDate(alert.date) }}</td>
                   <td class="alert-list-subject">{{ alert.subject }}</td>
                   <td>{{ getConfirmationRequiredLabel(alert.confirmationRequired) }}</td>
@@ -189,7 +286,7 @@
           </div>
 
           <ng-template #alertsEmpty>
-            <p class="empty-state">{{ translate('therapeuticPlan.manage.empty.alerts') }}</p>
+            <p class="empty-state">{{ translate(hasActiveAlertFilters ? 'therapeuticPlan.alert.empty.filtered' : 'therapeuticPlan.manage.empty.alerts') }}</p>
           </ng-template>
         </article>
       </div>
@@ -906,14 +1003,14 @@
           <div class="manage-section-actions">
             <button
               type="button"
-              class="icon-btn manage-btn"
+              class="btn btn-primary"
               (click)="showActivityBookingFilters = !showActivityBookingFilters"
             >
               <span class="icon">☰</span> <span class="manage-btn-label">{{ translate('search.filters') }}</span>
             </button>
             <button
               type="button"
-              class="icon-btn manage-btn"
+              class="btn btn-primary"
               (click)="openActivityBookingModal()"
             >
               <span class="icon">＋</span> <span class="manage-btn-label">{{ translate('therapeuticPlan.activityBooking.actions.add') }}</span>
@@ -1002,14 +1099,14 @@
           <div class="manage-section-actions">
             <button
               type="button"
-              class="icon-btn manage-btn"
+              class="btn btn-primary"
               (click)="showContactRequestFilters = !showContactRequestFilters"
             >
               <span class="icon">☰</span> <span class="manage-btn-label">{{ translate('search.filters') }}</span>
             </button>
             <button
               type="button"
-              class="icon-btn manage-btn"
+              class="btn btn-primary"
               (click)="openContactRequestModal()"
             >
               <span class="icon">＋</span> <span class="manage-btn-label">{{ translate('therapeuticPlan.contactRequests.actions.add') }}</span>

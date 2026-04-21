@@ -191,6 +191,21 @@ interface TherapeuticPlanContactRequestFilters {
   outpatientClinic: string;
 }
 
+interface TherapeuticPlanNotificationFilters {
+  sentDateFrom: string;
+  sentDateTo: string;
+  confirmed: '' | 'yes' | 'no' | 'na';
+  subject: string;
+}
+
+interface TherapeuticPlanAlertFilters {
+  dateFrom: string;
+  dateTo: string;
+  confirmationRequired: '' | 'true' | 'false';
+  confirmationSent: '' | 'yes' | 'no' | 'na';
+  subject: string;
+}
+
 type TherapeuticPlanVisitType = 'outpatient' | 'remote' | 'home' | 'followUpCenter' | 'trainingCenter';
 
 type TherapeuticPlanVisitCaregiver = 'child' | 'spouse' | 'relative' | 'other';
@@ -744,12 +759,16 @@ export class TherapeuticPlanManageComponent implements OnInit {
   doctor: TherapeuticPlanDoctor | null = null;
   selectedEquipment: TherapeuticPlanEquipment[] = [];
   notifications: TherapeuticPlanNotification[] = [];
+  notificationFilters: TherapeuticPlanNotificationFilters = this.createEmptyNotificationFilters();
+  showNotificationFilters = false;
   notificationModalOpen = false;
   notificationSaving = false;
   notificationErrorMessage = '';
   editingNotificationId: number | null = null;
   notificationForm: TherapeuticPlanNotificationForm = this.createEmptyNotificationForm();
   alerts: TherapeuticPlanAlert[] = [];
+  alertFilters: TherapeuticPlanAlertFilters = this.createEmptyAlertFilters();
+  showAlertFilters = false;
   alertModalOpen = false;
   alertSaving = false;
   alertErrorMessage = '';
@@ -1104,6 +1123,76 @@ export class TherapeuticPlanManageComponent implements OnInit {
 
   get activityBookingResultCountLabel(): string {
     return `${this.activityBookingEntries.length} ${this.translate('therapeuticPlan.activityBooking.results')}`;
+  }
+
+  get filteredNotifications(): TherapeuticPlanNotification[] {
+    const subjectFilter = this.notificationFilters.subject.trim().toLowerCase();
+
+    return this.notifications.filter((notification) => {
+      if (this.notificationFilters.sentDateFrom && notification.sentDate < this.notificationFilters.sentDateFrom) {
+        return false;
+      }
+
+      if (this.notificationFilters.sentDateTo && notification.sentDate > this.notificationFilters.sentDateTo) {
+        return false;
+      }
+
+      if (this.notificationFilters.confirmed) {
+        const normalizedConfirmed = notification.confirmed == null ? 'na' : notification.confirmed ? 'yes' : 'no';
+        if (normalizedConfirmed !== this.notificationFilters.confirmed) {
+          return false;
+        }
+      }
+
+      if (subjectFilter && !notification.subject.toLowerCase().includes(subjectFilter)) {
+        return false;
+      }
+
+      return true;
+    });
+  }
+
+  get hasActiveNotificationFilters(): boolean {
+    return !!this.notificationFilters.sentDateFrom
+      || !!this.notificationFilters.sentDateTo
+      || !!this.notificationFilters.confirmed
+      || this.notificationFilters.subject.trim().length > 0;
+  }
+
+  get filteredAlerts(): TherapeuticPlanAlert[] {
+    const subjectFilter = this.alertFilters.subject.trim().toLowerCase();
+
+    return this.alerts.filter((alert) => {
+      if (this.alertFilters.dateFrom && alert.date < this.alertFilters.dateFrom) {
+        return false;
+      }
+
+      if (this.alertFilters.dateTo && alert.date > this.alertFilters.dateTo) {
+        return false;
+      }
+
+      if (this.alertFilters.confirmationRequired && String(alert.confirmationRequired) !== this.alertFilters.confirmationRequired) {
+        return false;
+      }
+
+      if (this.alertFilters.confirmationSent && alert.confirmationSent !== this.alertFilters.confirmationSent) {
+        return false;
+      }
+
+      if (subjectFilter && !alert.subject.toLowerCase().includes(subjectFilter)) {
+        return false;
+      }
+
+      return true;
+    });
+  }
+
+  get hasActiveAlertFilters(): boolean {
+    return !!this.alertFilters.dateFrom
+      || !!this.alertFilters.dateTo
+      || !!this.alertFilters.confirmationRequired
+      || !!this.alertFilters.confirmationSent
+      || this.alertFilters.subject.trim().length > 0;
   }
 
   get filteredContactRequestEntries(): TherapeuticPlanContactRequestRecord[] {
@@ -1844,6 +1933,14 @@ export class TherapeuticPlanManageComponent implements OnInit {
     this.contactRequestFilters = this.createEmptyContactRequestFilters();
   }
 
+  resetNotificationFilters(): void {
+    this.notificationFilters = this.createEmptyNotificationFilters();
+  }
+
+  resetAlertFilters(): void {
+    this.alertFilters = this.createEmptyAlertFilters();
+  }
+
   closeVisitModal(): void {
     this.visitModalOpen = false;
     this.visitModalStep = 1;
@@ -2188,6 +2285,25 @@ export class TherapeuticPlanManageComponent implements OnInit {
       requestType: '',
       status: '',
       outpatientClinic: ''
+    };
+  }
+
+  private createEmptyNotificationFilters(): TherapeuticPlanNotificationFilters {
+    return {
+      sentDateFrom: '',
+      sentDateTo: '',
+      confirmed: '',
+      subject: ''
+    };
+  }
+
+  private createEmptyAlertFilters(): TherapeuticPlanAlertFilters {
+    return {
+      dateFrom: '',
+      dateTo: '',
+      confirmationRequired: '',
+      confirmationSent: '',
+      subject: ''
     };
   }
 
