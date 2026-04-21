@@ -5,7 +5,11 @@ import com.qtm.tenants.alert.service.AlertService;
 import com.qtm.tenants.authorization.service.ControllerFunctionAuthorizationService;
 import com.qtm.tenants.notification.dto.NotificationDto;
 import com.qtm.tenants.notification.service.NotificationService;
+import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanActivityBookingDto;
+import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanContactRequestDto;
 import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanDto;
+import com.qtm.tenants.therapeuticplan.service.TherapeuticPlanActivityBookingService;
+import com.qtm.tenants.therapeuticplan.service.TherapeuticPlanContactRequestService;
 import com.qtm.tenants.therapeuticplan.service.TherapeuticPlanService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -37,9 +41,11 @@ public class TherapeuticPlanController {
 
     private static final String MODULE_CODE = "THERAPEUTIC_PLAN";
 
-    private final TherapeuticPlanService therapeuticPlanService;
+        private final TherapeuticPlanService therapeuticPlanService;
         private final AlertService alertService;
         private final NotificationService notificationService;
+        private final TherapeuticPlanActivityBookingService activityBookingService;
+                private final TherapeuticPlanContactRequestService contactRequestService;
     private final ControllerFunctionAuthorizationService controllerFunctionAuthorizationService;
 
     @GetMapping
@@ -81,6 +87,24 @@ public class TherapeuticPlanController {
                 return notificationService.findAll(id);
         }
 
+        @GetMapping("/{id}/activity-bookings")
+        public List<TherapeuticPlanActivityBookingDto> findActivityBookingsByTherapeuticPlan(
+                        @PathVariable Long id,
+                        @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
+        ) {
+                controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
+                return activityBookingService.findAll(id);
+        }
+
+        @GetMapping("/{id}/contact-requests")
+        public List<TherapeuticPlanContactRequestDto> findContactRequestsByTherapeuticPlan(
+                        @PathVariable Long id,
+                        @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
+        ) {
+                controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
+                return contactRequestService.findAll(id);
+        }
+
     @PostMapping("/{id}/alerts")
     public AlertDto createAlert(
             @PathVariable Long id,
@@ -95,19 +119,47 @@ public class TherapeuticPlanController {
         return alertService.create(mergeAlertPlanId(dto, id));
     }
 
-        @PostMapping("/{id}/notifications")
-        public NotificationDto createNotification(
+    @PostMapping("/{id}/notifications")
+    public NotificationDto createNotification(
+            @PathVariable Long id,
+            @RequestBody NotificationDto dto,
+            @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        controllerFunctionAuthorizationService.requireFullEditPermission(
+                selectedRole,
+                MODULE_CODE,
+                ControllerFunctionAuthorizationService.CREATE_FUNCTION_CODE
+        );
+        return notificationService.create(mergeNotificationPlanId(dto, id, resolveOperatorLabel(jwt)), resolveOperatorLabel(jwt));
+    }
+
+    @PostMapping("/{id}/activity-bookings")
+    public TherapeuticPlanActivityBookingDto createActivityBooking(
+            @PathVariable Long id,
+            @RequestBody TherapeuticPlanActivityBookingDto dto,
+            @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
+    ) {
+        controllerFunctionAuthorizationService.requireFullEditPermission(
+                selectedRole,
+                MODULE_CODE,
+                ControllerFunctionAuthorizationService.CREATE_FUNCTION_CODE
+        );
+        return activityBookingService.create(mergeActivityBookingPlanId(dto, id));
+    }
+
+        @PostMapping("/{id}/contact-requests")
+        public TherapeuticPlanContactRequestDto createContactRequest(
                         @PathVariable Long id,
-                        @RequestBody NotificationDto dto,
-                        @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole,
-                        @AuthenticationPrincipal Jwt jwt
+                        @RequestBody TherapeuticPlanContactRequestDto dto,
+                        @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
         ) {
                 controllerFunctionAuthorizationService.requireFullEditPermission(
                                 selectedRole,
                                 MODULE_CODE,
                                 ControllerFunctionAuthorizationService.CREATE_FUNCTION_CODE
                 );
-                return notificationService.create(mergeNotificationPlanId(dto, id, resolveOperatorLabel(jwt)), resolveOperatorLabel(jwt));
+                return contactRequestService.create(mergeContactRequestPlanId(dto, id));
         }
 
     @PutMapping("/{id}/alerts/{alertId}")
@@ -251,6 +303,39 @@ public class TherapeuticPlanController {
                                 .confirmationDate(dto.getConfirmationDate())
                                 .confirmedByDoctor(dto.getConfirmedByDoctor())
                                 .notes(dto.getNotes())
+                                .build();
+        }
+
+        private TherapeuticPlanActivityBookingDto mergeActivityBookingPlanId(TherapeuticPlanActivityBookingDto dto, Long therapeuticPlanId) {
+                if (dto == null) {
+                        return TherapeuticPlanActivityBookingDto.builder()
+                                        .therapeuticPlanId(therapeuticPlanId)
+                                        .build();
+                }
+
+                return TherapeuticPlanActivityBookingDto.builder()
+                                .id(dto.getId())
+                                .therapeuticPlanId(therapeuticPlanId)
+                                .bookingDate(dto.getBookingDate())
+                                .visitType(dto.getVisitType())
+                                .protocolPlanned(dto.getProtocolPlanned())
+                                .build();
+        }
+
+        private TherapeuticPlanContactRequestDto mergeContactRequestPlanId(TherapeuticPlanContactRequestDto dto, Long therapeuticPlanId) {
+                if (dto == null) {
+                        return TherapeuticPlanContactRequestDto.builder()
+                                        .therapeuticPlanId(therapeuticPlanId)
+                                        .build();
+                }
+
+                return TherapeuticPlanContactRequestDto.builder()
+                                .id(dto.getId())
+                                .therapeuticPlanId(therapeuticPlanId)
+                                .requestDate(dto.getRequestDate())
+                                .requestType(dto.getRequestType())
+                                .outpatientClinic(dto.getOutpatientClinic())
+                                .status(dto.getStatus())
                                 .build();
         }
 

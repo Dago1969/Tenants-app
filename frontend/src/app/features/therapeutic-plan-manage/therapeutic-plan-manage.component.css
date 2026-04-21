@@ -1,3 +1,107 @@
+/* Barra blu Stomia stile identico a Dosaggi, testo bianco */
+.visit-barra-stomia {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  background: #234a8c;
+  border-radius: 16px;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  padding-left: 0;
+  padding-right: 0;
+}
+.visit-barra-title {
+  color: #fff;
+  font-size: 1.35rem;
+  font-weight: 700;
+  text-align: center;
+  width: 100%;
+  letter-spacing: 0.5px;
+  padding: 0.5rem 0;
+}
+/* Sezione autonoma dosaggi infusionali nel riepilogo */
+.visit-dosaggi-group {
+  margin-top: 2.2rem;
+  margin-bottom: 0.5rem;
+}
+/* Barra rossa PEG/J sopra dosaggi infusionali */
+/* Barra rossa PEG/J stile wizard inserimento */
+.dosaggi-barra-pegj {
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  background: #b71c1c;
+  border-radius: 16px;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  padding-left: 0;
+  padding-right: 0;
+}
+.dosaggi-barra-title {
+  color: #fff;
+  font-size: 1.35rem;
+  font-weight: 700;
+  text-align: center;
+  width: 100%;
+  letter-spacing: 0.5px;
+  padding: 0.5rem 0;
+}
+/* Dosaggi infusionali stile modulo classico */
+.dosaggi-title {
+  font-size: 1.15rem;
+  font-weight: bold;
+  color: #b71c1c;
+  margin-bottom: 12px;
+  text-align: left;
+}
+.dosaggi-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 18px;
+}
+.dosaggi-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  border-bottom: 1px solid #bbb;
+  padding: 0.5em 0;
+}
+.dosaggi-row:last-child {
+  border-bottom: none;
+}
+.dosaggi-label {
+  flex: 1 1 60%;
+  font-size: 1rem;
+  color: #222;
+  font-weight: 500;
+  padding: 8px 0 8px 2px;
+}
+.dosaggi-value {
+  flex: 0 0 40%;
+  font-size: 1rem;
+  color: #222;
+  font-weight: 600;
+  text-align: right;
+  padding: 8px 2px 8px 0;
+}
+/* Forza colore nero su label e valori riepilogo visita */
+.visit-summary-static-field,
+.visit-summary-inline-item strong,
+.visit-status-panel-header,
+.visit-status-panel-body,
+.visit-status-choice span,
+.visit-autonomy-choice span,
+.alert-modal-value {
+  color: #222 !important;
+}
 /* Icon button pencil uniform style */
 .icon-btn {
   background: none;
@@ -586,6 +690,14 @@
   box-shadow: none;
 }
 
+.contact-request-filters-panel {
+  margin-bottom: 18px;
+  padding: 18px 18px 8px;
+  border-radius: 18px;
+  background: #f8fafc;
+  border: 1px solid #dce6f3;
+}
+
 .inline-info-box {
   margin: 0 0 18px;
   padding: 12px 16px;
@@ -793,7 +905,7 @@
   border: 1.5px solid #d3e5f8;
   border-radius: 16px;
   background: #f6fbff;
-  color: #1a3a5d;
+  color: #222;
   padding: 12px 16px;
   font-size: 0.96rem;
   line-height: 1.45;
@@ -806,6 +918,12 @@
 .visit-summary-three-column-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.visit-summary-panel-column {
+  display: flex;
+  flex-direction: column;
   gap: 18px;
 }
 
@@ -836,16 +954,12 @@
 }
 
 .visit-summary-inline-item span {
-  font-size: 0.82rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #5d7598;
-  font-weight: 800;
+  text-transform: none;
 }
 
 .visit-summary-inline-item strong {
   font-size: 0.95rem;
-  color: #17365f;
+  color: #222;
 }
 
 .visit-summary-inline-item-bordered {
@@ -875,9 +989,7 @@
 }
 
 .alert-modal-field span {
-  color: #175fcb;
-  font-size: 0.98rem;
-  font-weight: 500;
+  display: inline-block;
 }
 
 .alert-modal-field input,
@@ -975,9 +1087,6 @@
 .visit-status-group h3 {
   margin: 0;
   text-align: center;
-  color: #203c66;
-  font-size: 1.05rem;
-  font-weight: 800;
 }
 
 .visit-status-group-suboptions {
@@ -1117,6 +1226,7 @@
   color: #203c66;
   font-size: 0.96rem;
   font-weight: 700;
+  text-align: center;
 }
 
 .visit-autonomy-row-label-full {

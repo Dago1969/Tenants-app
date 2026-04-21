@@ -141,6 +141,56 @@ interface TherapeuticPlanMovementForm {
   broken: boolean;
 }
 
+interface TherapeuticPlanActivityBookingRecord {
+  id?: number;
+  therapeuticPlanId: number;
+  patientId: number | null;
+  patientName: string;
+  structureId: number | null;
+  structureName: string;
+  bookingDate: string;
+  visitType: TherapeuticPlanVisitType;
+  protocolPlanned: boolean;
+}
+
+interface TherapeuticPlanActivityBookingForm {
+  bookingDate: string;
+  visitType: TherapeuticPlanVisitType | '';
+  protocolPlanned: boolean;
+}
+
+type TherapeuticPlanContactRequestType = 'patientViaContactCenter' | 'scheduled';
+
+type TherapeuticPlanContactRequestStatus = 'received' | 'toBeBooked' | 'booked' | 'closed';
+
+interface TherapeuticPlanContactRequestRecord {
+  id?: number;
+  therapeuticPlanId: number;
+  patientId: number | null;
+  patientName: string;
+  requestDate: string;
+  requestType: TherapeuticPlanContactRequestType;
+  outpatientClinic: string;
+  structureId: number | null;
+  structureName: string;
+  status: TherapeuticPlanContactRequestStatus;
+}
+
+interface TherapeuticPlanContactRequestForm {
+  requestDate: string;
+  requestType: TherapeuticPlanContactRequestType | '';
+  outpatientClinic: string;
+  status: TherapeuticPlanContactRequestStatus | '';
+}
+
+interface TherapeuticPlanContactRequestFilters {
+  requestDateFrom: string;
+  requestDateTo: string;
+  requestType: TherapeuticPlanContactRequestType | '';
+  status: TherapeuticPlanContactRequestStatus | '';
+  outpatientClinic: string;
+}
+
 type TherapeuticPlanVisitType = 'outpatient' | 'remote' | 'home' | 'followUpCenter' | 'trainingCenter';
 
 type TherapeuticPlanVisitCaregiver = 'child' | 'spouse' | 'relative' | 'other';
@@ -495,6 +545,18 @@ export class TherapeuticPlanManageComponent implements OnInit {
     { value: 'trainingCenter', titleKey: 'therapeuticPlan.visits.type.trainingCenter' }
   ];
 
+  readonly contactRequestTypeOptions: TherapeuticPlanManageOption[] = [
+    { value: 'patientViaContactCenter', titleKey: 'therapeuticPlan.contactRequests.type.patientViaContactCenter' },
+    { value: 'scheduled', titleKey: 'therapeuticPlan.contactRequests.type.scheduled' }
+  ];
+
+  readonly contactRequestStatusOptions: TherapeuticPlanManageOption[] = [
+    { value: 'received', titleKey: 'therapeuticPlan.contactRequests.status.received' },
+    { value: 'toBeBooked', titleKey: 'therapeuticPlan.contactRequests.status.toBeBooked' },
+    { value: 'booked', titleKey: 'therapeuticPlan.contactRequests.status.booked' },
+    { value: 'closed', titleKey: 'therapeuticPlan.contactRequests.status.closed' }
+  ];
+
   readonly visitCaregiverOptions: TherapeuticPlanManageOption[] = [
     { value: 'child', titleKey: 'therapeuticPlan.visits.caregiver.child' },
     { value: 'spouse', titleKey: 'therapeuticPlan.visits.caregiver.spouse' },
@@ -701,6 +763,20 @@ export class TherapeuticPlanManageComponent implements OnInit {
   movementModalOpen = false;
   movementErrorMessage = '';
   movementForm: TherapeuticPlanMovementForm = this.createEmptyMovementForm();
+  activityBookingEntries: TherapeuticPlanActivityBookingRecord[] = [];
+  activityBookingModalOpen = false;
+  activityBookingModalStep = 1;
+  activityBookingSaving = false;
+  activityBookingErrorMessage = '';
+  activityBookingForm: TherapeuticPlanActivityBookingForm = this.createEmptyActivityBookingForm();
+  contactRequestEntries: TherapeuticPlanContactRequestRecord[] = [];
+  contactRequestFilters: TherapeuticPlanContactRequestFilters = this.createEmptyContactRequestFilters();
+  showContactRequestFilters = true;
+  contactRequestModalOpen = false;
+  contactRequestModalStep = 1;
+  contactRequestSaving = false;
+  contactRequestErrorMessage = '';
+  contactRequestForm: TherapeuticPlanContactRequestForm = this.createEmptyContactRequestForm();
   visitEntries: TherapeuticPlanVisitRecord[] = this.createMockVisitEntries();
   visitModalOpen = false;
   visitModalStep = 1;
@@ -740,6 +816,51 @@ export class TherapeuticPlanManageComponent implements OnInit {
 
       this.visitEntries = this.sortVisitEntries(mapped);
     });
+  }
+
+  private fetchActivityBookings(planId: number): void {
+    const url = `${environment.apiBaseUrl}/therapeutic-plans/${planId}/activity-bookings`;
+    this.http.get<any[]>(url).pipe(catchError(() => of([]))).subscribe((list) => {
+      const mapped = (list || []).map((entry) => this.mapActivityBookingDtoToRecord(entry));
+      this.activityBookingEntries = this.sortActivityBookingEntries(mapped);
+    });
+  }
+
+  private fetchContactRequests(planId: number): void {
+    const url = `${environment.apiBaseUrl}/therapeutic-plans/${planId}/contact-requests`;
+    this.http.get<any[]>(url).pipe(catchError(() => of([]))).subscribe((list) => {
+      const mapped = (list || []).map((entry) => this.mapContactRequestDtoToRecord(entry));
+      this.contactRequestEntries = this.sortContactRequestEntries(mapped);
+    });
+  }
+
+  private mapActivityBookingDtoToRecord(entry: any): TherapeuticPlanActivityBookingRecord {
+    return {
+      id: typeof entry?.id === 'number' ? entry.id : undefined,
+      therapeuticPlanId: typeof entry?.therapeuticPlanId === 'number' ? entry.therapeuticPlanId : (this.planId ?? 0),
+      patientId: typeof entry?.patientId === 'number' ? entry.patientId : this.plan?.patientId ?? null,
+      patientName: this.getFirstNonBlankString(entry?.patientName, this.patientDisplayName),
+      structureId: typeof entry?.structureId === 'number' ? entry.structureId : this.plan?.structureId ?? null,
+      structureName: this.getFirstNonBlankString(entry?.structureName, this.structureLabel),
+      bookingDate: this.getFirstNonBlankString(entry?.bookingDate),
+      visitType: (this.getFirstNonBlankString(entry?.visitType, 'outpatient') as TherapeuticPlanVisitType),
+      protocolPlanned: entry?.protocolPlanned !== false
+    };
+  }
+
+  private mapContactRequestDtoToRecord(entry: any): TherapeuticPlanContactRequestRecord {
+    return {
+      id: typeof entry?.id === 'number' ? entry.id : undefined,
+      therapeuticPlanId: typeof entry?.therapeuticPlanId === 'number' ? entry.therapeuticPlanId : (this.planId ?? 0),
+      patientId: typeof entry?.patientId === 'number' ? entry.patientId : this.plan?.patientId ?? null,
+      patientName: this.getFirstNonBlankString(entry?.patientName, this.patientDisplayName),
+      requestDate: this.getFirstNonBlankString(entry?.requestDate),
+      requestType: (this.getFirstNonBlankString(entry?.requestType, 'patientViaContactCenter') as TherapeuticPlanContactRequestType),
+      outpatientClinic: this.getFirstNonBlankString(entry?.outpatientClinic),
+      structureId: typeof entry?.structureId === 'number' ? entry.structureId : this.plan?.structureId ?? null,
+      structureName: this.getFirstNonBlankString(entry?.structureName, this.structureLabel),
+      status: (this.getFirstNonBlankString(entry?.status, 'received') as TherapeuticPlanContactRequestStatus)
+    };
   }
 
   private mapVisitDtoToRecord(visitDto: any, index: number): TherapeuticPlanVisitRecord {
@@ -938,6 +1059,110 @@ export class TherapeuticPlanManageComponent implements OnInit {
 
   get movementResultCountLabel(): string {
     return `${this.movementEntries.length} ${this.translate('therapeuticPlan.movements.results')}`;
+  }
+
+  get activityBookingResultCountLabel(): string {
+    return `${this.activityBookingEntries.length} ${this.translate('therapeuticPlan.activityBooking.results')}`;
+  }
+
+  get filteredContactRequestEntries(): TherapeuticPlanContactRequestRecord[] {
+    const outpatientClinicFilter = this.contactRequestFilters.outpatientClinic.trim().toLowerCase();
+
+    return this.contactRequestEntries.filter((entry) => {
+      if (this.contactRequestFilters.requestDateFrom && entry.requestDate < this.contactRequestFilters.requestDateFrom) {
+        return false;
+      }
+
+      if (this.contactRequestFilters.requestDateTo && entry.requestDate > this.contactRequestFilters.requestDateTo) {
+        return false;
+      }
+
+      if (this.contactRequestFilters.requestType && entry.requestType !== this.contactRequestFilters.requestType) {
+        return false;
+      }
+
+      if (this.contactRequestFilters.status && entry.status !== this.contactRequestFilters.status) {
+        return false;
+      }
+
+      if (outpatientClinicFilter && !entry.outpatientClinic.toLowerCase().includes(outpatientClinicFilter)) {
+        return false;
+      }
+
+      return true;
+    });
+  }
+
+  get hasActiveContactRequestFilters(): boolean {
+    return !!this.contactRequestFilters.requestDateFrom
+      || !!this.contactRequestFilters.requestDateTo
+      || !!this.contactRequestFilters.requestType
+      || !!this.contactRequestFilters.status
+      || this.contactRequestFilters.outpatientClinic.trim().length > 0;
+  }
+
+  get contactRequestResultCountLabel(): string {
+    return `${this.filteredContactRequestEntries.length} ${this.translate('therapeuticPlan.contactRequests.results')}`;
+  }
+
+  get contactRequestModalTitleKey(): MessageKey {
+    return 'therapeuticPlan.contactRequests.modal.title';
+  }
+
+  get contactRequestStepTitleKey(): MessageKey {
+    switch (this.contactRequestModalStep) {
+      case 2:
+        return 'therapeuticPlan.contactRequests.modal.step2.title';
+      case 3:
+        return 'therapeuticPlan.contactRequests.modal.step3.title';
+      default:
+        return 'therapeuticPlan.contactRequests.modal.step1.title';
+    }
+  }
+
+  get contactRequestStepDescriptionKey(): MessageKey {
+    switch (this.contactRequestModalStep) {
+      case 2:
+        return 'therapeuticPlan.contactRequests.modal.step2.description';
+      case 3:
+        return 'therapeuticPlan.contactRequests.modal.step3.description';
+      default:
+        return 'therapeuticPlan.contactRequests.modal.step1.description';
+    }
+  }
+
+  get isLastContactRequestModalStep(): boolean {
+    return this.contactRequestModalStep === 3;
+  }
+
+  get activityBookingModalTitleKey(): MessageKey {
+    return 'therapeuticPlan.activityBooking.modal.title';
+  }
+
+  get activityBookingStepTitleKey(): MessageKey {
+    switch (this.activityBookingModalStep) {
+      case 2:
+        return 'therapeuticPlan.activityBooking.modal.step2.title';
+      case 3:
+        return 'therapeuticPlan.activityBooking.modal.step3.title';
+      default:
+        return 'therapeuticPlan.activityBooking.modal.step1.title';
+    }
+  }
+
+  get activityBookingStepDescriptionKey(): MessageKey {
+    switch (this.activityBookingModalStep) {
+      case 2:
+        return 'therapeuticPlan.activityBooking.modal.step2.description';
+      case 3:
+        return 'therapeuticPlan.activityBooking.modal.step3.description';
+      default:
+        return 'therapeuticPlan.activityBooking.modal.step1.description';
+    }
+  }
+
+  get isLastActivityBookingModalStep(): boolean {
+    return this.activityBookingModalStep === 3;
   }
 
   get visitResultCountLabel(): string {
@@ -1381,6 +1606,203 @@ export class TherapeuticPlanManageComponent implements OnInit {
     this.visitModalOpen = true;
   }
 
+  openActivityBookingModal(): void {
+    if (!this.planId) {
+      return;
+    }
+
+    this.activityBookingErrorMessage = '';
+    this.activityBookingModalStep = 1;
+    this.activityBookingForm = this.createEmptyActivityBookingForm();
+    this.activityBookingModalOpen = true;
+  }
+
+  openContactRequestModal(): void {
+    if (!this.planId) {
+      return;
+    }
+
+    this.contactRequestErrorMessage = '';
+    this.contactRequestModalStep = 1;
+    this.contactRequestForm = this.createEmptyContactRequestForm();
+    this.contactRequestModalOpen = true;
+  }
+
+  closeActivityBookingModal(): void {
+    if (this.activityBookingSaving) {
+      return;
+    }
+
+    this.activityBookingModalOpen = false;
+    this.activityBookingModalStep = 1;
+    this.activityBookingErrorMessage = '';
+    this.activityBookingForm = this.createEmptyActivityBookingForm();
+  }
+
+  closeContactRequestModal(): void {
+    if (this.contactRequestSaving) {
+      return;
+    }
+
+    this.contactRequestModalOpen = false;
+    this.contactRequestModalStep = 1;
+    this.contactRequestErrorMessage = '';
+    this.contactRequestForm = this.createEmptyContactRequestForm();
+  }
+
+  goToNextActivityBookingModalStep(): void {
+    this.activityBookingErrorMessage = '';
+
+    if (this.activityBookingModalStep === 1 && !this.activityBookingForm.visitType) {
+      this.activityBookingErrorMessage = this.translate('therapeuticPlan.activityBooking.validation.visitTypeRequired');
+      return;
+    }
+
+    if (this.activityBookingModalStep === 2 && !this.activityBookingForm.bookingDate.trim()) {
+      this.activityBookingErrorMessage = this.translate('therapeuticPlan.activityBooking.validation.bookingDateRequired');
+      return;
+    }
+
+    this.activityBookingModalStep = Math.min(3, this.activityBookingModalStep + 1);
+  }
+
+  goToNextContactRequestModalStep(): void {
+    this.contactRequestErrorMessage = '';
+
+    if (this.contactRequestModalStep === 1) {
+      if (!this.contactRequestForm.requestType) {
+        this.contactRequestErrorMessage = this.translate('therapeuticPlan.contactRequests.validation.requestTypeRequired');
+        return;
+      }
+
+      if (!this.contactRequestForm.status) {
+        this.contactRequestErrorMessage = this.translate('therapeuticPlan.contactRequests.validation.statusRequired');
+        return;
+      }
+    }
+
+    if (this.contactRequestModalStep === 2) {
+      if (!this.contactRequestForm.requestDate.trim()) {
+        this.contactRequestErrorMessage = this.translate('therapeuticPlan.contactRequests.validation.requestDateRequired');
+        return;
+      }
+
+      if (!this.contactRequestForm.outpatientClinic.trim()) {
+        this.contactRequestErrorMessage = this.translate('therapeuticPlan.contactRequests.validation.outpatientClinicRequired');
+        return;
+      }
+    }
+
+    this.contactRequestModalStep = Math.min(3, this.contactRequestModalStep + 1);
+  }
+
+  goToPreviousActivityBookingModalStep(): void {
+    this.activityBookingErrorMessage = '';
+    this.activityBookingModalStep = Math.max(1, this.activityBookingModalStep - 1);
+  }
+
+  goToPreviousContactRequestModalStep(): void {
+    this.contactRequestErrorMessage = '';
+    this.contactRequestModalStep = Math.max(1, this.contactRequestModalStep - 1);
+  }
+
+  saveActivityBooking(): void {
+    if (!this.planId || this.activityBookingSaving) {
+      return;
+    }
+
+    this.activityBookingErrorMessage = '';
+    if (!this.activityBookingForm.visitType) {
+      this.activityBookingErrorMessage = this.translate('therapeuticPlan.activityBooking.validation.visitTypeRequired');
+      return;
+    }
+    if (!this.activityBookingForm.bookingDate.trim()) {
+      this.activityBookingErrorMessage = this.translate('therapeuticPlan.activityBooking.validation.bookingDateRequired');
+      return;
+    }
+
+    this.activityBookingSaving = true;
+    const payload = {
+      therapeuticPlanId: this.planId,
+      bookingDate: this.activityBookingForm.bookingDate,
+      visitType: this.activityBookingForm.visitType,
+      protocolPlanned: this.activityBookingForm.protocolPlanned
+    };
+
+    this.http.post<any>(`${environment.apiBaseUrl}/therapeutic-plans/${this.planId}/activity-bookings`, payload).subscribe({
+      next: () => {
+        this.activityBookingSaving = false;
+        this.fetchActivityBookings(this.planId!);
+        this.closeActivityBookingModal();
+      },
+      error: (error: HttpErrorResponse) => {
+        this.activityBookingSaving = false;
+        this.activityBookingErrorMessage = this.resolveErrorMessage(error);
+      }
+    });
+  }
+
+  saveContactRequest(): void {
+    if (!this.planId || this.contactRequestSaving) {
+      return;
+    }
+
+    this.contactRequestErrorMessage = '';
+    if (!this.contactRequestForm.requestType) {
+      this.contactRequestErrorMessage = this.translate('therapeuticPlan.contactRequests.validation.requestTypeRequired');
+      return;
+    }
+    if (!this.contactRequestForm.status) {
+      this.contactRequestErrorMessage = this.translate('therapeuticPlan.contactRequests.validation.statusRequired');
+      return;
+    }
+    if (!this.contactRequestForm.requestDate.trim()) {
+      this.contactRequestErrorMessage = this.translate('therapeuticPlan.contactRequests.validation.requestDateRequired');
+      return;
+    }
+    if (!this.contactRequestForm.outpatientClinic.trim()) {
+      this.contactRequestErrorMessage = this.translate('therapeuticPlan.contactRequests.validation.outpatientClinicRequired');
+      return;
+    }
+
+    this.contactRequestSaving = true;
+    const payload = {
+      therapeuticPlanId: this.planId,
+      requestDate: this.contactRequestForm.requestDate,
+      requestType: this.contactRequestForm.requestType,
+      outpatientClinic: this.contactRequestForm.outpatientClinic.trim(),
+      status: this.contactRequestForm.status
+    };
+
+    this.http.post<any>(`${environment.apiBaseUrl}/therapeutic-plans/${this.planId}/contact-requests`, payload).subscribe({
+      next: () => {
+        this.contactRequestSaving = false;
+        this.fetchContactRequests(this.planId!);
+        this.closeContactRequestModal();
+      },
+      error: (error: HttpErrorResponse) => {
+        this.contactRequestSaving = false;
+        this.contactRequestErrorMessage = this.resolveErrorMessage(error);
+      }
+    });
+  }
+
+  getActivityBookingProtocolLabel(value: boolean): string {
+    return this.translate(value ? 'common.yes' : 'common.no');
+  }
+
+  getContactRequestTypeLabel(value: TherapeuticPlanContactRequestType): string {
+    return this.translate(`therapeuticPlan.contactRequests.type.${value}`);
+  }
+
+  getContactRequestStatusLabel(value: TherapeuticPlanContactRequestStatus): string {
+    return this.translate(`therapeuticPlan.contactRequests.status.${value}`);
+  }
+
+  resetContactRequestFilters(): void {
+    this.contactRequestFilters = this.createEmptyContactRequestFilters();
+  }
+
   closeVisitModal(): void {
     this.visitModalOpen = false;
     this.visitModalStep = 1;
@@ -1655,6 +2077,8 @@ export class TherapeuticPlanManageComponent implements OnInit {
         this.loading = false;
         // load visits from backend
         this.fetchVisits(planId);
+        this.fetchActivityBookings(planId);
+        this.fetchContactRequests(planId);
       },
       error: (error: HttpErrorResponse) => {
         this.loading = false;
@@ -1696,6 +2120,33 @@ export class TherapeuticPlanManageComponent implements OnInit {
       confirmationDate: '',
       confirmedByDoctor: '',
       notes: ''
+    };
+  }
+
+  private createEmptyActivityBookingForm(): TherapeuticPlanActivityBookingForm {
+    return {
+      bookingDate: this.getTodayDateInputValue(),
+      visitType: '',
+      protocolPlanned: true
+    };
+  }
+
+  private createEmptyContactRequestForm(): TherapeuticPlanContactRequestForm {
+    return {
+      requestDate: this.getTodayDateInputValue(),
+      requestType: '',
+      outpatientClinic: '',
+      status: 'received'
+    };
+  }
+
+  private createEmptyContactRequestFilters(): TherapeuticPlanContactRequestFilters {
+    return {
+      requestDateFrom: '',
+      requestDateTo: '',
+      requestType: '',
+      status: '',
+      outpatientClinic: ''
     };
   }
 
@@ -2843,6 +3294,22 @@ export class TherapeuticPlanManageComponent implements OnInit {
       const leftDate = left.movementDate ?? '';
       const rightDate = right.movementDate ?? '';
       return rightDate.localeCompare(leftDate) || right.id - left.id;
+    });
+  }
+
+  private sortActivityBookingEntries(entries: TherapeuticPlanActivityBookingRecord[]): TherapeuticPlanActivityBookingRecord[] {
+    return [...entries].sort((left, right) => {
+      const leftDate = left.bookingDate ?? '';
+      const rightDate = right.bookingDate ?? '';
+      return rightDate.localeCompare(leftDate) || (right.id ?? 0) - (left.id ?? 0);
+    });
+  }
+
+  private sortContactRequestEntries(entries: TherapeuticPlanContactRequestRecord[]): TherapeuticPlanContactRequestRecord[] {
+    return [...entries].sort((left, right) => {
+      const leftDate = left.requestDate ?? '';
+      const rightDate = right.requestDate ?? '';
+      return rightDate.localeCompare(leftDate) || (right.id ?? 0) - (left.id ?? 0);
     });
   }
 

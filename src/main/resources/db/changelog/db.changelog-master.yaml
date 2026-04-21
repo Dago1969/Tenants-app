@@ -1097,3 +1097,77 @@ databaseChangeLog:
 
               ALTER TABLE therapeutic_plan_visit
                 MODIFY COLUMN visit_date DATE NOT NULL;
+  - changeSet:
+      id: 2026-04-21-create-therapeutic-plan-activity-booking-table
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            tableExists:
+              tableName: therapeutic_plan_activity_booking
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              CREATE TABLE IF NOT EXISTS therapeutic_plan_activity_booking (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                therapeutic_plan_id BIGINT NOT NULL,
+                patient_id BIGINT NOT NULL,
+                structure_id BIGINT NOT NULL,
+                booking_date DATE NOT NULL,
+                visit_type VARCHAR(64) NOT NULL,
+                protocol_planned BIT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id)
+              );
+
+              CREATE INDEX idx_tp_activity_booking_plan_id ON therapeutic_plan_activity_booking (therapeutic_plan_id);
+              CREATE INDEX idx_tp_activity_booking_date ON therapeutic_plan_activity_booking (booking_date);
+              CREATE INDEX idx_tp_activity_booking_type ON therapeutic_plan_activity_booking (visit_type);
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              DROP TABLE IF EXISTS therapeutic_plan_activity_booking;
+  - changeSet:
+      id: 2026-04-21-create-therapeutic-plan-contact-request-table
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            tableExists:
+              tableName: therapeutic_plan_contact_request
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              CREATE TABLE IF NOT EXISTS therapeutic_plan_contact_request (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                therapeutic_plan_id BIGINT NOT NULL,
+                patient_id BIGINT NOT NULL,
+                request_date DATE NOT NULL,
+                request_type VARCHAR(64) NOT NULL,
+                outpatient_clinic VARCHAR(255) NOT NULL,
+                structure_id BIGINT NOT NULL,
+                status VARCHAR(64) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id)
+              );
+
+              CREATE INDEX idx_tp_contact_request_plan_id ON therapeutic_plan_contact_request (therapeutic_plan_id);
+              CREATE INDEX idx_tp_contact_request_date ON therapeutic_plan_contact_request (request_date);
+              CREATE INDEX idx_tp_contact_request_type ON therapeutic_plan_contact_request (request_type);
+              CREATE INDEX idx_tp_contact_request_status ON therapeutic_plan_contact_request (status);
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              DROP TABLE IF EXISTS therapeutic_plan_contact_request;
