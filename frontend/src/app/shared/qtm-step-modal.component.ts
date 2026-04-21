@@ -13,7 +13,7 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
   standalone: true,
   template: `
     <div class="qtm-modal-backdrop">
-      <div class="qtm-modal">
+      <div class="qtm-modal" [style.width]="modalWidth || null" [style.max-width]="modalMaxWidth || null">
         <div class="qtm-modal-header">
           <div class="qtm-modal-header-top">
             <span class="qtm-modal-title">{{ title }}</span>
@@ -48,6 +48,8 @@ export class QtmStepModalComponent {
   @Input() totalSteps = 1;
   @Input() stepTitle = '';
   @Input() stepDescription = '';
+  @Input() modalWidth = '';
+  @Input() modalMaxWidth = '';
   @Output() close = new EventEmitter<void>();
 
   get progressPercent(): number {

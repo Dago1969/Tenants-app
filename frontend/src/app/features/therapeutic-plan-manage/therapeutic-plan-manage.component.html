@@ -829,7 +829,6 @@
           <table class="peg-history-list-table movement-list-table">
             <thead>
               <tr>
-                <th>{{ translate('therapeuticPlan.visits.field.date') }}</th>
                 <th>{{ translate('therapeuticPlan.visits.field.duodopaTherapyStartDate') }}</th>
                 <th>{{ translate('therapeuticPlan.visits.field.caregiver') }}</th>
                 <th>{{ translate('therapeuticPlan.visits.field.clinicalCenter') }}</th>
@@ -837,12 +836,11 @@
                 <th>{{ translate('therapeuticPlan.visits.field.gastroenterologist') }}</th>
                 <th>{{ translate('therapeuticPlan.visits.field.type') }}</th>
                 <th>{{ translate('therapeuticPlan.visits.field.priority') }}</th>
-                <th>{{ translate('crud.actions.print') }}</th>
+                <th class="visit-print-column">{{ translate('crud.actions.print') }}</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let entry of visitEntries">
-                <td class="peg-history-list-date">{{ formatDate(entry.date) }}</td>
                 <td class="peg-history-list-date">{{ formatDate(entry.duodopaTherapyStartDate) }}</td>
                 <td>{{ getVisitCaregiverLabel(entry.caregiver) }}</td>
                 <td>{{ entry.clinicalCenter }}</td>
@@ -850,13 +848,29 @@
                 <td>{{ entry.gastroenterologist }}</td>
                 <td>{{ getVisitTypeLabel(entry.type) }}</td>
                 <td>{{ getVisitPriorityLabel(entry.priority) }}</td>
-                <td>
+                <td class="visit-actions-cell visit-actions-inline-cell">
+                  <button
+                    type="button"
+                    class="therapeutic-plan-btn therapeutic-plan-btn-secondary therapeutic-plan-btn-small"
+                    (click)="openVisitSummaryModal(entry)"
+                  >
+                    {{ translate('therapeuticPlan.visits.actions.summary') }}
+                  </button>
                   <button
                     type="button"
                     class="therapeutic-plan-btn therapeutic-plan-btn-secondary therapeutic-plan-btn-small"
                     (click)="printVisitDocument(entry)"
+                    [attr.aria-label]="translate('crud.actions.print')"
+                    [attr.title]="translate('crud.actions.print')"
                   >
-                    {{ translate('crud.actions.print') }}
+                    <span class="visit-print-icon" aria-hidden="true">
+                      <svg viewBox="0 0 24 24" focusable="false">
+                        <path d="M7 8V3h10v5"></path>
+                        <path d="M6 17H4V9h16v8h-2"></path>
+                        <path d="M7 14h10v7H7z"></path>
+                        <path d="M17 11h.01"></path>
+                      </svg>
+                    </span>
                   </button>
                 </td>
               </tr>
@@ -954,6 +968,396 @@
     </button>
     <button type="button" class="therapeutic-plan-btn therapeutic-plan-btn-primary" [disabled]="alertSaving" (click)="saveAlert()">
       {{ translate(alertSubmitLabelKey) }}
+    </button>
+  </div>
+</qtm-step-modal>
+
+<qtm-step-modal
+  *ngIf="visitSummaryModalOpen"
+  [title]="translate('therapeuticPlan.visits.preview.modal.title')"
+  [step]="visitSummaryModalStep"
+  [totalSteps]="3"
+  [stepTitle]="translate(visitSummaryModalStepTitleKey)"
+  [stepDescription]="translate(visitSummaryModalStepDescriptionKey)"
+  [modalWidth]="'80vw'"
+  [modalMaxWidth]="'80vw'"
+  (close)="closeVisitSummaryModal()"
+>
+  <div class="visit-summary-modal-shell" *ngIf="visitSummarySelectedVisit as visit">
+    <section *ngIf="visitSummaryModalStep === 1" class="alert-modal-grid visit-summary-overview-grid">
+      <label class="alert-modal-field alert-modal-field-full">
+        <span>{{ translate('therapeuticPlan.visits.field.patient') }}</span>
+        <div class="visit-summary-static-field">{{ getVisitPatientFullName(visit) }}</div>
+      </label>
+
+      <label class="alert-modal-field">
+        <span>{{ translate('therapeuticPlan.visits.field.duodopaTherapyStartDate') }}</span>
+        <div class="visit-summary-static-field">{{ formatDate(visit.duodopaTherapyStartDate) }}</div>
+      </label>
+
+      <label class="alert-modal-field">
+        <span>{{ translate('therapeuticPlan.visits.field.date') }}</span>
+        <div class="visit-summary-static-field">{{ formatDate(visit.date) }}</div>
+      </label>
+
+      <label class="alert-modal-field">
+        <span>{{ translate('therapeuticPlan.visits.field.caregiver') }}</span>
+        <div class="visit-summary-static-field">{{ getVisitCaregiverLabel(visit.caregiver) }}</div>
+      </label>
+
+      <label class="alert-modal-field">
+        <span>{{ translate('therapeuticPlan.visits.field.type') }}</span>
+        <div class="visit-summary-static-field">{{ getVisitTypeLabel(visit.type) }}</div>
+      </label>
+
+      <label class="alert-modal-field">
+        <span>{{ translate('therapeuticPlan.visits.field.priority') }}</span>
+        <div class="visit-summary-static-field">{{ getVisitPriorityLabel(visit.priority) }}</div>
+      </label>
+
+      <label class="alert-modal-field">
+        <span>{{ translate('therapeuticPlan.visits.field.clinicalCenter') }}</span>
+        <div class="visit-summary-static-field">{{ visit.clinicalCenter || translate('common.notAvailable') }}</div>
+      </label>
+
+      <label class="alert-modal-field">
+        <span>{{ translate('therapeuticPlan.visits.field.neurologist') }}</span>
+        <div class="visit-summary-static-field">{{ visit.neurologist || translate('common.notAvailable') }}</div>
+      </label>
+
+      <label class="alert-modal-field alert-modal-field-full">
+        <span>{{ translate('therapeuticPlan.visits.field.gastroenterologist') }}</span>
+        <div class="visit-summary-static-field">{{ visit.gastroenterologist || translate('common.notAvailable') }}</div>
+      </label>
+    </section>
+
+    <section *ngIf="visitSummaryModalStep === 2" class="visit-summary-three-column-grid">
+      <article class="visit-status-panel visit-status-panel-blue">
+        <header class="visit-status-panel-header">{{ translate('therapeuticPlan.visits.status.stomia.title') }}</header>
+        <div class="visit-status-panel-body">
+          <section class="visit-status-group">
+            <h3>{{ translate('therapeuticPlan.visits.status.stomia.bumperMobilization') }}</h3>
+            <div class="visit-status-options-grid visit-status-options-grid-three">
+              <label *ngFor="let option of visitStomiaBumperOptions" class="visit-status-choice visit-status-choice-readonly">
+                <input type="radio" [checked]="visit.stomiaStatus.bumperMobilization === option.value" disabled />
+                <span>{{ translate(option.titleKey) }}</span>
+              </label>
+            </div>
+          </section>
+
+          <section class="visit-status-group">
+            <h3>{{ translate('therapeuticPlan.visits.status.stomia.secretionLoss') }}</h3>
+            <div class="visit-status-options-grid visit-status-options-grid-three">
+              <label *ngFor="let option of visitStomiaSecretionAmountOptions" class="visit-status-choice visit-status-choice-readonly">
+                <input type="radio" [checked]="visit.stomiaStatus.secretionAmount === option.value" disabled />
+                <span>{{ translate(option.titleKey) }}</span>
+              </label>
+            </div>
+            <div class="visit-status-options-grid visit-status-options-grid-three visit-status-group-suboptions">
+              <label *ngFor="let option of visitStomiaSecretionTypeOptions" class="visit-status-choice visit-status-choice-readonly">
+                <input type="radio" [checked]="visit.stomiaStatus.secretionType === option.value" disabled />
+                <span>{{ translate(option.titleKey) }}</span>
+              </label>
+            </div>
+          </section>
+
+          <section class="visit-status-group">
+            <h3>{{ translate('therapeuticPlan.visits.status.stomia.skinVisualization') }}</h3>
+            <div class="visit-status-skin-layout">
+              <div class="visit-status-options-stack">
+                <label *ngFor="let option of visitStomiaSkinOptions" class="visit-status-choice visit-status-choice-readonly">
+                  <input type="radio" [checked]="visit.stomiaStatus.skinVisualization === option.value" disabled />
+                  <span>{{ translate(option.titleKey) }}</span>
+                </label>
+              </div>
+              <div class="visit-status-skin-figure visit-status-skin-figure-readonly" aria-hidden="true">
+                <span
+                  *ngIf="visit.stomiaStatus.skinPointX !== null && visit.stomiaStatus.skinPointY !== null"
+                  class="visit-status-skin-point"
+                  [style.left.%]="visit.stomiaStatus.skinPointX"
+                  [style.top.%]="visit.stomiaStatus.skinPointY"
+                ></span>
+              </div>
+            </div>
+          </section>
+
+          <section class="visit-status-group">
+            <h3>{{ translate('therapeuticPlan.visits.status.stomia.infusionalDosages') }}</h3>
+            <div class="visit-summary-inline-list">
+              <div class="visit-summary-inline-item">
+                <span>{{ translate('therapeuticPlan.visits.status.stomia.continuousInfusion') }}</span>
+                <strong>{{ visit.stomiaStatus.continuousInfusion || translate('common.notAvailable') }}</strong>
+              </div>
+              <div class="visit-summary-inline-item">
+                <span>{{ translate('therapeuticPlan.visits.status.stomia.extraDose') }}</span>
+                <strong>{{ visit.stomiaStatus.extraDose || translate('common.notAvailable') }}</strong>
+              </div>
+              <div class="visit-summary-inline-item">
+                <span>{{ translate('therapeuticPlan.visits.status.stomia.morningDose') }}</span>
+                <strong>{{ visit.stomiaStatus.morningDose || translate('common.notAvailable') }}</strong>
+              </div>
+              <div class="visit-summary-inline-item">
+                <span>{{ translate('therapeuticPlan.visits.status.stomia.infusion24Hours') }}</span>
+                <strong>{{ translate(visit.stomiaStatus.infusion24Hours ? 'common.yes' : 'common.no') }}</strong>
+              </div>
+            </div>
+          </section>
+        </div>
+      </article>
+
+      <article class="visit-status-panel visit-status-panel-red">
+        <header class="visit-status-panel-header">{{ translate('therapeuticPlan.visits.status.pegj.title') }}</header>
+        <div class="visit-status-panel-body">
+          <section class="visit-status-group">
+            <h3>{{ translate('therapeuticPlan.visits.status.pegj.usageDuration') }}</h3>
+            <div class="visit-status-options-grid visit-status-options-grid-three">
+              <label *ngFor="let option of visitPegUsageOptions" class="visit-status-choice visit-status-choice-readonly">
+                <input type="radio" [checked]="visit.pegjStatus.usageDuration === option.value" disabled />
+                <span>{{ translate(option.titleKey) }}</span>
+              </label>
+            </div>
+          </section>
+
+          <label class="alert-modal-field">
+            <span>{{ translate('therapeuticPlan.visits.status.pegj.replacementDate') }}</span>
+            <div class="visit-summary-static-field">{{ formatDate(visit.pegjStatus.replacementDate) }}</div>
+          </label>
+
+          <section class="visit-status-group">
+            <h3>{{ translate('therapeuticPlan.visits.status.pegj.typeLabel') }}</h3>
+            <div class="visit-status-options-grid visit-status-options-grid-four">
+              <label *ngFor="let option of visitPegTypeOptions" class="visit-status-choice visit-status-choice-readonly">
+                <input type="radio" [checked]="visit.pegjStatus.pegType === option.value" disabled />
+                <span>{{ translate(option.titleKey) }}</span>
+              </label>
+            </div>
+            <div *ngIf="visit.pegjStatus.pegType === 'other'" class="visit-summary-inline-item visit-summary-inline-item-bordered">
+              <span>{{ translate('therapeuticPlan.visits.status.pegj.type.otherDetail') }}</span>
+              <strong>{{ visit.pegjStatus.pegTypeOtherDetail || translate('common.notAvailable') }}</strong>
+            </div>
+          </section>
+
+          <section class="visit-status-group">
+            <h3>{{ translate('therapeuticPlan.visits.status.pegj.mobilization') }}</h3>
+            <div class="visit-status-options-grid">
+              <label class="visit-status-choice visit-status-choice-readonly">
+                <input type="radio" [checked]="visit.pegjStatus.mobilization" disabled />
+                <span>{{ translate('common.yes') }}</span>
+              </label>
+              <label class="visit-status-choice visit-status-choice-readonly">
+                <input type="radio" [checked]="!visit.pegjStatus.mobilization" disabled />
+                <span>{{ translate('common.no') }}</span>
+              </label>
+            </div>
+          </section>
+
+          <section class="visit-status-group">
+            <h3>{{ translate('therapeuticPlan.visits.status.pegj.integrity') }}</h3>
+            <div class="visit-status-options-grid visit-status-options-grid-three">
+              <label *ngFor="let option of visitPegIntegrityOptions" class="visit-status-choice visit-status-choice-readonly">
+                <input type="radio" [checked]="visit.pegjStatus.integrity === option.value" disabled />
+                <span>{{ translate(option.titleKey) }}</span>
+              </label>
+            </div>
+          </section>
+
+          <section class="visit-status-group">
+            <h3>{{ translate('therapeuticPlan.visits.status.pegj.colorLabel') }}</h3>
+            <div class="visit-status-options-grid">
+              <label *ngFor="let option of visitPegColorOptions" class="visit-status-choice visit-status-choice-readonly">
+                <input type="radio" [checked]="visit.pegjStatus.color === option.value" disabled />
+                <span>{{ translate(option.titleKey) }}</span>
+              </label>
+            </div>
+          </section>
+
+          <section class="visit-status-group">
+            <h3>{{ translate('therapeuticPlan.visits.status.pegj.pegPatency') }}</h3>
+            <div class="visit-status-options-grid visit-status-options-grid-three">
+              <label *ngFor="let option of visitPegPatencyOptions" class="visit-status-choice visit-status-choice-readonly">
+                <input type="radio" [checked]="visit.pegjStatus.pegPatency === option.value" disabled />
+                <span>{{ translate(option.titleKey) }}</span>
+              </label>
+            </div>
+          </section>
+
+          <section class="visit-status-group">
+            <h3>{{ translate('therapeuticPlan.visits.status.pegj.pejPatency') }}</h3>
+            <div class="visit-status-options-grid visit-status-options-grid-three">
+              <label *ngFor="let option of visitPegPatencyOptions" class="visit-status-choice visit-status-choice-readonly">
+                <input type="radio" [checked]="visit.pegjStatus.pejPatency === option.value" disabled />
+                <span>{{ translate(option.titleKey) }}</span>
+              </label>
+            </div>
+          </section>
+
+          <section class="visit-status-group">
+            <h3>{{ translate('therapeuticPlan.visits.status.pegj.connectorStatus') }}</h3>
+            <div class="visit-status-options-grid visit-status-options-grid-three">
+              <label *ngFor="let option of visitPegConnectorOptions" class="visit-status-choice visit-status-choice-readonly">
+                <input type="radio" [checked]="visit.pegjStatus.connectorStatus === option.value" disabled />
+                <span>{{ translate(option.titleKey) }}</span>
+              </label>
+            </div>
+          </section>
+
+          <section class="visit-status-group">
+            <h3>{{ translate('therapeuticPlan.visits.status.pegj.externalBumperStatus') }}</h3>
+            <div class="visit-status-options-grid visit-status-options-grid-three">
+              <label *ngFor="let option of visitPegExternalBumperOptions" class="visit-status-choice visit-status-choice-readonly">
+                <input type="radio" [checked]="visit.pegjStatus.externalBumperStatus === option.value" disabled />
+                <span>{{ translate(option.titleKey) }}</span>
+              </label>
+            </div>
+          </section>
+        </div>
+      </article>
+
+      <article class="visit-status-panel visit-status-panel-blue">
+        <header class="visit-status-panel-header">{{ translate('therapeuticPlan.visits.status.autonomy.title') }}</header>
+        <div class="visit-status-panel-body">
+          <div class="visit-autonomy-grid">
+            <div *ngFor="let item of visitAutonomyItems" class="visit-autonomy-row visit-autonomy-row-readonly">
+              <span class="visit-autonomy-row-label visit-autonomy-row-label-full">{{ translate(item.titleKey) }}</span>
+              <div class="visit-autonomy-options-row">
+                <label *ngFor="let option of visitAutonomyLevelOptions" class="visit-autonomy-choice visit-status-choice-readonly">
+                  <input type="radio" [checked]="visit.autonomyStatus[item.key] === option.value" disabled />
+                  <span>{{ translate(option.titleKey) }}</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section *ngIf="visitSummaryModalStep === 3" class="visit-summary-three-column-grid">
+      <article class="visit-status-panel visit-status-panel-blue">
+        <header class="visit-status-panel-header">{{ translate('therapeuticPlan.visits.status.stomia.title') }}</header>
+        <div class="visit-status-panel-body visit-status-panel-body-compact">
+          <section class="visit-status-group">
+            <h3>{{ translate('therapeuticPlan.visits.status.stomia.bumperMobilization') }}</h3>
+            <div class="visit-status-options-stack">
+              <label *ngFor="let option of visitStomiaBumperActionOptions" class="visit-status-choice visit-status-choice-readonly">
+                <input type="radio" [checked]="hasVisitActionSelection(visit.stomiaActions.bumperMobilization, option.value)" disabled />
+                <span>{{ translate(option.titleKey) }}</span>
+              </label>
+            </div>
+          </section>
+
+          <section class="visit-status-group">
+            <h3>{{ translate('therapeuticPlan.visits.status.stomia.secretionLoss') }}</h3>
+            <div class="visit-status-options-stack">
+              <label *ngFor="let option of visitStomiaCareActionOptions" class="visit-status-choice visit-status-choice-readonly">
+                <input type="radio" [checked]="hasVisitActionSelection(visit.stomiaActions.secretionLoss, option.value)" disabled />
+                <span>{{ translate(option.titleKey) }}</span>
+              </label>
+            </div>
+          </section>
+
+          <section class="visit-status-group">
+            <h3>{{ translate('therapeuticPlan.visits.status.stomia.skinVisualization') }}</h3>
+            <div class="visit-status-options-stack">
+              <label *ngFor="let option of visitStomiaCareActionOptions" class="visit-status-choice visit-status-choice-readonly">
+                <input type="radio" [checked]="hasVisitActionSelection(visit.stomiaActions.skinVisualization, option.value)" disabled />
+                <span>{{ translate(option.titleKey) }}</span>
+              </label>
+            </div>
+          </section>
+        </div>
+      </article>
+
+      <article class="visit-status-panel visit-status-panel-red">
+        <header class="visit-status-panel-header">{{ translate('therapeuticPlan.visits.status.pegj.title') }}</header>
+        <div class="visit-status-panel-body visit-status-panel-body-compact">
+          <section class="visit-status-group">
+            <h3>{{ translate('therapeuticPlan.visits.status.pegj.mobilization') }}</h3>
+            <div class="visit-status-options-stack">
+              <label *ngFor="let option of visitActionNoneOrContactOptions" class="visit-status-choice visit-status-choice-readonly">
+                <input type="radio" [checked]="hasVisitActionSelection(visit.pegjActions.mobilization, option.value)" disabled />
+                <span>{{ translate(option.titleKey) }}</span>
+              </label>
+            </div>
+          </section>
+
+          <section class="visit-status-group">
+            <h3>{{ translate('therapeuticPlan.visits.status.pegj.integrity') }}</h3>
+            <div class="visit-status-options-stack">
+              <label *ngFor="let option of visitActionNoneOrContactOptions" class="visit-status-choice visit-status-choice-readonly">
+                <input type="radio" [checked]="hasVisitActionSelection(visit.pegjActions.integrity, option.value)" disabled />
+                <span>{{ translate(option.titleKey) }}</span>
+              </label>
+            </div>
+          </section>
+
+          <section class="visit-status-group">
+            <h3>{{ translate('therapeuticPlan.visits.status.pegj.colorLabel') }}</h3>
+            <div class="visit-status-options-stack">
+              <label *ngFor="let option of visitActionNoneOrContactOptions" class="visit-status-choice visit-status-choice-readonly">
+                <input type="radio" [checked]="hasVisitActionSelection(visit.pegjActions.color, option.value)" disabled />
+                <span>{{ translate(option.titleKey) }}</span>
+              </label>
+            </div>
+          </section>
+
+          <section class="visit-status-group">
+            <h3>{{ translate('therapeuticPlan.visits.status.pegj.pegPatency') }} / {{ translate('therapeuticPlan.visits.status.pegj.pejPatency') }}</h3>
+            <div class="visit-status-options-stack">
+              <label *ngFor="let option of visitPegjPatencyActionOptions" class="visit-status-choice visit-status-choice-readonly">
+                <input type="radio" [checked]="hasVisitActionSelection(visit.pegjActions.patency, option.value)" disabled />
+                <span>{{ translate(option.titleKey) }}</span>
+              </label>
+            </div>
+          </section>
+
+          <section class="visit-status-group">
+            <h3>{{ translate('therapeuticPlan.visits.status.pegj.connectorStatus') }}</h3>
+            <div class="visit-status-options-stack">
+              <label *ngFor="let option of visitPegjConnectorActionOptions" class="visit-status-choice visit-status-choice-readonly">
+                <input type="radio" [checked]="hasVisitActionSelection(visit.pegjActions.connectors, option.value)" disabled />
+                <span>{{ translate(option.titleKey) }}</span>
+              </label>
+            </div>
+          </section>
+
+          <section class="visit-status-group">
+            <h3>{{ translate('therapeuticPlan.visits.status.pegj.externalBumperStatus') }}</h3>
+            <div class="visit-status-options-stack">
+              <label *ngFor="let option of visitPegjBumperActionOptions" class="visit-status-choice visit-status-choice-readonly">
+                <input type="radio" [checked]="hasVisitActionSelection(visit.pegjActions.externalBumper, option.value)" disabled />
+                <span>{{ translate(option.titleKey) }}</span>
+              </label>
+            </div>
+          </section>
+        </div>
+      </article>
+
+      <article class="visit-status-panel visit-status-panel-blue">
+        <header class="visit-status-panel-header">{{ translate('therapeuticPlan.visits.status.autonomy.title') }}</header>
+        <div class="visit-status-panel-body visit-status-panel-body-compact">
+          <section class="visit-status-group">
+            <h3>{{ translate('therapeuticPlan.visits.actionsTaken.autonomy.training') }}</h3>
+            <div class="visit-status-options-stack">
+              <label *ngFor="let item of visitAutonomyActionItems" class="visit-status-choice visit-status-choice-readonly">
+                <input type="checkbox" [checked]="visit.autonomyActions[item.key]" disabled />
+                <span>{{ translate(item.titleKey) }}</span>
+              </label>
+            </div>
+          </section>
+        </div>
+      </article>
+    </section>
+  </div>
+
+  <div modal-actions class="therapeutic-plan-actions">
+    <button type="button" class="therapeutic-plan-btn therapeutic-plan-btn-secondary" (click)="closeVisitSummaryModal()">
+      {{ translate('crud.actions.cancel') }}
+    </button>
+    <button *ngIf="visitSummaryModalStep > 1" type="button" class="therapeutic-plan-btn therapeutic-plan-btn-secondary" (click)="goToPreviousVisitSummaryModalStep()">
+      {{ translate('crud.actions.back') }}
+    </button>
+    <button *ngIf="!isLastVisitSummaryModalStep" type="button" class="therapeutic-plan-btn therapeutic-plan-btn-primary" (click)="goToNextVisitSummaryModalStep()">
+      {{ translate('crud.actions.next') }}
     </button>
   </div>
 </qtm-step-modal>
@@ -1165,61 +1569,23 @@
     </div>
 
     <section *ngIf="visitModalStep === 1" class="alert-modal-grid">
-      <label class="alert-modal-field">
-        <span>{{ translate('therapeuticPlan.visits.field.patientFirstName') }}</span>
-        <input [(ngModel)]="visitForm.patientFirstName" type="text" maxlength="255" readonly />
-      </label>
-
-      <label class="alert-modal-field">
-        <span>{{ translate('therapeuticPlan.visits.field.patientLastName') }}</span>
-        <input [(ngModel)]="visitForm.patientLastName" type="text" maxlength="255" readonly />
-      </label>
-
-      <label class="alert-modal-field">
-        <span>{{ translate('therapeuticPlan.visits.field.date') }}</span>
-        <input [(ngModel)]="visitForm.date" type="date" />
-      </label>
-
-      <label class="alert-modal-field">
-        <span>{{ translate('therapeuticPlan.visits.field.duodopaTherapyStartDate') }}</span>
-        <input [(ngModel)]="visitForm.duodopaTherapyStartDate" type="date" />
-      </label>
-
-      <label class="alert-modal-field">
-        <span>{{ translate('therapeuticPlan.visits.field.caregiver') }}</span>
-        <select [(ngModel)]="visitForm.caregiver">
-          <option *ngFor="let option of visitCaregiverOptions" [value]="option.value">{{ translate(option.titleKey) }}</option>
-        </select>
-      </label>
-
-      <label class="alert-modal-field alert-modal-field-full">
-        <span>{{ translate('therapeuticPlan.visits.field.clinicalCenter') }}</span>
-        <input [(ngModel)]="visitForm.clinicalCenter" type="text" maxlength="255" />
-      </label>
-
-      <label class="alert-modal-field">
-        <span>{{ translate('therapeuticPlan.visits.field.neurologist') }}</span>
-        <input [(ngModel)]="visitForm.neurologist" type="text" maxlength="255" />
-      </label>
-
-      <label class="alert-modal-field">
-        <span>{{ translate('therapeuticPlan.visits.field.gastroenterologist') }}</span>
-        <input [(ngModel)]="visitForm.gastroenterologist" type="text" maxlength="255" />
-      </label>
-
-      <label class="alert-modal-field">
-        <span>{{ translate('therapeuticPlan.visits.field.type') }}</span>
-        <select [(ngModel)]="visitForm.type">
-          <option *ngFor="let option of visitTypeOptions" [value]="option.value">{{ translate(option.titleKey) }}</option>
-        </select>
-      </label>
-
-      <label class="alert-modal-field">
-        <span>{{ translate('therapeuticPlan.visits.field.priority') }}</span>
-        <select [(ngModel)]="visitForm.priority">
-          <option *ngFor="let option of visitPriorityOptions" [value]="option.value">{{ translate(option.titleKey) }}</option>
-        </select>
-      </label>
+      <ng-container *ngFor="let key of visitVisibleSchemaFields">
+        <label class="alert-modal-field" [ngClass]="{'alert-modal-field-full': visitSchemaProperties[key.key]?.fullWidth}">
+          <span>{{ getVisitSchemaFieldLabel(key.key) }}</span>
+          <input *ngIf="!visitSchemaProperties[key.key].enum && (!visitSchemaProperties[key.key].type || visitSchemaProperties[key.key].type === 'string' || visitSchemaProperties[key.key].type === 'number')"
+                 [ngModel]="visitFormDynamic[key.key]"
+                 (ngModelChange)="onVisitDynamicFieldChange(key.key, $event)"
+               [type]="getVisitSchemaInputType(key.key)"
+                 [attr.maxlength]="visitSchemaProperties[key.key].maxLength || 255"
+               [attr.step]="visitSchemaProperties[key.key].format === 'date-time' ? 60 : null"
+          />
+          <select *ngIf="visitSchemaProperties[key.key].enum"
+                  [ngModel]="visitFormDynamic[key.key]"
+                  (ngModelChange)="onVisitDynamicFieldChange(key.key, $event)">
+            <option *ngFor="let opt of visitSchemaProperties[key.key].enum" [value]="opt">{{ getVisitSchemaOptionLabel(key.key, opt) }}</option>
+          </select>
+        </label>
+      </ng-container>
     </section>
 
     <section *ngIf="visitModalStep === 2" class="visit-status-step-shell">

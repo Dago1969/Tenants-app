@@ -5,10 +5,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
- * DTO per la visita associata al piano terapeutico. La chiave è composta da therapeuticPlanId + date.
+ * DTO per la visita associata al piano terapeutico. La chiave è composta da therapeuticPlanId + data/ora visita.
  */
 @Data
 @NoArgsConstructor
@@ -16,8 +16,7 @@ import java.time.LocalDate;
 @Builder
 public class TherapeuticPlanVisitDto {
     private Long therapeuticPlanId;
-    private LocalDate date;
-    private String startTherapy;
+    private LocalDateTime date;
     private String duodopa;
     private String caregiver;
     private String clinicalCenter;

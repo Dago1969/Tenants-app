@@ -1,19 +1,19 @@
 package com.qtm.tenants.therapeuticplan.entity;
 
 import java.io.Serializable;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
- * IdClass per la chiave composta della visita: therapeuticPlanId + date
+ * IdClass per la chiave composta della visita: therapeuticPlanId + data/ora visita
  */
 public class TherapeuticPlanVisitId implements Serializable {
     private Long therapeuticPlanId;
-    private LocalDate date;
+     private LocalDateTime date;
 
     public TherapeuticPlanVisitId() {
     }
 
-    public TherapeuticPlanVisitId(Long therapeuticPlanId, LocalDate date) {
+    public TherapeuticPlanVisitId(Long therapeuticPlanId, LocalDateTime date) {
         this.therapeuticPlanId = therapeuticPlanId;
         this.date = date;
     }
@@ -26,11 +26,11 @@ public class TherapeuticPlanVisitId implements Serializable {
         this.therapeuticPlanId = therapeuticPlanId;
     }
 
-    public LocalDate getDate() {
+    public LocalDateTime getDate() {
         return date;
     }
 
-    public void setDate(LocalDate date) {
+    public void setDate(LocalDateTime date) {
         this.date = date;
     }
 

@@ -1032,3 +1032,68 @@ databaseChangeLog:
             sql: |
               ALTER TABLE therapeutic_plan_visit
                 DROP COLUMN IF EXISTS json_visit;
+  - changeSet:
+      id: 2026-04-21-visit-start-therapy-datetime
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: therapeutic_plan_visit
+        - columnExists:
+            tableName: therapeutic_plan_visit
+            columnName: start_therapy
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE therapeutic_plan_visit
+                MODIFY COLUMN start_therapy DATETIME NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE therapeutic_plan_visit
+                MODIFY COLUMN start_therapy VARCHAR(64) NULL;
+  - changeSet:
+      id: 2026-04-21-visit-date-datetime-drop-start-therapy
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: therapeutic_plan_visit
+        - columnExists:
+            tableName: therapeutic_plan_visit
+            columnName: visit_date
+        - columnExists:
+            tableName: therapeutic_plan_visit
+            columnName: start_therapy
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE therapeutic_plan_visit
+                MODIFY COLUMN visit_date DATETIME NOT NULL;
+
+              UPDATE therapeutic_plan_visit
+                 SET visit_date = COALESCE(start_therapy, visit_date);
+
+              ALTER TABLE therapeutic_plan_visit
+                DROP COLUMN start_therapy;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE therapeutic_plan_visit
+                ADD COLUMN start_therapy DATETIME NULL AFTER visit_date;
+
+              UPDATE therapeutic_plan_visit
+                 SET start_therapy = visit_date;
+
+              ALTER TABLE therapeutic_plan_visit
+                MODIFY COLUMN visit_date DATE NOT NULL;

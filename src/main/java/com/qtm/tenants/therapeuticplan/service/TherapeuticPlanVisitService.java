@@ -6,12 +6,13 @@ import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanVisitId;
 import com.qtm.tenants.therapeuticplan.mapper.TherapeuticPlanVisitMapper;
 import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanEntity;
 import com.qtm.tenants.therapeuticplan.repository.TherapeuticPlanRepository;
+import com.qtm.tenants.structure.entity.StructureEntity;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.qtm.tenants.therapeuticplan.repository.TherapeuticPlanVisitRepository;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -33,21 +34,26 @@ public class TherapeuticPlanVisitService {
 
     public TherapeuticPlanVisitDto save(TherapeuticPlanVisitDto dto) {
         TherapeuticPlanVisitEntity entity = mapper.toEntity(dto);
+        TherapeuticPlanEntity planEntity = dto.getTherapeuticPlanId() != null
+                ? therapeuticPlanRepository.findById(dto.getTherapeuticPlanId()).orElse(null)
+                : null;
+
+        if ((entity.getClinicalCenter() == null || entity.getClinicalCenter().isBlank()) && planEntity != null) {
+            entity.setClinicalCenter(getPlanStructureName(planEntity));
+        }
 
         // Merge template JSON from therapeutic_plan.json_visit (if present) with DTO values
         try {
             ObjectNode baseNode = objectMapper.createObjectNode();
-            if (dto.getTherapeuticPlanId() != null) {
-                therapeuticPlanRepository.findById(dto.getTherapeuticPlanId()).ifPresent((TherapeuticPlanEntity plan) -> {
-                    String planJson = plan.getJsonVisit();
-                    if (planJson != null && !planJson.isBlank()) {
-                        try {
-                            ObjectNode parsed = (ObjectNode) objectMapper.readTree(planJson);
-                            baseNode.setAll(parsed);
-                        } catch (Exception ignored) {
-                        }
+            if (planEntity != null) {
+                String planJson = planEntity.getJsonVisit();
+                if (planJson != null && !planJson.isBlank()) {
+                    try {
+                        ObjectNode parsed = (ObjectNode) objectMapper.readTree(planJson);
+                        baseNode.setAll(parsed);
+                    } catch (Exception ignored) {
                     }
-                });
+                }
             }
 
             // convert DTO to ObjectNode and merge/overwrite baseNode
@@ -77,7 +83,16 @@ public class TherapeuticPlanVisitService {
         return mapper.toDto(saved);
     }
 
-    public Optional<TherapeuticPlanVisitDto> findById(Long therapeuticPlanId, LocalDate date) {
+    private String getPlanStructureName(TherapeuticPlanEntity planEntity) {
+        StructureEntity structure = planEntity.getStructure();
+        if (structure == null || structure.getName() == null || structure.getName().isBlank()) {
+            return null;
+        }
+
+        return structure.getName().trim();
+    }
+
+    public Optional<TherapeuticPlanVisitDto> findById(Long therapeuticPlanId, LocalDateTime date) {
         TherapeuticPlanVisitId id = new TherapeuticPlanVisitId(therapeuticPlanId, date);
         return repository.findById(id).map(mapper::toDto);
     }
@@ -88,7 +103,7 @@ public class TherapeuticPlanVisitService {
                 .collect(Collectors.toList());
     }
 
-    public void delete(Long therapeuticPlanId, LocalDate date) {
+    public void delete(Long therapeuticPlanId, LocalDateTime date) {
         TherapeuticPlanVisitId id = new TherapeuticPlanVisitId(therapeuticPlanId, date);
         repository.deleteById(id);
     }

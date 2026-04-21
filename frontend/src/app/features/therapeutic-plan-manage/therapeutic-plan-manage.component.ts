@@ -1,3 +1,4 @@
+// ...import e interfacce...
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
@@ -394,6 +395,12 @@ interface TherapeuticPlanMedicalRecordContentForm {
   styleUrl: './therapeutic-plan-manage.component.css'
 })
 export class TherapeuticPlanManageComponent implements OnInit {
+  // Proprietà dinamiche estratte dal JSON schema della visita
+  visitSchemaProperties: { [key: string]: any } = {};
+  visitSchemaRequired: string[] = [];
+  visitVisibleSchemaFields: Array<{ key: string; value: any }> = [];
+  // Valori dinamici del form visita
+  visitFormDynamic: { [key: string]: any } = {};
     /**
      * Calcola l'età del paziente dalla data di nascita (se disponibile), altrimenti mostra "Non disponibile".
      */
@@ -699,6 +706,9 @@ export class TherapeuticPlanManageComponent implements OnInit {
   visitModalStep = 1;
   visitErrorMessage = '';
   visitForm: TherapeuticPlanVisitForm = this.createEmptyVisitForm();
+  visitSummaryModalOpen = false;
+  visitSummaryModalStep = 1;
+  visitSummarySelectedVisit: TherapeuticPlanVisitRecord | null = null;
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -741,7 +751,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
       id: index + 1,
       patientFirstName: this.getFirstNonBlankString(parsedVisit?.['patientFirstName'], visitDto?.patientFirstName, this.patient?.firstName),
       patientLastName: this.getFirstNonBlankString(parsedVisit?.['patientLastName'], visitDto?.patientLastName, this.patient?.lastName),
-      duodopaTherapyStartDate: this.getFirstNonBlankString(parsedVisit?.['duodopaTherapyStartDate'], visitDto?.startTherapy),
+      duodopaTherapyStartDate: this.getFirstNonBlankString(parsedVisit?.['duodopaTherapyStartDate'], visitDto?.date),
       caregiver: (this.getFirstNonBlankString(parsedVisit?.['caregiver'], visitDto?.caregiver, 'other') as TherapeuticPlanVisitCaregiver),
       clinicalCenter: this.getFirstNonBlankString(parsedVisit?.['clinicalCenter'], visitDto?.clinicalCenter),
       neurologist: this.getFirstNonBlankString(parsedVisit?.['neurologist'], visitDto?.neurologist),
@@ -1014,10 +1024,13 @@ export class TherapeuticPlanManageComponent implements OnInit {
       return value;
     }
 
+    const includeTime = value.includes('T') || /\d{2}:\d{2}/.test(value);
+
     return new Intl.DateTimeFormat(undefined, {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric'
+      year: 'numeric',
+      ...(includeTime ? { hour: '2-digit', minute: '2-digit' } : {})
     }).format(parsedDate);
   }
 
@@ -1339,7 +1352,32 @@ export class TherapeuticPlanManageComponent implements OnInit {
   openVisitModal(): void {
     this.visitErrorMessage = '';
     this.visitModalStep = 1;
-    this.visitForm = this.createEmptyVisitForm();
+    // Recupera il JSON schema dal piano terapeutico corrente (esempio: this.plan?.jsonVisit)
+    let schema: any = null;
+    try {
+      if (this.plan && typeof this.plan.jsonVisit === 'string' && this.plan.jsonVisit.trim().length > 0) {
+        const parsed = JSON.parse(this.plan.jsonVisit);
+        if (parsed && typeof parsed === 'object' && parsed.properties) {
+          schema = parsed;
+        }
+      }
+    } catch {
+      schema = null;
+    }
+    this.visitSchemaProperties = schema && schema.properties ? schema.properties : {};
+    this.visitVisibleSchemaFields = Object.entries(this.visitSchemaProperties)
+      .filter(([, property]) => this.isVisitSchemaEditableProperty(property))
+      .map(([key, value]) => ({ key, value }));
+    this.visitSchemaRequired = Array.isArray(schema?.required)
+      ? schema.required.filter((entry: unknown): entry is string => typeof entry === 'string' && entry.trim().length > 0)
+          .filter((entry: string) => this.visitVisibleSchemaFields.some((field) => field.key === entry))
+      : [];
+    // Inizializza i valori del form dinamico
+    this.visitFormDynamic = {};
+    for (const key of this.visitVisibleSchemaFields.map((field) => field.key)) {
+      this.visitFormDynamic[key] = this.getInitialVisitSchemaFieldValue(key);
+    }
+    this.syncVisitFormFromDynamic();
     this.visitModalOpen = true;
   }
 
@@ -1366,6 +1404,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
 
   saveVisit(): void {
     this.visitErrorMessage = '';
+    this.syncVisitFormFromDynamic();
     if (!this.validateVisitBaseStep()) {
       return;
     }
@@ -1374,8 +1413,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
 
     const payload = {
       therapeuticPlanId: this.planId,
-      date: this.visitForm.date,
-      startTherapy: this.visitForm.duodopaTherapyStartDate,
+      date: this.visitForm.duodopaTherapyStartDate,
       // duodopa not present in visitForm; leave null so backend template controls it
       duodopa: null,
       caregiver: this.visitForm.caregiver,
@@ -1461,6 +1499,65 @@ export class TherapeuticPlanManageComponent implements OnInit {
       iframeWindow.focus();
       iframeWindow.print();
     }, 300);
+  }
+
+  openVisitSummaryModal(visit: TherapeuticPlanVisitRecord): void {
+    this.visitSummarySelectedVisit = visit;
+    this.visitSummaryModalStep = 1;
+    this.visitSummaryModalOpen = true;
+  }
+
+  closeVisitSummaryModal(): void {
+    this.visitSummaryModalOpen = false;
+    this.visitSummaryModalStep = 1;
+    this.visitSummarySelectedVisit = null;
+  }
+
+  goToNextVisitSummaryModalStep(): void {
+    this.visitSummaryModalStep = Math.min(3, this.visitSummaryModalStep + 1);
+  }
+
+  goToPreviousVisitSummaryModalStep(): void {
+    this.visitSummaryModalStep = Math.max(1, this.visitSummaryModalStep - 1);
+  }
+
+  get visitSummaryModalStepTitleKey(): MessageKey {
+    switch (this.visitSummaryModalStep) {
+      case 2:
+        return 'therapeuticPlan.visits.preview.step2.title';
+      case 3:
+        return 'therapeuticPlan.visits.preview.step3.title';
+      default:
+        return 'therapeuticPlan.visits.preview.step1.title';
+    }
+  }
+
+  get visitSummaryModalStepDescriptionKey(): MessageKey {
+    switch (this.visitSummaryModalStep) {
+      case 2:
+        return 'therapeuticPlan.visits.preview.step2.description';
+      case 3:
+        return 'therapeuticPlan.visits.preview.step3.description';
+      default:
+        return 'therapeuticPlan.visits.preview.step1.description';
+    }
+  }
+
+  get isLastVisitSummaryModalStep(): boolean {
+    return this.visitSummaryModalStep === 3;
+  }
+
+  getOptionLabel(options: TherapeuticPlanManageOption[], value: string | null | undefined): string {
+    if (!value) {
+      return this.translate('common.notAvailable');
+    }
+
+    const option = options.find((entry) => entry.value === value);
+    return option ? this.translate(option.titleKey) : value;
+  }
+
+  hasVisitActionSelection(selectedValue: string, optionValue: string): boolean {
+    return selectedValue === optionValue;
   }
 
   saveNotification(): void {
@@ -1812,7 +1909,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
       caregiver: this.patient?.caregiverFullName?.trim() ? 'relative' : 'other',
       clinicalCenter: this.structureLabel === this.translate('common.notAvailable') ? '' : this.structureLabel,
       neurologist: this.doctorLabel === this.translate('common.notAvailable') ? '' : this.doctorLabel,
-      gastroenterologist: 'Dr. Stefano Conti',
+      gastroenterologist: '',
       date: this.getTodayDateInputValue(),
       type: 'outpatient',
       priority: 'none',
@@ -1852,42 +1949,167 @@ export class TherapeuticPlanManageComponent implements OnInit {
   }
 
   private validateVisitBaseStep(): boolean {
-    if (!this.visitForm.patientFirstName.trim()) {
-      this.visitErrorMessage = this.translate('therapeuticPlan.visits.validation.patientFirstNameRequired');
-      return false;
-    }
+    this.syncVisitFormFromDynamic();
 
-    if (!this.visitForm.patientLastName.trim()) {
-      this.visitErrorMessage = this.translate('therapeuticPlan.visits.validation.patientLastNameRequired');
-      return false;
-    }
-
-    if (!this.visitForm.duodopaTherapyStartDate.trim()) {
-      this.visitErrorMessage = this.translate('therapeuticPlan.visits.validation.duodopaTherapyStartDateRequired');
-      return false;
-    }
-
-    if (!this.visitForm.clinicalCenter.trim()) {
-      this.visitErrorMessage = this.translate('therapeuticPlan.visits.validation.clinicalCenterRequired');
-      return false;
-    }
-
-    if (!this.visitForm.neurologist.trim()) {
-      this.visitErrorMessage = this.translate('therapeuticPlan.visits.validation.neurologistRequired');
-      return false;
-    }
-
-    if (!this.visitForm.gastroenterologist.trim()) {
-      this.visitErrorMessage = this.translate('therapeuticPlan.visits.validation.gastroenterologistRequired');
-      return false;
-    }
-
-    if (!this.visitForm.date.trim()) {
-      this.visitErrorMessage = this.translate('therapeuticPlan.visits.validation.dateRequired');
-      return false;
+    for (const key of this.visitSchemaRequired) {
+      if (this.isVisitSchemaFieldEmpty(key)) {
+        this.visitErrorMessage = `${this.getVisitSchemaFieldLabel(key)}: ${this.translate('crud.validation.required')}`;
+        return false;
+      }
     }
 
     return true;
+  }
+
+  getVisitSchemaFieldLabel(key: string): string {
+    const schemaProperty = this.visitSchemaProperties[key];
+    if (schemaProperty && typeof schemaProperty.title === 'string' && schemaProperty.title.trim().length > 0) {
+      return schemaProperty.title.trim();
+    }
+
+    if (schemaProperty && typeof schemaProperty.label === 'string' && schemaProperty.label.trim().length > 0) {
+      return schemaProperty.label.trim();
+    }
+
+    return key;
+  }
+
+  getVisitSchemaOptionLabel(key: string, option: unknown): string {
+    const schemaProperty = this.visitSchemaProperties[key];
+    const optionIndex = Array.isArray(schemaProperty?.enum)
+      ? schemaProperty.enum.findIndex((entry: unknown) => entry === option)
+      : -1;
+
+    if (optionIndex >= 0 && Array.isArray(schemaProperty?.enumTitles) && typeof schemaProperty.enumTitles[optionIndex] === 'string') {
+      return schemaProperty.enumTitles[optionIndex];
+    }
+
+    if (optionIndex >= 0 && Array.isArray(schemaProperty?.enumNames) && typeof schemaProperty.enumNames[optionIndex] === 'string') {
+      return schemaProperty.enumNames[optionIndex];
+    }
+
+    return typeof option === 'string' || typeof option === 'number'
+      ? String(option)
+      : '';
+  }
+
+  getVisitSchemaInputType(key: string): string {
+    const schemaProperty = this.visitSchemaProperties[key];
+    if (schemaProperty?.type === 'number') {
+      return 'number';
+    }
+
+    if (schemaProperty?.format === 'date-time') {
+      return 'datetime-local';
+    }
+
+    if (schemaProperty?.format === 'date') {
+      return 'date';
+    }
+
+    return 'text';
+  }
+
+  onVisitDynamicFieldChange(key: string, value: unknown): void {
+    this.visitFormDynamic[key] = value;
+    this.assignVisitFormValue(key, value);
+  }
+
+  private syncVisitFormFromDynamic(): void {
+    for (const key of Object.keys(this.visitFormDynamic)) {
+      this.assignVisitFormValue(key, this.visitFormDynamic[key]);
+    }
+  }
+
+  private getVisitFormValue(key: string): unknown {
+    const visitFormRecord = this.visitForm as unknown as Record<string, unknown>;
+    return this.normalizeVisitSchemaFieldValue(key, visitFormRecord[key] ?? '');
+  }
+
+  private getInitialVisitSchemaFieldValue(key: string): unknown {
+    const currentValue = this.getVisitFormValue(key);
+    const schemaProperty = this.visitSchemaProperties[key];
+
+    if (key === 'duodopaTherapyStartDate' && schemaProperty?.format === 'date-time') {
+      if (typeof currentValue === 'string' && currentValue.trim().length > 0 && currentValue.includes('T')) {
+        return currentValue;
+      }
+
+      return this.getCurrentDateTimeLocalInputValue();
+    }
+
+    return currentValue;
+  }
+
+  private assignVisitFormValue(key: string, value: unknown): void {
+    if (!Object.prototype.hasOwnProperty.call(this.visitForm, key)) {
+      return;
+    }
+
+    const visitFormRecord = this.visitForm as unknown as Record<string, unknown>;
+    visitFormRecord[key] = value;
+  }
+
+  private isVisitSchemaFieldEmpty(key: string): boolean {
+    const value = this.visitFormDynamic[key];
+
+    if (value === null || value === undefined) {
+      return true;
+    }
+
+    if (typeof value === 'string') {
+      return value.trim().length === 0;
+    }
+
+    return false;
+  }
+
+  private isVisitSchemaEditableProperty(property: any): boolean {
+    if (!property || typeof property !== 'object') {
+      return false;
+    }
+
+    if (Array.isArray(property.enum) && property.enum.length > 0) {
+      return true;
+    }
+
+    return !property.type || property.type === 'string' || property.type === 'number';
+  }
+
+  private normalizeVisitSchemaFieldValue(key: string, value: unknown): unknown {
+    const schemaProperty = this.visitSchemaProperties[key];
+    if (typeof value !== 'string') {
+      return value;
+    }
+
+    if (schemaProperty?.format === 'date-time') {
+      return this.toDateTimeLocalInputValue(value);
+    }
+
+    return value;
+  }
+
+  private toDateTimeLocalInputValue(value: string): string {
+    const trimmedValue = value.trim();
+    if (!trimmedValue) {
+      return '';
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(trimmedValue)) {
+      return trimmedValue;
+    }
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmedValue)) {
+      return `${trimmedValue}T00:00`;
+    }
+
+    const parsedDate = new Date(trimmedValue);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return trimmedValue;
+    }
+
+    const timezoneOffset = parsedDate.getTimezoneOffset() * 60_000;
+    return new Date(parsedDate.getTime() - timezoneOffset).toISOString().slice(0, 16);
   }
 
   private createMockVisitStomiaStatus(overrides: Partial<TherapeuticPlanVisitStomiaStatus> = {}): TherapeuticPlanVisitStomiaStatus {
@@ -2496,6 +2718,12 @@ export class TherapeuticPlanManageComponent implements OnInit {
     const today = new Date();
     const timezoneOffset = today.getTimezoneOffset() * 60_000;
     return new Date(today.getTime() - timezoneOffset).toISOString().slice(0, 10);
+  }
+
+  private getCurrentDateTimeLocalInputValue(): string {
+    const now = new Date();
+    const timezoneOffset = now.getTimezoneOffset() * 60_000;
+    return new Date(now.getTime() - timezoneOffset).toISOString().slice(0, 16);
   }
 
   private normalizeConfirmationSent(value?: string): 'yes' | 'no' | 'na' {

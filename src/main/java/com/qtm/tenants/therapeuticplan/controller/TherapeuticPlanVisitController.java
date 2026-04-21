@@ -5,7 +5,7 @@ import com.qtm.tenants.therapeuticplan.service.TherapeuticPlanVisitService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -36,7 +36,7 @@ public class TherapeuticPlanVisitController {
 
     @GetMapping("/{planId}/visits/{date}")
     public ResponseEntity<TherapeuticPlanVisitDto> getById(@PathVariable("planId") Long planId, @PathVariable("date") String date) {
-        LocalDate d = LocalDate.parse(date);
+        LocalDateTime d = LocalDateTime.parse(date);
         return visitService.findById(planId, d)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());

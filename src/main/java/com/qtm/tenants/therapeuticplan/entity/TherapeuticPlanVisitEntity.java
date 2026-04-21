@@ -11,11 +11,11 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 /**
  * Entity che rappresenta una visita associata a un piano terapeutico.
- * Chiave composta: therapeuticPlanId + date
+ * Chiave composta: therapeuticPlanId + dateTime visita
  */
 @Entity
 @Table(name = "therapeutic_plan_visit")
@@ -32,10 +32,7 @@ public class TherapeuticPlanVisitEntity {
 
     @Id
     @Column(name = "visit_date", nullable = false)
-    private LocalDate date;
-
-    @Column(name = "start_therapy", length = 64)
-    private String startTherapy;
+    private LocalDateTime date;
 
     @Column(name = "duodopa", length = 64)
     private String duodopa;
