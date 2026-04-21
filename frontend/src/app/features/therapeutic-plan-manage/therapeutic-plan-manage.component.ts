@@ -764,11 +764,52 @@ export class TherapeuticPlanManageComponent implements OnInit {
   movementErrorMessage = '';
   movementForm: TherapeuticPlanMovementForm = this.createEmptyMovementForm();
   activityBookingEntries: TherapeuticPlanActivityBookingRecord[] = [];
+  activityBookingFilters = {
+    bookingDateFrom: '',
+    bookingDateTo: '',
+    visitType: '',
+    protocolPlanned: ''
+  };
+  showActivityBookingFilters = true;
   activityBookingModalOpen = false;
   activityBookingModalStep = 1;
   activityBookingSaving = false;
   activityBookingErrorMessage = '';
   activityBookingForm: TherapeuticPlanActivityBookingForm = this.createEmptyActivityBookingForm();
+
+  get filteredActivityBookingEntries(): TherapeuticPlanActivityBookingRecord[] {
+    return this.activityBookingEntries.filter((entry) => {
+      if (this.activityBookingFilters.bookingDateFrom && entry.bookingDate < this.activityBookingFilters.bookingDateFrom) {
+        return false;
+      }
+      if (this.activityBookingFilters.bookingDateTo && entry.bookingDate > this.activityBookingFilters.bookingDateTo) {
+        return false;
+      }
+      if (this.activityBookingFilters.visitType && entry.visitType !== this.activityBookingFilters.visitType) {
+        return false;
+      }
+      if (this.activityBookingFilters.protocolPlanned !== '' && String(entry.protocolPlanned) !== this.activityBookingFilters.protocolPlanned) {
+        return false;
+      }
+      return true;
+    });
+  }
+
+  get hasActiveActivityBookingFilters(): boolean {
+    return !!this.activityBookingFilters.bookingDateFrom
+      || !!this.activityBookingFilters.bookingDateTo
+      || !!this.activityBookingFilters.visitType
+      || this.activityBookingFilters.protocolPlanned !== '';
+  }
+
+  resetActivityBookingFilters(): void {
+    this.activityBookingFilters = {
+      bookingDateFrom: '',
+      bookingDateTo: '',
+      visitType: '',
+      protocolPlanned: ''
+    };
+  }
   contactRequestEntries: TherapeuticPlanContactRequestRecord[] = [];
   contactRequestFilters: TherapeuticPlanContactRequestFilters = this.createEmptyContactRequestFilters();
   showContactRequestFilters = true;

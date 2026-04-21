@@ -903,16 +903,63 @@
             <p class="section-copy">{{ translate('therapeuticPlan.activityBooking.section.description') }}</p>
           </div>
 
-          <button
-            type="button"
-            class="manage-add-button"
-            (click)="openActivityBookingModal()"
-          >
-            {{ translate('therapeuticPlan.activityBooking.actions.add') }}
-          </button>
+          <div class="manage-section-actions">
+            <button
+              type="button"
+              class="manage-add-button manage-add-button-secondary"
+              (click)="showActivityBookingFilters = !showActivityBookingFilters"
+            >
+              {{ translate('search.filters') }}
+            </button>
+
+            <button
+              type="button"
+              class="manage-add-button"
+              (click)="openActivityBookingModal()"
+            >
+              {{ translate('therapeuticPlan.activityBooking.actions.add') }}
+            </button>
+          </div>
         </div>
 
-        <div *ngIf="activityBookingEntries.length > 0; else activityBookingEmpty" class="peg-history-list-table-wrapper">
+        <div *ngIf="showActivityBookingFilters" class="contact-request-filters-panel">
+          <div class="alert-modal-grid">
+            <label class="alert-modal-field">
+              <span>{{ translate('therapeuticPlan.activityBooking.filters.bookingDateFrom') }}</span>
+              <input [(ngModel)]="activityBookingFilters.bookingDateFrom" type="date" />
+            </label>
+
+            <label class="alert-modal-field">
+              <span>{{ translate('therapeuticPlan.activityBooking.filters.bookingDateTo') }}</span>
+              <input [(ngModel)]="activityBookingFilters.bookingDateTo" type="date" />
+            </label>
+
+            <label class="alert-modal-field">
+              <span>{{ translate('therapeuticPlan.activityBooking.filters.visitType') }}</span>
+              <select [(ngModel)]="activityBookingFilters.visitType">
+                <option value="">{{ translate('therapeuticPlan.activityBooking.filters.allVisitTypes') }}</option>
+                <option *ngFor="let option of visitTypeOptions" [value]="option.value">{{ translate(option.titleKey) }}</option>
+              </select>
+            </label>
+
+            <label class="alert-modal-field">
+              <span>{{ translate('therapeuticPlan.activityBooking.filters.protocolPlanned') }}</span>
+              <select [(ngModel)]="activityBookingFilters.protocolPlanned">
+                <option value="">{{ translate('therapeuticPlan.activityBooking.filters.allProtocolPlanned') }}</option>
+                <option value="true">{{ translate('common.yes') }}</option>
+                <option value="false">{{ translate('common.no') }}</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="therapeutic-plan-actions" *ngIf="hasActiveActivityBookingFilters">
+            <button type="button" class="therapeutic-plan-btn therapeutic-plan-btn-secondary" (click)="resetActivityBookingFilters()">
+              {{ translate('therapeuticPlan.activityBooking.filters.reset') }}
+            </button>
+          </div>
+        </div>
+
+        <div *ngIf="filteredActivityBookingEntries.length > 0; else activityBookingEmpty" class="peg-history-list-table-wrapper">
           <table class="peg-history-list-table movement-list-table">
             <thead>
               <tr>
@@ -924,7 +971,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr *ngFor="let entry of activityBookingEntries">
+              <tr *ngFor="let entry of filteredActivityBookingEntries">
                 <td>{{ getVisitTypeLabel(entry.visitType) }}</td>
                 <td class="peg-history-list-date">{{ formatDate(entry.bookingDate) }}</td>
                 <td>{{ entry.structureName || translate('common.notAvailable') }}</td>
@@ -935,7 +982,7 @@
           </table>
         </div>
 
-        <div class="peg-history-list-footer" *ngIf="activityBookingEntries.length > 0">
+        <div class="peg-history-list-footer" *ngIf="filteredActivityBookingEntries.length > 0">
           <span>{{ activityBookingResultCountLabel }}</span>
         </div>
 
