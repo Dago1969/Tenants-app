@@ -770,7 +770,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
     visitType: '',
     protocolPlanned: ''
   };
-  showActivityBookingFilters = true;
+  showActivityBookingFilters = false;
   activityBookingModalOpen = false;
   activityBookingModalStep = 1;
   activityBookingSaving = false;
@@ -812,7 +812,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
   }
   contactRequestEntries: TherapeuticPlanContactRequestRecord[] = [];
   contactRequestFilters: TherapeuticPlanContactRequestFilters = this.createEmptyContactRequestFilters();
-  showContactRequestFilters = true;
+  showContactRequestFilters = false;
   contactRequestModalOpen = false;
   contactRequestModalStep = 1;
   contactRequestSaving = false;

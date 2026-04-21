@@ -906,18 +906,17 @@
           <div class="manage-section-actions">
             <button
               type="button"
-              class="manage-add-button manage-add-button-secondary"
+              class="icon-btn manage-btn"
               (click)="showActivityBookingFilters = !showActivityBookingFilters"
             >
-              {{ translate('search.filters') }}
+              <span class="icon">☰</span> <span class="manage-btn-label">{{ translate('search.filters') }}</span>
             </button>
-
             <button
               type="button"
-              class="manage-add-button"
+              class="icon-btn manage-btn"
               (click)="openActivityBookingModal()"
             >
-              {{ translate('therapeuticPlan.activityBooking.actions.add') }}
+              <span class="icon">＋</span> <span class="manage-btn-label">{{ translate('therapeuticPlan.activityBooking.actions.add') }}</span>
             </button>
           </div>
         </div>
@@ -1003,18 +1002,17 @@
           <div class="manage-section-actions">
             <button
               type="button"
-              class="manage-add-button manage-add-button-secondary"
+              class="icon-btn manage-btn"
               (click)="showContactRequestFilters = !showContactRequestFilters"
             >
-              {{ translate('search.filters') }}
+              <span class="icon">☰</span> <span class="manage-btn-label">{{ translate('search.filters') }}</span>
             </button>
-
             <button
               type="button"
-              class="manage-add-button"
+              class="icon-btn manage-btn"
               (click)="openContactRequestModal()"
             >
-              {{ translate('therapeuticPlan.contactRequests.actions.add') }}
+              <span class="icon">＋</span> <span class="manage-btn-label">{{ translate('therapeuticPlan.contactRequests.actions.add') }}</span>
             </button>
           </div>
         </div>
