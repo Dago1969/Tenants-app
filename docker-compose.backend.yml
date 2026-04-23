@@ -1,0 +1,19 @@
+services:
+  tenants-backend:
+    image: tenants-app-backend:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tenants-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+    # Aggiungi qui eventuali variabili d'ambiente custom
+    # volumes:
+    #   - ./logs:/app/logs
+    restart: unless-stopped
+
+# Questo file docker-compose è pensato per avviare solo il backend Spring Boot.
+# Assicurati che il Dockerfile sia presente nella root e che esponga la porta 8080.
+# Modifica SPRING_PROFILES_ACTIVE secondo le tue esigenze.

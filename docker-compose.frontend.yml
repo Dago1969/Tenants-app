@@ -1,0 +1,17 @@
+services:
+  tenants-frontend:
+    image: tenants-app-frontend:latest
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tenants-frontend
+    ports:
+      - "4200:80"
+    # Se vuoi servire su una porta diversa, modifica qui
+    # volumes:
+    #   - ./frontend/dist/tenants-app-frontend/browser:/usr/share/nginx/html:ro
+    restart: unless-stopped
+
+# Questo file docker-compose è pensato per avviare solo il frontend Angular statico tramite nginx.
+# Assicurati che il Dockerfile sia presente in ./frontend e che esponga la porta 80.
+# Puoi personalizzare la porta host (4200) secondo necessità.
