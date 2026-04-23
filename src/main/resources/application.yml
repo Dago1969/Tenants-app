@@ -1,12 +1,4 @@
-server:
-  port: 8087
-
 spring:
-  datasource:
-    url: jdbc:mysql://localhost:3306/QTMTenant?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: root
-    password: dago
-    driver-class-name: com.mysql.cj.jdbc.Driver
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
   jpa:
@@ -43,6 +35,7 @@ logging:
   level:
     root: INFO
 
+# Proprietà custom per configurazione interna QTM (non standard Spring)
 qtm:
   dashboard:
     api-base-url: http://localhost:8086/api

@@ -6,9 +6,9 @@ services:
       dockerfile: Dockerfile
     container_name: tenants-backend
     ports:
-      - "8080:8080"
+      - "8087:8087"
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_PROFILES_ACTIVE=collaudo
     # Aggiungi qui eventuali variabili d'ambiente custom
     # volumes:
     #   - ./logs:/app/logs
