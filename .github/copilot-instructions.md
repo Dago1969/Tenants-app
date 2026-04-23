@@ -110,6 +110,8 @@ Comunica sempre in modo chiaro e conciso, con un tono amichevole ma professional
 
 ## Principi generali di programmazione
 - Usa sempre le traduzioni per ogni voce visibile all’utente nelle pagine html/Angular: ogni testo deve avere la relativa chiave nei file messages delle varie lingue e il template deve usare la funzione di traduzione.
+- In TENAPP tutti gli stili frontend condivisi o riusabili devono essere definiti in `frontend/src/styles.css`, salvo richiesta esplicita o reale necessità di override locale limitato a un singolo componente.
+- Prima di aggiungere CSS in un componente Angular, verificare sempre se lo stile può essere ereditato o centralizzato in `frontend/src/styles.css`; selettori locali per `label`, `span`, `input`, `select`, `textarea` e stati `:focus` sono vietati se non strettamente necessari.
 - Quando modifichi un testo visibile in una pagina frontend devi SEMPRE:
   - leggere prima il template/componente interessato e individuare dove viene risolto il testo
   - usare o creare una chiave di traduzione nei file messages/properties di tutte le lingue gestite

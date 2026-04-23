@@ -5,27 +5,29 @@
       <h2>{{ translate(titleKey) }}</h2>
       <p class="section-copy">{{ translate(subtitleKey) }}</p>
     </div>
-
     <div class="search-header-actions">
+      <button class="btn btn-outline" type="button" (click)="showFilters = !showFilters">
+        <span class="icon material-icons">filter_alt</span> {{ showFilters ? translate('crud.actions.hideFilters') : translate('crud.actions.showFilters') }}
+      </button>
       <button class="btn btn-outline" type="button" (click)="resetFilters()">
-        {{ translate('crud.actions.reset') }}
+        <span class="icon material-icons">filter_alt_off</span> {{ translate('crud.actions.reset') }}
       </button>
     </div>
   </div>
 
-  <div class="search-filters-panel">
+  <div class="search-filters-panel" *ngIf="showFilters">
     <form class="search-filters-form search-filters-form-inline" (ngSubmit)="applyFilters()">
-      <label class="search-filter-label search-filter-label-inline">
+      <label>
         <span>{{ translate('therapeuticPlan.patientContacts.field.therapeuticPlanId') }}</span>
         <input type="number" min="1" [(ngModel)]="filterModel.therapeuticPlanId" name="therapeuticPlanId" />
       </label>
 
-      <label class="search-filter-label search-filter-label-inline">
+      <label>
         <span>{{ translate('therapeuticPlan.patientContacts.field.date') }}</span>
         <input type="date" [(ngModel)]="filterModel.date" name="date" />
       </label>
 
-      <label class="search-filter-label search-filter-label-inline">
+      <label>
         <span>{{ translate('therapeuticPlan.patientContacts.field.type') }}</span>
         <select [(ngModel)]="filterModel.type" name="type">
           <option value="">{{ translate('search.option.all') }}</option>
@@ -33,13 +35,13 @@
         </select>
       </label>
 
-      <label class="search-filter-label search-filter-label-inline search-filter-label-wide">
+      <label>
         <span>{{ translate('therapeuticPlan.patientContacts.field.notes') }}</span>
         <input type="text" [(ngModel)]="filterModel.notes" name="notes" [placeholder]="translate('therapeuticPlan.patientContacts.field.notes.placeholder')" />
       </label>
 
       <div class="search-filters-actions search-filters-actions-inline">
-        <button type="submit" class="btn btn-primary">{{ translate('crud.actions.search') }}</button>
+        <button type="submit" class="btn btn-primary"><span class="icon material-icons">search</span> {{ translate('crud.actions.search') }}</button>
       </div>
     </form>
 

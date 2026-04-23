@@ -23,24 +23,6 @@
 }
 
 .role-profile-field {
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
-}
-
-.role-profile-field label {
-	font-size: 0.86rem;
-	font-weight: 700;
-	color: #395f31;
-}
-
-.role-profile-field input,
-.role-profile-field select {
-	min-height: 40px;
-	padding: 8px 10px;
-	border: 1px solid #c7d7c0;
-	border-radius: 6px;
-	background: #fff;
 }
 
 .role-profile-actions {

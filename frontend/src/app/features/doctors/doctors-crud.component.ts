@@ -8,7 +8,19 @@ import { CrudField, CrudFolder, CrudPageComponent } from '../../shared/crud-page
   selector: 'app-doctors-crud',
   standalone: true,
   imports: [CrudPageComponent],
-  template: `<app-crud-page [titleKey]="titleKey" [endpoint]="endpoint" [fields]="fields" [folders]="folders" [fieldPermissionsEndpoint]="permissionsEndpoint" />`
+  template: `
+    <app-crud-page
+      [titleKey]="titleKey"
+      [endpoint]="endpoint"
+      [fields]="fields"
+      [folders]="folders"
+      [fieldPermissionsEndpoint]="permissionsEndpoint"
+      [wizardMode]="true"
+      [popupMode]="true"
+      [closeRoute]="'/doctors/search'"
+      [closeOnSave]="true"
+    />
+  `
 })
 export class DoctorsCrudComponent {
   titleKey = 'doctors.title' as const;

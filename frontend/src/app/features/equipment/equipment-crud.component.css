@@ -11,52 +11,11 @@
 }
 
 .equipment-field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.equipment-field span,
-.equipment-json-grid-head {
-  color: #355277;
-  font-size: 0.95rem;
-  font-weight: 700;
 }
 
 .equipment-field-full,
 .equipment-inline-hint-full {
   grid-column: 1 / -1;
-}
-
-.equipment-field input,
-.equipment-field select,
-.equipment-field textarea,
-.equipment-json-value input,
-.equipment-json-value textarea {
-  width: 100%;
-  border: 1.5px solid #d3e5f8;
-  border-radius: 16px;
-  background: #edf6ff;
-  color: #1a3a5d;
-  padding: 12px 16px;
-  font-size: 0.96rem;
-  box-sizing: border-box;
-}
-
-.equipment-field textarea,
-.equipment-json-value textarea {
-  resize: vertical;
-  min-height: 112px;
-}
-
-.equipment-field input:focus,
-.equipment-field select:focus,
-.equipment-field textarea:focus,
-.equipment-json-value input:focus,
-.equipment-json-value textarea:focus {
-  outline: none;
-  border-color: #1870e8;
-  box-shadow: 0 0 0 3px rgba(24, 112, 232, 0.12);
 }
 
 .equipment-inline-hint {

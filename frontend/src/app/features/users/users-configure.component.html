@@ -28,7 +28,7 @@
           <span>
             {{ p.descrizione }} <span style="color:#6d9853; font-size:0.95em;">({{ p.code }})</span>
           </span>
-          <button *ngIf="canAssociateProject(p)" (click)="associateProjectCandidate(p)" style="padding:2px 10px; font-size:0.9em; background:#4d78c2; color:#fff; border:none; border-radius:2px; cursor:pointer; min-width: 70px; text-align: right;">{{ labelAssociate }}</button>
+          <button *ngIf="canAssociateProject(p)" class="btn btn-primary" (click)="associateProjectCandidate(p)"><span class="icon material-icons">add</span> {{ labelAssociate }}</button>
         </li>
       </ul>
       
@@ -46,9 +46,7 @@
           <span>
             {{ p.descrizione }} <span style="color:#6d9853; font-size:0.95em;">({{ p.code }})</span>
           </span>
-          <button (click)="disassociateProjectCandidate(p)" style="padding:2px 10px; font-size:0.9em; background:#c24d4d; color:#fff; border:none; border-radius:2px; cursor:pointer; min-width: 90px; text-align: right;">
-            {{ labelDisassociate }}
-          </button>
+          <button (click)="disassociateProjectCandidate(p)" class="btn btn-outline"><span class="icon material-icons">remove</span> {{ labelDisassociate }}</button>
         </li>
       </ul>
       <div *ngIf="!loadingAssociated && associatedProjects.length === 0" style="color:#aaa;">{{ translate('users.configure.projects.emptyAssociated') }}</div>

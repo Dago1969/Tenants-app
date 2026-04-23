@@ -49,30 +49,10 @@
 }
 
 .search-filter-label {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  font-weight: 700;
-  color: #274067;
-}
-
-.search-filter-label-inline input,
-.search-filter-label-inline select {
-  height: 40px;
-  border-radius: 18px;
-  border: 1px solid #cbd5e1;
-  padding: 8px 14px;
-  background: #ffffff;
-  color: #243b53;
-  min-width: 180px;
 }
 
 .search-filter-label-wide {
   flex: 1 1 320px;
-}
-
-.search-filter-label-wide input {
-  width: 100%;
 }
 
 .search-filters-actions-inline {

@@ -31,6 +31,7 @@ interface PatientContactFilterModel {
   styleUrl: './patient-contacts-search.component.css'
 })
 export class PatientContactsSearchComponent {
+    showFilters = false;
   readonly titleKey = 'therapeuticPlan.patientContacts.search.title' as const;
   readonly subtitleKey = 'therapeuticPlan.patientContacts.search.subtitle' as const;
 

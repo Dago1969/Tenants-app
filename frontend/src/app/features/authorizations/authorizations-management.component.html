@@ -14,7 +14,7 @@
         </label>
 
         <button class="authz-btn" type="button" (click)="save()" [disabled]="!selectedRoleId || loading || saving">
-          {{ translate('authorizations.actions.save') }}
+          <span class="icon material-icons">save</span> {{ translate('authorizations.actions.save') }}
         </button>
       </div>
     </header>

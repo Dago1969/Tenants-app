@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { CrudField, CrudPageComponent } from '../../shared/crud-page.component';
+import { CrudField, CrudFolder, CrudPageComponent } from '../../shared/crud-page.component';
 
 /**
  * Pagina CRUD infermieri tenant.
@@ -8,7 +8,19 @@ import { CrudField, CrudPageComponent } from '../../shared/crud-page.component';
   selector: 'app-nurses-crud',
   standalone: true,
   imports: [CrudPageComponent],
-  template: `<app-crud-page [titleKey]="titleKey" [endpoint]="endpoint" [fields]="fields" [fieldPermissionsEndpoint]="permissionsEndpoint" />`
+  template: `
+    <app-crud-page
+      [titleKey]="titleKey"
+      [endpoint]="endpoint"
+      [fields]="fields"
+      [folders]="folders"
+      [fieldPermissionsEndpoint]="permissionsEndpoint"
+      [wizardMode]="true"
+      [popupMode]="true"
+      [closeRoute]="'/nurses/search'"
+      [closeOnSave]="true"
+    />
+  `
 })
 export class NursesCrudComponent {
   titleKey = 'nurses.title' as const;
@@ -56,5 +68,58 @@ export class NursesCrudComponent {
     { key: 'referenceProvider', labelKey: 'nurses.field.referenceProvider', type: 'text' },
     { key: 'professionalRegister', labelKey: 'nurses.field.professionalRegister', type: 'text' },
     { key: 'enabled', labelKey: 'nurses.field.enabled', type: 'checkbox' }
+  ];
+
+  folders: CrudFolder[] = [
+    {
+      key: 'profile',
+      titleKey: 'nurses.folder.profile',
+      fields: [
+        { key: 'nurseProjectId', labelKey: 'nurses.field.nurseProjectId', type: 'text' },
+        { key: 'fullName', labelKey: 'nurses.field.fullName', type: 'text' },
+        { key: 'email', labelKey: 'nurses.field.email', type: 'text' },
+        { key: 'primaryPhone', labelKey: 'nurses.field.primaryPhone', type: 'text' },
+        { key: 'secondaryPhone', labelKey: 'nurses.field.secondaryPhone', type: 'text' },
+        {
+          key: 'regionId',
+          labelKey: 'nurses.field.region',
+          type: 'select',
+          optionsEndpoint: 'geography/regions',
+          optionValueKey: 'id',
+          optionLabelKey: 'name',
+          relatedFields: { region: 'name' },
+          resetFieldsOnChange: ['provinceId', 'province', 'cityId', 'city']
+        },
+        {
+          key: 'provinceId',
+          labelKey: 'nurses.field.province',
+          type: 'select',
+          optionsEndpoint: 'geography/provinces/by-region/{regionId}',
+          optionValueKey: 'id',
+          optionLabelKey: 'name',
+          relatedFields: { province: 'name' },
+          resetFieldsOnChange: ['cityId', 'city']
+        },
+        {
+          key: 'cityId',
+          labelKey: 'nurses.field.city',
+          type: 'select',
+          optionsEndpoint: 'geography/cities/by-province/{provinceId}',
+          optionValueKey: 'id',
+          optionLabelKey: 'name',
+          relatedFields: { city: 'name' }
+        },
+        { key: 'coverageArea', labelKey: 'nurses.field.coverageArea', type: 'text' },
+        { key: 'referenceProvider', labelKey: 'nurses.field.referenceProvider', type: 'text' },
+        { key: 'professionalRegister', labelKey: 'nurses.field.professionalRegister', type: 'text' }
+      ]
+    },
+    {
+      key: 'status',
+      titleKey: 'nurses.folder.status',
+      fields: [
+        { key: 'enabled', labelKey: 'nurses.field.enabled', type: 'checkbox' }
+      ]
+    }
   ];
 }

@@ -57,25 +57,6 @@
   box-shadow: 0 0 0 3px rgba(142, 179, 109, 0.18);
 }
 
-.authz-btn {
-  min-width: 180px;
-  min-height: 42px;
-  padding: 11px 18px;
-  border: none;
-  border-radius: 2px;
-  background: #4d78c2;
-  color: #ffffff;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 8px 18px rgba(77, 120, 194, 0.24);
-  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
-}
-
-.authz-btn:hover {
-  transform: translateY(-1px);
-  background: #4067a9;
-}
-
 .authz-btn:disabled,
 .authz-filter select:disabled,
 .authz-section select:disabled {

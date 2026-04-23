@@ -11,37 +11,10 @@
 }
 
 .therapeutic-plan-field {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.therapeutic-plan-field span {
-  color: #355277;
-  font-size: 0.95rem;
-  font-weight: 700;
 }
 
 .therapeutic-plan-field-full {
   grid-column: 1 / -1;
-}
-
-.therapeutic-plan-field input,
-.therapeutic-plan-field select,
-.therapeutic-plan-field textarea {
-  width: 100%;
-  border: 1.5px solid #d3e5f8;
-  border-radius: 16px;
-  background: #edf6ff;
-  color: #1a3a5d;
-  padding: 12px 16px;
-  font-size: 0.96rem;
-  box-sizing: border-box;
-}
-
-.therapeutic-plan-field textarea {
-  resize: vertical;
-  min-height: 112px;
 }
 
 .therapeutic-plan-medicine-select {
@@ -67,14 +40,6 @@
   color: #466487;
   font-size: 0.84rem;
   line-height: 1.4;
-}
-
-.therapeutic-plan-field input:focus,
-.therapeutic-plan-field select:focus,
-.therapeutic-plan-field textarea:focus {
-  outline: none;
-  border-color: #1870e8;
-  box-shadow: 0 0 0 3px rgba(24, 112, 232, 0.12);
 }
 
 .therapeutic-plan-inline-hint {
@@ -151,32 +116,6 @@
   gap: 12px;
   justify-content: flex-end;
   width: 100%;
-}
-
-.therapeutic-plan-btn {
-  min-width: 144px;
-  border: none;
-  border-radius: 999px;
-  padding: 12px 18px;
-  font-size: 0.95rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.therapeutic-plan-btn:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.therapeutic-plan-btn-primary {
-  color: #fff;
-  background: linear-gradient(90deg, #1870e8 0%, #1fc4ff 100%);
-  box-shadow: 0 10px 24px rgba(24, 112, 232, 0.22);
-}
-
-.therapeutic-plan-btn-secondary {
-  color: #355277;
-  background: #edf4fb;
 }
 
 .therapeutic-plan-loading {

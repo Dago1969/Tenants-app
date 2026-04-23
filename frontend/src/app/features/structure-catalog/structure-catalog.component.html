@@ -6,8 +6,8 @@
         <h2>{{ translate(titleKey) }}</h2>
         <p class="structure-type-description" *ngIf="currentType">{{ currentType.description }}</p>
       </div>
-      <button class="structure-secondary-btn" type="button" (click)="startCreate()">
-        {{ translate('crud.actions.new') }}
+      <button class="btn btn-primary" type="button" (click)="startCreate()">
+        <span class="icon material-icons">add</span> {{ translate('crud.actions.new') }}
       </button>
     </header>
 

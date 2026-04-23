@@ -107,8 +107,8 @@
         additional_metadata
       </div>
       <div class="equipment-metadata-toolbar" *ngIf="secondaryJsonExtensible">
-        <button type="button" class="equipment-btn equipment-btn-secondary equipment-btn-small" (click)="addSecondaryMetadataEntry()">
-          {{ translate('crud.actions.new') }} additional_metadata
+        <button type="button" class="btn btn-outline" (click)="addSecondaryMetadataEntry()">
+          <span class="icon material-icons">add</span> {{ translate('crud.actions.new') }} additional_metadata
         </button>
       </div>
       <div *ngFor="let entry of secondaryMetadataEntries; let index = index" class="equipment-metadata-row">
@@ -135,13 +135,13 @@
     <button type="button" class="equipment-btn equipment-btn-secondary" (click)="cancel()">
       {{ translate('crud.actions.cancel') }}
     </button>
-    <button *ngIf="!isFirstStep" type="button" class="equipment-btn equipment-btn-secondary" (click)="previousStep()">
+    <button *ngIf="!isFirstStep" type="button" class="btn btn-outline" (click)="previousStep()">
       {{ translate('projects.wizard.actions.previous') }}
     </button>
-    <button *ngIf="!isLastStep" type="button" class="equipment-btn equipment-btn-primary" (click)="nextStep()">
+    <button *ngIf="!isLastStep" type="button" class="btn btn-primary" (click)="nextStep()">
       {{ translate('crud.actions.next') }}
     </button>
-    <button *ngIf="isLastStep" type="button" class="equipment-btn equipment-btn-primary" [disabled]="saving" (click)="save()">
+    <button *ngIf="isLastStep" type="button" class="btn btn-primary" [disabled]="saving" (click)="save()">
       {{ translate(equipmentId === null ? 'crud.actions.create' : 'crud.actions.update') }}
     </button>
   </div>
