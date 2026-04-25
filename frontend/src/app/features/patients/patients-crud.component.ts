@@ -41,11 +41,11 @@ export class PatientsCrudComponent implements OnInit {
 
   fields: CrudField[] = [
     { key: 'assistedId', labelKey: 'patients.field.assistedId', type: 'text', columnSpan: 2 },
-    { key: 'fiscalCode', labelKey: 'patients.field.fiscalCode', type: 'text', columnSpan: 2 },
+    { key: 'fiscalCode', labelKey: 'patients.field.fiscalCode', type: 'text' },
 
     { key: 'firstName', labelKey: 'patients.field.firstName', type: 'text' },
     { key: 'lastName', labelKey: 'patients.field.lastName', type: 'text' },
-    { key: 'email', labelKey: 'patients.field.email', type: 'text' },
+    { key: 'email', labelKey: 'patients.field.email', type: 'text', columnSpan: 2 },
     { key: 'primaryPhone', labelKey: 'patients.field.primaryPhone', type: 'text', columnSpan: 2 },
     { key: 'secondaryPhone', labelKey: 'patients.field.secondaryPhone', type: 'text', columnSpan: 2 },
 
@@ -58,7 +58,17 @@ export class PatientsCrudComponent implements OnInit {
 
     { key: 'deliveryAddress', labelKey: 'patients.field.deliveryAddress', type: 'text', columnSpan: 2 },
     { key: 'secondaryAddresses', labelKey: 'patients.field.secondaryAddresses', type: 'text', columnSpan: 2 },
-    { key: 'communicationChannels', labelKey: 'patients.field.communicationChannels', type: 'text', columnSpan: 2 },
+    {
+      key: 'communicationChannels',
+      labelKey: 'patients.field.communicationChannels',
+      type: 'select',
+      columnSpan: 2,
+      options: [
+        { value: 'whatsapp', label: 'patients.communicationChannel.whatsapp' },
+        { value: 'SMS', label: 'patients.communicationChannel.sms' },
+        { value: 'EMail', label: 'patients.communicationChannel.email' }
+      ]
+    },
     { key: 'identificationDocumentReference', labelKey: 'patients.field.identificationDocumentReference', type: 'text', columnSpan: 2 },
     { key: 'dataProcessingConsent', labelKey: 'patients.field.dataProcessingConsent', type: 'checkbox' },
     { key: 'dataProcessingConsentDateTime', labelKey: 'patients.field.dataProcessingConsentDateTime', type: 'datetime-local' },
@@ -83,10 +93,10 @@ export class PatientsCrudComponent implements OnInit {
       titleKey: 'patients.folder.identity',
       fields: [
         { key: 'assistedId', labelKey: 'patients.field.assistedId', type: 'text', readonly: true, columnSpan: 2 },
-        { key: 'fiscalCode', labelKey: 'patients.field.fiscalCode', type: 'text', columnSpan: 2 },
+        { key: 'fiscalCode', labelKey: 'patients.field.fiscalCode', type: 'text' },
         { key: 'firstName', labelKey: 'patients.field.firstName', type: 'text' },
         { key: 'lastName', labelKey: 'patients.field.lastName', type: 'text' },
-        { key: 'email', labelKey: 'patients.field.email', type: 'text' },
+        { key: 'email', labelKey: 'patients.field.email', type: 'text', columnSpan: 2 },
         { key: 'primaryPhone', labelKey: 'patients.field.primaryPhone', type: 'text', columnSpan: 2 },
         { key: 'secondaryPhone', labelKey: 'patients.field.secondaryPhone', type: 'text', columnSpan: 2 },
         {
@@ -120,7 +130,17 @@ export class PatientsCrudComponent implements OnInit {
         },
         { key: 'deliveryAddress', labelKey: 'patients.field.deliveryAddress', type: 'text', columnSpan: 2 },
         { key: 'secondaryAddresses', labelKey: 'patients.field.secondaryAddresses', type: 'text', columnSpan: 2 },
-        { key: 'communicationChannels', labelKey: 'patients.field.communicationChannels', type: 'text', columnSpan: 2 },
+        {
+          key: 'communicationChannels',
+          labelKey: 'patients.field.communicationChannels',
+          type: 'select',
+          columnSpan: 2,
+          options: [
+            { value: 'whatsapp', label: 'patients.communicationChannel.whatsapp' },
+            { value: 'SMS', label: 'patients.communicationChannel.sms' },
+            { value: 'EMail', label: 'patients.communicationChannel.email' }
+          ]
+        },
         { key: 'identificationDocumentReference', labelKey: 'patients.field.identificationDocumentReference', type: 'text', columnSpan: 2 }
       ]
     },

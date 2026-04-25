@@ -2,6 +2,7 @@ package com.qtm.tenants.patient.service;
 
 import com.qtm.commonlib.dto.PatientDto;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
@@ -18,14 +19,15 @@ import java.util.List;
 import static org.springframework.http.HttpStatus.BAD_GATEWAY;
 
 /**
- * Client REST verso QTMDashboard per la persistenza centralizzata dei pazienti.
+ * Client REST verso QTMDB per la persistenza centralizzata dei pazienti.
  */
 @Service
+@Slf4j
 public class DashboardPatientClient {
 
     private static final ParameterizedTypeReference<List<PatientDto>> PATIENT_LIST_TYPE = new ParameterizedTypeReference<>() {
     };
-    private static final String SERVICE_UNAVAILABLE_MESSAGE = "Servizio pazienti QTMDashboard non disponibile";
+    private static final String SERVICE_UNAVAILABLE_MESSAGE = "Servizio pazienti QTMDB non disponibile";
 
     private final RestClient restClient;
 
@@ -36,6 +38,7 @@ public class DashboardPatientClient {
         this.restClient = restClientBuilder
                 .baseUrl(dashboardApiBaseUrl)
                 .build();
+        log.info("[DashboardPatientClient] Configured with dashboardApiBaseUrl={}", dashboardApiBaseUrl);
     }
 
     public PatientDto create(PatientDto patientDto) {
@@ -126,7 +129,7 @@ public class DashboardPatientClient {
     private String buildDownstreamMessage(RestClientResponseException exception) {
         String responseBody = exception.getResponseBodyAsString();
         if (responseBody == null || responseBody.isBlank()) {
-            return "Errore restituito da QTMDashboard durante la gestione pazienti";
+            return "Errore restituito da QTMDB durante la gestione pazienti";
         }
         return responseBody;
     }

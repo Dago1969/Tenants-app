@@ -1,28 +1,69 @@
 services:
+  mysql:
+    image: mysql:8.0
+    container_name: tenants-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: dago
+      MYSQL_DATABASE: QTMTenant
+    volumes:
+      - tenants-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -pdago --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    networks:
+      - tenants-network
+
   tenants-backend:
     image: tenants-app-backend:latest
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: Tenants-app/Dockerfile
+      args:
+        SPRING_PROFILES_ACTIVE: collaudo
     container_name: tenants-backend
+    depends_on:
+      mysql:
+        condition: service_healthy
     ports:
-      - "8087:8087"
+      - "8087:8080"
     environment:
       - SPRING_PROFILES_ACTIVE=collaudo
-      - DB_HOST=host.docker.internal
-      - DB_PORT=3307
-      - DB_NAME=QTMTenant
-      - DB_USERNAME=root
-      - DB_PASSWORD=dago
-      - KEYCLOAK_HOST=host.docker.internal
-      - KEYCLOAK_PORT=8085
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/QTMTenant?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=root
+      - SPRING_DATASOURCE_PASSWORD=dago
+      - QTM_DASHBOARD_API_BASE_URL=http://qtmdashboard-backend:8086/api
+      # Keycloak config allineata a QTMDB
+      - KEYCLOAK_HOST=keycloak
+      - KEYCLOAK_PORT=8080
       - KEYCLOAK_REALM=QTM
+      - APP_KEYCLOAK_SERVER_URL=http://keycloak:8080
+      - APP_KEYCLOAK_TOKEN_URL=http://keycloak:8080/realms/QTM/protocol/openid-connect/token
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8085/realms/QTM
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/QTM/protocol/openid-connect/certs
     extra_hosts:
       - "host.docker.internal:host-gateway"
     # volumes:
     #   - ./logs:/app/logs
     restart: unless-stopped
+    networks:
+      - tenants-network
+      - keycloak-net
 
 # Questo file docker-compose è pensato per avviare solo il backend Spring Boot.
 # Assicurati che il Dockerfile sia presente nella root e che esponga la porta 8080.
 # Modifica SPRING_PROFILES_ACTIVE secondo le tue esigenze.
+
+volumes:
+  tenants-mysql-data:
+    driver: local
+
+networks:
+  tenants-network:
+    driver: bridge
+  keycloak-net:
+    external: true
+    name: keycloak-docker_default # Sostituisci con il nome reale della rete esterna

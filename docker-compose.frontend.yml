@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile
     container_name: tenants-frontend
     ports:
-      - "4200:80"
+      - "4201:80"
     # Se vuoi servire su una porta diversa, modifica qui
     # volumes:
     #   - ./frontend/dist/tenants-app-frontend/browser:/usr/share/nginx/html:ro

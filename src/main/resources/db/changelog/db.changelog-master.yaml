@@ -865,6 +865,71 @@ databaseChangeLog:
               VALUES ('THERAPEUTIC_PLAN', 'THERAPEUTIC_PLAN');
 
   - changeSet:
+      id: 2026-04-24-fix-structure-asl-module-code-references
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: function_module_role_authorizations
+        - tableExists:
+            tableName: modules
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              INSERT IGNORE INTO modules (code, name)
+              VALUES ('STRUCTURE-ASL', 'ASL');
+
+              UPDATE function_module_role_authorizations
+              SET module_code = 'STRUCTURE-ASL'
+              WHERE module_code = 'ASL';
+
+              UPDATE module_role_authorizations
+              SET module_code = 'STRUCTURE-ASL'
+              WHERE module_code = 'ASL';
+
+  - changeSet:
+      id: 2026-04-24-fix-legacy-structure-module-code-references
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: function_module_role_authorizations
+        - tableExists:
+            tableName: modules
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              UPDATE function_module_role_authorizations
+              SET module_code = 'STRUCTURE-FARMACY-O'
+              WHERE module_code = 'HOSPITAL_PHARMACY';
+
+              UPDATE function_module_role_authorizations
+              SET module_code = 'STRUCTURE-FARMACY-R'
+              WHERE module_code = 'RETAIL_PHARMACY';
+
+              UPDATE function_module_role_authorizations
+              SET module_code = 'STRUCTURE_LOGISTICS_WAREHOUSE'
+              WHERE module_code = 'LOGISTICS_WAREHOUSE';
+
+              UPDATE function_module_role_authorizations
+              SET module_code = 'STRUCTURE_MATERIAL_WAREHOUSE'
+              WHERE module_code = 'MATERIAL_WAREHOUSE';
+
+              UPDATE function_module_role_authorizations
+              SET module_code = 'STRUCTURE_PHARMA_COMPANY'
+              WHERE module_code = 'PHARMA_COMPANY';
+
+              UPDATE function_module_role_authorizations
+              SET module_code = 'STRUCTURE_SPECIALIST_CLINIC'
+              WHERE module_code = 'SPECIALIST_CLINIC';
+
+  - changeSet:
       id: 2026-04-16-drop-therapeutic-plan-patient-fk
       author: copilot
       preConditions:

@@ -1,3 +1,9 @@
+/* Impedisce il wrapping delle voci di menu nella sidebar */
+.nav-group-link, .nav-group-toggle, .nav-group-link span, .nav-group-toggle span, .sidebar-menu a, .sidebar-menu span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 /* Output text/campi fissi */
 .output-text, .output-field, .output-label, .text-output, .fixed-field, .summary2-value {
   color: #111;
