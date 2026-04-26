@@ -1,3 +1,3 @@
 export const environment = {
-  apiBaseUrl: 'http://tenants-backend:8087/api/tenants'
+  apiBaseUrl: 'http://localhost:8087/api/tenants'
 };

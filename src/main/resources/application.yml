@@ -40,4 +40,4 @@ qtm:
   dashboard:
     api-base-url: http://localhost:8086/api
   frontend:
-    base-url: http://localhost:4200
+    base-url: http://localhost:4201

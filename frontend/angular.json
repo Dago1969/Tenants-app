@@ -32,13 +32,40 @@
             ],
             "tsConfig": "tsconfig.app.json",
             "styles": ["src/styles.css"]
+          },
+          "configurations": {
+            "sviluppo": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.sviluppo.ts"
+                }
+              ]
+            },
+            "collaudo": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.collaudo.ts"
+                }
+              ]
+            }
           }
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "buildTarget": "tenants-app-frontend:build",
-            "proxyConfig": "proxy.conf.json"
+            "buildTarget": "tenants-app-frontend:build"
+          },
+          "configurations": {
+            "sviluppo": {
+              "buildTarget": "tenants-app-frontend:build:sviluppo",
+              "proxyConfig": "proxy.conf.json"
+            },
+            "collaudo": {
+              "buildTarget": "tenants-app-frontend:build:collaudo",
+              "proxyConfig": "proxy.collaudo.conf.json"
+            }
           }
         },
         "test": {

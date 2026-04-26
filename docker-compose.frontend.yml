@@ -4,6 +4,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        ANGULAR_BUILD_CONFIGURATION: collaudo
     container_name: tenants-frontend
     ports:
       - "4201:80"

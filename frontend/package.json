@@ -7,8 +7,12 @@
     "prestart": "npm run i18n:sync",
     "prebuild": "npm run i18n:sync",
     "pretest": "npm run i18n:sync",
-    "start": "ng serve --port 4200",
-    "build": "ng build",
+    "start": "ng serve --port 4201 --configuration sviluppo",
+    "start:sviluppo": "ng serve --port 4201 --configuration sviluppo",
+    "start:collaudo": "ng serve --port 4201 --configuration collaudo",
+    "build": "ng build --configuration sviluppo",
+    "build:sviluppo": "ng build --configuration sviluppo",
+    "build:collaudo": "ng build --configuration collaudo",
     "test": "ng test"
   },
   "dependencies": {
