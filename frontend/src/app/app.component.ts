@@ -103,6 +103,7 @@ export class AppComponent implements OnDestroy {
 
   managementMenuItems: MenuItem[] = [
     { labelKey: 'menu.usersSearch', route: '/users', moduleCode: 'USER' },
+    { labelKey: 'menu.otpVerification', route: '/otp/request' },
     { labelKey: 'roles.search.title', route: '/roles', moduleCode: 'ROLE' },
     { labelKey: 'menu.modulesSearch', route: '/modules/search', moduleCode: 'MODULE' },
     { labelKey: 'menu.functionsSearch', route: '/functions/search', moduleCode: 'FUNCTION' },

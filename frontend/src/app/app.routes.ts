@@ -18,6 +18,8 @@ import { ProjectsCrudComponent } from './features/projects/projects-crud.compone
 import { NotAuthorizedComponent } from './features/not-authorized/not-authorized.component';
 import { ForbiddenComponent } from './features/forbidden/forbidden.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
+import { OtpRequestComponent } from './features/otp-request/otp-request.component';
+import { OtpVerifyComponent } from './features/otp-verify/otp-verify.component';
 import { UsersSearchComponent } from './features/users-search/users-search.component';
 import { DoctorsSearchComponent } from './features/doctors-search/doctors-search.component';
 import { NursesSearchComponent } from './features/nurses-search/nurses-search.component';
@@ -45,6 +47,8 @@ export const appRoutes: Routes = [
   { path: 'hospitals-search', pathMatch: 'full', redirectTo: 'structures/hospitals' },
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
+  { path: 'otp/request', component: OtpRequestComponent, canActivate: [authGuard] },
+  { path: 'otp/verify', component: OtpVerifyComponent, canActivate: [authGuard] },
   { path: 'equipment/search', component: EquipmentSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('EQUIPMENT')] },
   { path: 'equipment/manage', component: EquipmentCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('EQUIPMENT')] },
   { path: 'equipment/manage/:id', component: EquipmentCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('EQUIPMENT')] },

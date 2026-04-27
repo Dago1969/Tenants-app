@@ -1,0 +1,226 @@
+{
+  "info": {
+    "_postman_id": "5c7f2a0d-8fb4-4e54-bd75-0db8f4d070d8",
+    "name": "TENAPP OTP",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Collection Postman per testare gli endpoint OTP Twilio di TENAPP sia per utenti esistenti sia per numeri non ancora presenti a sistema."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8087"
+    },
+    {
+      "key": "jwt",
+      "value": ""
+    },
+    {
+      "key": "selectedRole",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": "1"
+    },
+    {
+      "key": "phoneNumber",
+      "value": "+393331234567"
+    },
+    {
+      "key": "otpCode",
+      "value": "123456"
+    },
+    {
+      "key": "otpChannel",
+      "value": "sms"
+    }
+  ],
+  "item": [
+    {
+      "name": "OTP utente esistente",
+      "item": [
+        {
+          "name": "Send OTP by userId",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Selected-Role",
+                "value": "{{selectedRole}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tenants/users/{{userId}}/otp/send",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tenants",
+                "users",
+                "{{userId}}",
+                "otp",
+                "send"
+              ]
+            },
+            "description": "Invia OTP usando il numero o il canale OTP configurato sull'utente già presente a sistema."
+          },
+          "response": []
+        },
+        {
+          "name": "Check OTP by userId",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Selected-Role",
+                "value": "{{selectedRole}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{otpCode}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tenants/users/{{userId}}/otp/check",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tenants",
+                "users",
+                "{{userId}}",
+                "otp",
+                "check"
+              ]
+            },
+            "description": "Verifica il codice OTP ricevuto per un utente già presente a sistema."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "OTP solo telefono",
+      "item": [
+        {
+          "name": "Send OTP by phoneNumber",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Selected-Role",
+                "value": "{{selectedRole}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"{{phoneNumber}}\",\n  \"channel\": \"{{otpChannel}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tenants/users/otp/send",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tenants",
+                "users",
+                "otp",
+                "send"
+              ]
+            },
+            "description": "Invia OTP direttamente a un numero di telefono in formato E.164, senza utente a sistema."
+          },
+          "response": []
+        },
+        {
+          "name": "Check OTP by phoneNumber",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt}}",
+                "type": "text"
+              },
+              {
+                "key": "X-Selected-Role",
+                "value": "{{selectedRole}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"{{phoneNumber}}\",\n  \"code\": \"{{otpCode}}\",\n  \"channel\": \"{{otpChannel}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/tenants/users/otp/check",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tenants",
+                "users",
+                "otp",
+                "check"
+              ]
+            },
+            "description": "Verifica il codice OTP ricevuto su un numero di telefono non ancora associato a un utente."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

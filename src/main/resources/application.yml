@@ -17,7 +17,7 @@ spring:
     host: smtp.gmail.com
     port: 587
     username: francesco.tripodi@gmail.com
-    password: ayekcfnurmmpwrxd
+    password: ${SPRING_MAIL_PASSWORD:}
     protocol: smtp
     properties:
       mail:
@@ -41,3 +41,14 @@ qtm:
     api-base-url: http://localhost:8086/api
   frontend:
     base-url: http://localhost:4201
+  otp:
+    twilio:
+      enabled: ${QTM_OTP_TWILIO_ENABLED:true}
+      auto-send-on-onboarding: ${QTM_OTP_TWILIO_AUTO_SEND_ON_ONBOARDING:true}
+      base-url: ${QTM_OTP_TWILIO_BASE_URL:https://verify.twilio.com/v2}
+      service-sid: ${QTM_OTP_TWILIO_SERVICE_SID:}
+      account-sid: ${QTM_OTP_TWILIO_ACCOUNT_SID:}
+      auth-token: ${QTM_OTP_TWILIO_AUTH_TOKEN:}
+      api-key: ${QTM_OTP_TWILIO_API_KEY:}
+      api-secret: ${QTM_OTP_TWILIO_API_SECRET:}
+      default-channel: ${QTM_OTP_TWILIO_DEFAULT_CHANNEL:sms}

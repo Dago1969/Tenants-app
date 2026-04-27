@@ -28,6 +28,13 @@ import { CrudField, CrudFolder, CrudPageComponent } from '../../shared/crud-page
   `
 })
 export class UsersCrudComponent {
+  private readonly otpChannelOptions = [
+    { value: 'sms', label: 'users.otpChannel.sms' },
+    { value: 'whatsapp', label: 'users.otpChannel.whatsapp' },
+    { value: 'call', label: 'users.otpChannel.call' },
+    { value: 'email', label: 'users.otpChannel.email' }
+  ] as const;
+
   constructor(
     private readonly authService: AuthService,
     private readonly tenantPointerApi: TenantPointerApiService
@@ -77,7 +84,7 @@ export class UsersCrudComponent {
     { key: 'telefono', labelKey: 'users.field.telefono', type: 'text' },
     { key: 'codiceFiscale', labelKey: 'users.field.codiceFiscale', type: 'text' },
     { key: 'dataFineValiditaPassword', labelKey: 'users.field.dataFineValiditaPassword', type: 'date' },
-    { key: 'canaleOtp', labelKey: 'users.field.canaleOtp', type: 'text' },
+    { key: 'canaleOtp', labelKey: 'users.field.canaleOtp', type: 'select', options: [...this.otpChannelOptions] },
     {
       key: 'projectId',
       labelKey: 'users.field.projectId',
@@ -126,7 +133,7 @@ export class UsersCrudComponent {
         { key: 'telefono', labelKey: 'users.field.telefono', type: 'text' },
         { key: 'codiceFiscale', labelKey: 'users.field.codiceFiscale', type: 'text' },
         { key: 'dataFineValiditaPassword', labelKey: 'users.field.dataFineValiditaPassword', type: 'date' },
-        { key: 'canaleOtp', labelKey: 'users.field.canaleOtp', type: 'text' }
+        { key: 'canaleOtp', labelKey: 'users.field.canaleOtp', type: 'select', options: [...this.otpChannelOptions] }
       ]
     },
     {

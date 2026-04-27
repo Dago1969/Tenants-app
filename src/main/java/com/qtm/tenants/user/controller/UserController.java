@@ -2,9 +2,15 @@ package com.qtm.tenants.user.controller;
 
 import com.qtm.commonlib.dto.UserDto;
 import com.qtm.tenants.authorization.service.ControllerFunctionAuthorizationService;
+import com.qtm.tenants.otp.dto.OtpPhoneVerificationCheckRequest;
+import com.qtm.tenants.otp.dto.OtpPhoneVerificationSendRequest;
+import com.qtm.tenants.otp.dto.OtpVerificationCheckRequest;
+import com.qtm.tenants.otp.dto.OtpVerificationResultResponse;
+import com.qtm.tenants.otp.service.UserOtpService;
 import com.qtm.tenants.user.dto.UserOnboardingRequest;
 import com.qtm.tenants.user.service.UserOnboardingService;
 import com.qtm.tenants.user.service.UserRemoteService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.slf4j.Logger;
@@ -38,6 +44,7 @@ public class UserController {
 
         private final UserRemoteService userRemoteService;
         private final UserOnboardingService userOnboardingService;
+        private final UserOtpService userOtpService;
     private final ControllerFunctionAuthorizationService controllerFunctionAuthorizationService;
 
     @PostMapping
@@ -128,6 +135,49 @@ public class UserController {
         return ResponseEntity.ok(userRemoteService.update(id, userDto));
     }
 
+    @PostMapping("/{id}/otp/send")
+    public ResponseEntity<OtpVerificationResultResponse> sendOtp(
+            @PathVariable Long id,
+            @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
+    ) {
+        controllerFunctionAuthorizationService.requireFullEditPermission(
+                selectedRole,
+                MODULE_CODE,
+                ControllerFunctionAuthorizationService.UPDATE_FUNCTION_CODE
+        );
+        return ResponseEntity.ok(userOtpService.sendOtpForUser(id));
+    }
+
+    @PostMapping("/{id}/otp/check")
+    public ResponseEntity<OtpVerificationResultResponse> checkOtp(
+            @PathVariable Long id,
+            @Valid @RequestBody OtpVerificationCheckRequest request,
+            @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
+    ) {
+        controllerFunctionAuthorizationService.requireFullEditPermission(
+                selectedRole,
+                MODULE_CODE,
+                ControllerFunctionAuthorizationService.UPDATE_FUNCTION_CODE
+        );
+        return ResponseEntity.ok(userOtpService.checkOtpForUser(id, request));
+    }
+
+    @PostMapping("/otp/send")
+    public ResponseEntity<OtpVerificationResultResponse> sendOtpByPhone(
+                        @Valid @RequestBody OtpPhoneVerificationSendRequest request
+    ) {
+                log.info("[UserController] OTP phone-only send richiesto phone={} channel={}", maskPhone(request != null ? request.getPhoneNumber() : null), request != null ? request.getChannel() : null);
+        return ResponseEntity.ok(userOtpService.sendOtpForPhone(request));
+    }
+
+    @PostMapping("/otp/check")
+    public ResponseEntity<OtpVerificationResultResponse> checkOtpByPhone(
+                        @Valid @RequestBody OtpPhoneVerificationCheckRequest request
+    ) {
+                log.info("[UserController] OTP phone-only check richiesto phone={} channel={}", maskPhone(request != null ? request.getPhoneNumber() : null), request != null ? request.getChannel() : null);
+        return ResponseEntity.ok(userOtpService.checkOtpForPhone(request));
+    }
+
         private void enrichClientId(UserDto userDto, String selectedClient) {
                 if (userDto == null) {
                         return;
@@ -140,6 +190,17 @@ public class UserController {
                 if (selectedClient != null && !selectedClient.isBlank()) {
                         userDto.setClientId(selectedClient.trim());
                 }
+        }
+
+        private String maskPhone(String phoneNumber) {
+                if (phoneNumber == null || phoneNumber.isBlank()) {
+                        return "";
+                }
+                String trimmed = phoneNumber.trim();
+                if (trimmed.length() <= 4) {
+                        return "****";
+                }
+                return "***" + trimmed.substring(trimmed.length() - 4);
         }
 
     @DeleteMapping("/{id}")

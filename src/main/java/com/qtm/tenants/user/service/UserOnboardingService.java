@@ -3,6 +3,7 @@ package com.qtm.tenants.user.service;
 import com.qtm.commonlib.dto.UserDto;
 import com.qtm.commonlib.dto.UserRoleProjectDto;
 import com.qtm.tenants.mail.MailService;
+import com.qtm.tenants.otp.service.UserOtpService;
 import com.qtm.tenants.user.dto.UserOnboardingRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,7 @@ public class UserOnboardingService {
     private final UserRemoteService userRemoteService;
     private final DashboardUserRoleProjectClient dashboardUserRoleProjectClient;
     private final MailService mailService;
+    private final UserOtpService userOtpService;
 
     @Value("${qtm.frontend.base-url:http://localhost:4200}")
     private String frontendBaseUrl;
@@ -47,6 +49,7 @@ public class UserOnboardingService {
         dashboardUserRoleProjectClient.create(relation);
 
         sendOnboardingMail(createdUser);
+        userOtpService.sendOtpWhenConfigured(createdUser);
 
         createdUser.setPassword(null);
         createdUser.setTemporaryPassword(false);
