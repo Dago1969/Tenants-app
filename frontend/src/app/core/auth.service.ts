@@ -2,6 +2,8 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 
+const QTMDASHBOARD_LOGIN_URL = 'http://localhost:4200/login';
+
 /**
  * Service auth per riuso token JWT condiviso con qtm-dashboard.
  */
@@ -74,6 +76,18 @@ export class AuthService {
 
   isAuthenticated(): boolean {
     return this.getToken() !== null;
+  }
+
+  logout(): void {
+    localStorage.removeItem(this.tokenStorageKey);
+    localStorage.removeItem(this.roleStorageKey);
+    localStorage.removeItem(this.clientStorageKey);
+    localStorage.removeItem(this.projectStorageKey);
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('selectedProject');
+      window.location.assign(QTMDASHBOARD_LOGIN_URL);
+    }
+    this.selectedRoleSubject.next('');
   }
 
   setToken(token: string): void {

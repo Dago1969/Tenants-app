@@ -3,9 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../core/auth.service';
-import { ProjectApiService, ProjectDto } from '../../core/project-api.service';
 import { RoleApiService, RoleDto } from '../../core/role-api.service';
-import { UserTenantProjectRelationApiService } from '../../core/user-tenant-project-relation-api.service';
 import { UserRoleProfileApiService, UserRoleProfileDto } from '../../core/user-role-profile-api.service';
 import { TenantPointerApiService } from '../../core/tenant-pointer-api.service';
 import { CrudField, CrudFolder, CrudPageComponent } from '../../shared/crud-page.component';
@@ -28,54 +26,6 @@ export class UsersConfigureComponent implements OnInit {
 
   readonly labelAssociate = t('users.configure.actions.associate');
   readonly labelDisassociate = t('users.configure.actions.disassociate');
-
-    /**
-     * Disassocia un progetto dall'utente (update ottimistico + refresh sincrono)
-     */
-    disassociateProject(projectId: number): void {
-      const tenantCode = this.authService.getSelectedClient();
-      const userIdParam = this.route.snapshot.paramMap.get('id');
-      const userId = userIdParam ? Number(userIdParam) : null;
-      if (!userId || !tenantCode) {
-        console.warn('[disassociateProject] userId o tenantCode mancante', { userId, tenantCode });
-        return;
-      }
-      // Aggiornamento ottimistico: rimuovi subito il progetto dagli associati e rimettilo tra i disponibili solo se non già presente
-      const removedProject = this.associatedProjects.find(p => p.id === projectId);
-      if (removedProject) {
-        this.associatedProjects = this.associatedProjects.filter(p => p.id !== projectId);
-        if (!this.projects.some(p => p.id === projectId)) {
-          this.projects = [...this.projects, removedProject];
-        }
-      }
-      // Chiamata backend per rimuovere l'associazione tramite proxy TENAPP
-      this.tenantPointerApi.getTenantPointerByClientCode(tenantCode).subscribe({
-        next: (tenantPointer) => {
-          if (!tenantPointer || !tenantPointer.id) {
-            console.error('[disassociateProject] tenantPointer non trovato per tenantCode', tenantCode);
-            return;
-          }
-          this.userTenantProjectRelationApi.removeRelation(userId, tenantPointer.id, projectId).subscribe({
-            next: () => {
-              // Riallinea le liste dal backend
-              this.refreshConfigurationData();
-            },
-            error: (err) => {
-              console.error('[disassociateProject] Errore:', err);
-            }
-          });
-        },
-        error: (err) => {
-          console.error('[disassociateProject] Errore recupero tenantPointer:', err);
-        }
-      });
-    }
-  projects: ProjectDto[] = [];
-  associatedProjects: ProjectDto[] = [];
-  loadingProjects = false;
-  loadingAssociated = false;
-  errorProjects = '';
-  errorAssociated = '';
   roles: RoleDto[] = [];
   userRoleProfiles: UserRoleProfileView[] = [];
   loadingRoles = false;
@@ -88,9 +38,7 @@ export class UsersConfigureComponent implements OnInit {
 
   constructor(
     private readonly authService: AuthService,
-    private readonly projectApi: ProjectApiService,
     private readonly roleApi: RoleApiService,
-    private readonly userTenantProjectRelationApi: UserTenantProjectRelationApiService,
     private readonly userRoleProfileApi: UserRoleProfileApiService,
     private readonly tenantPointerApi: TenantPointerApiService,
     private readonly route: ActivatedRoute,
@@ -101,59 +49,8 @@ export class UsersConfigureComponent implements OnInit {
     return t(key);
   }
 
-  isProjectAssociated(projectId: number): boolean {
-    return this.associatedProjects.some(p => p.id === projectId);
-  }
-
   canAssociateRoleProfile(): boolean {
     return !!this.selectedRoleId && this.profileId.trim().length > 0 && this.selectedTenantId !== null;
-  }
-
-  associateProject(projectId: number): void {
-    const tenantCode = this.authService.getSelectedClient();
-    const userIdParam = this.route.snapshot.paramMap.get('id');
-    const userId = userIdParam ? Number(userIdParam) : null;
-    if (!userId || !tenantCode) {
-      console.warn('[associateProject] userId o tenantCode mancante', { userId, tenantCode });
-      return;
-    }
-    // Aggiornamento ottimistico (asincrono): sposta subito il progetto tra gli associati
-    const selectedProject = this.projects.find(p => p.id === projectId);
-    if (selectedProject && !this.associatedProjects.some(p => p.id === projectId)) {
-      this.associatedProjects = [...this.associatedProjects, selectedProject];
-    }
-    // Rimuovi subito dagli attivi
-    this.projects = this.projects.filter(p => p.id !== projectId);
-
-    // Poi chiama il backend normalmente e riallinea le liste al ritorno (sincrono)
-    this.tenantPointerApi.getTenantPointerByClientCode(tenantCode).subscribe({
-      next: (tenantPointer) => {
-        if (!tenantPointer || !tenantPointer.id) {
-          console.error('[associateProject] tenantPointer non trovato per tenantCode', tenantCode);
-          return;
-        }
-        const relation = {
-          userId,
-          tenantId: tenantPointer.id,
-          projectId,
-          superuser: false
-        };
-        console.log('[associateProject] DTO inviato:', relation);
-        this.userTenantProjectRelationApi.addRelation(relation).subscribe({
-          next: (res) => {
-            console.log('[associateProject] Successo:', res);
-            // Riallinea le liste dal backend
-            this.refreshConfigurationData();
-          },
-          error: (err) => {
-            console.error('[associateProject] Errore:', err);
-          }
-        });
-      },
-      error: (err) => {
-        console.error('[associateProject] Errore recupero tenantPointer:', err);
-      }
-    });
   }
 
   associateRoleProfile(): void {
@@ -199,64 +96,7 @@ export class UsersConfigureComponent implements OnInit {
 
 
   refreshConfigurationData(): void {
-    this.refreshProjectsData();
     this.refreshRolesData();
-  }
-
-  private refreshProjectsData(): void {
-    const tenantCode = this.authService.getSelectedClient();
-    const userIdParam = this.route.snapshot.paramMap.get('id');
-    const userId = userIdParam ? Number(userIdParam) : null;
-    if (!tenantCode) {
-      this.errorProjects = this.translate('users.configure.errors.tenantNotSelected');
-      return;
-    }
-    this.loadingProjects = true;
-    this.errorProjects = '';
-    this.errorAssociated = '';
-    this.projectApi.getProjectsByTenant(tenantCode).subscribe({
-      next: (projects) => {
-        this.projects = projects;
-        this.loadingProjects = false;
-        if (userId) {
-          this.loadingAssociated = true;
-          this.tenantPointerApi.getTenantPointerByClientCode(tenantCode).subscribe({
-            next: (tenantPointer) => {
-              if (!tenantPointer || !tenantPointer.id) {
-                this.errorAssociated = this.translate('users.configure.errors.tenantNotFound');
-                this.loadingAssociated = false;
-                return;
-              }
-              this.projectApi.getAssociatedProjectsByUser(userId, tenantPointer.id).subscribe({
-                next: (relations) => {
-                  this.associatedProjects = relations
-                    .map(rel => projects.find(p => p.id === rel.projectId))
-                    .filter((p): p is ProjectDto => !!p);
-                  this.loadingAssociated = false;
-                },
-                error: (err) => {
-                  this.errorAssociated = this.translate('users.configure.projects.errors.loadAssociated');
-                  this.loadingAssociated = false;
-                }
-              });
-            },
-            error: (err) => {
-              this.errorAssociated = this.translate('users.configure.errors.loadTenant');
-              this.loadingAssociated = false;
-            }
-          });
-        } else {
-          this.errorAssociated = this.translate('users.configure.errors.userNotIdentified');
-          this.associatedProjects = [];
-          this.loadingAssociated = false;
-        }
-      },
-      error: (err) => {
-        this.errorProjects = this.translate('users.configure.projects.errors.loadAvailable');
-        this.loadingProjects = false;
-        this.loadingAssociated = false;
-      }
-    });
   }
 
   private refreshRolesData(): void {

@@ -1051,7 +1051,38 @@ input:-ms-input-placeholder { color: var(--Primary); font-weight: 400 !important
   background: linear-gradient(0deg, rgba(251, 251, 251, 0.80) 0%, rgba(251, 251, 251, 0.80) 100%), var(--Grad-element, #E3F7FF);
 }
 
+.tenants-main-header {
+  width: 100%;
+  padding: 18px 32px 8px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  border-bottom: 1px solid #e6eef7;
+  min-height: 80px;
+  box-sizing: border-box;
+}
+
+.tenants-main-logo {
+  height: 54px;
+  width: auto;
+  display: block;
+}
+
+.tenants-header-logout {
+  min-width: 110px;
+}
+
 @media (max-width: 1100px) {
+  .tenants-main-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .tenants-header-logout {
+    align-self: flex-end;
+  }
+
   .therapeutic-plan-manage-page .manage-hero {
     grid-template-columns: 1fr;
   }

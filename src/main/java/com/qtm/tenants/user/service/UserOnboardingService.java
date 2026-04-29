@@ -26,8 +26,8 @@ public class UserOnboardingService {
     private final MailService mailService;
     private final UserOtpService userOtpService;
 
-    @Value("${qtm.frontend.base-url:http://localhost:4200}")
-    private String frontendBaseUrl;
+    @Value("${qtm.dashboard.frontend-base-url:http://localhost:4200}")
+    private String dashboardFrontendBaseUrl;
 
     /**
      * Esegue l'onboarding completo di un utente creato dal wizard tenant utilizzando i servizi remoti gia presenti.
@@ -89,7 +89,7 @@ public class UserOnboardingService {
         String subject = "Accesso Tenants App";
         String body = "Ciao,\n\n"
                 + "il tuo account e' stato creato con successo.\n"
-                + "URL di accesso: " + frontendBaseUrl + "\n"
+            + "URL di accesso: " + dashboardFrontendBaseUrl + "\n"
                 + "Username: " + createdUser.getUsername() + "\n"
                 + "Password temporanea: " + generatedPassword + "\n\n"
             + "Ti consigliamo di cambiare la password dopo il primo accesso.\n";
