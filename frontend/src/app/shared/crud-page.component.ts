@@ -1,8 +1,10 @@
 import { CommonModule, Location } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Component, Input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, Input, OnChanges, OnDestroy, OnInit, QueryList, SimpleChanges, ViewChildren } from '@angular/core';
 import { FormsModule, NgForm, NgModel } from '@angular/forms';
+import intlTelInput, { type AllOptions, type Iti } from 'intl-tel-input';
 import { ActivatedRoute, Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { FunctionAuthorizationService } from '../core/function-authorization.service';
 import { hasMessageKey, MessageKey, t } from '../i18n/messages';
@@ -46,6 +48,14 @@ interface OperationLogEntry {
   id: number;
   type: 'success' | 'error';
   message: string;
+}
+
+interface PhoneInputBinding {
+  fieldKey: string;
+  input: HTMLInputElement;
+  iti: Iti;
+  syncValue: () => void;
+  cleanup: () => void;
 }
 
 @Component({
@@ -155,21 +165,42 @@ interface OperationLogEntry {
                     </div>
                   </ng-container>
                   <ng-template #genericTextInput>
-                    <input
-                      class="crud-input"
-                      [class.crud-input-invalid]="shouldShowRequiredError(field, genericField)"
-                      [id]="field.key"
-                      [type]="field.type"
-                      [(ngModel)]="formModel[field.key]"
-                      [name]="field.key"
-                      [disabled]="isFieldDisabled(field)"
-                      (blur)="onFieldBlur(field)"
-                      [required]="field.required === true"
-                      #genericField="ngModel"
-                    />
-                    <div *ngIf="shouldShowRequiredError(field, genericField)" class="crud-field-error">
-                      {{ translate(requiredFieldMessageKey) }}
-                    </div>
+                    <ng-container *ngIf="isPhoneField(field); else defaultTextInput">
+                      <div class="phone-input-group phone-input-group-intl" [class.phone-field-invalid]="shouldShowPhoneRequiredError(field)">
+                        <input
+                          #phoneInputElement
+                          class="crud-input phone-number-input"
+                          [class.crud-input-invalid]="shouldShowPhoneRequiredError(field)"
+                          [id]="field.key"
+                          type="tel"
+                          [attr.data-phone-field-key]="field.key"
+                          [name]="field.key"
+                          [disabled]="isFieldDisabled(field)"
+                          [required]="field.required === true"
+                          (blur)="onPhoneFieldBlur(field)"
+                        />
+                      </div>
+                      <div *ngIf="shouldShowPhoneRequiredError(field)" class="crud-field-error">
+                        {{ translate(requiredFieldMessageKey) }}
+                      </div>
+                    </ng-container>
+                    <ng-template #defaultTextInput>
+                      <input
+                        class="crud-input"
+                        [class.crud-input-invalid]="shouldShowRequiredError(field, genericField)"
+                        [id]="field.key"
+                        [type]="field.type"
+                        [(ngModel)]="formModel[field.key]"
+                        [name]="field.key"
+                        [disabled]="isFieldDisabled(field)"
+                        (blur)="onFieldBlur(field)"
+                        [required]="field.required === true"
+                        #genericField="ngModel"
+                      />
+                      <div *ngIf="shouldShowRequiredError(field, genericField)" class="crud-field-error">
+                        {{ translate(requiredFieldMessageKey) }}
+                      </div>
+                    </ng-template>
                   </ng-template>
                 </ng-template>
               </div>
@@ -255,6 +286,9 @@ interface OperationLogEntry {
 export class CrudPageComponent implements OnInit, OnChanges {
   readonly requiredFieldMessageKey = 'crud.validation.required' as MessageKey;
   readonly usernameTakenMessageKey: MessageKey = 'users.error.username.taken';
+  readonly defaultPhoneCountryIsoCode = 'it';
+  readonly phoneCountryOrder: NonNullable<AllOptions['countryOrder']> = ['it', 'us', 'gb', 'fr', 'de', 'es'];
+  readonly loadPhoneInputUtils = () => import('intl-tel-input/utils');
 
 
   @Input({ required: true }) titleKey!: MessageKey;
@@ -285,7 +319,11 @@ export class CrudPageComponent implements OnInit, OnChanges {
   fieldPermissions: Record<string, string> = {};
   fieldOptions: Record<string, SelectOption[]> = {};
   operationLogs: OperationLogEntry[] = [];
+  phoneFieldTouched: Record<string, boolean> = {};
+  @ViewChildren('phoneInputElement') phoneInputElements!: QueryList<ElementRef<HTMLInputElement>>;
   private operationLogTimeouts: Record<number, any> = {};
+  private phoneInputBindings = new Map<string, PhoneInputBinding>();
+  private phoneInputChangesSubscription?: Subscription;
   protected loadedEntityKeyValue: string | number | null = null;
 
   constructor(
@@ -307,6 +345,21 @@ export class CrudPageComponent implements OnInit, OnChanges {
     if (changes['initialFormModel']) {
       this.applyInitialFormModel('ngOnChanges');
     }
+  }
+
+  ngAfterViewInit(): void {
+    this.syncPhoneInputs();
+    this.phoneInputChangesSubscription = this.phoneInputElements.changes.subscribe(() => {
+      this.syncPhoneInputs();
+    });
+  }
+
+  ngOnDestroy(): void {
+    this.phoneInputChangesSubscription?.unsubscribe();
+    for (const binding of this.phoneInputBindings.values()) {
+      binding.cleanup();
+    }
+    this.phoneInputBindings.clear();
   }
 
   get currentFields(): CrudField[] {
@@ -336,6 +389,11 @@ export class CrudPageComponent implements OnInit, OnChanges {
 
   get folderProgressPercent(): number {
     return this.folders.length > 1 ? ((this.currentFolderIndex + 1) / this.folders.length) * 100 : 100;
+  }
+
+  isPhoneField(field: CrudField): boolean {
+    const normalizedKey = field.key.toLowerCase();
+    return field.type === 'text' && (normalizedKey.includes('phone') || normalizedKey.includes('telefono'));
   }
 
   isFieldDisabled(field: CrudField): boolean {
@@ -391,6 +449,15 @@ export class CrudPageComponent implements OnInit, OnChanges {
       && (control.touched === true || control.dirty === true || this.submissionAttempted);
   }
 
+  shouldShowPhoneRequiredError(field: CrudField): boolean {
+    if (field.required !== true) {
+      return false;
+    }
+
+    return (this.phoneFieldTouched[field.key] === true || this.submissionAttempted)
+      && this.asPhoneString(this.formModel[field.key]).trim().length === 0;
+  }
+
   onSelectChange(field: CrudField, value: unknown): void {
     this.formModel[field.key] = value;
     this.applyRelatedFields(field, value);
@@ -430,7 +497,8 @@ export class CrudPageComponent implements OnInit, OnChanges {
 
   save(form: NgForm): void {
     this.submissionAttempted = true;
-    if (form.invalid) {
+    this.markPhoneFieldsTouched();
+    if (form.invalid || this.hasPhoneValidationErrors()) {
       form.control.markAllAsTouched();
       return;
     }
@@ -500,7 +568,9 @@ export class CrudPageComponent implements OnInit, OnChanges {
     this.loadedEntityKeyValue = null;
     this.usernameTaken = false;
     this.submissionAttempted = false;
+    this.phoneFieldTouched = {};
     this.loadSelectOptions();
+    this.syncPhoneInputs();
   }
 
   cancel(): void {
@@ -578,6 +648,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
       ...this.formModel,
       ...this.initialFormModel
     };
+    this.syncPhoneInputs();
 
     // eslint-disable-next-line no-console
     console.log(`[CrudPageComponent] Applied initial form model from ${source}:`, this.formModel);
@@ -746,7 +817,9 @@ export class CrudPageComponent implements OnInit, OnChanges {
         this.formModel = { ...entity };
         this.submissionAttempted = false;
         this.usernameTaken = false;
+        this.phoneFieldTouched = {};
         this.loadSelectOptions();
+        this.syncPhoneInputs();
         for (const field of this.getAllFields().filter((currentField) => currentField.type === 'select')) {
           this.applyRelatedFields(field, this.formModel[field.key]);
         }
@@ -756,6 +829,134 @@ export class CrudPageComponent implements OnInit, OnChanges {
         this.pushOperationLog('error', message);
       }
     });
+  }
+
+  private asPhoneString(value: unknown): string {
+    return typeof value === 'string' ? value : '';
+  }
+
+  /**
+   * Aggancia intl-tel-input agli input telefono attualmente renderizzati e sincronizza il modello E.164 usato dal backend.
+   */
+  private syncPhoneInputs(): void {
+    if (!this.phoneInputElements) {
+      return;
+    }
+
+    const activeFieldKeys = new Set<string>();
+    for (const inputRef of this.phoneInputElements.toArray()) {
+      const input = inputRef.nativeElement;
+      const fieldKey = input.dataset['phoneFieldKey'] ?? input.id;
+      if (!fieldKey) {
+        continue;
+      }
+
+      activeFieldKeys.add(fieldKey);
+      const existingBinding = this.phoneInputBindings.get(fieldKey);
+      if (existingBinding?.input === input && existingBinding.iti.isActive()) {
+        this.syncPhoneInputFromModel(fieldKey, input, existingBinding.iti);
+        continue;
+      }
+
+      if (existingBinding) {
+        existingBinding.cleanup();
+        this.phoneInputBindings.delete(fieldKey);
+      }
+
+      const iti = intlTelInput(input, {
+        containerClass: 'phone-intl-input',
+        countryOrder: this.phoneCountryOrder,
+        initialCountry: this.defaultPhoneCountryIsoCode,
+        loadUtils: this.loadPhoneInputUtils,
+        nationalMode: true,
+        separateDialCode: true
+      });
+
+      const syncValue = () => this.updatePhoneModelFromInput(fieldKey, input, iti);
+      input.addEventListener('input', syncValue);
+      input.addEventListener('countrychange', syncValue);
+      input.addEventListener('blur', syncValue);
+
+      this.phoneInputBindings.set(fieldKey, {
+        fieldKey,
+        input,
+        iti,
+        syncValue,
+        cleanup: () => {
+          input.removeEventListener('input', syncValue);
+          input.removeEventListener('countrychange', syncValue);
+          input.removeEventListener('blur', syncValue);
+          iti.destroy();
+        }
+      });
+
+      iti.promise.then(() => {
+        if (!iti.isActive()) {
+          return;
+        }
+
+        this.syncPhoneInputFromModel(fieldKey, input, iti);
+        this.updatePhoneModelFromInput(fieldKey, input, iti);
+        // eslint-disable-next-line no-console
+        console.log('[CrudPageComponent][phone-init]', {
+          fieldKey,
+          activeFolder: this.activeFolder,
+          modelValue: this.asPhoneString(this.formModel[fieldKey]),
+          wrapperClass: input.closest('.iti')?.className ?? 'missing'
+        });
+      });
+    }
+
+    for (const [fieldKey, binding] of this.phoneInputBindings.entries()) {
+      if (!activeFieldKeys.has(fieldKey)) {
+        binding.cleanup();
+        this.phoneInputBindings.delete(fieldKey);
+      }
+    }
+  }
+
+  private syncPhoneInputFromModel(fieldKey: string, input: HTMLInputElement, iti: Iti): void {
+    if (document.activeElement === input) {
+      return;
+    }
+
+    const modelValue = this.asPhoneString(this.formModel[fieldKey]);
+    const currentValue = iti.getNumber() || input.value;
+    if (modelValue !== currentValue) {
+      iti.setNumber(modelValue);
+    }
+  }
+
+  private updatePhoneModelFromInput(fieldKey: string, input: HTMLInputElement, iti: Iti): void {
+    const nextValue = iti.getNumber() || this.asPhoneString(input.value);
+    if (this.formModel[fieldKey] === nextValue) {
+      return;
+    }
+
+    this.formModel[fieldKey] = nextValue;
+    // eslint-disable-next-line no-console
+    console.log('[CrudPageComponent][phone-change]', {
+      fieldKey,
+      activeFolder: this.activeFolder,
+      inputValue: input.value,
+      e164Value: nextValue,
+      countryIso: iti.getSelectedCountryData()?.iso2 ?? ''
+    });
+  }
+
+  onPhoneFieldBlur(field: CrudField): void {
+    this.phoneFieldTouched[field.key] = true;
+    this.onFieldBlur(field);
+  }
+
+  private hasPhoneValidationErrors(): boolean {
+    return this.getAllFields().some((field) => this.isPhoneField(field) && this.shouldShowPhoneRequiredError(field));
+  }
+
+  private markPhoneFieldsTouched(): void {
+    for (const field of this.getAllFields().filter((currentField) => this.isPhoneField(currentField) && currentField.required === true)) {
+      this.phoneFieldTouched[field.key] = true;
+    }
   }
 
   /**

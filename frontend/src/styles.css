@@ -88,6 +88,108 @@ textarea {
   min-height: 50px;
 }
 
+.phone-input-group {
+  display: grid;
+  grid-template-columns: minmax(116px, 140px) minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+}
+
+.phone-input-group-inline {
+  margin-top: 8px;
+}
+
+.phone-input-group-compact {
+  min-width: 260px;
+}
+
+.phone-country-select,
+.phone-number-input {
+  width: 100%;
+  margin-bottom: 0 !important;
+}
+
+.phone-country-select {
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+  text-align: center;
+  font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", "Segoe UI Symbol", "Work Sans", Arial, Helvetica, sans-serif !important;
+  font-size: 20px !important;
+  line-height: 1;
+}
+
+.phone-country-select option {
+  font-family: "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", "Segoe UI Symbol", "Work Sans", Arial, Helvetica, sans-serif;
+  font-size: 18px;
+}
+
+.phone-input-group-intl {
+  display: block;
+  width: 100%;
+}
+
+.phone-intl-input {
+  display: block;
+  width: 100%;
+}
+
+.phone-intl-input .iti {
+  width: 100%;
+}
+
+.phone-intl-input .iti__tel-input {
+  width: 100%;
+  min-height: var(--input-height, 36px);
+  padding: var(--input-padding, 6px 16px) !important;
+  padding-left: 74px !important;
+  border-radius: var(--input-border-radius, 18px);
+  background: var(--input-background);
+  border: 1px solid var(--Color-shadow);
+  box-sizing: border-box;
+  color: var(--Primary) !important;
+  font-family: "Work Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: normal;
+}
+
+.phone-intl-input .iti__country-container {
+  left: 8px;
+}
+
+.phone-intl-input .iti__selected-country {
+  min-height: calc(var(--input-height, 36px) - 4px);
+  border-radius: 14px;
+  padding: 0 10px;
+}
+
+.phone-intl-input .iti__selected-country-primary {
+  gap: 8px;
+}
+
+.phone-intl-input .iti__selected-dial-code {
+  display: none;
+}
+
+.phone-intl-input .iti__flag {
+  transform: scale(1.05);
+}
+
+.phone-intl-input.phone-field-invalid .iti__tel-input {
+  border-color: #d32f2f;
+}
+
+.phone-intl-input.phone-field-invalid .iti__tel-input:focus {
+  box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.14);
+}
+
+@media (max-width: 640px) {
+  .phone-input-group {
+    grid-template-columns: 1fr;
+  }
+}
+
 input[type="text"]:focus,
 input[type="email"]:focus,
 input[type="password"]:focus,
