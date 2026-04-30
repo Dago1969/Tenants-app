@@ -1,0 +1,357 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260430-10-create-core-schema
+      author: copilot
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              CREATE TABLE IF NOT EXISTS equipment_type (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                code VARCHAR(64) NOT NULL UNIQUE,
+                name VARCHAR(128) NOT NULL,
+                description VARCHAR(512),
+                equipment_use VARCHAR(256),
+                cost DECIMAL(19,2),
+                supplier VARCHAR(128),
+                serial_number_required BIT,
+                principal_json_present BIT,
+                principal_json_path TEXT,
+                secondary_json_present BIT,
+                secondary_json_path TEXT,
+                purchase_date DATE,
+                status VARCHAR(32) NOT NULL DEFAULT 'attivo',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP
+              );
+
+              CREATE TABLE IF NOT EXISTS structures (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                code VARCHAR(255) UNIQUE,
+                name VARCHAR(255) NOT NULL,
+                description VARCHAR(255),
+                address VARCHAR(255) NOT NULL,
+                cap VARCHAR(255),
+                city_id BIGINT,
+                city VARCHAR(255),
+                province_id BIGINT,
+                province VARCHAR(255),
+                region_id BIGINT,
+                region VARCHAR(255),
+                phone VARCHAR(255),
+                email VARCHAR(255),
+                service_calendar_hours TEXT,
+                active BIT,
+                structure_type VARCHAR(255),
+                parent_structure_id BIGINT
+              );
+
+              CREATE TABLE IF NOT EXISTS structure_types (
+                code VARCHAR(255) PRIMARY KEY,
+                description VARCHAR(255) NOT NULL,
+                function_description VARCHAR(1000) NOT NULL,
+                parent_type_code VARCHAR(255),
+                display_order INT NOT NULL
+              );
+
+              CREATE TABLE IF NOT EXISTS referents (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                first_name VARCHAR(255) NOT NULL,
+                last_name VARCHAR(255) NOT NULL,
+                role VARCHAR(255),
+                phone VARCHAR(255),
+                email VARCHAR(255)
+              );
+
+              CREATE TABLE IF NOT EXISTS structure_referents (
+                structure_id BIGINT UNSIGNED NOT NULL,
+                referent_id BIGINT UNSIGNED NOT NULL,
+                PRIMARY KEY (structure_id, referent_id)
+              );
+
+              CREATE TABLE IF NOT EXISTS structure_pharmacies (
+                structure_id BIGINT UNSIGNED NOT NULL,
+                pharmacy_id BIGINT UNSIGNED NOT NULL,
+                PRIMARY KEY (structure_id, pharmacy_id)
+              );
+
+              CREATE TABLE IF NOT EXISTS modules (
+                code VARCHAR(255) PRIMARY KEY,
+                name VARCHAR(255) NOT NULL
+              );
+
+              CREATE TABLE IF NOT EXISTS roles (
+                id VARCHAR(255) PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                description VARCHAR(255) NOT NULL
+              );
+
+              CREATE TABLE IF NOT EXISTS functions (
+                code VARCHAR(255) PRIMARY KEY,
+                name VARCHAR(255) NOT NULL
+              );
+
+              CREATE TABLE IF NOT EXISTS controller_method_functions (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                module_code VARCHAR(100) NOT NULL,
+                method_name VARCHAR(150) NOT NULL,
+                function_code VARCHAR(100) NOT NULL,
+                UNIQUE KEY uk_controller_method_function (module_code, method_name)
+              );
+
+              CREATE TABLE IF NOT EXISTS module_role_authorizations (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                module_code VARCHAR(255) NOT NULL,
+                role_id VARCHAR(255) NOT NULL,
+                authorization VARCHAR(255) NOT NULL,
+                UNIQUE KEY uk_module_role_authorizations_module_code_role (module_code, role_id)
+              );
+
+              CREATE TABLE IF NOT EXISTS field_authorizations (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                module_role_authorization_id BIGINT NOT NULL,
+                entity_name VARCHAR(255) NOT NULL,
+                field_name VARCHAR(255) NOT NULL,
+                authorization VARCHAR(255) NOT NULL,
+                UNIQUE KEY uk_field_authorizations_module_role_entity_field (module_role_authorization_id, entity_name, field_name)
+              );
+
+              CREATE TABLE IF NOT EXISTS function_module_role_authorizations (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                function_code VARCHAR(255) NOT NULL,
+                module_code VARCHAR(255) NOT NULL,
+                role_id VARCHAR(255) NOT NULL,
+                authorization VARCHAR(255) NOT NULL,
+                UNIQUE KEY uk_fmra_func_mod_role (function_code, module_code, role_id)
+              );
+
+              CREATE TABLE IF NOT EXISTS patients (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                assisted_id VARCHAR(255) UNIQUE,
+                first_name VARCHAR(255) NOT NULL,
+                last_name VARCHAR(255) NOT NULL,
+                fiscal_code VARCHAR(255) NOT NULL UNIQUE,
+                email VARCHAR(255),
+                primary_phone VARCHAR(255),
+                secondary_phone VARCHAR(255),
+                region_id BIGINT,
+                region VARCHAR(255),
+                province_id BIGINT,
+                province VARCHAR(255),
+                city_id BIGINT,
+                city VARCHAR(255),
+                delivery_address VARCHAR(255),
+                secondary_addresses VARCHAR(2000),
+                communication_channels VARCHAR(255),
+                identification_document_reference VARCHAR(2000),
+                data_processing_consent BIT,
+                data_processing_consent_datetime DATETIME,
+                data_processing_consent_revocation_log VARCHAR(4000),
+                additional_consents VARCHAR(2000),
+                therapy_status VARCHAR(255),
+                prescribing_specialist VARCHAR(255),
+                reference_hospital_structure VARCHAR(255),
+                reference_pharmacy VARCHAR(255),
+                preferred_pickup_pharmacy VARCHAR(255),
+                delivery_mode VARCHAR(255),
+                reminder_enabled BIT,
+                caregiver_full_name VARCHAR(255),
+                caregiver_phone VARCHAR(255),
+                preferred_contact VARCHAR(255),
+                structure_id BIGINT
+              );
+
+              CREATE TABLE IF NOT EXISTS doctors (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                doctor_flyer_id VARCHAR(255) UNIQUE,
+                full_name VARCHAR(255) NOT NULL,
+                email VARCHAR(255),
+                primary_phone VARCHAR(255),
+                secondary_phone VARCHAR(255),
+                region_id BIGINT,
+                region VARCHAR(255),
+                province_id BIGINT,
+                province VARCHAR(255),
+                city_id BIGINT,
+                city VARCHAR(255),
+                delivery_address VARCHAR(255),
+                secondary_addresses VARCHAR(2000),
+                structure_id BIGINT,
+                specialization VARCHAR(255),
+                data_processing_consent BIT,
+                data_processing_consent_datetime DATETIME,
+                data_processing_consent_revocation_log VARCHAR(4000),
+                additional_consents VARCHAR(2000)
+              );
+
+              CREATE TABLE IF NOT EXISTS nurses (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                nurse_project_id VARCHAR(255) UNIQUE,
+                full_name VARCHAR(255) NOT NULL,
+                email VARCHAR(255),
+                primary_phone VARCHAR(255),
+                secondary_phone VARCHAR(255),
+                region_id BIGINT,
+                region VARCHAR(255),
+                province_id BIGINT,
+                province VARCHAR(255),
+                city_id BIGINT,
+                city VARCHAR(255),
+                coverage_area VARCHAR(255),
+                reference_provider VARCHAR(255),
+                professional_register VARCHAR(255),
+                enabled BIT
+              );
+
+              CREATE TABLE IF NOT EXISTS operation_logs (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                occurred_at DATETIME NOT NULL,
+                module_code VARCHAR(255) NOT NULL,
+                function_code VARCHAR(255),
+                operation VARCHAR(255) NOT NULL,
+                description TEXT,
+                target_id VARCHAR(255),
+                role_id VARCHAR(255),
+                username VARCHAR(255) NOT NULL,
+                client_ip VARCHAR(255),
+                user_agent TEXT,
+                metadata TEXT
+              );
+
+  - changeSet:
+      id: 20260430-10-create-therapy-schema
+      author: copilot
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              CREATE TABLE IF NOT EXISTS equipment (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                equipment_type_id BIGINT UNSIGNED NOT NULL,
+                code VARCHAR(64) NOT NULL UNIQUE,
+                status VARCHAR(32) NOT NULL DEFAULT 'in_magazzino',
+                serial_number VARCHAR(128),
+                location VARCHAR(255),
+                assigned_to BIGINT NULL,
+                purchase_date DATE,
+                last_revision_date DATE,
+                next_revision_date DATE,
+                notes VARCHAR(1000),
+                primary_json TEXT,
+                secondary_json TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                CONSTRAINT fk_equipment_equipment_type
+                  FOREIGN KEY (equipment_type_id) REFERENCES equipment_type (id),
+                KEY idx_equipment_type_id (equipment_type_id),
+                KEY idx_equipment_status (status),
+                KEY idx_equipment_assigned_to (assigned_to)
+              );
+
+              CREATE TABLE IF NOT EXISTS therapeutic_plan (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                patient_id BIGINT NOT NULL,
+                project_code VARCHAR(128) NOT NULL,
+                structure_id BIGINT NOT NULL,
+                nurse_id BIGINT NOT NULL,
+                doctor_id BIGINT NOT NULL,
+                drug_code VARCHAR(128) NOT NULL,
+                start_date DATE NOT NULL,
+                end_date DATE,
+                status VARCHAR(32) NOT NULL DEFAULT 'draft',
+                notes VARCHAR(1000),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                KEY idx_therapeutic_plan_patient_id (patient_id),
+                KEY idx_therapeutic_plan_project_code (project_code),
+                KEY idx_therapeutic_plan_status (status),
+                KEY idx_therapeutic_plan_structure_id (structure_id)
+              );
+
+              CREATE TABLE IF NOT EXISTS therapeutic_plan_alert (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                therapeutic_plan_id BIGINT NOT NULL,
+                doctor_id BIGINT NOT NULL,
+                alert_date DATE NOT NULL,
+                subject VARCHAR(255) NOT NULL,
+                confirmation_required BIT NOT NULL,
+                confirmation_sent VARCHAR(8) NOT NULL DEFAULT 'na',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                KEY idx_therapeutic_plan_alert_plan_id (therapeutic_plan_id),
+                KEY idx_therapeutic_plan_alert_doctor_id (doctor_id),
+                KEY idx_therapeutic_plan_alert_date (alert_date),
+                KEY idx_therapeutic_plan_alert_confirmation_sent (confirmation_sent)
+              );
+
+              CREATE TABLE IF NOT EXISTS therapeutic_plan_notification (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                therapeutic_plan_id BIGINT NOT NULL,
+                sent_date DATE NOT NULL,
+                sent_by_operator VARCHAR(255) NOT NULL,
+                subject VARCHAR(255) NOT NULL,
+                message TEXT NOT NULL,
+                confirmed BIT NULL,
+                confirmation_date DATE NULL,
+                confirmed_by_doctor VARCHAR(255) NULL,
+                notes TEXT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                KEY idx_therapeutic_plan_notification_plan_id (therapeutic_plan_id),
+                KEY idx_therapeutic_plan_notification_sent_date (sent_date),
+                KEY idx_therapeutic_plan_notification_confirmed (confirmed)
+              );
+
+              CREATE TABLE IF NOT EXISTS therapeutic_plan_visit (
+                therapeutic_plan_id BIGINT NOT NULL,
+                visit_date DATETIME NOT NULL,
+                duodopa VARCHAR(64),
+                caregiver VARCHAR(255),
+                clinical_center VARCHAR(255),
+                neurologist VARCHAR(255),
+                gastroenterologist VARCHAR(255),
+                visit_type VARCHAR(64),
+                visit_priority VARCHAR(32),
+                json_visit TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (therapeutic_plan_id, visit_date),
+                KEY idx_therapeutic_plan_visit_plan_id (therapeutic_plan_id),
+                KEY idx_therapeutic_plan_visit_date (visit_date)
+              );
+
+              CREATE TABLE IF NOT EXISTS therapeutic_plan_activity_booking (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                therapeutic_plan_id BIGINT NOT NULL,
+                patient_id BIGINT NOT NULL,
+                structure_id BIGINT NOT NULL,
+                booking_date DATE NOT NULL,
+                visit_type VARCHAR(64) NOT NULL,
+                protocol_planned BIT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                KEY idx_tp_activity_booking_plan_id (therapeutic_plan_id),
+                KEY idx_tp_activity_booking_date (booking_date),
+                KEY idx_tp_activity_booking_type (visit_type)
+              );
+
+              CREATE TABLE IF NOT EXISTS therapeutic_plan_contact_request (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                therapeutic_plan_id BIGINT NOT NULL,
+                patient_id BIGINT NOT NULL,
+                request_date DATE NOT NULL,
+                request_type VARCHAR(64) NOT NULL,
+                outpatient_clinic VARCHAR(255) NOT NULL,
+                structure_id BIGINT NOT NULL,
+                status VARCHAR(64) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                KEY idx_tp_contact_request_plan_id (therapeutic_plan_id),
+                KEY idx_tp_contact_request_date (request_date),
+                KEY idx_tp_contact_request_type (request_type),
+                KEY idx_tp_contact_request_status (status)
+              );

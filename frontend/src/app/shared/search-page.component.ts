@@ -20,6 +20,12 @@ export interface SearchField {
   optionsQueryParamKey?: string;
 }
 
+export interface SearchPrintSection {
+  titleKey: MessageKey;
+  descriptionKey?: MessageKey;
+  fields: string[];
+}
+
 type SearchResult = Record<string, unknown> & { id?: string | number };
 
 interface SelectOption {
@@ -55,6 +61,12 @@ interface ViewDetailItem {
   value: string;
   isStatus: boolean;
   statusClass?: string;
+}
+
+interface ViewDetailSection {
+  title: string;
+  description: string;
+  items: ViewDetailItem[];
 }
 
 
@@ -246,21 +258,47 @@ type DeleteDialogMode = 'confirm' | 'reassign';
           </div>
 
           <div class="search-view-dialog-body">
-            <div *ngIf="viewDetailItems.length > 0; else emptyViewState" class="summary4-grid search-view-summary-grid">
+            <div *ngIf="hasConfiguredViewSections; else defaultViewLayout" class="search-view-sections">
+              <section *ngFor="let section of viewDetailSections" class="search-view-section">
+                <div class="search-view-section-header">
+                  <h4 class="detail-section-title">{{ section.title }}</h4>
+                  <p *ngIf="section.description" class="detail-section-description">{{ section.description }}</p>
+                </div>
+                <div class="summary4-grid search-view-summary-grid">
+                  <div *ngFor="let row of getViewDetailRows(section.items)" class="summary4-row search-view-summary-row">
+                    <div *ngFor="let item of row" class="summary4-col search-view-summary-col">
+                      <div class="detail-field-label">{{ item.label }}</div>
+                      <div class="detail-field-value search-view-value-block">
+                        <span *ngIf="item.isStatus; else standardSectionValue" class="status-badge" [ngClass]="item.statusClass">
+                          {{ item.value }}
+                        </span>
+                        <ng-template #standardSectionValue>
+                          <span class="detail-field-value">{{ item.value }}</span>
+                        </ng-template>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
+
+            <ng-template #defaultViewLayout>
+              <div *ngIf="viewDetailItems.length > 0; else emptyViewState" class="summary4-grid search-view-summary-grid">
               <div *ngFor="let row of viewDetailRows" class="summary4-row search-view-summary-row">
                 <div *ngFor="let item of row" class="summary4-col search-view-summary-col">
-                  <div class="summary2-label search-view-label">{{ item.label }}</div>
-                  <div class="summary2-value search-view-value-block">
+                  <div class="detail-field-label">{{ item.label }}</div>
+                  <div class="detail-field-value search-view-value-block">
                     <span *ngIf="item.isStatus; else standardViewValue" class="status-badge" [ngClass]="item.statusClass">
                       {{ item.value }}
                     </span>
                     <ng-template #standardViewValue>
-                      <span class="search-view-value">{{ item.value }}</span>
+                      <span class="detail-field-value">{{ item.value }}</span>
                     </ng-template>
                   </div>
                 </div>
               </div>
-            </div>
+              </div>
+            </ng-template>
 
             <ng-template #emptyViewState>
               <p class="search-dialog-message search-view-empty-message">{{ translate('search.view.empty') }}</p>
@@ -351,6 +389,7 @@ export class SearchPageComponent implements OnInit {
   @Input() manageActionLabelKey = '';
   @Input() deleteCheckEndpoint = '';
   @Input() interceptEditAction = false;
+  @Input() printSections: SearchPrintSection[] = [];
   @Output() editAction = new EventEmitter<string>();
 
   filterModel: Record<string, string> = {};
@@ -447,7 +486,38 @@ export class SearchPageComponent implements OnInit {
   }
 
   get viewDetailRows(): ViewDetailItem[][] {
-    const items = this.viewDetailItems;
+    return this.getViewDetailRows(this.viewDetailItems);
+  }
+
+  get hasConfiguredViewSections(): boolean {
+    return this.viewDetailSections.length > 0;
+  }
+
+  get viewDetailSections(): ViewDetailSection[] {
+    if (!this.hasConfiguredPrintSections()) {
+      return [];
+    }
+
+    return this.printSections
+      .map((section) => {
+        const items = section.fields
+          .map((fieldKey) => this.buildViewDetailItem(fieldKey, this.selectedViewRow?.[fieldKey]))
+          .filter((item): item is ViewDetailItem => item !== null);
+
+        if (items.length === 0) {
+          return null;
+        }
+
+        return {
+          title: this.translate(section.titleKey),
+          description: section.descriptionKey ? this.translate(section.descriptionKey) : '',
+          items
+        };
+      })
+      .filter((section): section is ViewDetailSection => section !== null);
+  }
+
+  getViewDetailRows(items: ViewDetailItem[]): ViewDetailItem[][] {
     const rows: ViewDetailItem[][] = [];
 
     for (let index = 0; index < items.length; index += 4) {
@@ -782,7 +852,9 @@ export class SearchPageComponent implements OnInit {
   private buildPrintMarkup(): string {
     const title = this.escapeHtml(this.translate('search.view.title'));
     const subtitle = this.escapeHtml(this.viewDialogSubtitle);
-    const rows = this.viewDetailItems.map((item) => `
+    const content = this.hasConfiguredPrintSections()
+      ? this.buildSectionedPrintMarkup()
+      : this.viewDetailItems.map((item) => `
       <div class="print-row">
         <div class="print-label">${this.escapeHtml(item.label)}</div>
         <div class="print-value">${this.escapeHtml(item.value).replace(/\n/g, '<br>')}</div>
@@ -799,6 +871,11 @@ export class SearchPageComponent implements OnInit {
             h1 { margin: 0 0 8px; font-size: 24px; color: #1f3d6e; }
             .subtitle { margin: 0 0 24px; color: #4b5563; }
             .print-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+            .print-sections { display: grid; gap: 24px; }
+            .print-section { border: 1px solid #dbe4f0; border-radius: 16px; padding: 18px 20px; background: #f8fbff; }
+            .print-section-header { margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #dbe4f0; }
+            .print-section-title { margin: 0 0 6px; font-size: 18px; color: #1f3d6e; }
+            .print-section-description { margin: 0; color: #4b5563; font-size: 13px; line-height: 1.5; }
             .print-row { border: 1px solid #dbe4f0; border-radius: 10px; padding: 12px 14px; break-inside: avoid; }
             .print-label { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #4667a8; margin-bottom: 8px; }
             .print-value { font-size: 14px; white-space: pre-wrap; word-break: break-word; }
@@ -807,9 +884,49 @@ export class SearchPageComponent implements OnInit {
         <body>
           <h1>${title}</h1>
           <p class="subtitle">${subtitle}</p>
-          <div class="print-grid">${rows}</div>
+          <div class="${this.hasConfiguredPrintSections() ? 'print-sections' : 'print-grid'}">${content}</div>
         </body>
       </html>`;
+  }
+
+  private hasConfiguredPrintSections(): boolean {
+    return this.printSections.length > 0 && this.selectedViewRow !== null;
+  }
+
+  private buildSectionedPrintMarkup(): string {
+    return this.printSections
+      .map((section) => {
+        const sectionItems = section.fields
+          .map((fieldKey) => this.buildViewDetailItem(fieldKey, this.selectedViewRow?.[fieldKey]))
+          .filter((item): item is ViewDetailItem => item !== null);
+
+        if (sectionItems.length === 0) {
+          return '';
+        }
+
+        const sectionRows = sectionItems.map((item) => `
+          <div class="print-row">
+            <div class="print-label">${this.escapeHtml(item.label)}</div>
+            <div class="print-value">${this.escapeHtml(item.value).replace(/\n/g, '<br>')}</div>
+          </div>
+        `).join('');
+
+        const descriptionMarkup = section.descriptionKey
+          ? `<p class="print-section-description">${this.escapeHtml(this.translate(section.descriptionKey))}</p>`
+          : '';
+
+        return `
+          <section class="print-section">
+            <div class="print-section-header">
+              <h2 class="print-section-title">${this.escapeHtml(this.translate(section.titleKey))}</h2>
+              ${descriptionMarkup}
+            </div>
+            <div class="print-grid">${sectionRows}</div>
+          </section>
+        `;
+      })
+      .filter((sectionMarkup) => sectionMarkup.length > 0)
+      .join('');
   }
 
   private escapeHtml(value: string): string {

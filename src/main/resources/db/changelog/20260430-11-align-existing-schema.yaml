@@ -1,0 +1,230 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260430-11-align-equipment-type
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: equipment_type
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              UPDATE equipment_type
+              SET status = 'attivo'
+              WHERE status IS NULL OR TRIM(status) = '';
+
+              ALTER TABLE equipment_type
+                MODIFY COLUMN principal_json_path TEXT NULL,
+                MODIFY COLUMN secondary_json_path TEXT NULL,
+                MODIFY COLUMN status VARCHAR(32) NOT NULL DEFAULT 'attivo';
+
+  - changeSet:
+      id: 20260430-11-normalize-module-codes
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: function_module_role_authorizations
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              UPDATE function_module_role_authorizations
+              SET module_code = 'STRUCTURE-ASL'
+              WHERE module_code = 'ASL';
+
+              UPDATE function_module_role_authorizations
+              SET module_code = 'STRUCTURE-FARMACY-O'
+              WHERE module_code = 'HOSPITAL_PHARMACY';
+
+              UPDATE function_module_role_authorizations
+              SET module_code = 'STRUCTURE-FARMACY-R'
+              WHERE module_code = 'RETAIL_PHARMACY';
+
+              UPDATE function_module_role_authorizations
+              SET module_code = 'STRUCTURE_LOGISTICS_WAREHOUSE'
+              WHERE module_code = 'LOGISTICS_WAREHOUSE';
+
+              UPDATE function_module_role_authorizations
+              SET module_code = 'STRUCTURE_MATERIAL_WAREHOUSE'
+              WHERE module_code = 'MATERIAL_WAREHOUSE';
+
+              UPDATE function_module_role_authorizations
+              SET module_code = 'STRUCTURE_PHARMA_COMPANY'
+              WHERE module_code = 'PHARMA_COMPANY';
+
+              UPDATE function_module_role_authorizations
+              SET module_code = 'STRUCTURE_SPECIALIST_CLINIC'
+              WHERE module_code = 'SPECIALIST_CLINIC';
+
+  - changeSet:
+      id: 20260430-11-normalize-module-role-authorizations
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: module_role_authorizations
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              UPDATE module_role_authorizations
+              SET module_code = 'STRUCTURE-ASL'
+              WHERE module_code = 'ASL';
+
+  - changeSet:
+      id: 20260430-11-migrate-equipment-assignment
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: therapeutic_plan_equipment
+        - tableExists:
+            tableName: equipment
+        - columnExists:
+            tableName: equipment
+            columnName: assigned_to
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              UPDATE equipment equipment_record
+              LEFT JOIN (
+                SELECT equipment_id, MAX(therapeutic_plan_id) AS therapeutic_plan_id
+                FROM therapeutic_plan_equipment
+                GROUP BY equipment_id
+              ) assigned_plan ON assigned_plan.equipment_id = equipment_record.id
+              SET equipment_record.assigned_to = CASE
+                WHEN assigned_plan.therapeutic_plan_id IS NOT NULL THEN CAST(assigned_plan.therapeutic_plan_id AS CHAR(255))
+                WHEN TRIM(COALESCE(equipment_record.assigned_to, '')) REGEXP '^[0-9]+$' THEN TRIM(equipment_record.assigned_to)
+                ELSE NULL
+              END;
+
+              DROP TABLE IF EXISTS therapeutic_plan_equipment;
+
+  - changeSet:
+      id: 20260430-11-align-equipment-assigned-to
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: equipment
+        - columnExists:
+            tableName: equipment
+            columnName: assigned_to
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+
+              UPDATE equipment
+              SET assigned_to = NULL
+              WHERE TRIM(COALESCE(assigned_to, '')) = ''
+                 OR TRIM(COALESCE(assigned_to, '')) NOT REGEXP '^[0-9]+$';
+
+              ALTER TABLE equipment
+                MODIFY COLUMN assigned_to BIGINT NULL;
+
+  - changeSet:
+      id: 20260430-11-align-therapeutic-plan
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: therapeutic_plan
+        - columnExists:
+            tableName: therapeutic_plan
+            columnName: json_visit
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE therapeutic_plan DROP COLUMN json_visit;
+
+  - changeSet:
+      id: 20260430-11-add-therapeutic-plan-visit-json-visit
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: therapeutic_plan_visit
+        - not:
+            columnExists:
+              tableName: therapeutic_plan_visit
+              columnName: json_visit
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE therapeutic_plan_visit
+                ADD COLUMN json_visit TEXT NULL;
+
+  - changeSet:
+      id: 20260430-11-drop-therapeutic-plan-patient-fk
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - foreignKeyConstraintExists:
+            foreignKeyName: FK9r1ucp0kt9paqj1fwr66ld3du
+            foreignKeyTableName: therapeutic_plan
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: therapeutic_plan
+            constraintName: FK9r1ucp0kt9paqj1fwr66ld3du
+
+  - changeSet:
+      id: 20260430-11-align-therapeutic-plan-visit
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: therapeutic_plan_visit
+        - columnExists:
+            tableName: therapeutic_plan_visit
+            columnName: visit_date
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE therapeutic_plan_visit
+                MODIFY COLUMN visit_date DATETIME NOT NULL;
+
+  - changeSet:
+      id: 20260430-11-drop-therapeutic-plan-visit-start-therapy
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: therapeutic_plan_visit
+        - columnExists:
+            tableName: therapeutic_plan_visit
+            columnName: start_therapy
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+
+              UPDATE therapeutic_plan_visit
+              SET visit_date = COALESCE(start_therapy, visit_date);
+
+              ALTER TABLE therapeutic_plan_visit DROP COLUMN start_therapy;

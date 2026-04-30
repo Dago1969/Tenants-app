@@ -1,0 +1,1321 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260415-01-create-equipment-type-table
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            tableExists:
+              tableName: equipment_type
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              CREATE TABLE IF NOT EXISTS equipment_type (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                code VARCHAR(64) NOT NULL UNIQUE,
+                name VARCHAR(128) NOT NULL,
+                description VARCHAR(512),
+                equipment_use VARCHAR(256),
+                cost DECIMAL(19,2),
+                supplier VARCHAR(128),
+                serial_number_required BIT,
+                principal_json_present BIT,
+                principal_json_path VARCHAR(256),
+                secondary_json_present BIT,
+                secondary_json_path VARCHAR(256),
+                purchase_date DATE,
+                status VARCHAR(32),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP
+              );
+  - changeSet:
+      id: 20260415-02-rename-equipment-type-use-column
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: equipment_type
+        - columnExists:
+            tableName: equipment_type
+            columnName: use
+        - not:
+            columnExists:
+              tableName: equipment_type
+              columnName: equipment_use
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE equipment_type
+                CHANGE COLUMN `use` equipment_use VARCHAR(256);
+  - changeSet:
+      id: 2026-04-14-create-base-tables
+      author: copilot
+      validCheckSum:
+        - 9:1d43b9313aca899264436c48ab6812d7
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              CREATE TABLE IF NOT EXISTS structures (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                code VARCHAR(255) UNIQUE,
+                name VARCHAR(255) NOT NULL,
+                description VARCHAR(255),
+                address VARCHAR(255) NOT NULL,
+                cap VARCHAR(255),
+                city_id BIGINT,
+                city VARCHAR(255),
+                province_id BIGINT,
+                province VARCHAR(255),
+                region_id BIGINT,
+                region VARCHAR(255),
+                phone VARCHAR(255),
+                email VARCHAR(255),
+                service_calendar_hours TEXT,
+                active BIT,
+                structure_type VARCHAR(255),
+                parent_structure_id BIGINT
+              );
+
+              CREATE TABLE IF NOT EXISTS structure_types (
+                code VARCHAR(255) PRIMARY KEY,
+                description VARCHAR(255) NOT NULL,
+                function_description VARCHAR(1000) NOT NULL,
+                parent_type_code VARCHAR(255),
+                display_order INT NOT NULL
+              );
+
+              CREATE TABLE IF NOT EXISTS referents (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                first_name VARCHAR(255) NOT NULL,
+                last_name VARCHAR(255) NOT NULL,
+                role VARCHAR(255),
+                phone VARCHAR(255),
+                email VARCHAR(255)
+              );
+
+              CREATE TABLE IF NOT EXISTS structure_referents (
+                structure_id BIGINT UNSIGNED NOT NULL,
+                referent_id BIGINT UNSIGNED NOT NULL,
+                PRIMARY KEY (structure_id, referent_id)
+              );
+
+              CREATE TABLE IF NOT EXISTS structure_pharmacies (
+                structure_id BIGINT UNSIGNED NOT NULL,
+                pharmacy_id BIGINT UNSIGNED NOT NULL,
+                PRIMARY KEY (structure_id, pharmacy_id)
+              );
+
+              CREATE TABLE IF NOT EXISTS modules (
+                code VARCHAR(255) PRIMARY KEY,
+                name VARCHAR(255) NOT NULL
+              );
+
+              CREATE TABLE IF NOT EXISTS roles (
+                id VARCHAR(255) PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                description VARCHAR(255) NOT NULL
+              );
+
+              CREATE TABLE IF NOT EXISTS functions (
+                code VARCHAR(255) PRIMARY KEY,
+                name VARCHAR(255) NOT NULL
+              );
+
+              CREATE TABLE IF NOT EXISTS controller_method_functions (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                module_code VARCHAR(100) NOT NULL,
+                method_name VARCHAR(150) NOT NULL,
+                function_code VARCHAR(100) NOT NULL,
+                UNIQUE KEY uk_controller_method_function (module_code, method_name)
+              );
+
+              CREATE TABLE IF NOT EXISTS module_role_authorizations (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                module_code VARCHAR(255) NOT NULL,
+                role_id VARCHAR(255) NOT NULL,
+                authorization VARCHAR(255) NOT NULL,
+                UNIQUE KEY uk_module_role_authorizations_module_code_role (module_code, role_id)
+              );
+
+              CREATE TABLE IF NOT EXISTS field_authorizations (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                module_role_authorization_id BIGINT NOT NULL,
+                entity_name VARCHAR(255) NOT NULL,
+                field_name VARCHAR(255) NOT NULL,
+                authorization VARCHAR(255) NOT NULL,
+                UNIQUE KEY uk_field_authorizations_module_role_entity_field (module_role_authorization_id, entity_name, field_name)
+              );
+
+              CREATE TABLE IF NOT EXISTS function_module_role_authorizations (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                function_code VARCHAR(255) NOT NULL,
+                module_code VARCHAR(255) NOT NULL,
+                role_id VARCHAR(255) NOT NULL,
+                authorization VARCHAR(255) NOT NULL,
+                UNIQUE KEY uk_fmra_func_mod_role (function_code, module_code, role_id)
+              );
+
+              CREATE TABLE IF NOT EXISTS patients (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                assisted_id VARCHAR(255) UNIQUE,
+                first_name VARCHAR(255) NOT NULL,
+                last_name VARCHAR(255) NOT NULL,
+                fiscal_code VARCHAR(255) NOT NULL UNIQUE,
+                email VARCHAR(255),
+                primary_phone VARCHAR(255),
+                secondary_phone VARCHAR(255),
+                region_id BIGINT,
+                region VARCHAR(255),
+                province_id BIGINT,
+                province VARCHAR(255),
+                city_id BIGINT,
+                city VARCHAR(255),
+                delivery_address VARCHAR(255),
+                secondary_addresses VARCHAR(2000),
+                communication_channels VARCHAR(255),
+                identification_document_reference VARCHAR(2000),
+                data_processing_consent BIT,
+                data_processing_consent_datetime DATETIME,
+                data_processing_consent_revocation_log VARCHAR(4000),
+                additional_consents VARCHAR(2000),
+                therapy_status VARCHAR(255),
+                prescribing_specialist VARCHAR(255),
+                reference_hospital_structure VARCHAR(255),
+                reference_pharmacy VARCHAR(255),
+                preferred_pickup_pharmacy VARCHAR(255),
+                delivery_mode VARCHAR(255),
+                reminder_enabled BIT,
+                caregiver_full_name VARCHAR(255),
+                caregiver_phone VARCHAR(255),
+                preferred_contact VARCHAR(255),
+                structure_id BIGINT
+              );
+
+              CREATE TABLE IF NOT EXISTS doctors (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                doctor_flyer_id VARCHAR(255) UNIQUE,
+                full_name VARCHAR(255) NOT NULL,
+                email VARCHAR(255),
+                primary_phone VARCHAR(255),
+                secondary_phone VARCHAR(255),
+                region_id BIGINT,
+                region VARCHAR(255),
+                province_id BIGINT,
+                province VARCHAR(255),
+                city_id BIGINT,
+                city VARCHAR(255),
+                delivery_address VARCHAR(255),
+                secondary_addresses VARCHAR(2000),
+                structure_id BIGINT,
+                specialization VARCHAR(255),
+                data_processing_consent BIT,
+                data_processing_consent_datetime DATETIME,
+                data_processing_consent_revocation_log VARCHAR(4000),
+                additional_consents VARCHAR(2000)
+              );
+
+              CREATE TABLE IF NOT EXISTS nurses (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                nurse_project_id VARCHAR(255) UNIQUE,
+                full_name VARCHAR(255) NOT NULL,
+                email VARCHAR(255),
+                primary_phone VARCHAR(255),
+                secondary_phone VARCHAR(255),
+                region_id BIGINT,
+                region VARCHAR(255),
+                province_id BIGINT,
+                province VARCHAR(255),
+                city_id BIGINT,
+                city VARCHAR(255),
+                coverage_area VARCHAR(255),
+                reference_provider VARCHAR(255),
+                professional_register VARCHAR(255),
+                enabled BIT
+              );
+
+              CREATE TABLE IF NOT EXISTS operation_logs (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                occurred_at DATETIME NOT NULL,
+                module_code VARCHAR(255) NOT NULL,
+                function_code VARCHAR(255),
+                operation VARCHAR(255) NOT NULL,
+                description TEXT,
+                target_id VARCHAR(255),
+                role_id VARCHAR(255),
+                username VARCHAR(255) NOT NULL,
+                client_ip VARCHAR(255),
+                user_agent TEXT,
+                metadata TEXT
+              );
+
+  - changeSet:
+      id: 2026-04-14-create-missing-entity-tables
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              CREATE TABLE IF NOT EXISTS structures (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                code VARCHAR(255) UNIQUE,
+                name VARCHAR(255) NOT NULL,
+                description VARCHAR(255),
+                address VARCHAR(255) NOT NULL,
+                cap VARCHAR(255),
+                city_id BIGINT,
+                city VARCHAR(255),
+                province_id BIGINT,
+                province VARCHAR(255),
+                region_id BIGINT,
+                region VARCHAR(255),
+                phone VARCHAR(255),
+                email VARCHAR(255),
+                service_calendar_hours TEXT,
+                active BIT,
+                structure_type VARCHAR(255),
+                parent_structure_id BIGINT
+              );
+
+              CREATE TABLE IF NOT EXISTS structure_types (
+                code VARCHAR(255) PRIMARY KEY,
+                description VARCHAR(255) NOT NULL,
+                function_description VARCHAR(1000) NOT NULL,
+                parent_type_code VARCHAR(255),
+                display_order INT NOT NULL
+              );
+
+              CREATE TABLE IF NOT EXISTS referents (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                first_name VARCHAR(255) NOT NULL,
+                last_name VARCHAR(255) NOT NULL,
+                role VARCHAR(255),
+                phone VARCHAR(255),
+                email VARCHAR(255)
+              );
+
+              CREATE TABLE IF NOT EXISTS structure_referents (
+                structure_id BIGINT UNSIGNED NOT NULL,
+                referent_id BIGINT UNSIGNED NOT NULL,
+                PRIMARY KEY (structure_id, referent_id)
+              );
+
+              CREATE TABLE IF NOT EXISTS structure_pharmacies (
+                structure_id BIGINT UNSIGNED NOT NULL,
+                pharmacy_id BIGINT UNSIGNED NOT NULL,
+                PRIMARY KEY (structure_id, pharmacy_id)
+              );
+
+              CREATE TABLE IF NOT EXISTS modules (
+                code VARCHAR(255) PRIMARY KEY,
+                name VARCHAR(255) NOT NULL
+              );
+
+              CREATE TABLE IF NOT EXISTS roles (
+                id VARCHAR(255) PRIMARY KEY,
+                name VARCHAR(255) NOT NULL,
+                description VARCHAR(255) NOT NULL
+              );
+
+              CREATE TABLE IF NOT EXISTS functions (
+                code VARCHAR(255) PRIMARY KEY,
+                name VARCHAR(255) NOT NULL
+              );
+
+              CREATE TABLE IF NOT EXISTS controller_method_functions (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                module_code VARCHAR(100) NOT NULL,
+                method_name VARCHAR(150) NOT NULL,
+                function_code VARCHAR(100) NOT NULL,
+                UNIQUE KEY uk_controller_method_function (module_code, method_name)
+              );
+
+              CREATE TABLE IF NOT EXISTS module_role_authorizations (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                module_code VARCHAR(255) NOT NULL,
+                role_id VARCHAR(255) NOT NULL,
+                authorization VARCHAR(255) NOT NULL,
+                UNIQUE KEY uk_module_role_authorizations_module_code_role (module_code, role_id)
+              );
+
+              CREATE TABLE IF NOT EXISTS field_authorizations (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                module_role_authorization_id BIGINT NOT NULL,
+                entity_name VARCHAR(255) NOT NULL,
+                field_name VARCHAR(255) NOT NULL,
+                authorization VARCHAR(255) NOT NULL,
+                UNIQUE KEY uk_field_authorizations_module_role_entity_field (module_role_authorization_id, entity_name, field_name)
+              );
+
+              CREATE TABLE IF NOT EXISTS function_module_role_authorizations (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                function_code VARCHAR(255) NOT NULL,
+                module_code VARCHAR(255) NOT NULL,
+                role_id VARCHAR(255) NOT NULL,
+                authorization VARCHAR(255) NOT NULL,
+                UNIQUE KEY uk_fmra_func_mod_role (function_code, module_code, role_id)
+              );
+
+              CREATE TABLE IF NOT EXISTS patients (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                assisted_id VARCHAR(255) UNIQUE,
+                first_name VARCHAR(255) NOT NULL,
+                last_name VARCHAR(255) NOT NULL,
+                fiscal_code VARCHAR(255) NOT NULL UNIQUE,
+                email VARCHAR(255),
+                primary_phone VARCHAR(255),
+                secondary_phone VARCHAR(255),
+                region_id BIGINT,
+                region VARCHAR(255),
+                province_id BIGINT,
+                province VARCHAR(255),
+                city_id BIGINT,
+                city VARCHAR(255),
+                delivery_address VARCHAR(255),
+                secondary_addresses VARCHAR(2000),
+                communication_channels VARCHAR(255),
+                identification_document_reference VARCHAR(2000),
+                data_processing_consent BIT,
+                data_processing_consent_datetime DATETIME,
+                data_processing_consent_revocation_log VARCHAR(4000),
+                additional_consents VARCHAR(2000),
+                therapy_status VARCHAR(255),
+                prescribing_specialist VARCHAR(255),
+                reference_hospital_structure VARCHAR(255),
+                reference_pharmacy VARCHAR(255),
+                preferred_pickup_pharmacy VARCHAR(255),
+                delivery_mode VARCHAR(255),
+                reminder_enabled BIT,
+                caregiver_full_name VARCHAR(255),
+                caregiver_phone VARCHAR(255),
+                preferred_contact VARCHAR(255),
+                structure_id BIGINT
+              );
+
+              CREATE TABLE IF NOT EXISTS doctors (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                doctor_flyer_id VARCHAR(255) UNIQUE,
+                full_name VARCHAR(255) NOT NULL,
+                email VARCHAR(255),
+                primary_phone VARCHAR(255),
+                secondary_phone VARCHAR(255),
+                region_id BIGINT,
+                region VARCHAR(255),
+                province_id BIGINT,
+                province VARCHAR(255),
+                city_id BIGINT,
+                city VARCHAR(255),
+                delivery_address VARCHAR(255),
+                secondary_addresses VARCHAR(2000),
+                structure_id BIGINT,
+                specialization VARCHAR(255),
+                data_processing_consent BIT,
+                data_processing_consent_datetime DATETIME,
+                data_processing_consent_revocation_log VARCHAR(4000),
+                additional_consents VARCHAR(2000)
+              );
+
+              CREATE TABLE IF NOT EXISTS nurses (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                nurse_project_id VARCHAR(255) UNIQUE,
+                full_name VARCHAR(255) NOT NULL,
+                email VARCHAR(255),
+                primary_phone VARCHAR(255),
+                secondary_phone VARCHAR(255),
+                region_id BIGINT,
+                region VARCHAR(255),
+                province_id BIGINT,
+                province VARCHAR(255),
+                city_id BIGINT,
+                city VARCHAR(255),
+                coverage_area VARCHAR(255),
+                reference_provider VARCHAR(255),
+                professional_register VARCHAR(255),
+                enabled BIT
+              );
+
+              CREATE TABLE IF NOT EXISTS operation_logs (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                occurred_at DATETIME NOT NULL,
+                module_code VARCHAR(255) NOT NULL,
+                function_code VARCHAR(255),
+                operation VARCHAR(255) NOT NULL,
+                description TEXT,
+                target_id VARCHAR(255),
+                role_id VARCHAR(255),
+                username VARCHAR(255) NOT NULL,
+                client_ip VARCHAR(255),
+                user_agent TEXT,
+                metadata TEXT
+              );
+  - changeSet:
+      id: 2026-04-14-create-modules
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            tableExists:
+              tableName: modules
+      changes:
+        - createTable:
+            tableName: modules
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT UNSIGNED AUTO_INCREMENT
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: code
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+                    unique: true
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+            remarks: Tabella dei moduli applicativi
+  - changeSet:
+      id: 2026-04-14-create-module-role-authorizations
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            tableExists:
+              tableName: module_role_authorizations
+      changes:
+        - createTable:
+            tableName: module_role_authorizations
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT UNSIGNED AUTO_INCREMENT
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: module_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: role_id
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: function_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+            remarks: Tabella di autorizzazione ruolo-funzione-modulo
+        - addUniqueConstraint:
+            tableName: module_role_authorizations
+            columnNames: module_id, role_id, function_id
+            constraintName: uq_module_role_authorizations
+
+  # ATTENZIONE: Per supportare la creazione di un nuovo DB da zero,
+  # inserire qui come primo changeset uno script SQL che contenga tutte le CREATE TABLE base.
+  # Esempio: esporta lo schema da un DB funzionante con mysqldump --no-data > schema-base.sql
+  # Sostituisci il path con quello reale e popola lo script.
+  - changeSet:
+      id: 2026-04-14-schema-base
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            tableExists:
+              tableName: roles
+      changes:
+        - sqlFile:
+            path: ../manual-migrations/schema-base.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: false
+
+  - changeSet:
+      id: 2026-04-04-module-code-schema-migration
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            columnExists:
+              tableName: module_role_authorizations
+              columnName: module_code
+      changes:
+        - sqlFile:
+            path: ../manual-migrations/2026-03-06-module-code-key.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: false
+
+  - changeSet:
+      id: 2026-04-14-align-module-role-authorizations-schema
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - and:
+            - tableExists:
+                tableName: module_role_authorizations
+            - columnExists:
+                tableName: module_role_authorizations
+                columnName: module_id
+            - columnExists:
+                tableName: module_role_authorizations
+                columnName: function_id
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE module_role_authorizations
+                MODIFY COLUMN module_id BIGINT NULL,
+                MODIFY COLUMN function_id BIGINT NULL;
+
+              ALTER TABLE module_role_authorizations
+                DROP INDEX uq_module_role_authorizations;
+
+              ALTER TABLE module_role_authorizations
+                ADD UNIQUE INDEX uq_module_role_authorizations_code_role (module_code, role_id);
+
+  - changeSet:
+      id: 2026-04-04-structure-service-calendar-schema-migration
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            columnExists:
+              tableName: structures
+              columnName: service_calendar_hours
+      changes:
+        - sql:
+            sql: ALTER TABLE structures ADD COLUMN service_calendar_hours TEXT NULL
+
+  - changeSet:
+      id: 2026-04-04-structure-types-seed
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: structure_types
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              INSERT IGNORE INTO structure_types (code, description, function_description, parent_type_code, display_order) VALUES
+                ('ASL', 'Azienda Sanitaria Locale', 'Nodo capofila territoriale: raggruppa ospedali, farmacie e altre strutture, assicurando coerenza dei flussi e visibilita dati multi-tenant.', NULL, 10),
+                ('HOSPITAL', 'Struttura Ospedaliera', 'Centro clinico dove si prescrivono e si monitorano i Piani Terapeutici; fa capo a una o piu farmacie ospedaliere.', 'ASL', 20),
+                ('HOSPITAL_PHARMACY', 'Farmacia Ospedaliera', 'Hub logistico interno all''ospedale per preparazione e tracciabilita ordini.', 'HOSPITAL', 30),
+                ('RETAIL_PHARMACY', 'Farmacia Retail', 'Punto di ritiro di prossimita o ultimo-miglio delivery nei progetti territoriali.', 'ASL', 40),
+                ('LOGISTICS_WAREHOUSE', 'Magazzino Logistica', 'Deposito centrale esterno o interno che alimenta FO o FR; collegabile via API o WMS per stock real-time.', 'ASL', 50),
+                ('MATERIAL_WAREHOUSE', 'Magazzino Materiale', 'Distribuzione interna di gadget, volantini e materiale monouso o promozionale.', 'ASL', 60),
+                ('PHARMA_COMPANY', 'Azienda Farmaceutica', 'Ente promotore di progetti PSP, aderenza o delivery con interesse a KPI clinici, logistici e farmacovigilanza.', NULL, 70),
+                ('SPECIALIST_CLINIC', 'Clinica Ambulatorio Specialistica', 'Struttura extra-ospedaliera che utilizza gli stessi flussi PT dell''ospedale per progetti cronici o PSP.', 'ASL', 80),
+                ('VENDOR', 'Fornitore', 'Nodo organizzativo per aziende terze che forniscono beni o servizi essenziali alla delivery di un PSP, inclusi dispositivi, logistica, laboratori e personale infermieristico.', NULL, 90);
+
+  - changeSet:
+      id: 2026-04-04-modules-seed
+      author: copilot
+      validCheckSum:
+        - 9:00461edbcae3cf441f2ce0190ef16190
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: modules
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              INSERT IGNORE INTO modules (code, name) VALUES
+                ('USER', 'USER'),               
+                ('STRUCTURE-ASL', 'ASL'),               
+                ('STRUCTURE-FARMACY-O', 'Farmacie Ospedaliere'),
+                ('STRUCTURE-FARMACY-R', 'Farmacie Retail'),
+                ('STRUCTURE_LOGISTICS_WAREHOUSE', 'Magazzini Logistica'),
+                ('STRUCTURE_MATERIAL_WAREHOUSE', 'Magazzini Materiale'),
+                ('STRUCTURE_PHARMA_COMPANY', 'Aziende Farmaceutiche'),
+                ('STRUCTURE_SPECIALIST_CLINIC', 'Cliniche e Ambulatori Specialistici'),
+                ('STRUCTURE_IMPORT', 'Import massivo strutture'),
+                ('ROLE', 'ROLE'),
+                ('MODULE', 'MODULE'),
+                ('FUNCTION', 'FUNCTION'),
+                ('PATIENT', 'PATIENT'),
+                ('DOCTOR', 'DOCTOR'),
+                ('NURSE', 'NURSE');
+
+  - changeSet:
+      id: 2026-04-04-roles-seed
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: roles
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              INSERT IGNORE INTO roles (id, name, description) VALUES
+                ('ADMIN', 'ADMIN', 'Amministratore'),
+                ('SUPER_ADMIN', 'SUPER_ADMIN', 'Super Admin');
+
+  - changeSet:
+      id: 2026-04-04-function-module-role-authorizations-seed
+      author: copilot
+      validCheckSum:
+        - 9:469eb96398501f76189df09c2b6c5a8c
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: function_module_role_authorizations
+      changes:
+        - sqlFile:
+            path: ../manual-migrations/2026-04-04-function-module-role-authorizations-seed.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: false
+
+  - changeSet:
+      id: 2026-04-04-controller-method-functions-seed
+      author: copilot
+      validCheckSum:
+        - 9:fadde1ece1a3ea0904162ad16b35791a
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: controller_method_functions
+      changes:
+        - sqlFile:
+            path: ../manual-migrations/2026-04-04-controller-method-functions-seed.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: false
+
+  - changeSet:
+      id: 2026-04-16-equipment-type-json-paths-text
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: equipment_type
+        - columnExists:
+            tableName: equipment_type
+            columnName: principal_json_path
+        - columnExists:
+            tableName: equipment_type
+            columnName: secondary_json_path
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE equipment_type
+                MODIFY COLUMN principal_json_path TEXT NULL,
+                MODIFY COLUMN secondary_json_path TEXT NULL;
+
+  - changeSet:
+      id: 2026-04-16-equipment-type-status-default-attivo
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: equipment_type
+        - columnExists:
+            tableName: equipment_type
+            columnName: status
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              UPDATE equipment_type
+              SET status = 'attivo'
+              WHERE status IS NULL OR TRIM(status) = '';
+
+              ALTER TABLE equipment_type
+                MODIFY COLUMN status VARCHAR(32) NOT NULL DEFAULT 'attivo';
+  - changeSet:
+      id: 2026-04-16-create-equipment-table
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            tableExists:
+              tableName: equipment
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              CREATE TABLE IF NOT EXISTS equipment (
+                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+                equipment_type_id BIGINT UNSIGNED NOT NULL,
+                code VARCHAR(64) NOT NULL UNIQUE,
+                status VARCHAR(32) NOT NULL DEFAULT 'in_magazzino',
+                serial_number VARCHAR(128),
+                location VARCHAR(255),
+                assigned_to VARCHAR(255),
+                purchase_date DATE,
+                last_revision_date DATE,
+                next_revision_date DATE,
+                notes VARCHAR(1000),
+                primary_json TEXT,
+                secondary_json TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                CONSTRAINT fk_equipment_equipment_type
+                  FOREIGN KEY (equipment_type_id) REFERENCES equipment_type (id)
+              );
+
+              CREATE INDEX idx_equipment_type_id ON equipment (equipment_type_id);
+              CREATE INDEX idx_equipment_status ON equipment (status);
+
+  - changeSet:
+      id: 2026-04-16-create-therapeutic-plan-tables
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            tableExists:
+              tableName: therapeutic_plan
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              CREATE TABLE IF NOT EXISTS therapeutic_plan (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                patient_id BIGINT NOT NULL,
+                project_code VARCHAR(128) NOT NULL,
+                structure_id BIGINT NOT NULL,
+                nurse_id BIGINT NOT NULL,
+                doctor_id BIGINT NOT NULL,
+                drug_code VARCHAR(128) NOT NULL,
+                start_date DATE NOT NULL,
+                end_date DATE,
+                status VARCHAR(32) NOT NULL DEFAULT 'draft',
+                notes VARCHAR(1000),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+              );
+
+              CREATE TABLE IF NOT EXISTS therapeutic_plan_equipment (
+                therapeutic_plan_id BIGINT NOT NULL,
+                equipment_id BIGINT NOT NULL,
+                PRIMARY KEY (therapeutic_plan_id, equipment_id),
+                CONSTRAINT fk_therapeutic_plan_equipment_plan
+                  FOREIGN KEY (therapeutic_plan_id) REFERENCES therapeutic_plan (id)
+                  ON DELETE CASCADE
+              );
+
+              CREATE INDEX idx_therapeutic_plan_patient_id ON therapeutic_plan (patient_id);
+              CREATE INDEX idx_therapeutic_plan_project_code ON therapeutic_plan (project_code);
+              CREATE INDEX idx_therapeutic_plan_status ON therapeutic_plan (status);
+              CREATE INDEX idx_therapeutic_plan_structure_id ON therapeutic_plan (structure_id);
+              CREATE INDEX idx_therapeutic_plan_equipment_equipment_id ON therapeutic_plan_equipment (equipment_id);
+
+  - changeSet:
+      id: 2026-04-16-therapeutic-plan-module-seed
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: modules
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              INSERT IGNORE INTO modules (code, name)
+              VALUES ('THERAPEUTIC_PLAN', 'THERAPEUTIC_PLAN');
+
+  - changeSet:
+      id: 2026-04-30-migrate-therapeutic-plan-equipment-to-equipment-assigned-to
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: therapeutic_plan_equipment
+        - tableExists:
+            tableName: equipment
+        - columnExists:
+            tableName: equipment
+            columnName: assigned_to
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              UPDATE equipment equipment_record
+              LEFT JOIN (
+                SELECT equipment_id, MAX(therapeutic_plan_id) AS therapeutic_plan_id
+                FROM therapeutic_plan_equipment
+                GROUP BY equipment_id
+              ) assigned_plan ON assigned_plan.equipment_id = equipment_record.id
+              SET equipment_record.assigned_to = CASE
+                WHEN assigned_plan.therapeutic_plan_id IS NOT NULL THEN CAST(assigned_plan.therapeutic_plan_id AS CHAR(255))
+                WHEN TRIM(COALESCE(equipment_record.assigned_to, '')) REGEXP '^[0-9]+$' THEN TRIM(equipment_record.assigned_to)
+                ELSE NULL
+              END;
+
+              DROP TABLE IF EXISTS therapeutic_plan_equipment;
+
+  - changeSet:
+      id: 2026-04-30-change-equipment-assigned-to-to-therapeutic-plan-reference
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: equipment
+        - columnExists:
+            tableName: equipment
+            columnName: assigned_to
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              UPDATE equipment
+              SET assigned_to = NULL
+              WHERE TRIM(COALESCE(assigned_to, '')) = ''
+                 OR TRIM(COALESCE(assigned_to, '')) NOT REGEXP '^[0-9]+$';
+
+              ALTER TABLE equipment
+                MODIFY COLUMN assigned_to BIGINT NULL;
+
+              CREATE INDEX idx_equipment_assigned_to ON equipment (assigned_to);
+
+  - changeSet:
+      id: 2026-04-24-fix-structure-asl-module-code-references
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: function_module_role_authorizations
+        - tableExists:
+            tableName: modules
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              INSERT IGNORE INTO modules (code, name)
+              VALUES ('STRUCTURE-ASL', 'ASL');
+
+              UPDATE function_module_role_authorizations
+              SET module_code = 'STRUCTURE-ASL'
+              WHERE module_code = 'ASL';
+
+              UPDATE module_role_authorizations
+              SET module_code = 'STRUCTURE-ASL'
+              WHERE module_code = 'ASL';
+
+  - changeSet:
+      id: 2026-04-24-fix-legacy-structure-module-code-references
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: function_module_role_authorizations
+        - tableExists:
+            tableName: modules
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              UPDATE function_module_role_authorizations
+              SET module_code = 'STRUCTURE-FARMACY-O'
+              WHERE module_code = 'HOSPITAL_PHARMACY';
+
+              UPDATE function_module_role_authorizations
+              SET module_code = 'STRUCTURE-FARMACY-R'
+              WHERE module_code = 'RETAIL_PHARMACY';
+
+              UPDATE function_module_role_authorizations
+              SET module_code = 'STRUCTURE_LOGISTICS_WAREHOUSE'
+              WHERE module_code = 'LOGISTICS_WAREHOUSE';
+
+              UPDATE function_module_role_authorizations
+              SET module_code = 'STRUCTURE_MATERIAL_WAREHOUSE'
+              WHERE module_code = 'MATERIAL_WAREHOUSE';
+
+              UPDATE function_module_role_authorizations
+              SET module_code = 'STRUCTURE_PHARMA_COMPANY'
+              WHERE module_code = 'PHARMA_COMPANY';
+
+              UPDATE function_module_role_authorizations
+              SET module_code = 'STRUCTURE_SPECIALIST_CLINIC'
+              WHERE module_code = 'SPECIALIST_CLINIC';
+
+  - changeSet:
+      id: 2026-04-16-drop-therapeutic-plan-patient-fk
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - foreignKeyConstraintExists:
+            foreignKeyName: FK9r1ucp0kt9paqj1fwr66ld3du
+            foreignKeyTableName: therapeutic_plan
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: therapeutic_plan
+            constraintName: FK9r1ucp0kt9paqj1fwr66ld3du
+
+  - changeSet:
+      id: 2026-04-16-create-therapeutic-plan-alert-table
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            tableExists:
+              tableName: therapeutic_plan_alert
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              CREATE TABLE IF NOT EXISTS therapeutic_plan_alert (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                therapeutic_plan_id BIGINT NOT NULL,
+                doctor_id BIGINT NOT NULL,
+                alert_date DATE NOT NULL,
+                subject VARCHAR(255) NOT NULL,
+                confirmation_required BIT NOT NULL,
+                confirmation_sent VARCHAR(8) NOT NULL DEFAULT 'na',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+              );
+
+              CREATE INDEX idx_therapeutic_plan_alert_plan_id ON therapeutic_plan_alert (therapeutic_plan_id);
+              CREATE INDEX idx_therapeutic_plan_alert_doctor_id ON therapeutic_plan_alert (doctor_id);
+              CREATE INDEX idx_therapeutic_plan_alert_date ON therapeutic_plan_alert (alert_date);
+              CREATE INDEX idx_therapeutic_plan_alert_confirmation_sent ON therapeutic_plan_alert (confirmation_sent);
+
+  - changeSet:
+      id: 2026-04-16-create-therapeutic-plan-notification-table
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            tableExists:
+              tableName: therapeutic_plan_notification
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              CREATE TABLE IF NOT EXISTS therapeutic_plan_notification (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                therapeutic_plan_id BIGINT NOT NULL,
+                sent_date DATE NOT NULL,
+                sent_by_operator VARCHAR(255) NOT NULL,
+                subject VARCHAR(255) NOT NULL,
+                message TEXT NOT NULL,
+                confirmed BIT NULL,
+                confirmation_date DATE NULL,
+                confirmed_by_doctor VARCHAR(255) NULL,
+                notes TEXT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+              );
+
+              CREATE INDEX idx_therapeutic_plan_notification_plan_id ON therapeutic_plan_notification (therapeutic_plan_id);
+              CREATE INDEX idx_therapeutic_plan_notification_sent_date ON therapeutic_plan_notification (sent_date);
+              CREATE INDEX idx_therapeutic_plan_notification_confirmed ON therapeutic_plan_notification (confirmed);
+  - changeSet:
+      id: 2026-04-20-add-json-visit-to-therapeutic-plan
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: therapeutic_plan
+        - not:
+            columnExists:
+              tableName: therapeutic_plan
+              columnName: json_visit
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE therapeutic_plan
+                ADD COLUMN json_visit TEXT NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE therapeutic_plan
+                DROP COLUMN json_visit;
+  - changeSet:
+      id: 2026-04-30-drop-json-visit-from-therapeutic-plan
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: therapeutic_plan
+        - columnExists:
+            tableName: therapeutic_plan
+            columnName: json_visit
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE therapeutic_plan
+                DROP COLUMN json_visit;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE therapeutic_plan
+                ADD COLUMN json_visit TEXT NULL;
+  - changeSet:
+      id: 2026-04-20-create-therapeutic-plan-visit-table
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            tableExists:
+              tableName: therapeutic_plan_visit
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              CREATE TABLE IF NOT EXISTS therapeutic_plan_visit (
+                therapeutic_plan_id BIGINT NOT NULL,
+                visit_date DATE NOT NULL,
+                start_therapy VARCHAR(64),
+                duodopa VARCHAR(64),
+                caregiver VARCHAR(255),
+                clinical_center VARCHAR(255),
+                neurologist VARCHAR(255),
+                gastroenterologist VARCHAR(255),
+                visit_type VARCHAR(64),
+                visit_priority VARCHAR(32),
+                json_visit TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (therapeutic_plan_id, visit_date)
+              );
+
+              CREATE INDEX idx_therapeutic_plan_visit_plan_id ON therapeutic_plan_visit (therapeutic_plan_id);
+              CREATE INDEX idx_therapeutic_plan_visit_date ON therapeutic_plan_visit (visit_date);
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              DROP TABLE IF EXISTS therapeutic_plan_visit;
+  - changeSet:
+      id: 2026-04-20-add-json-visit-to-therapeutic-plan-visit
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: therapeutic_plan_visit
+        - not:
+            columnExists:
+              tableName: therapeutic_plan_visit
+              columnName: json_visit
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE therapeutic_plan_visit
+                ADD COLUMN json_visit TEXT NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE therapeutic_plan_visit
+                DROP COLUMN json_visit;
+  - changeSet:
+      id: 2026-04-21-visit-start-therapy-datetime
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: therapeutic_plan_visit
+        - columnExists:
+            tableName: therapeutic_plan_visit
+            columnName: start_therapy
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE therapeutic_plan_visit
+                MODIFY COLUMN start_therapy DATETIME NULL;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE therapeutic_plan_visit
+                MODIFY COLUMN start_therapy VARCHAR(64) NULL;
+  - changeSet:
+      id: 2026-04-21-visit-date-datetime-drop-start-therapy
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: therapeutic_plan_visit
+        - columnExists:
+            tableName: therapeutic_plan_visit
+            columnName: visit_date
+        - columnExists:
+            tableName: therapeutic_plan_visit
+            columnName: start_therapy
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE therapeutic_plan_visit
+                MODIFY COLUMN visit_date DATETIME NOT NULL;
+
+              UPDATE therapeutic_plan_visit
+                 SET visit_date = COALESCE(start_therapy, visit_date);
+
+              ALTER TABLE therapeutic_plan_visit
+                DROP COLUMN start_therapy;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE therapeutic_plan_visit
+                ADD COLUMN start_therapy DATETIME NULL AFTER visit_date;
+
+              UPDATE therapeutic_plan_visit
+                 SET start_therapy = visit_date;
+
+              ALTER TABLE therapeutic_plan_visit
+                MODIFY COLUMN visit_date DATE NOT NULL;
+  - changeSet:
+      id: 2026-04-21-create-therapeutic-plan-activity-booking-table
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            tableExists:
+              tableName: therapeutic_plan_activity_booking
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              CREATE TABLE IF NOT EXISTS therapeutic_plan_activity_booking (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                therapeutic_plan_id BIGINT NOT NULL,
+                patient_id BIGINT NOT NULL,
+                structure_id BIGINT NOT NULL,
+                booking_date DATE NOT NULL,
+                visit_type VARCHAR(64) NOT NULL,
+                protocol_planned BIT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id)
+              );
+
+              CREATE INDEX idx_tp_activity_booking_plan_id ON therapeutic_plan_activity_booking (therapeutic_plan_id);
+              CREATE INDEX idx_tp_activity_booking_date ON therapeutic_plan_activity_booking (booking_date);
+              CREATE INDEX idx_tp_activity_booking_type ON therapeutic_plan_activity_booking (visit_type);
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              DROP TABLE IF EXISTS therapeutic_plan_activity_booking;
+  - changeSet:
+      id: 2026-04-21-create-therapeutic-plan-contact-request-table
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            tableExists:
+              tableName: therapeutic_plan_contact_request
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              CREATE TABLE IF NOT EXISTS therapeutic_plan_contact_request (
+                id BIGINT NOT NULL AUTO_INCREMENT,
+                therapeutic_plan_id BIGINT NOT NULL,
+                patient_id BIGINT NOT NULL,
+                request_date DATE NOT NULL,
+                request_type VARCHAR(64) NOT NULL,
+                outpatient_clinic VARCHAR(255) NOT NULL,
+                structure_id BIGINT NOT NULL,
+                status VARCHAR(64) NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id)
+              );
+
+              CREATE INDEX idx_tp_contact_request_plan_id ON therapeutic_plan_contact_request (therapeutic_plan_id);
+              CREATE INDEX idx_tp_contact_request_date ON therapeutic_plan_contact_request (request_date);
+              CREATE INDEX idx_tp_contact_request_type ON therapeutic_plan_contact_request (request_type);
+              CREATE INDEX idx_tp_contact_request_status ON therapeutic_plan_contact_request (status);
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              DROP TABLE IF EXISTS therapeutic_plan_contact_request;

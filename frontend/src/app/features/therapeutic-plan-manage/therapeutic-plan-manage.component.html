@@ -1568,48 +1568,41 @@
         </div>
       </article>
 
-      <!-- CARD STOMIA -->
-      <article class="visit-status-panel visit-status-panel-blue">
-        <div class="visit-barra-stomia">
-          <span class="visit-barra-title">{{ translate('therapeuticPlan.visits.status.stomia.title') }}</span>
-        </div>
-        <div class="visit-status-panel-body">
-          <!-- ...contenuto stomia... -->
-        </div>
-      </article>
-
-      <!-- CARD DOSAGGI INFUSIONALI -->
-      <article class="visit-status-panel visit-status-panel-red">
-        <div class="dosaggi-barra-pegj">
-          <span class="dosaggi-barra-title">{{ translate('therapeuticPlan.visits.status.stomia.infusionalDosages') }}</span>
-        </div>
-        <div class="visit-status-panel-body">
-          <div class="dosaggi-table">
-            <div class="dosaggi-row">
-              <div class="dosaggi-label">{{ translate('therapeuticPlan.visits.status.stomia.continuousInfusion') }}</div>
-              <div class="dosaggi-value">{{ visit.stomiaStatus.continuousInfusion || translate('common.notAvailable') }}</div>
-            </div>
-            <div class="dosaggi-row">
-              <div class="dosaggi-label">{{ translate('therapeuticPlan.visits.status.stomia.extraDose') }}</div>
-              <div class="dosaggi-value">{{ visit.stomiaStatus.extraDose || translate('common.notAvailable') }}</div>
-            </div>
-            <div class="dosaggi-row">
-              <div class="dosaggi-label">{{ translate('therapeuticPlan.visits.status.stomia.morningDose') }}</div>
-              <div class="dosaggi-value">{{ visit.stomiaStatus.morningDose || translate('common.notAvailable') }}</div>
-            </div>
-            <div class="dosaggi-row">
-              <div class="dosaggi-label">{{ translate('therapeuticPlan.visits.status.stomia.infusion24Hours') }}</div>
-              <div class="dosaggi-value">{{ translate(visit.stomiaStatus.infusion24Hours ? 'common.yes' : 'common.no') }}</div>
-            </div>
-          </div>
-        </div>
-      </article>
-
         <article class="visit-status-panel visit-status-panel-red">
           <div class="dosaggi-barra-pegj">
             <span class="dosaggi-barra-title">{{ translate('therapeuticPlan.visits.status.pegj.title') }}</span>
           </div>
           <div class="visit-status-panel-body visit-status-panel-body-compact">
+          <section class="visit-status-group">
+            <h3>{{ translate('therapeuticPlan.visits.status.pegj.mobilization') }}</h3>
+            <div class="visit-status-options-stack">
+              <label *ngFor="let option of visitActionNoneOrContactOptions" class="visit-status-choice visit-status-choice-readonly">
+                <input type="radio" [checked]="hasVisitActionSelection(visit.pegjActions.mobilization, option.value)" disabled />
+                <span>{{ translate(option.titleKey) }}</span>
+              </label>
+            </div>
+          </section>
+
+          <section class="visit-status-group">
+            <h3>{{ translate('therapeuticPlan.visits.status.pegj.integrity') }}</h3>
+            <div class="visit-status-options-stack">
+              <label *ngFor="let option of visitActionNoneOrContactOptions" class="visit-status-choice visit-status-choice-readonly">
+                <input type="radio" [checked]="hasVisitActionSelection(visit.pegjActions.integrity, option.value)" disabled />
+                <span>{{ translate(option.titleKey) }}</span>
+              </label>
+            </div>
+          </section>
+
+          <section class="visit-status-group">
+            <h3>{{ translate('therapeuticPlan.visits.status.pegj.colorLabel') }}</h3>
+            <div class="visit-status-options-stack">
+              <label *ngFor="let option of visitActionNoneOrContactOptions" class="visit-status-choice visit-status-choice-readonly">
+                <input type="radio" [checked]="hasVisitActionSelection(visit.pegjActions.color, option.value)" disabled />
+                <span>{{ translate(option.titleKey) }}</span>
+              </label>
+            </div>
+          </section>
+
           <section class="visit-status-group">
             <h3>{{ translate('therapeuticPlan.visits.status.pegj.pegPatency') }} / {{ translate('therapeuticPlan.visits.status.pegj.pejPatency') }}</h3>
             <div class="visit-status-options-stack">

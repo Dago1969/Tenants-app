@@ -5,7 +5,7 @@
   text-overflow: ellipsis;
 }
 /* Output text/campi fissi */
-.output-text, .output-field, .output-label, .text-output, .fixed-field, .summary2-value {
+.output-text, .output-field, .output-label, .text-output, .fixed-field {
   color: #111;
   font-family: "Work Sans", Arial, Helvetica, sans-serif;
   font-size: 10px;
@@ -14,6 +14,49 @@
   line-height: 100%;
   letter-spacing: 0;
 }
+
+.detail-section-title {
+  margin: 0;
+  color: #355277;
+  font-family: "Work Sans", Arial, Helvetica, sans-serif;
+  font-size: 1.1rem;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.detail-section-description {
+  margin: 8px 0 0;
+  color: #6b7a90;
+  font-family: "Work Sans", Arial, Helvetica, sans-serif;
+  font-size: 0.95rem;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+.detail-field-label {
+  color: #111;
+  font-family: "Work Sans", Arial, Helvetica, sans-serif;
+  font-size: 1rem;
+  font-style: normal;
+  font-weight: 600;
+  line-height: 1.2;
+  margin-bottom: 2px;
+}
+
+.detail-field-value {
+  color: #222;
+  font-family: "Work Sans", Arial, Helvetica, sans-serif;
+  font-size: 1.05rem;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1.4;
+  margin-bottom: 8px;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
 main.content {
   background-image: url('./assets/bckgrnd.svg') !important;
   background-repeat: no-repeat !important;

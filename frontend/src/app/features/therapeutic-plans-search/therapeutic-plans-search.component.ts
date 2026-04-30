@@ -1,7 +1,7 @@
 
 import { Component, ViewChild } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { SearchField, SearchPageComponent } from '../../shared/search-page.component';
+import { SearchField, SearchPageComponent, SearchPrintSection } from '../../shared/search-page.component';
 import { AuthService } from '../../core/auth.service';
 
 /**
@@ -25,6 +25,7 @@ import { AuthService } from '../../core/auth.service';
       [showManageAction]="true"
       [manageRouteBase]="manageRouteBase"
       [manageActionLabelKey]="manageActionLabelKey"
+      [printSections]="printSections"
       [autoSearch]="true"
       [fixedParams]="getFixedParams()"
     />
@@ -80,6 +81,29 @@ export class TherapeuticPlansSearchComponent {
     { key: 'status', labelKey: 'therapeuticPlan.field.status', type: 'text' },
     { key: 'startDate', labelKey: 'therapeuticPlan.field.startDate', type: 'text' },
     { key: 'endDate', labelKey: 'therapeuticPlan.field.endDate', type: 'text' }
+  ];
+
+  printSections: SearchPrintSection[] = [
+    {
+      titleKey: 'therapeuticPlan.folder.main',
+      descriptionKey: 'therapeuticPlan.folder.main.desc',
+      fields: ['patientDisplayName', 'projectCode', 'status', 'drugCode']
+    },
+    {
+      titleKey: 'therapeuticPlan.folder.clinical',
+      descriptionKey: 'therapeuticPlan.folder.clinical.desc',
+      fields: ['structureName', 'structureType', 'nurseName', 'doctorName']
+    },
+    {
+      titleKey: 'therapeuticPlan.folder.equipment',
+      descriptionKey: 'therapeuticPlan.folder.equipment.desc',
+      fields: ['equipmentCodes']
+    },
+    {
+      titleKey: 'therapeuticPlan.folder.schedule',
+      descriptionKey: 'therapeuticPlan.folder.schedule.desc',
+      fields: ['startDate', 'endDate', 'notes']
+    }
   ];
 
   refreshAfterWizardClose(): void {
