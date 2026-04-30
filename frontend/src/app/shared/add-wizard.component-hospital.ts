@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, CUSTOM_ELEMENTS_SCHEMA, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import intlTelInput, { type AllOptions, type Iti } from 'intl-tel-input';
 import { GeographyApiService, GeographicOptionDto } from '../core/geography-api.service';
 import { PharmacyApiService, PharmacyDto } from '../core/pharmacy-api.service';
 import { ReferentApiService, ReferentDto } from '../core/referent-api.service';
@@ -88,7 +89,9 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
             </label>
           
             <label>{{ translate('structures.field.phone') }}<span class="required-asterisk">*</span>
-              <input type="text" name="phone" [(ngModel)]="model.phone" required autocomplete="off" />
+              <div class="phone-input-group phone-input-group-intl">
+                <input #phoneInputElement type="tel" inputmode="tel" name="phone" [ngModel]="model.phone" (ngModelChange)="onPhoneModelChange($event)" required autocomplete="off" class="phone-number-input" />
+              </div>
             </label>
             </div>
 
@@ -229,9 +232,40 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
   `,
   styleUrls: ['./add-wizard.component.css']
 })
-export class AddWizardComponentHospital implements OnInit {
+export class AddWizardComponentHospital implements OnInit, OnDestroy {
   @Input() structureId: number | null = null;
   @Output() close = new EventEmitter<void>();
+
+  readonly defaultPhoneCountryIsoCode = 'it';
+  readonly phoneCountryOrder: NonNullable<AllOptions['countryOrder']> = ['it', 'us', 'gb', 'fr', 'de', 'es'];
+  readonly loadPhoneInputUtils = () => import('intl-tel-input/utils');
+
+  @ViewChild('phoneInputElement')
+  set phoneInputElement(ref: ElementRef<HTMLInputElement> | undefined) {
+    const nextInput = ref?.nativeElement;
+    if (this.phoneInputBinding?.input === nextInput) {
+      return;
+    }
+
+    this.destroyPhoneInput();
+    if (!nextInput) {
+      return;
+    }
+
+    queueMicrotask(() => {
+      if (this.phoneInputBinding?.input === nextInput) {
+        return;
+      }
+
+      this.initializePhoneInput(nextInput);
+    });
+  }
+
+  private phoneInputBinding?: {
+    input: HTMLInputElement;
+    iti: Iti;
+    syncValue: () => void;
+  };
 
   showAddReferent = false;
   newReferent: Partial<ReferentDto> = { firstName: '', lastName: '', role: '', email: '', phone: '' };
@@ -324,6 +358,10 @@ export class AddWizardComponentHospital implements OnInit {
     this.loadStructureForEdit();
   }
 
+  ngOnDestroy(): void {
+    this.destroyPhoneInput();
+  }
+
   translate(key: string): string {
     try {
       return t(key as never) || key;
@@ -356,6 +394,11 @@ export class AddWizardComponentHospital implements OnInit {
         this.notificationService.showError(this.translate('referent.actions.addError'));
       }
     });
+  }
+
+  onPhoneModelChange(value: string): void {
+    this.model.phone = value;
+    this.syncPhoneInputFromModel();
   }
 
   onPlaceSelected(event: Event): void {
@@ -655,5 +698,73 @@ export class AddWizardComponentHospital implements OnInit {
     }
 
     return String(optionId);
+  }
+
+  private initializePhoneInput(input: HTMLInputElement): void {
+    const iti = intlTelInput(input, {
+      containerClass: 'phone-intl-input',
+      countryOrder: this.phoneCountryOrder,
+      initialCountry: this.defaultPhoneCountryIsoCode,
+      loadUtils: this.loadPhoneInputUtils,
+      strictMode: false,
+      useFullscreenPopup: false
+    });
+
+    const syncValue = () => this.updatePhoneFromInput(input, iti);
+    input.addEventListener('input', syncValue);
+    input.addEventListener('countrychange', syncValue);
+
+    this.phoneInputBinding = {
+      input,
+      iti,
+      syncValue
+    };
+
+    iti.promise.then(() => {
+      if (!iti.isActive() || this.phoneInputBinding?.input !== input) {
+        return;
+      }
+
+      this.syncPhoneInputFromModel();
+      this.updatePhoneFromInput(input, iti);
+    });
+  }
+
+  private destroyPhoneInput(): void {
+    if (!this.phoneInputBinding) {
+      return;
+    }
+
+    const { input, iti, syncValue } = this.phoneInputBinding;
+    input.removeEventListener('input', syncValue);
+    input.removeEventListener('countrychange', syncValue);
+    iti.destroy();
+    this.phoneInputBinding = undefined;
+  }
+
+  private syncPhoneInputFromModel(): void {
+    const binding = this.phoneInputBinding;
+    if (!binding) {
+      return;
+    }
+
+    const modelValue = this.asPhoneString(this.model.phone);
+    const currentValue = binding.iti.getNumber() || binding.input.value;
+    if (modelValue !== currentValue) {
+      binding.iti.setNumber(modelValue);
+    }
+  }
+
+  private updatePhoneFromInput(input: HTMLInputElement, iti: Iti): void {
+    const nextValue = iti.getNumber() || this.asPhoneString(input.value);
+    if (this.model.phone === nextValue) {
+      return;
+    }
+
+    this.model.phone = nextValue;
+  }
+
+  private asPhoneString(value: unknown): string {
+    return typeof value === 'string' ? value.trim() : '';
   }
 }
