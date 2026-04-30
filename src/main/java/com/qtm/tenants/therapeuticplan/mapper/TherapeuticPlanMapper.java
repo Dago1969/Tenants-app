@@ -57,7 +57,6 @@ public class TherapeuticPlanMapper {
                 .endDate(entity.getEndDate())
                 .status(entity.getStatus())
                 .notes(entity.getNotes())
-                .jsonVisit(entity.getJsonVisit())
                 .build();
     }
 
@@ -93,6 +92,5 @@ public class TherapeuticPlanMapper {
         entity.setEndDate(dto.getEndDate());
         entity.setStatus(dto.getStatus());
         entity.setNotes(dto.getNotes());
-        entity.setJsonVisit(dto.getJsonVisit());
     }
 }

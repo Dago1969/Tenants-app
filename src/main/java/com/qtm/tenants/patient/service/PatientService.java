@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
@@ -62,6 +63,7 @@ public class PatientService {
     public PatientDto create(PatientDto patientDto) {
         AuthorizationPolicy policy = resolveAuthorizationPolicy();
         enforceModuleWriteAllowed(policy);
+        validatePrivacyConsent(patientDto);
         enforceFieldWriteAllowed(patientDto, null, policy.fieldScopes());
 
         return applyReadAuthorization(dashboardPatientClient.create(patientDto), policy);
@@ -107,6 +109,7 @@ public class PatientService {
     public PatientDto update(Long id, PatientDto patientDto) {
         AuthorizationPolicy policy = resolveAuthorizationPolicy();
         enforceModuleWriteAllowed(policy);
+        validatePrivacyConsent(patientDto);
 
         PatientDto currentDto = findPatientById(id);
         enforceFieldWriteAllowed(patientDto, currentDto, policy.fieldScopes());
@@ -130,6 +133,20 @@ public class PatientService {
                 throw new ResponseStatusException(NOT_FOUND, "Paziente non trovato", exception);
             }
             throw exception;
+        }
+    }
+
+    private void validatePrivacyConsent(PatientDto patientDto) {
+        if (patientDto == null) {
+            throw new ResponseStatusException(BAD_REQUEST, "Dati paziente obbligatori");
+        }
+
+        if (!Boolean.TRUE.equals(patientDto.getDataProcessingConsent())) {
+            throw new ResponseStatusException(BAD_REQUEST, "Il consenso al trattamento dati e obbligatorio");
+        }
+
+        if (patientDto.getDataProcessingConsentDateTime() == null) {
+            throw new ResponseStatusException(BAD_REQUEST, "La data del consenso al trattamento dati e obbligatoria dopo la verifica OTP");
         }
     }
 

@@ -21,13 +21,14 @@ public interface EquipmentRepository extends JpaRepository<EquipmentEntity, Long
     boolean existsByCodeAndIdNot(String code, Long id);
 
     @Override
-    @EntityGraph(attributePaths = "equipmentType")
+    @EntityGraph(attributePaths = {"equipmentType", "assignedTo"})
     Optional<EquipmentEntity> findById(Long id);
 
     @Query("""
         SELECT equipment
         FROM EquipmentEntity equipment
         JOIN FETCH equipment.equipmentType equipmentType
+        LEFT JOIN FETCH equipment.assignedTo assignedTo
         WHERE LOWER(equipment.code) LIKE LOWER(CONCAT('%', :code, '%'))
           AND (:equipmentTypeId IS NULL OR equipmentType.id = :equipmentTypeId)
           AND (:status = '' OR LOWER(COALESCE(equipment.status, '')) = LOWER(:status))

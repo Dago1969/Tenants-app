@@ -25,7 +25,7 @@ interface EquipmentFormModel {
   status: string;
   serialNumber: string;
   location: string;
-  assignedTo: string;
+  assignedTo: number | null;
   purchaseDate: string;
   lastRevisionDate: string;
   nextRevisionDate: string;
@@ -265,7 +265,7 @@ export class EquipmentCrudComponent implements OnInit {
           status: typeof equipment.status === 'string' ? equipment.status : 'in_magazzino',
           serialNumber: typeof equipment.serialNumber === 'string' ? equipment.serialNumber : '',
           location: typeof equipment.location === 'string' ? equipment.location : '',
-          assignedTo: typeof equipment.assignedTo === 'string' ? equipment.assignedTo : '',
+          assignedTo: typeof equipment.assignedTo === 'number' ? equipment.assignedTo : null,
           purchaseDate: typeof equipment.purchaseDate === 'string' ? equipment.purchaseDate : '',
           lastRevisionDate: typeof equipment.lastRevisionDate === 'string' ? equipment.lastRevisionDate : '',
           nextRevisionDate: typeof equipment.nextRevisionDate === 'string' ? equipment.nextRevisionDate : '',
@@ -459,7 +459,7 @@ export class EquipmentCrudComponent implements OnInit {
       status: this.formModel.status,
       serialNumber: this.formModel.serialNumber.trim(),
       location: this.formModel.location.trim(),
-      assignedTo: this.formModel.assignedTo.trim(),
+      assignedTo: this.formModel.assignedTo,
       purchaseDate: this.formModel.purchaseDate || null,
       lastRevisionDate: this.formModel.lastRevisionDate || null,
       nextRevisionDate: this.formModel.nextRevisionDate || null,
@@ -712,7 +712,7 @@ export class EquipmentCrudComponent implements OnInit {
       status: 'in_magazzino',
       serialNumber: '',
       location: '',
-      assignedTo: '',
+      assignedTo: null,
       purchaseDate: '',
       lastRevisionDate: '',
       nextRevisionDate: '',

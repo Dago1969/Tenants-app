@@ -1,5 +1,6 @@
 package com.qtm.tenants.therapeuticplan.service;
 
+import com.qtm.tenants.project.service.DashboardProjectClient;
 import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanVisitDto;
 import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanVisitEntity;
 import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanVisitId;
@@ -11,11 +12,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.qtm.tenants.therapeuticplan.repository.TherapeuticPlanVisitRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 @Service
 public class TherapeuticPlanVisitService {
@@ -23,12 +27,18 @@ public class TherapeuticPlanVisitService {
     private final TherapeuticPlanVisitRepository repository;
     private final TherapeuticPlanVisitMapper mapper;
     private final TherapeuticPlanRepository therapeuticPlanRepository;
+    private final DashboardProjectClient dashboardProjectClient;
     private final ObjectMapper objectMapper;
 
-    public TherapeuticPlanVisitService(TherapeuticPlanVisitRepository repository, TherapeuticPlanVisitMapper mapper, TherapeuticPlanRepository therapeuticPlanRepository, ObjectMapper objectMapper) {
+    public TherapeuticPlanVisitService(TherapeuticPlanVisitRepository repository,
+                                       TherapeuticPlanVisitMapper mapper,
+                                       TherapeuticPlanRepository therapeuticPlanRepository,
+                                       DashboardProjectClient dashboardProjectClient,
+                                       ObjectMapper objectMapper) {
         this.repository = repository;
         this.mapper = mapper;
         this.therapeuticPlanRepository = therapeuticPlanRepository;
+        this.dashboardProjectClient = dashboardProjectClient;
         this.objectMapper = objectMapper;
     }
 
@@ -46,7 +56,7 @@ public class TherapeuticPlanVisitService {
         try {
             ObjectNode baseNode = objectMapper.createObjectNode();
             if (planEntity != null) {
-                String planJson = planEntity.getJsonVisit();
+                String planJson = resolveProjectJsonVisit(planEntity.getProjectCode());
                 if (planJson != null && !planJson.isBlank()) {
                     try {
                         ObjectNode parsed = (ObjectNode) objectMapper.readTree(planJson);
@@ -106,5 +116,20 @@ public class TherapeuticPlanVisitService {
     public void delete(Long therapeuticPlanId, LocalDateTime date) {
         TherapeuticPlanVisitId id = new TherapeuticPlanVisitId(therapeuticPlanId, date);
         repository.deleteById(id);
+    }
+
+    private String resolveProjectJsonVisit(String projectCode) {
+        if (projectCode == null || projectCode.isBlank()) {
+            return null;
+        }
+
+        try {
+            return dashboardProjectClient.findByCodeAndCurrentTenant(projectCode).getJsonVisit();
+        } catch (ResponseStatusException exception) {
+            if (exception.getStatusCode() == NOT_FOUND) {
+                return null;
+            }
+            throw exception;
+        }
     }
 }

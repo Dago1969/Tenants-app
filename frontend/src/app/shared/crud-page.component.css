@@ -253,6 +253,18 @@
   gap: 6px;
 }
 
+.crud-field-control-action {
+  justify-content: flex-end;
+}
+
+.crud-field-control-action .crud-btn {
+  width: 100%;
+}
+
+.crud-log-panel-inline {
+  margin-top: 12px;
+}
+
 @media (max-width: 1200px) {
   .crud-fields {
     grid-template-columns: repeat(3, 1fr);

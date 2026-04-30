@@ -19,6 +19,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 import static org.springframework.http.HttpStatus.BAD_GATEWAY;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 /**
  * Client REST verso QTMDashboard per la persistenza centralizzata dei progetti.
@@ -73,6 +74,19 @@ public class DashboardProjectClient {
                 .body(ProjectDto.class));
     }
 
+    public ProjectDto findByCodeAndCurrentTenant(String code) {
+        String normalizedCode = normalize(code);
+        if (normalizedCode == null) {
+            return null;
+        }
+
+        String selectedClient = normalize(resolveCurrentHeader("X-Selected-Client"));
+        return findAll(normalizedCode, selectedClient).stream()
+                .filter(project -> normalizedCode.equalsIgnoreCase(normalize(project.getCode())))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Progetto non trovato: " + normalizedCode));
+    }
+
     public ProjectDto update(Long id, ProjectDto projectDto) {
         log.info("[DashboardProjectClient] Forwarding update project request: id={}, code={}, tenant={}, tenantId={}",
                 id, projectDto.getCode(), projectDto.getTenant(), projectDto.getTenantId());
@@ -120,6 +134,20 @@ public class DashboardProjectClient {
     private HttpServletRequest resolveCurrentRequest() {
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
         return attributes == null ? null : attributes.getRequest();
+    }
+
+    private String resolveCurrentHeader(String headerName) {
+        HttpServletRequest currentRequest = resolveCurrentRequest();
+        return currentRequest == null ? null : currentRequest.getHeader(headerName);
+    }
+
+    private String normalize(String value) {
+        if (value == null) {
+            return null;
+        }
+
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 
     private <T> T execute(RestCall<T> call) {

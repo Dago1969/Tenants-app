@@ -6,16 +6,14 @@ import com.qtm.tenants.nurse.entity.NurseEntity;
 import com.qtm.tenants.structure.entity.StructureEntity;
 import jakarta.persistence.ConstraintMode;
 import jakarta.persistence.Column;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -50,12 +48,7 @@ public class TherapeuticPlanEntity {
     @Column(name = "project_code", nullable = false, length = 128)
     private String projectCode;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "therapeutic_plan_equipment",
-            joinColumns = @jakarta.persistence.JoinColumn(name = "therapeutic_plan_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT)),
-            inverseJoinColumns = @jakarta.persistence.JoinColumn(name = "equipment_id", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
-    )
+        @OneToMany(mappedBy = "assignedTo", fetch = FetchType.LAZY)
     @Builder.Default
     private List<EquipmentEntity> equipments = new ArrayList<>();
 
@@ -85,13 +78,6 @@ public class TherapeuticPlanEntity {
 
     @Column(name = "notes", length = 1000)
     private String notes;
-
-    /**
-     * Campo LOB per memorizzare un JSON molto grande relativo al piano terapeutico.
-     */
-    @Lob
-    @Column(name = "json_visit", columnDefinition = "text")
-    private String jsonVisit;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;

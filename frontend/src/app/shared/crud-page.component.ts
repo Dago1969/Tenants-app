@@ -7,12 +7,13 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { FunctionAuthorizationService } from '../core/function-authorization.service';
+import { OtpApiService, OtpVerificationResultResponse } from '../core/otp-api.service';
 import { hasMessageKey, MessageKey, t } from '../i18n/messages';
 
 export interface CrudField {
   key: string;
   labelKey: MessageKey;
-  type: 'text' | 'textarea' | 'number' | 'checkbox' | 'date' | 'datetime-local' | 'select';
+  type: 'text' | 'textarea' | 'number' | 'checkbox' | 'date' | 'datetime-local' | 'select' | 'action';
   columnSpan?: number;
   rows?: number;
   hidden?: boolean;
@@ -27,6 +28,9 @@ export interface CrudField {
   includeValueInOptionLabel?: boolean;
   relatedFields?: Record<string, string>;
   required?: boolean;
+  transient?: boolean;
+  actionButtonStyle?: 'primary' | 'secondary';
+  actionType?: 'send-patient-consent-otp' | 'verify-patient-consent-otp';
 }
 
 export interface CrudFolder {
@@ -56,6 +60,14 @@ interface PhoneInputBinding {
   iti: Iti;
   syncValue: () => void;
   cleanup: () => void;
+}
+
+interface PatientConsentOtpState {
+  pending: boolean;
+  sent: boolean;
+  verified: boolean;
+  destination: string;
+  statusKey: MessageKey | null;
 }
 
 @Component({
@@ -125,7 +137,19 @@ interface PhoneInputBinding {
                 {{ translate(field.labelKey) }}
                 <span *ngIf="field.required === true" class="crud-required-marker">*</span>
               </label>
-              <div *ngIf="field.type !== 'checkbox' && field.type !== 'select'" class="crud-field-control">
+              <div *ngIf="field.type === 'action'" class="crud-field-control crud-field-control-action">
+                <button
+                  type="button"
+                  class="crud-btn"
+                  [class.crud-btn-primary]="field.actionButtonStyle !== 'secondary'"
+                  [class.crud-btn-secondary]="field.actionButtonStyle === 'secondary'"
+                  [disabled]="isActionFieldDisabled(field)"
+                  (click)="runFieldAction(field)"
+                >
+                  {{ translate(field.labelKey) }}
+                </button>
+              </div>
+              <div *ngIf="field.type !== 'checkbox' && field.type !== 'select' && field.type !== 'action'" class="crud-field-control">
                 <ng-container *ngIf="field.key === 'username'; else genericInput">
                   <input
                     class="crud-input"
@@ -193,6 +217,7 @@ interface PhoneInputBinding {
                         [(ngModel)]="formModel[field.key]"
                         [name]="field.key"
                         [disabled]="isFieldDisabled(field)"
+                        [readOnly]="isFieldReadonly(field)"
                         (blur)="onFieldBlur(field)"
                         [required]="field.required === true"
                         #genericField="ngModel"
@@ -233,8 +258,18 @@ interface PhoneInputBinding {
                   [(ngModel)]="formModel[field.key]"
                   [name]="field.key"
                   [disabled]="isFieldDisabled(field)"
+                  [required]="field.required === true"
                 />
               </label>
+            </div>
+          </div>
+
+          <div *ngIf="shouldShowPatientConsentOtpSummary()" class="crud-log-panel crud-log-panel-inline">
+            <div class="crud-log-entry crud-log-entry-success" *ngIf="patientConsentOtpState.destination">
+              {{ patientConsentOtpState.destination }}
+            </div>
+            <div class="crud-log-entry" *ngIf="patientConsentOtpState.statusKey">
+              {{ translate(patientConsentOtpState.statusKey) }}
             </div>
           </div>
 
@@ -289,6 +324,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
   readonly defaultPhoneCountryIsoCode = 'it';
   readonly phoneCountryOrder: NonNullable<AllOptions['countryOrder']> = ['it', 'us', 'gb', 'fr', 'de', 'es'];
   readonly loadPhoneInputUtils = () => import('intl-tel-input/utils');
+  readonly patientConsentOtpSmsChannel = 'sms';
 
 
   @Input({ required: true }) titleKey!: MessageKey;
@@ -320,6 +356,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
   fieldOptions: Record<string, SelectOption[]> = {};
   operationLogs: OperationLogEntry[] = [];
   phoneFieldTouched: Record<string, boolean> = {};
+  patientConsentOtpState: PatientConsentOtpState = this.createPatientConsentOtpState();
   @ViewChildren('phoneInputElement') phoneInputElements!: QueryList<ElementRef<HTMLInputElement>>;
   private operationLogTimeouts: Record<number, any> = {};
   private phoneInputBindings = new Map<string, PhoneInputBinding>();
@@ -330,6 +367,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
     private readonly http: HttpClient,
     private readonly route: ActivatedRoute,
     private readonly functionAuthorizationService: FunctionAuthorizationService,
+    private readonly otpApiService: OtpApiService,
     private readonly router: Router,
     private readonly location: Location
   ) {}
@@ -398,10 +436,14 @@ export class CrudPageComponent implements OnInit, OnChanges {
 
   isFieldDisabled(field: CrudField): boolean {
     return this.isViewMode
-      || field.readonly === true
+      || this.isReadonlyDisabledField(field)
       || (field.lockOnEdit === true && (this.loadedEntityKeyValue !== null || this.isEditMode))
       || this.hasUnresolvedSelectDependencies(field)
       || this.getFieldPermission(field.key) === 'read-only';
+  }
+
+  isFieldReadonly(field: CrudField): boolean {
+    return field.readonly === true && !this.isReadonlyDisabledField(field);
   }
 
   translate(key: MessageKey): string {
@@ -470,8 +512,15 @@ export class CrudPageComponent implements OnInit, OnChanges {
       return;
     }
 
+    this.submissionAttempted = true;
+    this.markPhoneFieldsTouched();
+    if (this.hasCurrentFolderValidationErrors()) {
+      return;
+    }
+
     const nextFolder = this.folders[this.currentFolderIndex + 1];
     if (nextFolder) {
+      this.submissionAttempted = false;
       this.activeFolder = nextFolder.key;
     }
   }
@@ -498,7 +547,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
   save(form: NgForm): void {
     this.submissionAttempted = true;
     this.markPhoneFieldsTouched();
-    if (form.invalid || this.hasPhoneValidationErrors()) {
+    if (form.invalid || this.hasPhoneValidationErrors() || this.hasCurrentFolderValidationErrors()) {
       form.control.markAllAsTouched();
       return;
     }
@@ -569,6 +618,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
     this.usernameTaken = false;
     this.submissionAttempted = false;
     this.phoneFieldTouched = {};
+    this.patientConsentOtpState = this.createPatientConsentOtpState();
     this.loadSelectOptions();
     this.syncPhoneInputs();
   }
@@ -656,6 +706,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
 
   private buildPayload(): CrudEntity {
     return this.getAllFields()
+      .filter((field) => field.transient !== true && field.type !== 'action')
       .filter((field) => !field.createOnly || this.loadedEntityKeyValue === null)
       .reduce<CrudEntity>((accumulator, field) => {
         accumulator[field.key] = this.formModel[field.key];
@@ -818,6 +869,16 @@ export class CrudPageComponent implements OnInit, OnChanges {
         this.submissionAttempted = false;
         this.usernameTaken = false;
         this.phoneFieldTouched = {};
+        this.patientConsentOtpState = this.createPatientConsentOtpState();
+        if (this.endpoint === 'patients' && this.hasValue(this.formModel['dataProcessingConsentDateTime'])) {
+          this.patientConsentOtpState = {
+            pending: false,
+            sent: true,
+            verified: true,
+            destination: '',
+            statusKey: 'patients.privacy.otp.status.verified'
+          };
+        }
         this.loadSelectOptions();
         this.syncPhoneInputs();
         for (const field of this.getAllFields().filter((currentField) => currentField.type === 'select')) {
@@ -833,6 +894,207 @@ export class CrudPageComponent implements OnInit, OnChanges {
 
   private asPhoneString(value: unknown): string {
     return typeof value === 'string' ? value : '';
+  }
+
+  private isReadonlyDisabledField(field: CrudField): boolean {
+    return field.readonly === true && (field.type === 'checkbox' || field.type === 'select' || this.isViewMode);
+  }
+
+  private hasCurrentFolderValidationErrors(): boolean {
+    return this.currentFields.some((field) => this.isRequiredFieldMissing(field)) || this.hasPatientPrivacyConsentErrors();
+  }
+
+  private isRequiredFieldMissing(field: CrudField): boolean {
+    if (field.required !== true || field.hidden || field.type === 'action') {
+      return false;
+    }
+
+    const value = this.formModel[field.key];
+    if (field.type === 'checkbox') {
+      return value !== true;
+    }
+
+    return value === null || value === undefined || String(value).trim().length === 0;
+  }
+
+  shouldShowPatientConsentOtpSummary(): boolean {
+    return this.endpoint === 'patients'
+      && this.activeFolder === 'privacy'
+      && (this.patientConsentOtpState.destination.length > 0 || this.patientConsentOtpState.statusKey !== null);
+  }
+
+  isActionFieldDisabled(field: CrudField): boolean {
+    if (this.isViewMode) {
+      return true;
+    }
+
+    switch (field.actionType) {
+      case 'send-patient-consent-otp':
+        return this.patientConsentOtpState.pending || !this.hasPatientPrimaryPhone();
+      case 'verify-patient-consent-otp':
+        return this.patientConsentOtpState.pending
+          || !this.patientConsentOtpState.sent
+          || !this.hasValue(this.formModel['patientConsentOtpCode']);
+      default:
+        return false;
+    }
+  }
+
+  runFieldAction(field: CrudField): void {
+    switch (field.actionType) {
+      case 'send-patient-consent-otp':
+        this.sendPatientConsentOtp();
+        break;
+      case 'verify-patient-consent-otp':
+        this.verifyPatientConsentOtp();
+        break;
+      default:
+        break;
+    }
+  }
+
+  private hasPatientPrivacyConsentErrors(): boolean {
+    if (this.endpoint !== 'patients' || this.activeFolder !== 'privacy') {
+      return false;
+    }
+
+    return this.formModel['dataProcessingConsent'] !== true || !this.hasValue(this.formModel['dataProcessingConsentDateTime']);
+  }
+
+  private sendPatientConsentOtp(): void {
+    const phoneNumber = this.getPatientPrimaryPhone();
+    if (!phoneNumber) {
+      this.pushOperationLog('error', 'patients.privacy.otp.error.phoneRequired');
+      return;
+    }
+
+    this.patientConsentOtpState = {
+      pending: true,
+      sent: this.patientConsentOtpState.sent,
+      verified: false,
+      destination: this.patientConsentOtpState.destination,
+      statusKey: 'patients.privacy.otp.status.sending'
+    };
+    this.formModel['dataProcessingConsent'] = true;
+    this.formModel['dataProcessingConsentDateTime'] = '';
+
+    this.otpApiService.sendPhoneOtp(phoneNumber, this.patientConsentOtpSmsChannel).subscribe({
+      next: (result) => {
+        this.applyPatientConsentOtpSendResult(result);
+        this.pushOperationLog('success', 'patients.privacy.otp.success.sent');
+      },
+      error: () => {
+        this.patientConsentOtpState = {
+          pending: false,
+          sent: false,
+          verified: false,
+          destination: '',
+          statusKey: 'patients.privacy.otp.error.send'
+        };
+        this.pushOperationLog('error', 'patients.privacy.otp.error.send');
+      }
+    });
+  }
+
+  private verifyPatientConsentOtp(): void {
+    const phoneNumber = this.getPatientPrimaryPhone();
+    const code = this.asString(this.formModel['patientConsentOtpCode']);
+    if (!phoneNumber) {
+      this.pushOperationLog('error', 'patients.privacy.otp.error.phoneRequired');
+      return;
+    }
+    if (!code) {
+      this.pushOperationLog('error', 'patients.privacy.otp.error.codeRequired');
+      return;
+    }
+
+    this.patientConsentOtpState = {
+      pending: true,
+      sent: true,
+      verified: false,
+      destination: this.patientConsentOtpState.destination,
+      statusKey: 'patients.privacy.otp.status.verifying'
+    };
+
+    this.otpApiService.checkPhoneOtp(phoneNumber, code, this.patientConsentOtpSmsChannel).subscribe({
+      next: (result) => {
+        if (!result.approved) {
+          this.patientConsentOtpState = {
+            pending: false,
+            sent: true,
+            verified: false,
+            destination: result.destination,
+            statusKey: 'patients.privacy.otp.error.rejected'
+          };
+          this.formModel['dataProcessingConsentDateTime'] = '';
+          this.pushOperationLog('error', 'patients.privacy.otp.error.rejected');
+          return;
+        }
+
+        this.formModel['dataProcessingConsent'] = true;
+        this.formModel['dataProcessingConsentDateTime'] = this.getCurrentDateTimeLocalInputValue();
+        this.patientConsentOtpState = {
+          pending: false,
+          sent: true,
+          verified: true,
+          destination: result.destination,
+          statusKey: 'patients.privacy.otp.status.verified'
+        };
+        this.pushOperationLog('success', 'patients.privacy.otp.success.verified');
+      },
+      error: () => {
+        this.patientConsentOtpState = {
+          pending: false,
+          sent: true,
+          verified: false,
+          destination: this.patientConsentOtpState.destination,
+          statusKey: 'patients.privacy.otp.error.check'
+        };
+        this.pushOperationLog('error', 'patients.privacy.otp.error.check');
+      }
+    });
+  }
+
+  private applyPatientConsentOtpSendResult(result: OtpVerificationResultResponse): void {
+    this.patientConsentOtpState = {
+      pending: false,
+      sent: true,
+      verified: false,
+      destination: result.destination,
+      statusKey: 'patients.privacy.otp.status.sent'
+    };
+  }
+
+  private createPatientConsentOtpState(): PatientConsentOtpState {
+    return {
+      pending: false,
+      sent: false,
+      verified: false,
+      destination: '',
+      statusKey: null
+    };
+  }
+
+  private hasPatientPrimaryPhone(): boolean {
+    return this.getPatientPrimaryPhone() !== '';
+  }
+
+  private getPatientPrimaryPhone(): string {
+    return this.asString(this.formModel['primaryPhone']);
+  }
+
+  private hasValue(value: unknown): boolean {
+    return this.asString(value).length > 0;
+  }
+
+  private asString(value: unknown): string {
+    return typeof value === 'string' ? value.trim() : '';
+  }
+
+  private getCurrentDateTimeLocalInputValue(): string {
+    const currentDate = new Date();
+    const timezoneOffset = currentDate.getTimezoneOffset() * 60000;
+    return new Date(currentDate.getTime() - timezoneOffset).toISOString().slice(0, 16);
   }
 
   /**

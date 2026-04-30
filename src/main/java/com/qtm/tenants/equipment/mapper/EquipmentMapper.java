@@ -3,6 +3,7 @@ package com.qtm.tenants.equipment.mapper;
 import com.qtm.tenants.equipment.dto.EquipmentDTO;
 import com.qtm.tenants.equipment.entity.EquipmentEntity;
 import com.qtm.tenants.equipment.entity.EquipmentTypeEntity;
+import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanEntity;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -29,7 +30,7 @@ public class EquipmentMapper {
                 .status(entity.getStatus())
                 .serialNumber(entity.getSerialNumber())
                 .location(entity.getLocation())
-                .assignedTo(entity.getAssignedTo())
+                .assignedTo(entity.getAssignedTo() != null ? entity.getAssignedTo().getId() : null)
                 .purchaseDate(entity.getPurchaseDate())
                 .lastRevisionDate(entity.getLastRevisionDate())
                 .nextRevisionDate(entity.getNextRevisionDate())
@@ -39,20 +40,20 @@ public class EquipmentMapper {
                 .build();
     }
 
-    public EquipmentEntity toNewEntity(EquipmentDTO dto, EquipmentTypeEntity equipmentType) {
+    public EquipmentEntity toNewEntity(EquipmentDTO dto, EquipmentTypeEntity equipmentType, TherapeuticPlanEntity assignedTo) {
         EquipmentEntity entity = new EquipmentEntity();
-        updateEntity(entity, dto, equipmentType);
+        updateEntity(entity, dto, equipmentType, assignedTo);
         entity.setId(dto.getId());
         return entity;
     }
 
-    public void updateEntity(EquipmentEntity entity, EquipmentDTO dto, EquipmentTypeEntity equipmentType) {
+    public void updateEntity(EquipmentEntity entity, EquipmentDTO dto, EquipmentTypeEntity equipmentType, TherapeuticPlanEntity assignedTo) {
         entity.setEquipmentType(equipmentType);
         entity.setCode(dto.getCode());
         entity.setStatus(dto.getStatus());
         entity.setSerialNumber(dto.getSerialNumber());
         entity.setLocation(dto.getLocation());
-        entity.setAssignedTo(dto.getAssignedTo());
+        entity.setAssignedTo(assignedTo);
         entity.setPurchaseDate(dto.getPurchaseDate());
         entity.setLastRevisionDate(dto.getLastRevisionDate());
         entity.setNextRevisionDate(dto.getNextRevisionDate());

@@ -2,6 +2,7 @@ package com.qtm.tenants.therapeuticplan.service;
 
 import com.qtm.tenants.alert.repository.AlertRepository;
 import com.qtm.tenants.notification.repository.NotificationRepository;
+import com.qtm.tenants.project.service.DashboardProjectClient;
 import com.qtm.tenants.doctor.entity.DoctorEntity;
 import com.qtm.tenants.doctor.repository.DoctorRepository;
 import com.qtm.tenants.equipment.EquipmentStatusRules;
@@ -55,6 +56,7 @@ public class TherapeuticPlanService {
     private final DoctorRepository doctorRepository;
     private final EquipmentRepository equipmentRepository;
     private final TherapeuticPlanMapper therapeuticPlanMapper;
+    private final DashboardProjectClient dashboardProjectClient;
     private final AlertRepository alertRepository;
     private final NotificationRepository notificationRepository;
 
@@ -72,7 +74,9 @@ public class TherapeuticPlanService {
             .collect(Collectors.toSet()));
 
         return therapeuticPlans.stream()
-            .map(entity -> therapeuticPlanMapper.toDto(entity, buildPatientDisplayName(patientsById.get(entity.getPatientId()))))
+            .map(entity -> enrichWithProjectJsonVisit(
+                therapeuticPlanMapper.toDto(entity, buildPatientDisplayName(patientsById.get(entity.getPatientId())))
+            ))
             .filter(dto -> matchesPatientName(dto.getPatientDisplayName(), normalizedPatientName))
             .toList();
     }
@@ -80,7 +84,9 @@ public class TherapeuticPlanService {
     @Transactional(readOnly = true)
     public TherapeuticPlanDto findById(Long id) {
         return therapeuticPlanRepository.findById(requireId(id))
-            .map(entity -> therapeuticPlanMapper.toDto(entity, resolvePatientDisplayName(entity.getPatientId())))
+            .map(entity -> enrichWithProjectJsonVisit(
+                    therapeuticPlanMapper.toDto(entity, resolvePatientDisplayName(entity.getPatientId()))
+            ))
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Piano terapeutico non trovato"));
     }
 
@@ -91,9 +97,7 @@ public class TherapeuticPlanService {
         StructureEntity structure = resolveStructure(normalizedDto.getStructureId());
         NurseEntity nurse = resolveNurse(normalizedDto.getNurseId());
         DoctorEntity doctor = resolveDoctor(normalizedDto.getDoctorId());
-        List<EquipmentEntity> selectedEquipments = resolveEquipments(normalizedDto.getEquipmentIds(), Set.of());
-
-        synchronizeEquipmentStatuses(List.of(), selectedEquipments);
+        List<EquipmentEntity> selectedEquipments = resolveEquipments(normalizedDto.getEquipmentIds(), null);
         TherapeuticPlanEntity entity = therapeuticPlanMapper.toNewEntity(
                 normalizedDto,
                 structure,
@@ -102,7 +106,11 @@ public class TherapeuticPlanService {
                 selectedEquipments
         );
         TherapeuticPlanEntity savedEntity = therapeuticPlanRepository.save(entity);
-        return therapeuticPlanMapper.toDto(savedEntity, resolvePatientDisplayName(savedEntity.getPatientId()));
+            synchronizeEquipmentAssignments(List.of(), selectedEquipments, savedEntity);
+            savedEntity.setEquipments(new ArrayList<>(selectedEquipments));
+        return enrichWithProjectJsonVisit(
+                therapeuticPlanMapper.toDto(savedEntity, resolvePatientDisplayName(savedEntity.getPatientId()))
+        );
     }
 
     @Transactional
@@ -112,20 +120,15 @@ public class TherapeuticPlanService {
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Piano terapeutico non trovato"));
 
         TherapeuticPlanDto normalizedDto = normalizeDto(dto);
-    validatePatientExists(normalizedDto.getPatientId());
+        validatePatientExists(normalizedDto.getPatientId());
         StructureEntity structure = resolveStructure(normalizedDto.getStructureId());
         NurseEntity nurse = resolveNurse(normalizedDto.getNurseId());
         DoctorEntity doctor = resolveDoctor(normalizedDto.getDoctorId());
         List<EquipmentEntity> currentEquipments = entity.getEquipments() == null
                 ? List.of()
                 : List.copyOf(entity.getEquipments());
-        Set<Long> currentEquipmentIds = currentEquipments.stream()
-                .map(EquipmentEntity::getId)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet());
-        List<EquipmentEntity> selectedEquipments = resolveEquipments(normalizedDto.getEquipmentIds(), currentEquipmentIds);
+        List<EquipmentEntity> selectedEquipments = resolveEquipments(normalizedDto.getEquipmentIds(), therapeuticPlanId);
 
-        synchronizeEquipmentStatuses(currentEquipments, selectedEquipments);
         therapeuticPlanMapper.updateEntity(
                 entity,
                 normalizedDto,
@@ -135,7 +138,11 @@ public class TherapeuticPlanService {
                 selectedEquipments
         );
         TherapeuticPlanEntity savedEntity = therapeuticPlanRepository.save(entity);
-        return therapeuticPlanMapper.toDto(savedEntity, resolvePatientDisplayName(savedEntity.getPatientId()));
+            synchronizeEquipmentAssignments(currentEquipments, selectedEquipments, savedEntity);
+            savedEntity.setEquipments(new ArrayList<>(selectedEquipments));
+            return enrichWithProjectJsonVisit(
+                therapeuticPlanMapper.toDto(savedEntity, resolvePatientDisplayName(savedEntity.getPatientId()))
+            );
     }
 
     @Transactional
@@ -143,7 +150,7 @@ public class TherapeuticPlanService {
         TherapeuticPlanEntity entity = therapeuticPlanRepository.findById(requireId(id))
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Piano terapeutico non trovato"));
 
-        synchronizeEquipmentStatuses(entity.getEquipments(), List.of());
+        synchronizeEquipmentAssignments(entity.getEquipments(), List.of(), null);
         alertRepository.deleteByTherapeuticPlan_Id(entity.getId());
         notificationRepository.deleteByTherapeuticPlan_Id(entity.getId());
         therapeuticPlanRepository.delete(entity);
@@ -254,6 +261,31 @@ public class TherapeuticPlanService {
         return patientDisplayName.toLowerCase(Locale.ROOT).contains(patientNameFilter.toLowerCase(Locale.ROOT));
     }
 
+    private TherapeuticPlanDto enrichWithProjectJsonVisit(TherapeuticPlanDto dto) {
+        if (dto == null) {
+            return null;
+        }
+
+        dto.setJsonVisit(resolveProjectJsonVisit(dto.getProjectCode()));
+        return dto;
+    }
+
+    private String resolveProjectJsonVisit(String projectCode) {
+        String normalizedProjectCode = normalizeOptionalText(projectCode);
+        if (normalizedProjectCode == null) {
+            return null;
+        }
+
+        try {
+            return normalizeOptionalText(dashboardProjectClient.findByCodeAndCurrentTenant(normalizedProjectCode).getJsonVisit());
+        } catch (ResponseStatusException exception) {
+            if (exception.getStatusCode() == NOT_FOUND) {
+                return null;
+            }
+            throw exception;
+        }
+    }
+
     private StructureEntity resolveStructure(Long structureId) {
         if (structureId == null) {
             throw new ResponseStatusException(BAD_REQUEST, "Struttura obbligatoria");
@@ -298,7 +330,7 @@ public class TherapeuticPlanService {
                 .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Medico non trovato"));
     }
 
-    private List<EquipmentEntity> resolveEquipments(List<Long> equipmentIds, Set<Long> currentEquipmentIds) {
+    private List<EquipmentEntity> resolveEquipments(List<Long> equipmentIds, Long currentTherapeuticPlanId) {
         List<Long> normalizedEquipmentIds = normalizeEquipmentIds(equipmentIds);
         if (normalizedEquipmentIds.isEmpty()) {
             throw new ResponseStatusException(BAD_REQUEST, "Selezionare almeno una attrezzatura disponibile");
@@ -314,8 +346,16 @@ public class TherapeuticPlanService {
                 throw new ResponseStatusException(BAD_REQUEST, "Attrezzatura non trovata: " + equipmentId);
             }
 
+            Long assignedTherapeuticPlanId = equipment.getAssignedTo() != null ? equipment.getAssignedTo().getId() : null;
+            boolean alreadyAssignedToCurrentPlan = currentTherapeuticPlanId != null
+                    && Objects.equals(assignedTherapeuticPlanId, currentTherapeuticPlanId);
+            if (!alreadyAssignedToCurrentPlan && assignedTherapeuticPlanId != null) {
+                throw new ResponseStatusException(BAD_REQUEST,
+                        "Attrezzatura gia assegnata a un altro piano terapeutico: " + equipment.getCode());
+            }
+
             String normalizedStatus = EquipmentStatusRules.normalizeStatus(equipment.getStatus());
-            if (!currentEquipmentIds.contains(equipmentId) && !EquipmentStatusRules.IN_STOCK.equals(normalizedStatus)) {
+            if (!alreadyAssignedToCurrentPlan && !EquipmentStatusRules.IN_STOCK.equals(normalizedStatus)) {
                 throw new ResponseStatusException(BAD_REQUEST, "Attrezzatura non disponibile in magazzino: " + equipment.getCode());
             }
 
@@ -325,7 +365,9 @@ public class TherapeuticPlanService {
         return resolvedEquipments;
     }
 
-    private void synchronizeEquipmentStatuses(List<EquipmentEntity> currentEquipments, List<EquipmentEntity> selectedEquipments) {
+    private void synchronizeEquipmentAssignments(List<EquipmentEntity> currentEquipments,
+                                                 List<EquipmentEntity> selectedEquipments,
+                                                 TherapeuticPlanEntity therapeuticPlan) {
         Set<Long> selectedIds = selectedEquipments.stream()
                 .map(EquipmentEntity::getId)
                 .filter(Objects::nonNull)
@@ -335,12 +377,14 @@ public class TherapeuticPlanService {
         for (EquipmentEntity equipment : currentEquipments) {
             if (equipment.getId() != null && !selectedIds.contains(equipment.getId())) {
                 equipment.setStatus(EquipmentStatusRules.IN_STOCK);
+                equipment.setAssignedTo(null);
                 equipmentsToPersist.add(equipment);
             }
         }
 
         for (EquipmentEntity equipment : selectedEquipments) {
             equipment.setStatus(EquipmentStatusRules.ASSIGNED);
+            equipment.setAssignedTo(therapeuticPlan);
             equipmentsToPersist.add(equipment);
         }
 

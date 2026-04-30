@@ -7,6 +7,8 @@ import com.qtm.tenants.equipment.entity.EquipmentTypeEntity;
 import com.qtm.tenants.equipment.mapper.EquipmentMapper;
 import com.qtm.tenants.equipment.repository.EquipmentRepository;
 import com.qtm.tenants.equipment.repository.EquipmentTypeRepository;
+import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanEntity;
+import com.qtm.tenants.therapeuticplan.repository.TherapeuticPlanRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +32,7 @@ public class EquipmentService {
     private final EquipmentRepository equipmentRepository;
     private final EquipmentTypeRepository equipmentTypeRepository;
     private final EquipmentMapper equipmentMapper;
+    private final TherapeuticPlanRepository therapeuticPlanRepository;
 
     @Transactional(readOnly = true)
     public List<EquipmentDTO> findAll(String code, Long equipmentTypeId, String status, String serialNumber) {
@@ -56,8 +59,9 @@ public class EquipmentService {
         }
 
         EquipmentTypeEntity equipmentType = resolveEquipmentType(normalizedDto.getEquipmentTypeId());
+        TherapeuticPlanEntity assignedTo = resolveAssignedTo(normalizedDto.getAssignedTo());
         validateSerialNumberRequirement(normalizedDto, equipmentType);
-        EquipmentEntity entity = equipmentMapper.toNewEntity(normalizedDto, equipmentType);
+        EquipmentEntity entity = equipmentMapper.toNewEntity(normalizedDto, equipmentType, assignedTo);
         return equipmentMapper.toDto(equipmentRepository.save(entity));
     }
 
@@ -78,8 +82,9 @@ public class EquipmentService {
         }
 
         EquipmentTypeEntity equipmentType = resolveEquipmentType(normalizedDto.getEquipmentTypeId());
+        TherapeuticPlanEntity assignedTo = resolveAssignedTo(normalizedDto.getAssignedTo());
         validateSerialNumberRequirement(normalizedDto, equipmentType);
-        equipmentMapper.updateEntity(entity, normalizedDto, equipmentType);
+        equipmentMapper.updateEntity(entity, normalizedDto, equipmentType, assignedTo);
         return equipmentMapper.toDto(equipmentRepository.save(entity));
     }
 
@@ -101,6 +106,15 @@ public class EquipmentService {
                 .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Tipo attrezzatura non trovato"));
     }
 
+    private TherapeuticPlanEntity resolveAssignedTo(Long therapeuticPlanId) {
+        if (therapeuticPlanId == null) {
+            return null;
+        }
+
+        return therapeuticPlanRepository.findById(therapeuticPlanId)
+                .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Piano terapeutico assegnato non trovato"));
+    }
+
     private void validateSerialNumberRequirement(EquipmentDTO dto, EquipmentTypeEntity equipmentType) {
         if (equipmentType.isSerialNumberRequired() && normalizeOptionalText(dto.getSerialNumber()) == null) {
             throw new ResponseStatusException(BAD_REQUEST, "Seriale obbligatorio per il tipo attrezzatura selezionato");
@@ -119,7 +133,7 @@ public class EquipmentService {
                 .status(normalizeStatus(dto.getStatus()))
                 .serialNumber(normalizeOptionalText(dto.getSerialNumber()))
                 .location(normalizeOptionalText(dto.getLocation()))
-                .assignedTo(normalizeOptionalText(dto.getAssignedTo()))
+            .assignedTo(dto.getAssignedTo())
                 .purchaseDate(dto.getPurchaseDate())
                 .lastRevisionDate(dto.getLastRevisionDate())
                 .nextRevisionDate(dto.getNextRevisionDate())

@@ -12,6 +12,11 @@ export interface OtpVerificationResultResponse {
   verificationSid: string;
 }
 
+export interface PendingOtpContext {
+  phoneNumber: string;
+  channel: string;
+}
+
 interface PhoneOtpSendRequest {
   phoneNumber: string;
   channel: string;
@@ -19,11 +24,6 @@ interface PhoneOtpSendRequest {
 
 interface PhoneOtpCheckRequest extends PhoneOtpSendRequest {
   code: string;
-}
-
-interface PendingOtpContext {
-  phoneNumber: string;
-  channel: string;
 }
 
 /**

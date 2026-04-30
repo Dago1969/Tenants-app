@@ -865,6 +865,64 @@ databaseChangeLog:
               VALUES ('THERAPEUTIC_PLAN', 'THERAPEUTIC_PLAN');
 
   - changeSet:
+      id: 2026-04-30-migrate-therapeutic-plan-equipment-to-equipment-assigned-to
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: therapeutic_plan_equipment
+        - tableExists:
+            tableName: equipment
+        - columnExists:
+            tableName: equipment
+            columnName: assigned_to
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              UPDATE equipment equipment_record
+              LEFT JOIN (
+                SELECT equipment_id, MAX(therapeutic_plan_id) AS therapeutic_plan_id
+                FROM therapeutic_plan_equipment
+                GROUP BY equipment_id
+              ) assigned_plan ON assigned_plan.equipment_id = equipment_record.id
+              SET equipment_record.assigned_to = CASE
+                WHEN assigned_plan.therapeutic_plan_id IS NOT NULL THEN CAST(assigned_plan.therapeutic_plan_id AS CHAR(255))
+                WHEN TRIM(COALESCE(equipment_record.assigned_to, '')) REGEXP '^[0-9]+$' THEN TRIM(equipment_record.assigned_to)
+                ELSE NULL
+              END;
+
+              DROP TABLE IF EXISTS therapeutic_plan_equipment;
+
+  - changeSet:
+      id: 2026-04-30-change-equipment-assigned-to-to-therapeutic-plan-reference
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: equipment
+        - columnExists:
+            tableName: equipment
+            columnName: assigned_to
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              UPDATE equipment
+              SET assigned_to = NULL
+              WHERE TRIM(COALESCE(assigned_to, '')) = ''
+                 OR TRIM(COALESCE(assigned_to, '')) NOT REGEXP '^[0-9]+$';
+
+              ALTER TABLE equipment
+                MODIFY COLUMN assigned_to BIGINT NULL;
+
+              CREATE INDEX idx_equipment_assigned_to ON equipment (assigned_to);
+
+  - changeSet:
       id: 2026-04-24-fix-structure-asl-module-code-references
       author: copilot
       preConditions:
@@ -1031,7 +1089,32 @@ databaseChangeLog:
             stripComments: false
             sql: |
               ALTER TABLE therapeutic_plan
-                DROP COLUMN IF EXISTS json_visit;
+                DROP COLUMN json_visit;
+  - changeSet:
+      id: 2026-04-30-drop-json-visit-from-therapeutic-plan
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: therapeutic_plan
+        - columnExists:
+            tableName: therapeutic_plan
+            columnName: json_visit
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE therapeutic_plan
+                DROP COLUMN json_visit;
+      rollback:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              ALTER TABLE therapeutic_plan
+                ADD COLUMN json_visit TEXT NULL;
   - changeSet:
       id: 2026-04-20-create-therapeutic-plan-visit-table
       author: copilot
@@ -1096,7 +1179,7 @@ databaseChangeLog:
             stripComments: false
             sql: |
               ALTER TABLE therapeutic_plan_visit
-                DROP COLUMN IF EXISTS json_visit;
+                DROP COLUMN json_visit;
   - changeSet:
       id: 2026-04-21-visit-start-therapy-datetime
       author: copilot

@@ -1,8 +1,11 @@
 package com.qtm.tenants.equipment.entity;
 
+import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanEntity;
+import jakarta.persistence.ConstraintMode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -50,8 +53,9 @@ public class EquipmentEntity {
     @Column(name = "location", length = 255)
     private String location;
 
-    @Column(name = "assigned_to", length = 255)
-    private String assignedTo;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "assigned_to", foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    private TherapeuticPlanEntity assignedTo;
 
     @Column(name = "purchase_date")
     private LocalDate purchaseDate;

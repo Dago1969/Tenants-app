@@ -20,6 +20,7 @@ import { MessageKey, t } from '../../i18n/messages';
         [endpoint]="endpoint"
         [fields]="fields"
         [folders]="folders"
+        [initialFormModel]="initialFormModel"
         [fieldPermissionsEndpoint]="permissionsEndpoint"
         [wizardMode]="true"
         [popupMode]="true"
@@ -38,6 +39,11 @@ export class PatientsCrudComponent implements OnInit {
   permissionsEndpoint = 'patients/permissions';
   loadingMessageKey = 'structures.message.loading' as const;
   optionsReady = false;
+  initialFormModel = {
+    dataProcessingConsent: true,
+    dataProcessingConsentDateTime: '',
+    patientConsentOtpCode: ''
+  };
 
   fields: CrudField[] = [
     { key: 'assistedId', labelKey: 'patients.field.assistedId', type: 'text', columnSpan: 2 },
@@ -70,10 +76,26 @@ export class PatientsCrudComponent implements OnInit {
       ]
     },
     { key: 'identificationDocumentReference', labelKey: 'patients.field.identificationDocumentReference', type: 'text', columnSpan: 2 },
-    { key: 'dataProcessingConsent', labelKey: 'patients.field.dataProcessingConsent', type: 'checkbox' },
-    { key: 'dataProcessingConsentDateTime', labelKey: 'patients.field.dataProcessingConsentDateTime', type: 'datetime-local' },
+    { key: 'dataProcessingConsent', labelKey: 'patients.field.dataProcessingConsent', type: 'checkbox', readonly: true, required: true },
+    { key: 'dataProcessingConsentDateTime', labelKey: 'patients.field.dataProcessingConsentDateTime', type: 'datetime-local', readonly: true, required: true },
     { key: 'dataProcessingConsentRevocationLog', labelKey: 'patients.field.dataProcessingConsentRevocationLog', type: 'text' },
     { key: 'additionalConsents', labelKey: 'patients.field.additionalConsents', type: 'text' },
+    { key: 'patientConsentOtpCode', labelKey: 'patients.privacy.otp.code', type: 'text', transient: true, columnSpan: 2 },
+    {
+      key: 'patientConsentOtpSendAction',
+      labelKey: 'patients.privacy.otp.sendAction',
+      type: 'action',
+      transient: true,
+      actionType: 'send-patient-consent-otp',
+      actionButtonStyle: 'secondary'
+    },
+    {
+      key: 'patientConsentOtpVerifyAction',
+      labelKey: 'patients.privacy.otp.verifyAction',
+      type: 'action',
+      transient: true,
+      actionType: 'verify-patient-consent-otp'
+    },
     { key: 'therapyStatus', labelKey: 'patients.field.therapyStatus', type: 'text' },
     { key: 'prescribingSpecialist', labelKey: 'patients.field.prescribingSpecialist', type: 'text' },
     { key: 'referenceHospitalStructure', labelKey: 'patients.field.referenceHospitalStructure', type: 'select' },
@@ -148,8 +170,24 @@ export class PatientsCrudComponent implements OnInit {
       key: 'privacy',
       titleKey: 'patients.folder.privacy',
       fields: [
-        { key: 'dataProcessingConsent', labelKey: 'patients.field.dataProcessingConsent', type: 'checkbox' },
-        { key: 'dataProcessingConsentDateTime', labelKey: 'patients.field.dataProcessingConsentDateTime', type: 'datetime-local' },
+        { key: 'dataProcessingConsent', labelKey: 'patients.field.dataProcessingConsent', type: 'checkbox', readonly: true, required: true },
+        { key: 'dataProcessingConsentDateTime', labelKey: 'patients.field.dataProcessingConsentDateTime', type: 'datetime-local', readonly: true, required: true },
+        { key: 'patientConsentOtpCode', labelKey: 'patients.privacy.otp.code', type: 'text', transient: true, columnSpan: 2 },
+        {
+          key: 'patientConsentOtpSendAction',
+          labelKey: 'patients.privacy.otp.sendAction',
+          type: 'action',
+          transient: true,
+          actionType: 'send-patient-consent-otp',
+          actionButtonStyle: 'secondary'
+        },
+        {
+          key: 'patientConsentOtpVerifyAction',
+          labelKey: 'patients.privacy.otp.verifyAction',
+          type: 'action',
+          transient: true,
+          actionType: 'verify-patient-consent-otp'
+        },
         { key: 'dataProcessingConsentRevocationLog', labelKey: 'patients.field.dataProcessingConsentRevocationLog', type: 'text' },
         { key: 'additionalConsents', labelKey: 'patients.field.additionalConsents', type: 'text' }
       ]

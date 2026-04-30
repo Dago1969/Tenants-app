@@ -23,7 +23,7 @@ public class EquipmentDTO {
     private String status;
     private String serialNumber;
     private String location;
-    private String assignedTo;
+    private Long assignedTo;
     private LocalDate purchaseDate;
     private LocalDate lastRevisionDate;
     private LocalDate nextRevisionDate;
