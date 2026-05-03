@@ -20,13 +20,18 @@
       <div class="role-profile-field">
         <label>{{ translate('common.role') }}</label>
         <select [(ngModel)]="selectedRoleId">
-          <option value="">Seleziona ruolo</option>
+          <option value="">{{ translate('users.configure.roleProfiles.selectRole') }}</option>
           <option *ngFor="let role of roles" [value]="role.id">{{ role.id }} - {{ role.description || role.name }}</option>
         </select>
       </div>
       <div class="role-profile-field">
-        <label>Progetto</label>
-        <input type="text" [value]="selectedProject" disabled>
+        <label>{{ translate('users.field.projectId') }}</label>
+        <select [(ngModel)]="selectedProject" [disabled]="loadingProjects || projects.length === 0">
+          <option value="">{{ labelSelectPlaceholder }}</option>
+          <option *ngFor="let project of projects" [value]="project.id != null ? project.id.toString() : project.code">
+            {{ project.code }}
+          </option>
+        </select>
       </div>
       <div class="role-profile-actions" style="gap: 12px;">
         <button type="button" class="btn btn-primary" (click)="associateRoleProject()" [disabled]="!canAssociateRoleProject()">{{ labelAssociate }}</button>

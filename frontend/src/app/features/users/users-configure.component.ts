@@ -28,6 +28,7 @@ export class UsersConfigureComponent implements OnInit {
 
   readonly labelAssociate = t('users.configure.actions.associate');
   readonly labelDisassociate = t('users.configure.actions.disassociate');
+  readonly labelSelectPlaceholder = t('common.selectPlaceholder');
   projects: ProjectDto[] = [];
   loadingProjects = false;
   errorProjects = '';
@@ -131,6 +132,7 @@ export class UsersConfigureComponent implements OnInit {
     this.projectApi.getProjectsByTenant(tenantCode).subscribe({
       next: (projects) => {
         this.projects = projects;
+        this.alignSelectedProject(projects);
         this.loadingProjects = false;
       },
       error: (err) => {
@@ -243,6 +245,25 @@ export class UsersConfigureComponent implements OnInit {
     }
 
     return null;
+  }
+
+  private alignSelectedProject(projects: ProjectDto[]): void {
+    const normalizedSelectedProject = this.selectedProject.trim();
+    if (projects.length === 0) {
+      this.selectedProject = '';
+      return;
+    }
+
+    const matchedProject = normalizedSelectedProject
+      ? projects.find(currentProject =>
+          String(currentProject.id) === normalizedSelectedProject
+          || currentProject.code.trim().toLowerCase() === normalizedSelectedProject.toLowerCase())
+      : null;
+
+    const fallbackProject = matchedProject ?? projects[0];
+    this.selectedProject = fallbackProject.id != null
+      ? String(fallbackProject.id)
+      : fallbackProject.code;
   }
 
 
