@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Component, OnDestroy } from '@angular/core';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { NavigationCancel, NavigationEnd, NavigationError, NavigationStart, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from './core/auth.service';
 import { ProjectApiService, ProjectDto } from './core/project-api.service';
 import { getCurrentLanguage, MessageKey, t } from './i18n/messages';
@@ -56,7 +56,8 @@ export class AppComponent implements OnDestroy {
   constructor(
     private readonly authService: AuthService,
     private readonly http: HttpClient,
-    private readonly projectApi: ProjectApiService
+    private readonly projectApi: ProjectApiService,
+    private readonly router: Router
   ) {
     if (typeof document !== 'undefined') {
       document.title = t('app.title');
@@ -72,6 +73,15 @@ export class AppComponent implements OnDestroy {
     this.selectedClient = this.authService.getSelectedClient();
     this.username = this.authService.getName();
     this.preferredUsername = this.authService.getPreferredUsername();
+    console.log('[TENANTS-APP] bootstrap state', {
+      href: typeof window !== 'undefined' ? window.location.href : 'server',
+      selectedRole: this.selectedRole,
+      selectedClient: this.selectedClient,
+      selectedProject: this.selectedProject,
+      username: this.username,
+      preferredUsername: this.preferredUsername,
+      hasToken: !!this.authService.getToken()
+    });
     this.loadProjectFooter();
     // Log info utente dal JWT
     const token = this.authService.getToken();
@@ -88,6 +98,38 @@ export class AppComponent implements OnDestroy {
       console.warn('[TENANTS-APP] Nessun token JWT trovato');
     }
     this.loadModuleVisibility();
+
+    this.subscriptions.add(
+      this.router.events.subscribe((event) => {
+        if (event instanceof NavigationStart) {
+          console.log('[TENANTS-APP] NavigationStart', {
+            url: event.url,
+            currentHref: typeof window !== 'undefined' ? window.location.href : 'server'
+          });
+        }
+
+        if (event instanceof NavigationEnd) {
+          console.log('[TENANTS-APP] NavigationEnd', {
+            url: event.url,
+            urlAfterRedirects: event.urlAfterRedirects
+          });
+        }
+
+        if (event instanceof NavigationCancel) {
+          console.warn('[TENANTS-APP] NavigationCancel', {
+            url: event.url,
+            reason: event.reason
+          });
+        }
+
+        if (event instanceof NavigationError) {
+          console.error('[TENANTS-APP] NavigationError', {
+            url: event.url,
+            error: event.error
+          });
+        }
+      })
+    );
 
     this.subscriptions.add(
       this.authService.getSelectedRoleChanges().subscribe((role) => {
@@ -210,6 +252,10 @@ export class AppComponent implements OnDestroy {
     const selectedProject = this.selectedProject?.trim() ?? '';
 
     if (!selectedClient || !selectedProject) {
+      console.log('[TENANTS-APP] loadProjectFooter() skipped', {
+        selectedClient,
+        selectedProject
+      });
       this.projectFooterText = null;
       return;
     }
@@ -218,10 +264,16 @@ export class AppComponent implements OnDestroy {
       this.projectApi.getProjectsByTenant(selectedClient).subscribe({
         next: (projects) => {
           const matchedProject = projects.find((project) => this.matchesSelectedProject(project, selectedProject));
-            this.projectFooterText = matchedProject ? this.buildProjectFooterText(matchedProject) : null;
+          console.log('[TENANTS-APP] loadProjectFooter() projects loaded', {
+            totalProjects: projects.length,
+            selectedProject,
+            matchedProject: matchedProject?.id ?? null
+          });
+          this.projectFooterText = matchedProject ? this.buildProjectFooterText(matchedProject) : null;
         },
-        error: () => {
-            this.projectFooterText = null;
+        error: (error) => {
+          console.warn('[TENANTS-APP] loadProjectFooter() error', error);
+          this.projectFooterText = null;
         }
       })
     );

@@ -110,14 +110,25 @@ export class DashboardComponent implements OnInit {
   ngOnInit(): void {
     this.selectedRole = this.authService.getSelectedRole();
     this.selectedClient = this.authService.getSelectedClient();
+    console.log('[DashboardComponent] ngOnInit()', {
+      selectedRole: this.selectedRole,
+      selectedClient: this.selectedClient,
+      visibleLinksBeforeVisibilityLoad: this.visibleDashboardLinks.map((link) => link.route)
+    });
     this.loadModuleVisibility();
   }
 
   private loadModuleVisibility(): void {
     if (!this.selectedRole) {
+      console.warn('[DashboardComponent] loadModuleVisibility() skipped: selectedRole assente');
       this.hiddenModuleCodes.clear();
       return;
     }
+
+    console.log('[DashboardComponent] loadModuleVisibility() request', {
+      selectedRole: this.selectedRole,
+      url: `${environment.apiBaseUrl}/authorizations/roles/${this.selectedRole}`
+    });
 
     this.http
       .get<AuthorizationRoleMatrixDto>(`${environment.apiBaseUrl}/authorizations/roles/${this.selectedRole}`)
@@ -128,8 +139,13 @@ export class DashboardComponent implements OnInit {
               .filter((module) => module.moduleAuthorization === 'hide-field')
               .map((module) => module.moduleCode)
           );
+          console.log('[DashboardComponent] loadModuleVisibility() success', {
+            hiddenModuleCodes: Array.from(this.hiddenModuleCodes),
+            visibleLinks: this.visibleDashboardLinks.map((link) => link.route)
+          });
         },
-        error: () => {
+        error: (error) => {
+          console.warn('[DashboardComponent] loadModuleVisibility() error', error);
           this.hiddenModuleCodes.clear();
         }
       });

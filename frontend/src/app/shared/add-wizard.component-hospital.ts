@@ -87,7 +87,6 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
             <label>{{ translate('structures.field.cap') }}<span class="required-asterisk">*</span>
               <input type="text" name="cap" [(ngModel)]="model.cap" maxlength="10" required autocomplete="off" />
             </label>
-          
             <label>{{ translate('structures.field.phone') }}<span class="required-asterisk">*</span>
               <div class="phone-input-group phone-input-group-intl">
                 <input #phoneInputElement type="tel" inputmode="tel" name="phone" [ngModel]="model.phone" (ngModelChange)="onPhoneModelChange($event)" required autocomplete="off" class="phone-number-input" />
@@ -120,15 +119,34 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
             </label>
             <button type="button" class="btn btn-secondary" (click)="showAddReferent = !showAddReferent">{{ translate('referent.actions.add') }}</button>
           </div>
-          <div class="form-row" *ngIf="showAddReferent" style="margin-top: 1rem; border: 1px solid #eee; padding: 1rem; border-radius: 6px; background: #fafbfc;">
-            <form (ngSubmit)="addReferent()" #addReferentForm="ngForm" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
-              <input name="firstName" [(ngModel)]="newReferent.firstName" required placeholder="{{ translate('referent.field.firstName') }}" class="form-control" style="width: 120px;" />
-              <input name="lastName" [(ngModel)]="newReferent.lastName" required placeholder="{{ translate('referent.field.lastName') }}" class="form-control" style="width: 120px;" />
-              <input name="role" [(ngModel)]="newReferent.role" placeholder="{{ translate('referent.field.role') }}" class="form-control" style="width: 120px;" />
-              <input name="email" [(ngModel)]="newReferent.email" required placeholder="{{ translate('referent.field.email') }}" class="form-control" style="width: 180px;" type="email" />
-              <input name="phone" [(ngModel)]="newReferent.phone" required placeholder="{{ translate('referent.field.phone') }}" class="form-control" style="width: 140px;" type="tel" />
-              <button type="submit" class="btn btn-primary" [disabled]="!addReferentForm.valid">{{ translate('referent.actions.save') }}</button>
-              <button type="button" class="btn btn-outline" (click)="showAddReferent = false">{{ translate('crud.actions.cancel') }}</button>
+          <div class="referent-editor-shell" *ngIf="showAddReferent">
+            <form (ngSubmit)="addReferent()" #addReferentForm="ngForm" class="referent-editor-form">
+              <div class="referent-editor-field">
+                <label for="referentFirstName">{{ translate('referent.field.firstName') }}</label>
+                <input id="referentFirstName" name="firstName" [(ngModel)]="newReferent.firstName" required class="crud-input referent-editor-input" />
+              </div>
+              <div class="referent-editor-field">
+                <label for="referentLastName">{{ translate('referent.field.lastName') }}</label>
+                <input id="referentLastName" name="lastName" [(ngModel)]="newReferent.lastName" required class="crud-input referent-editor-input" />
+              </div>
+              <div class="referent-editor-field">
+                <label for="referentRole">{{ translate('referent.field.role') }}</label>
+                <input id="referentRole" name="role" [(ngModel)]="newReferent.role" class="crud-input referent-editor-input" />
+              </div>
+              <div class="referent-editor-field">
+                <label for="referentEmail">{{ translate('referent.field.email') }}</label>
+                <input id="referentEmail" name="email" [(ngModel)]="newReferent.email" required class="crud-input referent-editor-input referent-editor-input-email" type="email" />
+              </div>
+              <div class="referent-editor-field">
+                <label for="referentPhone">{{ translate('referent.field.phone') }}</label>
+                <div class="phone-input-group phone-input-group-intl referent-editor-input-phone">
+                  <input id="referentPhone" #referentPhoneInputElement name="phone" [ngModel]="newReferent.phone" (ngModelChange)="onReferentPhoneModelChange($event)" required class="crud-input referent-editor-input phone-number-input" type="tel" inputmode="tel" autocomplete="off" />
+                </div>
+              </div>
+              <div class="referent-editor-actions">
+                <button type="submit" class="crud-btn crud-btn-primary" [disabled]="!addReferentForm.valid">{{ translate('referent.actions.save') }}</button>
+                <button type="button" class="crud-btn crud-btn-secondary" (click)="showAddReferent = false">{{ translate('crud.actions.cancel') }}</button>
+              </div>
             </form>
           </div>
         </form>
@@ -360,6 +378,7 @@ export class AddWizardComponentHospital implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.destroyPhoneInput();
+    this.destroyReferentPhoneInput();
   }
 
   translate(key: string): string {
@@ -379,6 +398,10 @@ export class AddWizardComponentHospital implements OnInit, OnDestroy {
   };
 
   addReferent(): void {
+    // Normalizza telefono con intl-tel-input se presente
+    if (this.referentPhoneInputBinding) {
+      this.newReferent.phone = this.referentPhoneInputBinding.iti.getNumber() || this.referentPhoneInputBinding.input.value || '';
+    }
     if (!this.newReferent.firstName || !this.newReferent.lastName || !this.newReferent.email || !this.newReferent.phone) {
       return;
     }
@@ -389,11 +412,97 @@ export class AddWizardComponentHospital implements OnInit, OnDestroy {
         this.model.referents = [...(this.model.referents || []), created];
         this.newReferent = { firstName: '', lastName: '', role: '', email: '', phone: '' };
         this.showAddReferent = false;
+        this.destroyReferentPhoneInput();
       },
       error: () => {
         this.notificationService.showError(this.translate('referent.actions.addError'));
       }
     });
+  }
+  @ViewChild('referentPhoneInputElement')
+  set referentPhoneInputElement(ref: ElementRef<HTMLInputElement> | undefined) {
+    const nextInput = ref?.nativeElement;
+    if (this.referentPhoneInputBinding?.input === nextInput) {
+      return;
+    }
+    this.destroyReferentPhoneInput();
+    if (!nextInput) {
+      return;
+    }
+    queueMicrotask(() => {
+      if (this.referentPhoneInputBinding?.input === nextInput) {
+        return;
+      }
+      this.initializeReferentPhoneInput(nextInput);
+    });
+  }
+
+  private referentPhoneInputBinding?: {
+    input: HTMLInputElement;
+    iti: Iti;
+    syncValue: () => void;
+  };
+
+  private initializeReferentPhoneInput(input: HTMLInputElement): void {
+    const iti = intlTelInput(input, {
+      containerClass: 'phone-intl-input',
+      countryOrder: this.phoneCountryOrder,
+      initialCountry: this.defaultPhoneCountryIsoCode,
+      loadUtils: this.loadPhoneInputUtils,
+      strictMode: false,
+      useFullscreenPopup: false
+    });
+    const syncValue = () => this.updateReferentPhoneFromInput(input, iti);
+    input.addEventListener('input', syncValue);
+    input.addEventListener('countrychange', syncValue);
+    this.referentPhoneInputBinding = {
+      input,
+      iti,
+      syncValue
+    };
+    iti.promise.then(() => {
+      if (!iti.isActive() || this.referentPhoneInputBinding?.input !== input) {
+        return;
+      }
+      this.syncReferentPhoneInputFromModel();
+      this.updateReferentPhoneFromInput(input, iti);
+    });
+  }
+
+  private destroyReferentPhoneInput(): void {
+    if (!this.referentPhoneInputBinding) {
+      return;
+    }
+    const { input, iti, syncValue } = this.referentPhoneInputBinding;
+    input.removeEventListener('input', syncValue);
+    input.removeEventListener('countrychange', syncValue);
+    iti.destroy();
+    this.referentPhoneInputBinding = undefined;
+  }
+
+  private syncReferentPhoneInputFromModel(): void {
+    const binding = this.referentPhoneInputBinding;
+    if (!binding) {
+      return;
+    }
+    const modelValue = this.asPhoneString(this.newReferent.phone);
+    const currentValue = binding.iti.getNumber() || binding.input.value;
+    if (modelValue !== currentValue) {
+      binding.iti.setNumber(modelValue);
+    }
+  }
+
+  private updateReferentPhoneFromInput(input: HTMLInputElement, iti: Iti): void {
+    const nextValue = iti.getNumber() || this.asPhoneString(input.value);
+    if (this.newReferent.phone === nextValue) {
+      return;
+    }
+    this.newReferent.phone = nextValue;
+  }
+
+  onReferentPhoneModelChange(value: string): void {
+    this.newReferent.phone = value;
+    this.syncReferentPhoneInputFromModel();
   }
 
   onPhoneModelChange(value: string): void {

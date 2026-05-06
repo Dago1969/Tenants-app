@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import intlTelInput, { type AllOptions, type Iti } from 'intl-tel-input';
 import { GeographyApiService, GeographicOptionDto } from '../core/geography-api.service';
 import { ReferentApiService, ReferentDto } from '../core/referent-api.service';
 import { StructureApiService, StructureDto } from '../core/structure-api.service';
@@ -107,7 +108,9 @@ interface ParentStructureOption {
               <input type="text" name="cap" [(ngModel)]="model.cap" maxlength="10" required autocomplete="off" />
             </label>
             <label>{{ translate('structures.field.phone') }}<span class="required-asterisk">*</span>
-              <input type="text" name="phone" [(ngModel)]="model.phone" required autocomplete="off" />
+              <div class="phone-input-group phone-input-group-intl">
+                <input #phoneInputElement type="tel" inputmode="tel" name="phone" [ngModel]="model.phone" (ngModelChange)="onPhoneModelChange($event)" required autocomplete="off" class="phone-number-input" />
+              </div>
             </label>
           </div>
 
@@ -127,12 +130,14 @@ interface ParentStructureOption {
             <button type="button" class="btn btn-secondary" (click)="showAddReferent = !showAddReferent">{{ translate('referent.actions.add') }}</button>
           </div>
           <div class="form-row" *ngIf="showAddReferent" style="margin-top: 1rem; border: 1px solid #eee; padding: 1rem; border-radius: 6px; background: #fafbfc;">
-            <form (ngSubmit)="addReferent()" #addReferentForm="ngForm" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+            <form (ngSubmit)="addReferent()" #addReferentForm="ngForm" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; width: 100%;">
               <input name="firstName" [(ngModel)]="newReferent.firstName" required placeholder="{{ translate('referent.field.firstName') }}" class="form-control" style="width: 120px;" />
               <input name="lastName" [(ngModel)]="newReferent.lastName" required placeholder="{{ translate('referent.field.lastName') }}" class="form-control" style="width: 120px;" />
               <input name="role" [(ngModel)]="newReferent.role" placeholder="{{ translate('referent.field.role') }}" class="form-control" style="width: 120px;" />
               <input name="email" [(ngModel)]="newReferent.email" required placeholder="{{ translate('referent.field.email') }}" class="form-control" style="width: 180px;" type="email" />
-              <input name="phone" [(ngModel)]="newReferent.phone" required placeholder="{{ translate('referent.field.phone') }}" class="form-control" style="width: 140px;" type="tel" />
+              <div class="phone-input-group phone-input-group-intl" style="width: 140px;">
+                <input #referentPhoneInputElement name="phone" [ngModel]="newReferent.phone" (ngModelChange)="onReferentPhoneModelChange($event)" required placeholder="{{ translate('referent.field.phone') }}" class="form-control phone-number-input" type="tel" inputmode="tel" autocomplete="off" />
+              </div>
               <button type="submit" class="btn btn-primary" [disabled]="!addReferentForm.valid">{{ translate('referent.actions.save') }}</button>
               <button type="button" class="btn btn-outline" (click)="showAddReferent = false">{{ translate('crud.actions.cancel') }}</button>
             </form>
@@ -259,10 +264,68 @@ interface ParentStructureOption {
   `,
   styleUrls: ['./add-wizard.component.css']
 })
-export class AddWizardComponentPharmacy implements OnInit {
+export class AddWizardComponentPharmacy implements OnInit, OnDestroy {
   @Input() structureId: number | null = null;
   @Input() structureType: ManagedStructureType = 'HOSPITAL_PHARMACY';
   @Output() close = new EventEmitter<void>();
+
+  readonly defaultPhoneCountryIsoCode = 'it';
+  readonly phoneCountryOrder: NonNullable<AllOptions['countryOrder']> = ['it', 'us', 'gb', 'fr', 'de', 'es'];
+  readonly loadPhoneInputUtils = () => import('intl-tel-input/utils');
+
+  @ViewChild('phoneInputElement')
+  set phoneInputElement(ref: ElementRef<HTMLInputElement> | undefined) {
+    const nextInput = ref?.nativeElement;
+    if (this.phoneInputBinding?.input === nextInput) {
+      return;
+    }
+
+    this.destroyPhoneInput();
+    if (!nextInput) {
+      return;
+    }
+
+    queueMicrotask(() => {
+      if (this.phoneInputBinding?.input === nextInput) {
+        return;
+      }
+
+      this.initializePhoneInput(nextInput);
+    });
+  }
+
+  @ViewChild('referentPhoneInputElement')
+  set referentPhoneInputElement(ref: ElementRef<HTMLInputElement> | undefined) {
+    const nextInput = ref?.nativeElement;
+    if (this.referentPhoneInputBinding?.input === nextInput) {
+      return;
+    }
+
+    this.destroyReferentPhoneInput();
+    if (!nextInput) {
+      return;
+    }
+
+    queueMicrotask(() => {
+      if (this.referentPhoneInputBinding?.input === nextInput) {
+        return;
+      }
+
+      this.initializeReferentPhoneInput(nextInput);
+    });
+  }
+
+  private phoneInputBinding?: {
+    input: HTMLInputElement;
+    iti: Iti;
+    syncValue: () => void;
+  };
+
+  private referentPhoneInputBinding?: {
+    input: HTMLInputElement;
+    iti: Iti;
+    syncValue: () => void;
+  };
 
   showAddReferent = false;
   newReferent: Partial<ReferentDto> = { firstName: '', lastName: '', role: '', email: '', phone: '' };
@@ -381,6 +444,11 @@ export class AddWizardComponentPharmacy implements OnInit {
     this.loadStructureForEdit();
   }
 
+  ngOnDestroy(): void {
+    this.destroyPhoneInput();
+    this.destroyReferentPhoneInput();
+  }
+
   translate(key: string): string {
     try {
       return t(key as never) || key;
@@ -396,6 +464,22 @@ export class AddWizardComponentPharmacy implements OnInit {
   compareReferentsById = (left: ReferentDto | null, right: ReferentDto | null): boolean => {
     return (left?.id ?? null) === (right?.id ?? null);
   };
+
+  onPhoneModelChange(value: string): void {
+    this.model = {
+      ...this.model,
+      phone: value
+    };
+    this.syncPhoneInputFromModel();
+  }
+
+  onReferentPhoneModelChange(value: string): void {
+    this.newReferent = {
+      ...this.newReferent,
+      phone: value
+    };
+    this.syncReferentPhoneInputFromModel();
+  }
 
   getWizardTitleKey(): string {
     return this.wizardTitleKeys[this.structureType];
@@ -778,5 +862,145 @@ export class AddWizardComponentPharmacy implements OnInit {
     }
 
     return String(optionId);
+  }
+
+  private initializePhoneInput(input: HTMLInputElement): void {
+    const iti = intlTelInput(input, {
+      containerClass: 'phone-intl-input',
+      countryOrder: this.phoneCountryOrder,
+      initialCountry: this.defaultPhoneCountryIsoCode,
+      loadUtils: this.loadPhoneInputUtils,
+      strictMode: false,
+      useFullscreenPopup: false
+    });
+
+    const syncValue = () => this.updatePhoneFromInput(input, iti);
+    input.addEventListener('input', syncValue);
+    input.addEventListener('countrychange', syncValue);
+
+    this.phoneInputBinding = {
+      input,
+      iti,
+      syncValue
+    };
+
+    iti.promise.then(() => {
+      if (!iti.isActive() || this.phoneInputBinding?.input !== input) {
+        return;
+      }
+
+      this.syncPhoneInputFromModel();
+      this.updatePhoneFromInput(input, iti);
+    });
+  }
+
+  private destroyPhoneInput(): void {
+    if (!this.phoneInputBinding) {
+      return;
+    }
+
+    const { input, iti, syncValue } = this.phoneInputBinding;
+    input.removeEventListener('input', syncValue);
+    input.removeEventListener('countrychange', syncValue);
+    iti.destroy();
+    this.phoneInputBinding = undefined;
+  }
+
+  private syncPhoneInputFromModel(): void {
+    const binding = this.phoneInputBinding;
+    if (!binding) {
+      return;
+    }
+
+    const modelValue = this.asPhoneString(this.model.phone);
+    const currentValue = binding.iti.getNumber() || binding.input.value;
+    if (modelValue !== currentValue) {
+      binding.iti.setNumber(modelValue);
+    }
+  }
+
+  private updatePhoneFromInput(input: HTMLInputElement, iti: Iti): void {
+    const nextValue = iti.getNumber() || this.asPhoneString(input.value);
+    if (this.model.phone === nextValue) {
+      return;
+    }
+
+    this.model = {
+      ...this.model,
+      phone: nextValue
+    };
+  }
+
+  private initializeReferentPhoneInput(input: HTMLInputElement): void {
+    const iti = intlTelInput(input, {
+      containerClass: 'phone-intl-input',
+      countryOrder: this.phoneCountryOrder,
+      initialCountry: this.defaultPhoneCountryIsoCode,
+      loadUtils: this.loadPhoneInputUtils,
+      nationalMode: true,
+      separateDialCode: true
+    });
+
+    const syncValue = () => this.updateReferentPhoneFromInput(input, iti);
+    input.addEventListener('input', syncValue);
+    input.addEventListener('countrychange', syncValue);
+    input.addEventListener('blur', syncValue);
+
+    this.referentPhoneInputBinding = {
+      input,
+      iti,
+      syncValue
+    };
+
+    iti.promise.then(() => {
+      if (!iti.isActive() || this.referentPhoneInputBinding?.input !== input) {
+        return;
+      }
+
+      this.syncReferentPhoneInputFromModel();
+      this.updateReferentPhoneFromInput(input, iti);
+    });
+  }
+
+  private destroyReferentPhoneInput(): void {
+    if (!this.referentPhoneInputBinding) {
+      return;
+    }
+
+    const { input, iti, syncValue } = this.referentPhoneInputBinding;
+    input.removeEventListener('input', syncValue);
+    input.removeEventListener('countrychange', syncValue);
+    input.removeEventListener('blur', syncValue);
+    iti.destroy();
+    this.referentPhoneInputBinding = undefined;
+  }
+
+  private syncReferentPhoneInputFromModel(): void {
+    const binding = this.referentPhoneInputBinding;
+    if (!binding || document.activeElement === binding.input) {
+      return;
+    }
+
+    const modelValue = this.asPhoneString(this.newReferent.phone);
+    const currentValue = binding.iti.getNumber() || binding.input.value;
+    if (modelValue !== currentValue) {
+      binding.iti.setNumber(modelValue);
+    }
+  }
+
+  private updateReferentPhoneFromInput(input: HTMLInputElement, iti: Iti): void {
+    const nextValue = iti.getNumber() || this.asPhoneString(input.value);
+    if (this.newReferent.phone === nextValue) {
+      return;
+    }
+
+    this.newReferent = {
+      ...this.newReferent,
+      phone: nextValue
+    };
+  }
+
+  private asPhoneString(value: unknown): string {
+    return typeof value === 'string' ? value : '';
   }
 }
