@@ -1,5 +1,6 @@
 import { t } from '../i18n/messages';
 import { Component, OnDestroy, OnInit, Output, EventEmitter, CUSTOM_ELEMENTS_SCHEMA, Input, ElementRef, ViewChild } from '@angular/core';
+// import già presente, rimosso duplicato
 import { GeographyApiService, GeographicOptionDto } from '../core/geography-api.service';
 import { ReferentApiService, ReferentDto } from '../core/referent-api.service';
 import { PharmacyApiService, PharmacyDto } from '../core/pharmacy-api.service';
@@ -78,7 +79,9 @@ import { NotificationService } from './notification.service';
               <input type="text" name="cap" [(ngModel)]="model.cap" maxlength="10" required autocomplete="off" />
             </label>
             <label>{{ translate('structures.field.phone') }}<span class="required-asterisk">*</span>
-              <input type="text" name="phone" [(ngModel)]="model.phone" required autocomplete="off" />
+              <div class="phone-input-group phone-input-group-intl">
+                <input #phoneInputElement type="tel" inputmode="tel" name="phone" [ngModel]="model.phone" (ngModelChange)="onPhoneModelChange($event)" required autocomplete="off" class="phone-number-input" />
+              </div>
             </label>
           </div>
 
@@ -204,6 +207,83 @@ import { NotificationService } from './notification.service';
   styleUrls: ['./add-wizard.component.css']
 })
 export class AddWizardComponentAsl implements OnInit, OnDestroy {
+  @ViewChild('phoneInputElement')
+  set phoneInputElement(ref: ElementRef<HTMLInputElement> | undefined) {
+    const nextInput = ref?.nativeElement;
+    if (this.phoneInputBinding?.input === nextInput) {
+      return;
+    }
+    this.destroyPhoneInput();
+    if (!nextInput) {
+      return;
+    }
+    queueMicrotask(() => {
+      if (this.phoneInputBinding?.input === nextInput) {
+        return;
+      }
+      this.initializePhoneInput(nextInput);
+    });
+  }
+
+  private phoneInputBinding?: {
+    input: HTMLInputElement;
+    iti: Iti;
+    syncValue: () => void;
+  };
+
+  // ngOnDestroy già presente, rimosso duplicato
+
+  onPhoneModelChange(value: string): void {
+    this.model.phone = value;
+    this.syncPhoneInputFromModel();
+  }
+
+  private initializePhoneInput(input: HTMLInputElement): void {
+    const iti = intlTelInput(input, {
+      containerClass: 'phone-intl-input',
+      countryOrder: ['it', 'us', 'gb', 'fr', 'de', 'es'],
+      initialCountry: 'it',
+      loadUtils: () => import('intl-tel-input/utils'),
+      strictMode: false,
+      useFullscreenPopup: false
+    });
+    const syncValue = () => this.updatePhoneFromInput(input, iti);
+    input.addEventListener('input', syncValue);
+    input.addEventListener('countrychange', syncValue);
+    this.phoneInputBinding = { input, iti, syncValue };
+    iti.promise.then(() => {
+      if (!iti.isActive() || this.phoneInputBinding?.input !== input) {
+        return;
+      }
+      this.syncPhoneInputFromModel();
+      this.updatePhoneFromInput(input, iti);
+    });
+  }
+
+  private destroyPhoneInput(): void {
+    if (!this.phoneInputBinding) return;
+    const { input, iti, syncValue } = this.phoneInputBinding;
+    input.removeEventListener('input', syncValue);
+    input.removeEventListener('countrychange', syncValue);
+    iti.destroy();
+    this.phoneInputBinding = undefined;
+  }
+
+  private syncPhoneInputFromModel(): void {
+    const binding = this.phoneInputBinding;
+    if (!binding) return;
+    const modelValue = typeof this.model.phone === 'string' ? this.model.phone.trim() : '';
+    const currentValue = binding.iti.getNumber() || binding.input.value;
+    if (modelValue !== currentValue) {
+      binding.iti.setNumber(modelValue);
+    }
+  }
+
+  private updatePhoneFromInput(input: HTMLInputElement, iti: Iti): void {
+    const nextValue = iti.getNumber() || (typeof input.value === 'string' ? input.value.trim() : '');
+    if (this.model.phone === nextValue) return;
+    this.model.phone = nextValue;
+  }
     readonly defaultPhoneCountryIsoCode = 'it';
     readonly phoneCountryOrder: NonNullable<AllOptions['countryOrder']> = ['it', 'us', 'gb', 'fr', 'de', 'es'];
     readonly loadPhoneInputUtils = () => import('intl-tel-input/utils');
