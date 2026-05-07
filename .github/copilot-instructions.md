@@ -17,9 +17,25 @@ Quando l’utente chiede "compila tutto" devi SEMPRE:
 - Quando ti uso la risposta deve sempre iniziare con "ok Boss QTM"
 
 # 🚨 IMPORTANTE: Git add/commit/push
-**Esegui SEMPRE i comandi git add, commit e push dalla root del progetto Tenants-app e NON da sottocartelle (es. frontend).**
+## 🚦 Committa tutto
+
+Quando l’utente chiede "committa tutto" devi SEMPRE:
+**Esegui SEMPRE i comandi git add, commit e push dalla root del progetto QTMDashnboard eTenants-app e NON da sottocartelle (es. frontend).**
 Questo garantisce che tutte le modifiche, inclusi i sorgenti backend e frontend, vengano versionate e mandate su remoto.
 
+1. Eseguire `git add .` su tutti i progetti della workspace dalla root del progetto.
+2. Eseguire `git commit -m "<messaggio>"` su tutti i progetti (usa un messaggio coerente con le modifiche).
+3. Eseguire `git push` su tutti i progetti.
+
+## Stile di interazione
+- Quando ti uso la risposta deve sempre iniziare con "ok Boss QTM"
+
+## Glossario workspace
+- `QTMDB` = `QTMDashboard`
+- `TENAPP` = `TENANTS-APP`
+- `QTMPAT` = `QTMPatients`
+- `QTMCL` = `QTMCommonLib`
+- `RealmM` = `RealmManager`
 
 ### 🚀 Potenziamento della Modalità Agente
 
