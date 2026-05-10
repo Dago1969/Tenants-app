@@ -59,7 +59,12 @@
 
       <label class="equipment-field">
         <span>{{ translate('equipment.field.assignedTo') }}</span>
-        <input [(ngModel)]="formModel.assignedTo" type="number" />
+        <select [(ngModel)]="formModel.assignedTo">
+          <option value="">-</option>
+          <option *ngFor="let patient of patients" [value]="patient.id">
+            {{ patient.lastName }} {{ patient.firstName }}
+          </option>
+        </select>
       </label>
     </section>
 
@@ -117,7 +122,7 @@
           <input [(ngModel)]="entry.key" type="text" />
         </label>
         <label class="equipment-field">
-          <span>{{ entry.key.trim() }}</span>
+          <span>Valore</span>
           <input [(ngModel)]="entry.value" type="text" />
         </label>
         <button type="button" class="equipment-metadata-remove" (click)="removeSecondaryMetadataEntry(index)">

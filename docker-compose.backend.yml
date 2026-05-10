@@ -5,7 +5,7 @@ services:
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: dago
-      MYSQL_DATABASE: QTMTenant
+      MYSQL_DATABASE: QTMTenant_${APP_KEYCLOAK_REALM_CODE}
     volumes:
       - tenants-mysql-data:/var/lib/mysql
     healthcheck:
@@ -37,7 +37,7 @@ services:
 >>>>>>> cd15be65a1631429e5575cecaf38a999323c7107
     environment:
       - SPRING_PROFILES_ACTIVE=collaudo
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/QTMTenant?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/QTMTenant_${APP_KEYCLOAK_REALM_CODE}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
       - SPRING_DATASOURCE_USERNAME=root
       - SPRING_DATASOURCE_PASSWORD=dago
       - QTM_DASHBOARD_API_BASE_URL=http://qtmdashboard-backend:8086/api
@@ -49,7 +49,7 @@ services:
       - APP_KEYCLOAK_TOKEN_URL=http://keycloak:8080/realms/QTM/protocol/openid-connect/token
 <<<<<<< HEAD
 =======
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8085/realms/QTM
+      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8085/realms/${APP_KEYCLOAK_REALM_CODE}
 >>>>>>> cd15be65a1631429e5575cecaf38a999323c7107
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/QTM/protocol/openid-connect/certs
     extra_hosts:

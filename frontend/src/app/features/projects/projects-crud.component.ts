@@ -12,7 +12,7 @@ import { getCurrentLanguage, MessageKey, t } from '../../i18n/messages';
 import { catchError, forkJoin, map, of, switchMap } from 'rxjs';
 
 interface WizardStep {
-  key: 'general' | 'administrators' | 'roles' | 'modules' | 'summary';
+  key: 'general' | 'administrators' | 'roles' | 'modules' | 'json_visit' | 'summary';
   titleKey: MessageKey;
 }
 
@@ -53,6 +53,7 @@ export class ProjectsCrudComponent implements OnInit {
     { key: 'administrators', titleKey: 'projects.wizard.step.administrators.title' },
     { key: 'roles', titleKey: 'projects.wizard.step.roles.title' },
     { key: 'modules', titleKey: 'projects.wizard.step.modules.title' },
+    { key: 'json_visit', titleKey: 'projects.wizard.step.json_visit.title' },
     { key: 'summary', titleKey: 'projects.wizard.step.summary.title' }
   ];
 

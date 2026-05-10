@@ -1,4 +1,3 @@
-// ...import e interfacce...
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
@@ -232,6 +231,7 @@ interface TherapeuticPlanVisitRecord {
   pegjActions: TherapeuticPlanVisitPegjActions;
   autonomyStatus: TherapeuticPlanVisitAutonomyStatus;
   autonomyActions: TherapeuticPlanVisitAutonomyActions;
+  manualJsonData?: Record<string, unknown> | null;
 }
 
 interface TherapeuticPlanVisitForm {
@@ -251,6 +251,17 @@ interface TherapeuticPlanVisitForm {
   pegjActions: TherapeuticPlanVisitPegjActions;
   autonomyStatus: TherapeuticPlanVisitAutonomyStatus;
   autonomyActions: TherapeuticPlanVisitAutonomyActions;
+}
+
+interface TherapeuticPlanVisitJsonEntry {
+  key: string;
+  value: string;
+}
+
+interface TherapeuticPlanVisitSchemaField {
+  key: string;
+  value: any;
+  sectionTitle?: string;
 }
 
 interface TherapeuticPlanVisitPatientHeader {
@@ -463,9 +474,16 @@ export class TherapeuticPlanManageComponent implements OnInit {
   // Proprietà dinamiche estratte dal JSON schema della visita
   visitSchemaProperties: { [key: string]: any } = {};
   visitSchemaRequired: string[] = [];
-  visitVisibleSchemaFields: Array<{ key: string; value: any }> = [];
+  visitVisibleSchemaFields: TherapeuticPlanVisitSchemaField[] = [];
+  visitJsonSchemaAvailable = false;
   // Valori dinamici del form visita
   visitFormDynamic: { [key: string]: any } = {};
+  visitManualJsonEntries: TherapeuticPlanVisitJsonEntry[] = [{ key: '', value: '' }];
+
+  onVisitDateChange(value: string): void {
+    this.visitForm.date = value;
+  }
+
     /**
      * Calcola l'età del paziente dalla data di nascita (se disponibile), altrimenti mostra "Non disponibile".
      */
@@ -932,7 +950,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
       id: index + 1,
       patientFirstName: this.getFirstNonBlankString(parsedVisit?.['patientFirstName'], visitDto?.patientFirstName, this.patient?.firstName),
       patientLastName: this.getFirstNonBlankString(parsedVisit?.['patientLastName'], visitDto?.patientLastName, this.patient?.lastName),
-      duodopaTherapyStartDate: this.getFirstNonBlankString(parsedVisit?.['duodopaTherapyStartDate'], visitDto?.date),
+      duodopaTherapyStartDate: this.getFirstNonBlankString(parsedVisit?.['duodopaTherapyStartDate'], this.plan?.startDate),
       caregiver: (this.getFirstNonBlankString(parsedVisit?.['caregiver'], visitDto?.caregiver, 'other') as TherapeuticPlanVisitCaregiver),
       clinicalCenter: this.getFirstNonBlankString(parsedVisit?.['clinicalCenter'], visitDto?.clinicalCenter),
       neurologist: this.getFirstNonBlankString(parsedVisit?.['neurologist'], visitDto?.neurologist),
@@ -965,7 +983,8 @@ export class TherapeuticPlanManageComponent implements OnInit {
       autonomyActions: {
         ...emptyVisitForm.autonomyActions,
         ...(this.isVisitObject(parsedVisit?.['autonomyActions']) ? parsedVisit['autonomyActions'] : {})
-      }
+      },
+      manualJsonData: parsedVisit
     };
   }
 
@@ -1315,46 +1334,52 @@ export class TherapeuticPlanManageComponent implements OnInit {
     return `${this.visitPatientHeader.patientFirstName} ${this.visitPatientHeader.patientLastName}`.trim() || this.translate('common.notAvailable');
   }
 
-  get visitModalStepTitleKey(): MessageKey {
-    switch (this.visitModalStep) {
-      case 2:
-        return 'therapeuticPlan.visits.modal.step2.title';
-      case 3:
-        return 'therapeuticPlan.visits.modal.step3.title';
-      case 4:
-        return 'therapeuticPlan.visits.modal.step4.title';
-      case 5:
-        return 'therapeuticPlan.visits.modal.step5.title';
-      case 6:
-        return 'therapeuticPlan.visits.modal.step6.title';
-      case 7:
-        return 'therapeuticPlan.visits.modal.step7.title';
-      default:
-        return 'therapeuticPlan.visits.modal.step1.title';
+  get visitModalStepTitleKey(): MessageKey | string {
+    if (!this.visitJsonSchemaAvailable) {
+      return this.visitModalStep === 2
+        ? 'therapeuticPlan.visits.modal.manualJson.title'
+        : 'therapeuticPlan.visits.modal.step1.title';
     }
+
+    if (this.useLegacyVisitSchemaLayout) {
+      return this.visitModalStep === 1
+        ? 'therapeuticPlan.visits.modal.step1.title'
+        : 'therapeuticPlan.visits.modal.step2.title';
+    }
+
+    return this.visitModalStep === 1
+      ? 'therapeuticPlan.visits.modal.step1.title'
+      : 'therapeuticPlan.visits.modal.generatedJson.title';
   }
 
-  get visitModalStepDescriptionKey(): MessageKey {
-    switch (this.visitModalStep) {
-      case 2:
-        return 'therapeuticPlan.visits.modal.step2.description';
-      case 3:
-        return 'therapeuticPlan.visits.modal.step3.description';
-      case 4:
-        return 'therapeuticPlan.visits.modal.step4.description';
-      case 5:
-        return 'therapeuticPlan.visits.modal.step5.description';
-      case 6:
-        return 'therapeuticPlan.visits.modal.step6.description';
-      case 7:
-        return 'therapeuticPlan.visits.modal.step7.description';
-      default:
-        return 'therapeuticPlan.visits.modal.step1.description';
+  get visitModalStepDescriptionKey(): MessageKey | string {
+    if (!this.visitJsonSchemaAvailable) {
+      return this.visitModalStep === 2
+        ? 'therapeuticPlan.visits.modal.manualJson.description'
+        : 'therapeuticPlan.visits.modal.step1.description';
     }
+
+    if (this.useLegacyVisitSchemaLayout) {
+      return this.visitModalStep === 1
+        ? 'therapeuticPlan.visits.modal.step1.description'
+        : 'therapeuticPlan.visits.modal.step2.description';
+    }
+
+    return this.visitModalStep === 1
+      ? 'therapeuticPlan.visits.modal.step1.description'
+      : 'therapeuticPlan.visits.modal.generatedJson.description';
+  }
+
+  get visitModalTotalSteps(): number {
+    if (!this.visitJsonSchemaAvailable) {
+      return 2;
+    }
+
+    return this.useLegacyVisitSchemaLayout ? 2 : Math.max(1, 1 + this.visitSchemaFieldPages.length);
   }
 
   get isLastVisitModalStep(): boolean {
-    return this.visitModalStep === 7;
+    return this.visitModalStep === this.visitModalTotalSteps;
   }
 
   get confirmationSentLabel(): string {
@@ -1707,6 +1732,12 @@ export class TherapeuticPlanManageComponent implements OnInit {
   openVisitModal(): void {
     this.visitErrorMessage = '';
     this.visitModalStep = 1;
+    this.visitForm = this.createEmptyVisitForm();
+    this.visitManualJsonEntries = [{ key: '', value: '' }];
+    // Inizializza i dati paziente nei campi del form visita step1
+    this.visitForm.patientFirstName = this.patient?.firstName || '';
+    this.visitForm.patientLastName = this.patient?.lastName || '';
+    this.visitForm.duodopaTherapyStartDate = this.plan?.startDate || '';
     // Recupera il JSON schema dal piano terapeutico corrente (esempio: this.plan?.jsonVisit)
     let schema: any = null;
     try {
@@ -1719,14 +1750,22 @@ export class TherapeuticPlanManageComponent implements OnInit {
     } catch {
       schema = null;
     }
-    this.visitSchemaProperties = schema && schema.properties ? schema.properties : {};
-    this.visitVisibleSchemaFields = Object.entries(this.visitSchemaProperties)
-      .filter(([, property]) => this.isVisitSchemaEditableProperty(property))
-      .map(([key, value]) => ({ key, value }));
-    this.visitSchemaRequired = Array.isArray(schema?.required)
-      ? schema.required.filter((entry: unknown): entry is string => typeof entry === 'string' && entry.trim().length > 0)
-          .filter((entry: string) => this.visitVisibleSchemaFields.some((field) => field.key === entry))
+    this.visitJsonSchemaAvailable = schema !== null;
+    this.visitVisibleSchemaFields = this.visitJsonSchemaAvailable
+      ? this.flattenVisitSchemaProperties(
+          schema?.properties ?? {},
+          Array.isArray(schema?.required)
+            ? schema.required.filter((entry: unknown): entry is string => typeof entry === 'string' && entry.trim().length > 0)
+            : []
+        )
       : [];
+    this.visitSchemaProperties = this.visitVisibleSchemaFields.reduce<Record<string, any>>((accumulator, field) => {
+      accumulator[field.key] = field.value;
+      return accumulator;
+    }, {});
+    this.visitSchemaRequired = this.visitVisibleSchemaFields
+      .filter((field) => field.value?.required === true)
+      .map((field) => field.key);
     // Inizializza i valori del form dinamico
     this.visitFormDynamic = {};
     for (const key of this.visitVisibleSchemaFields.map((field) => field.key)) {
@@ -1945,6 +1984,8 @@ export class TherapeuticPlanManageComponent implements OnInit {
     this.visitModalOpen = false;
     this.visitModalStep = 1;
     this.visitErrorMessage = '';
+    this.visitJsonSchemaAvailable = false;
+    this.visitManualJsonEntries = [{ key: '', value: '' }];
     this.visitForm = this.createEmptyVisitForm();
   }
 
@@ -1954,7 +1995,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
       return;
     }
 
-    this.visitModalStep = Math.min(7, this.visitModalStep + 1);
+    this.visitModalStep = Math.min(this.visitModalTotalSteps, this.visitModalStep + 1);
   }
 
   goToPreviousVisitModalStep(): void {
@@ -1969,11 +2010,17 @@ export class TherapeuticPlanManageComponent implements OnInit {
       return;
     }
 
-    const visitRecord = this.createVisitRecordFromForm();
+    if (!this.visitJsonSchemaAvailable && !this.validateVisitManualJsonStep()) {
+      return;
+    }
+
+    const visitRecord = this.visitJsonSchemaAvailable
+      ? this.buildVisitSchemaJsonRecord()
+      : this.buildManualVisitJsonRecord();
 
     const payload = {
       therapeuticPlanId: this.planId,
-      date: this.visitForm.duodopaTherapyStartDate,
+      date: this.normalizeLocalDateTimeForBackend(this.visitForm.date),
       // duodopa not present in visitForm; leave null so backend template controls it
       duodopa: null,
       caregiver: this.visitForm.caregiver,
@@ -2014,6 +2061,17 @@ export class TherapeuticPlanManageComponent implements OnInit {
 
   getVisitPriorityLabel(value: TherapeuticPlanVisitPriority): string {
     return this.translate(`therapeuticPlan.visits.priority.${value}`);
+  }
+
+  addVisitManualJsonEntry(): void {
+    this.visitManualJsonEntries = [...this.visitManualJsonEntries, { key: '', value: '' }];
+  }
+
+  removeVisitManualJsonEntry(index: number): void {
+    this.visitManualJsonEntries = this.visitManualJsonEntries.filter((_, currentIndex) => currentIndex !== index);
+    if (this.visitManualJsonEntries.length === 0) {
+      this.visitManualJsonEntries = [{ key: '', value: '' }];
+    }
   }
 
   getVisitAutonomyLevelLabel(value: TherapeuticPlanVisitAutonomyLevel): string {
@@ -2074,37 +2132,106 @@ export class TherapeuticPlanManageComponent implements OnInit {
   }
 
   goToNextVisitSummaryModalStep(): void {
-    this.visitSummaryModalStep = Math.min(3, this.visitSummaryModalStep + 1);
+    this.visitSummaryModalStep = Math.min(this.visitSummaryModalTotalSteps, this.visitSummaryModalStep + 1);
   }
 
   goToPreviousVisitSummaryModalStep(): void {
     this.visitSummaryModalStep = Math.max(1, this.visitSummaryModalStep - 1);
   }
 
-  get visitSummaryModalStepTitleKey(): MessageKey {
-    switch (this.visitSummaryModalStep) {
-      case 2:
-        return 'therapeuticPlan.visits.preview.step2.title';
-      case 3:
-        return 'therapeuticPlan.visits.preview.step3.title';
-      default:
-        return 'therapeuticPlan.visits.preview.step1.title';
+  get visitSummaryModalStepTitleKey(): MessageKey | string {
+    if (!this.hasVisitProjectJsonSchema) {
+      return this.visitSummaryModalStep === 2
+        ? 'therapeuticPlan.visits.preview.manualJson.title'
+        : 'therapeuticPlan.visits.preview.step1.title';
     }
+
+    if (this.useLegacyVisitSchemaLayout) {
+      return this.visitSummaryModalStep === 1
+        ? 'therapeuticPlan.visits.preview.step1.title'
+        : 'therapeuticPlan.visits.preview.step2.title';
+    }
+
+    return this.visitSummaryModalStep === 1
+      ? 'therapeuticPlan.visits.preview.step1.title'
+      : 'therapeuticPlan.visits.preview.generatedJson.title';
   }
 
-  get visitSummaryModalStepDescriptionKey(): MessageKey {
-    switch (this.visitSummaryModalStep) {
-      case 2:
-        return 'therapeuticPlan.visits.preview.step2.description';
-      case 3:
-        return 'therapeuticPlan.visits.preview.step3.description';
-      default:
-        return 'therapeuticPlan.visits.preview.step1.description';
+  get visitSummaryModalStepDescriptionKey(): MessageKey | string {
+    if (!this.hasVisitProjectJsonSchema) {
+      return this.visitSummaryModalStep === 2
+        ? 'therapeuticPlan.visits.preview.manualJson.description'
+        : 'therapeuticPlan.visits.preview.step1.description';
     }
+
+    if (this.useLegacyVisitSchemaLayout) {
+      return this.visitSummaryModalStep === 1
+        ? 'therapeuticPlan.visits.preview.step1.description'
+        : 'therapeuticPlan.visits.preview.step2.description';
+    }
+
+    return this.visitSummaryModalStep === 1
+      ? 'therapeuticPlan.visits.preview.step1.description'
+      : 'therapeuticPlan.visits.preview.generatedJson.description';
+  }
+
+  get visitSummaryModalTotalSteps(): number {
+    if (!this.hasVisitProjectJsonSchema) {
+      return 2;
+    }
+
+    return this.useLegacyVisitSchemaLayout ? 2 : Math.max(1, 1 + this.visitSummarySchemaFieldPages.length);
   }
 
   get isLastVisitSummaryModalStep(): boolean {
-    return this.visitSummaryModalStep === 3;
+    return this.visitSummaryModalStep === this.visitSummaryModalTotalSteps;
+  }
+
+  get hasVisitProjectJsonSchema(): boolean {
+    return this.resolveVisitSchemaFromPlan() !== null;
+  }
+
+  get useLegacyVisitSchemaLayout(): boolean {
+    return this.hasLegacyVisitSchemaLayout(this.resolveVisitSchemaFromPlan());
+  }
+
+  get visitSchemaGeneratedFields(): TherapeuticPlanVisitSchemaField[] {
+    return this.visitVisibleSchemaFields.filter((field) => !this.isVisitSchemaBaseField(field.key));
+  }
+
+  get visitSchemaFieldPages(): TherapeuticPlanVisitSchemaField[][] {
+    return this.chunkVisitSchemaFields(this.visitSchemaGeneratedFields);
+  }
+
+  get currentVisitSchemaPageFields(): TherapeuticPlanVisitSchemaField[] {
+    return this.visitSchemaFieldPages[this.visitModalStep - 2] ?? [];
+  }
+
+  get visitSummarySchemaFieldPages(): TherapeuticPlanVisitJsonEntry[][] {
+    return this.chunkVisitSchemaFields(this.getVisitSummarySchemaFields());
+  }
+
+  get currentVisitSummarySchemaPageFields(): TherapeuticPlanVisitJsonEntry[] {
+    return this.visitSummarySchemaFieldPages[this.visitSummaryModalStep - 2] ?? [];
+  }
+
+  getVisitSchemaSectionTitle(key: string): string {
+    const schemaProperty = this.visitSchemaProperties[key];
+    return typeof schemaProperty?.sectionTitle === 'string' ? schemaProperty.sectionTitle : '';
+  }
+
+  shouldRenderVisitSchemaSectionTitle(fields: TherapeuticPlanVisitSchemaField[], index: number): boolean {
+    const currentTitle = fields[index]?.sectionTitle?.trim() ?? '';
+    if (!currentTitle) {
+      return false;
+    }
+
+    if (index === 0) {
+      return true;
+    }
+
+    const previousTitle = fields[index - 1]?.sectionTitle?.trim() ?? '';
+    return currentTitle !== previousTitle;
   }
 
   getOptionLabel(options: TherapeuticPlanManageOption[], value: string | null | undefined): string {
@@ -2118,6 +2245,18 @@ export class TherapeuticPlanManageComponent implements OnInit {
 
   hasVisitActionSelection(selectedValue: string, optionValue: string): boolean {
     return selectedValue === optionValue;
+  }
+
+  getVisitManualJsonSummaryEntries(visit: TherapeuticPlanVisitRecord): TherapeuticPlanVisitJsonEntry[] {
+    const source = visit.manualJsonData;
+    if (!source || !this.isVisitObject(source)) {
+      return [];
+    }
+
+    return Object.entries(source).map(([key, value]) => ({
+      key,
+      value: this.toVisitManualJsonDisplayValue(value)
+    }));
   }
 
   saveNotification(): void {
@@ -2518,7 +2657,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
       clinicalCenter: this.structureLabel === this.translate('common.notAvailable') ? '' : this.structureLabel,
       neurologist: this.doctorLabel === this.translate('common.notAvailable') ? '' : this.doctorLabel,
       gastroenterologist: '',
-      date: this.getTodayDateInputValue(),
+      date: this.getCurrentDateTimeLocalInputValue(),
       type: 'outpatient',
       priority: 'none',
       stomiaStatus: this.createMockVisitStomiaStatus(),
@@ -2542,7 +2681,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
       clinicalCenter: this.visitForm.clinicalCenter.trim(),
       neurologist: this.visitForm.neurologist.trim(),
       gastroenterologist: this.visitForm.gastroenterologist.trim(),
-      date: this.visitForm.date,
+      date: this.normalizeLocalDateTimeForBackend(this.visitForm.date),
       type: this.visitForm.type,
       priority: this.visitForm.priority,
       nurse: operatorLabel,
@@ -2556,8 +2695,75 @@ export class TherapeuticPlanManageComponent implements OnInit {
     };
   }
 
+  private buildVisitSchemaJsonRecord(): Record<string, unknown> {
+    return this.visitVisibleSchemaFields.reduce<Record<string, unknown>>((accumulator, field) => {
+      const normalizedValue = this.normalizeVisitSchemaPayloadValue(field.key, this.visitFormDynamic[field.key]);
+      if (normalizedValue !== undefined) {
+        this.setVisitValueByPath(accumulator, field.key, normalizedValue);
+      }
+      return accumulator;
+    }, {});
+  }
+
+  private validateVisitManualJsonStep(): boolean {
+    const missingKeyEntry = this.visitManualJsonEntries.find(
+      (entry) => entry.key.trim().length === 0 && entry.value.trim().length > 0
+    );
+
+    if (missingKeyEntry) {
+      this.visitErrorMessage = `${this.translate('therapeuticPlan.visits.manualJson.field.key')}: ${this.translate('crud.validation.required')}`;
+      return false;
+    }
+
+    return true;
+  }
+
+  private buildManualVisitJsonRecord(): Record<string, unknown> {
+    return this.visitManualJsonEntries.reduce<Record<string, unknown>>((accumulator, entry) => {
+      const normalizedKey = entry.key.trim();
+      if (!normalizedKey) {
+        return accumulator;
+      }
+
+      accumulator[normalizedKey] = this.parseVisitManualJsonValue(entry.value);
+      return accumulator;
+    }, {});
+  }
+
+  private parseVisitManualJsonValue(rawValue: string): unknown {
+    const trimmedValue = rawValue.trim();
+    if (!trimmedValue) {
+      return '';
+    }
+
+    try {
+      return JSON.parse(trimmedValue);
+    } catch {
+      return rawValue;
+    }
+  }
+
   private validateVisitBaseStep(): boolean {
     this.syncVisitFormFromDynamic();
+
+    if (!this.visitForm.date.trim()) {
+      this.visitErrorMessage = `${this.translate('therapeuticPlan.visits.field.date')}: ${this.translate('crud.validation.required')}`;
+      return false;
+    }
+
+    if (!this.visitJsonSchemaAvailable) {
+      if (!this.visitForm.clinicalCenter.trim()) {
+        this.visitErrorMessage = `${this.translate('therapeuticPlan.visits.field.clinicalCenter')}: ${this.translate('crud.validation.required')}`;
+        return false;
+      }
+
+      if (!this.visitForm.neurologist.trim()) {
+        this.visitErrorMessage = `${this.translate('therapeuticPlan.visits.field.neurologist')}: ${this.translate('crud.validation.required')}`;
+        return false;
+      }
+
+      return true;
+    }
 
     for (const key of this.visitSchemaRequired) {
       if (this.isVisitSchemaFieldEmpty(key)) {
@@ -2567,6 +2773,13 @@ export class TherapeuticPlanManageComponent implements OnInit {
     }
 
     return true;
+  }
+
+  private isVisitSchemaBaseField(key: string): boolean {
+    return key === 'patientFirstName'
+      || key === 'patientLastName'
+      || key === 'duodopaTherapyStartDate'
+      || key === 'date';
   }
 
   getVisitSchemaFieldLabel(key: string): string {
@@ -2631,7 +2844,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
 
   private getVisitFormValue(key: string): unknown {
     const visitFormRecord = this.visitForm as unknown as Record<string, unknown>;
-    return this.normalizeVisitSchemaFieldValue(key, visitFormRecord[key] ?? '');
+    return this.normalizeVisitSchemaFieldValue(key, this.getVisitValueByPath(visitFormRecord, key) ?? '');
   }
 
   private getInitialVisitSchemaFieldValue(key: string): unknown {
@@ -2646,16 +2859,20 @@ export class TherapeuticPlanManageComponent implements OnInit {
       return this.getCurrentDateTimeLocalInputValue();
     }
 
+    if (key === 'date' && schemaProperty?.format === 'date-time') {
+      if (typeof currentValue === 'string' && currentValue.trim().length > 0) {
+        return currentValue.slice(0, 16);
+      }
+
+      return this.getCurrentDateTimeLocalInputValue();
+    }
+
     return currentValue;
   }
 
   private assignVisitFormValue(key: string, value: unknown): void {
-    if (!Object.prototype.hasOwnProperty.call(this.visitForm, key)) {
-      return;
-    }
-
     const visitFormRecord = this.visitForm as unknown as Record<string, unknown>;
-    visitFormRecord[key] = value;
+    this.setVisitValueByPath(visitFormRecord, key, value);
   }
 
   private isVisitSchemaFieldEmpty(key: string): boolean {
@@ -2677,17 +2894,46 @@ export class TherapeuticPlanManageComponent implements OnInit {
       return false;
     }
 
+    if (property.type === 'object' && property.properties && typeof property.properties === 'object') {
+      return false;
+    }
+
     if (Array.isArray(property.enum) && property.enum.length > 0) {
       return true;
     }
 
-    return !property.type || property.type === 'string' || property.type === 'number';
+    if (Array.isArray(property.type)) {
+      return property.type.some((entry: unknown) => entry === 'string' || entry === 'number' || entry === 'boolean');
+    }
+
+    return !property.type || property.type === 'string' || property.type === 'number' || property.type === 'boolean';
   }
 
   private normalizeVisitSchemaFieldValue(key: string, value: unknown): unknown {
     const schemaProperty = this.visitSchemaProperties[key];
+    if (schemaProperty?.type === 'boolean') {
+      if (typeof value === 'boolean') {
+        return value;
+      }
+
+      if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        if (normalized === 'true') {
+          return true;
+        }
+        if (normalized === 'false') {
+          return false;
+        }
+      }
+    }
+
     if (typeof value !== 'string') {
       return value;
+    }
+
+    if (Array.isArray(schemaProperty?.type) && schemaProperty.type.includes('number')) {
+      const numericValue = Number(value);
+      return Number.isNaN(numericValue) ? value : numericValue;
     }
 
     if (schemaProperty?.format === 'date-time') {
@@ -2695,6 +2941,173 @@ export class TherapeuticPlanManageComponent implements OnInit {
     }
 
     return value;
+  }
+
+  getVisitSchemaSummaryValue(visit: TherapeuticPlanVisitRecord, key: string): string {
+    const visitData = visit.manualJsonData;
+    const rawValue = visitData ? this.getVisitValueByPath(visitData, key) : undefined;
+
+    return this.formatVisitSchemaDisplayValue(key, rawValue);
+  }
+
+  private getVisitSummarySchemaFields(): TherapeuticPlanVisitJsonEntry[] {
+    const selectedVisit = this.visitSummarySelectedVisit;
+    if (!selectedVisit) {
+      return [];
+    }
+
+    return this.visitSchemaGeneratedFields.map((field) => ({
+      key: this.getVisitSchemaFieldLabel(field.key),
+      value: this.getVisitSchemaSummaryValue(selectedVisit, field.key)
+    }));
+  }
+
+  private chunkVisitSchemaFields<T>(fields: T[]): T[][] {
+    return fields.length > 0 ? [fields] : [];
+  }
+
+  private normalizeVisitSchemaPayloadValue(key: string, value: unknown): unknown {
+    const schemaProperty = this.visitSchemaProperties[key];
+
+    if (value === undefined) {
+      return undefined;
+    }
+
+    if (typeof value === 'string') {
+      const trimmedValue = value.trim();
+      if (trimmedValue.length === 0) {
+        return '';
+      }
+
+      if (schemaProperty?.type === 'number') {
+        const numericValue = Number(trimmedValue);
+        return Number.isNaN(numericValue) ? trimmedValue : numericValue;
+      }
+
+      if (Array.isArray(schemaProperty?.type) && schemaProperty.type.includes('number')) {
+        const numericValue = Number(trimmedValue);
+        return Number.isNaN(numericValue) ? trimmedValue : numericValue;
+      }
+
+      if (schemaProperty?.type === 'boolean') {
+        if (trimmedValue.toLowerCase() === 'true') {
+          return true;
+        }
+        if (trimmedValue.toLowerCase() === 'false') {
+          return false;
+        }
+      }
+
+      if (schemaProperty?.format === 'date-time') {
+        return this.normalizeLocalDateTimeForBackend(trimmedValue);
+      }
+
+      return trimmedValue;
+    }
+
+    return value;
+  }
+
+  private formatVisitSchemaDisplayValue(key: string, value: unknown): string {
+    if (value === null || value === undefined || value === '') {
+      return this.translate('common.notAvailable');
+    }
+
+    const schemaProperty = this.visitSchemaProperties[key];
+    if (schemaProperty?.enum) {
+      return this.getVisitSchemaOptionLabel(key, value);
+    }
+
+    if (schemaProperty?.type === 'boolean' && typeof value === 'boolean') {
+      return this.translate(value ? 'common.yes' : 'common.no');
+    }
+
+    if ((schemaProperty?.format === 'date' || schemaProperty?.format === 'date-time') && typeof value === 'string') {
+      return this.formatDate(value);
+    }
+
+    return this.toVisitManualJsonDisplayValue(value) || this.translate('common.notAvailable');
+  }
+
+  private flattenVisitSchemaProperties(
+    properties: Record<string, any>,
+    requiredFields: string[],
+    parentPath = '',
+    sectionTitle = ''
+  ): TherapeuticPlanVisitSchemaField[] {
+    return Object.entries(properties).flatMap(([key, property]) => {
+      const normalizedPath = parentPath ? `${parentPath}.${key}` : key;
+      const propertySectionTitle = parentPath
+        ? sectionTitle
+        : this.getVisitSchemaPropertyTitle(property);
+
+      if (property?.type === 'object' && property.properties && typeof property.properties === 'object') {
+        return this.flattenVisitSchemaProperties(
+          property.properties,
+          Array.isArray(property.required)
+            ? property.required.filter((entry: unknown): entry is string => typeof entry === 'string' && entry.trim().length > 0)
+            : [],
+          normalizedPath,
+          this.getVisitSchemaPropertyTitle(property)
+        );
+      }
+
+      if (!this.isVisitSchemaEditableProperty(property)) {
+        return [];
+      }
+
+      return [{
+        key: normalizedPath,
+        value: {
+          ...property,
+          required: requiredFields.includes(key),
+          sectionTitle: propertySectionTitle
+        },
+        sectionTitle: propertySectionTitle
+      }];
+    });
+  }
+
+  private getVisitSchemaPropertyTitle(property: any): string {
+    if (property && typeof property.title === 'string' && property.title.trim().length > 0) {
+      return property.title.trim();
+    }
+
+    if (property && typeof property.label === 'string' && property.label.trim().length > 0) {
+      return property.label.trim();
+    }
+
+    return '';
+  }
+
+  private getVisitValueByPath(source: Record<string, unknown>, path: string): unknown {
+    return path.split('.').reduce<unknown>((currentValue, segment) => {
+      if (!currentValue || typeof currentValue !== 'object' || Array.isArray(currentValue)) {
+        return undefined;
+      }
+
+      return (currentValue as Record<string, unknown>)[segment];
+    }, source);
+  }
+
+  private setVisitValueByPath(target: Record<string, unknown>, path: string, value: unknown): void {
+    const segments = path.split('.');
+    let currentTarget: Record<string, unknown> = target;
+
+    segments.forEach((segment, index) => {
+      const isLastSegment = index === segments.length - 1;
+      if (isLastSegment) {
+        currentTarget[segment] = value;
+        return;
+      }
+
+      const nextTarget = currentTarget[segment];
+      if (!nextTarget || typeof nextTarget !== 'object' || Array.isArray(nextTarget)) {
+        currentTarget[segment] = {};
+      }
+
+      currentTarget = currentTarget[segment] as Record<string, unknown>;
+    });
   }
 
   private toDateTimeLocalInputValue(value: string): string {
@@ -2821,20 +3234,23 @@ export class TherapeuticPlanManageComponent implements OnInit {
     const coverPages = this.paginateVisitPrintPages(visits);
     const patientHeader = this.visitPatientHeader;
     const detailVisit = visits[0] ?? null;
-    const detailPagesCount = detailVisit ? 6 : 0;
+    const detailPagesCount = detailVisit
+      ? (this.hasVisitProjectJsonSchema
+          ? (this.useLegacyVisitSchemaLayout ? 1 : Math.max(1, this.getVisitPrintSchemaFieldPages(detailVisit).length))
+          : 1)
+      : 0;
     const totalPages = coverPages.length + detailPagesCount;
     const coverMarkup = coverPages
       .map((pageVisits, pageIndex) => this.buildVisitPrintPage(pageVisits, patientHeader, pageIndex + 1, totalPages, pageIndex === 0))
       .join('');
     const statusMarkup = detailVisit
-      ? [
-          this.buildVisitStomiaStatusPrintPage(detailVisit, coverPages.length + 1, totalPages),
-          this.buildVisitPegjStatusPrintPage(detailVisit, coverPages.length + 2, totalPages),
-          this.buildVisitAutonomyStatusPrintPage(detailVisit, coverPages.length + 3, totalPages),
-          this.buildVisitStomiaActionsPrintPage(detailVisit, coverPages.length + 4, totalPages),
-          this.buildVisitPegjActionsPrintPage(detailVisit, coverPages.length + 5, totalPages),
-          this.buildVisitAutonomyActionsPrintPage(detailVisit, coverPages.length + 6, totalPages)
-        ].join('')
+      ? this.hasVisitProjectJsonSchema
+        ? (this.useLegacyVisitSchemaLayout
+            ? this.buildVisitLegacySchemaPrintPage(detailVisit, coverPages.length + 1, totalPages)
+            : this.getVisitPrintSchemaFieldPages(detailVisit)
+                .map((pageEntries, pageIndex) => this.buildVisitSchemaPrintPage(detailVisit, pageEntries, coverPages.length + pageIndex + 1, totalPages))
+                .join(''))
+        : this.buildVisitManualJsonPrintPage(detailVisit, coverPages.length + 1, totalPages)
       : '';
     const printMarkup = `${coverMarkup}${statusMarkup}`;
 
@@ -2874,6 +3290,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
       .status-page-title h2 { margin: 0; font-size: 30px; font-weight: 800; }
       .status-page-subtitle { margin: 0 0 4px; color: #444; font-size: 15px; }
       .status-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+      .status-grid + .status-grid { margin-top: 18px; }
       .status-panel { border: 2px solid #de9090; min-height: 100%; }
       .status-panel-header { padding: 10px 12px; color: #fff; font-size: 15px; font-weight: 800; text-align: center; text-transform: uppercase; }
       .status-panel-header.blue { background: #2d4f91; }
@@ -3013,6 +3430,140 @@ export class TherapeuticPlanManageComponent implements OnInit {
       <p class="status-page-subtitle">${this.escapeHtml(this.getVisitPatientFullName(visit))} - ${this.escapeHtml(this.formatDate(visit.date))} - ${this.escapeHtml(this.getVisitTypeLabel(visit.type))}</p>
       ${this.buildVisitAutonomyActionsPanel(visit.autonomyActions)}
     </section>`;
+  }
+
+  private buildVisitManualJsonPrintPage(visit: TherapeuticPlanVisitRecord, pageNumber: number, totalPages: number): string {
+    const entries = this.getVisitManualJsonSummaryEntries(visit);
+    const rowsMarkup = entries.length > 0
+      ? entries.map((entry) => `<tr>
+          <td>${this.escapeHtml(entry.key)}</td>
+          <td>${this.escapeHtml(entry.value || this.translate('common.notAvailable'))}</td>
+        </tr>`).join('')
+      : `<tr>
+          <td colspan="2">${this.escapeHtml(this.translate('therapeuticPlan.visits.manualJson.empty'))}</td>
+        </tr>`;
+
+    return `<section class="page">
+      <div class="status-page-title">
+        <h2>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.manualJson.title'))}</h2>
+        <span>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.pageLabel'))} ${pageNumber} / ${totalPages}</span>
+      </div>
+      <p class="status-page-subtitle">${this.escapeHtml(this.getVisitPatientFullName(visit))} - ${this.escapeHtml(this.formatDate(visit.date))} - ${this.escapeHtml(this.getVisitTypeLabel(visit.type))}</p>
+      <p class="subtitle">${this.escapeHtml(this.translate('therapeuticPlan.visits.print.manualJson.description'))}</p>
+      <table class="visit-list-table">
+        <thead>
+          <tr>
+            <th>${this.escapeHtml(this.translate('therapeuticPlan.visits.manualJson.field.key'))}</th>
+            <th>${this.escapeHtml(this.translate('therapeuticPlan.visits.manualJson.field.value'))}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsMarkup}
+        </tbody>
+      </table>
+    </section>`;
+  }
+
+  private buildVisitLegacySchemaPrintPage(visit: TherapeuticPlanVisitRecord, pageNumber: number, totalPages: number): string {
+    return `<section class="page">
+      <div class="status-page-title">
+        <h2>${this.escapeHtml(this.translate('therapeuticPlan.visits.status.reportTitle'))}</h2>
+        <span>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.pageLabel'))} ${pageNumber} / ${totalPages}</span>
+      </div>
+      <p class="status-page-subtitle">${this.escapeHtml(this.getVisitPatientFullName(visit))} - ${this.escapeHtml(this.formatDate(visit.date))} - ${this.escapeHtml(this.getVisitTypeLabel(visit.type))}</p>
+      <div class="status-grid">
+        ${this.buildVisitStatusStomiaPrintPanel(visit.stomiaStatus)}
+        ${this.buildVisitStatusPegjPrintPanel(visit.pegjStatus)}
+        ${this.buildVisitStatusAutonomyPrintPanel(visit.autonomyStatus)}
+      </div>
+      <div class="status-grid">
+        ${this.buildVisitStomiaActionsPanel(visit.stomiaActions)}
+        ${this.buildVisitPegjActionsPanel(visit.pegjActions)}
+        ${this.buildVisitAutonomyActionsPanel(visit.autonomyActions)}
+      </div>
+    </section>`;
+  }
+
+  private getVisitPrintSchemaFieldPages(visit: TherapeuticPlanVisitRecord): TherapeuticPlanVisitJsonEntry[][] {
+    const entries = this.visitSchemaGeneratedFields.map((field) => ({
+      key: this.getVisitSchemaFieldLabel(field.key),
+      value: this.getVisitSchemaSummaryValue(visit, field.key)
+    }));
+
+    const pages = this.chunkVisitSchemaFields(entries);
+    return pages.length > 0 ? pages : [[]];
+  }
+
+  private buildVisitSchemaPrintPage(
+    visit: TherapeuticPlanVisitRecord,
+    entries: TherapeuticPlanVisitJsonEntry[],
+    pageNumber: number,
+    totalPages: number
+  ): string {
+    const rowsMarkup = entries.length > 0
+      ? entries.map((entry) => `<tr>
+          <td>${this.escapeHtml(entry.key)}</td>
+          <td>${this.escapeHtml(entry.value || this.translate('common.notAvailable'))}</td>
+        </tr>`).join('')
+      : `<tr>
+          <td colspan="2">${this.escapeHtml(this.translate('therapeuticPlan.visits.manualJson.empty'))}</td>
+        </tr>`;
+
+    return `<section class="page">
+      <div class="status-page-title">
+        <h2>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.generatedJson.title'))}</h2>
+        <span>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.pageLabel'))} ${pageNumber} / ${totalPages}</span>
+      </div>
+      <p class="status-page-subtitle">${this.escapeHtml(this.getVisitPatientFullName(visit))} - ${this.escapeHtml(this.formatDate(visit.date))} - ${this.escapeHtml(this.getVisitTypeLabel(visit.type))}</p>
+      <p class="subtitle">${this.escapeHtml(this.translate('therapeuticPlan.visits.print.generatedJson.description'))}</p>
+      <table class="visit-list-table">
+        <thead>
+          <tr>
+            <th>${this.escapeHtml(this.translate('therapeuticPlan.visits.manualJson.field.key'))}</th>
+            <th>${this.escapeHtml(this.translate('therapeuticPlan.visits.manualJson.field.value'))}</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsMarkup}
+        </tbody>
+      </table>
+    </section>`;
+  }
+
+  private hasLegacyVisitSchemaLayout(schema: Record<string, unknown> | null): boolean {
+    if (!schema) {
+      return false;
+    }
+
+    const flattenedProperties = this.flattenVisitSchemaProperties(
+      this.getVisitSchemaRootProperties(schema),
+      this.getVisitSchemaRequiredFields(schema)
+    ).reduce<Record<string, any>>((accumulator, field) => {
+      accumulator[field.key] = field.value;
+      return accumulator;
+    }, {});
+
+    const requiredLegacyPaths = [
+      'stomiaStatus.bumperMobilization',
+      'pegjStatus.usageDuration',
+      'autonomyStatus.pumpCassetteConnection'
+    ];
+
+    return requiredLegacyPaths.every((path) => Object.prototype.hasOwnProperty.call(flattenedProperties, path));
+  }
+
+  private getVisitSchemaRootProperties(schema: Record<string, unknown>): Record<string, any> {
+    const rawProperties = schema['properties'];
+    return rawProperties && typeof rawProperties === 'object' && !Array.isArray(rawProperties)
+      ? rawProperties as Record<string, any>
+      : {};
+  }
+
+  private getVisitSchemaRequiredFields(schema: Record<string, unknown>): string[] {
+    const rawRequired = schema['required'];
+    return Array.isArray(rawRequired)
+      ? rawRequired.filter((entry: unknown): entry is string => typeof entry === 'string' && entry.trim().length > 0)
+      : [];
   }
 
   private buildVisitPatientPrintHeader(patientHeader: TherapeuticPlanVisitPatientHeader): string {
@@ -3334,6 +3885,15 @@ export class TherapeuticPlanManageComponent implements OnInit {
     return new Date(now.getTime() - timezoneOffset).toISOString().slice(0, 16);
   }
 
+  private normalizeLocalDateTimeForBackend(value: string): string {
+    const trimmedValue = value.trim();
+    if (!trimmedValue) {
+      return trimmedValue;
+    }
+
+    return trimmedValue.length === 16 ? `${trimmedValue}:00` : trimmedValue;
+  }
+
   private normalizeConfirmationSent(value?: string): 'yes' | 'no' | 'na' {
     switch (value?.trim().toLowerCase()) {
       case 'yes':
@@ -3406,6 +3966,33 @@ export class TherapeuticPlanManageComponent implements OnInit {
 
   private isVisitObject(value: unknown): value is Record<string, any> {
     return typeof value === 'object' && value !== null && !Array.isArray(value);
+  }
+
+  private resolveVisitSchemaFromPlan(): Record<string, unknown> | null {
+    if (!this.plan || typeof this.plan.jsonVisit !== 'string' || this.plan.jsonVisit.trim().length === 0) {
+      return null;
+    }
+
+    try {
+      const parsed = JSON.parse(this.plan.jsonVisit);
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) && 'properties' in parsed
+        ? parsed as Record<string, unknown>
+        : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private toVisitManualJsonDisplayValue(value: unknown): string {
+    if (typeof value === 'string') {
+      return value;
+    }
+
+    if (value == null) {
+      return '';
+    }
+
+    return JSON.stringify(value);
   }
 
   private getFirstNonBlankString(...values: Array<unknown>): string {

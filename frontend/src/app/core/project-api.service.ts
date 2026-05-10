@@ -26,6 +26,7 @@ export interface ProjectDto {
   roleIds?: string[];
   enabledModuleCodes?: string[];
   enabled?: boolean;
+  json_visit?: string;
 }
 
 @Injectable({ providedIn: 'root' })

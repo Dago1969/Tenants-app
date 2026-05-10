@@ -1002,6 +1002,69 @@
   font-weight: 500;
 }
 
+.visit-manual-json-shell {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.visit-manual-json-hint {
+  margin: 0;
+  color: #49627d;
+}
+
+.visit-manual-json-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.visit-manual-json-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) auto;
+  gap: 14px;
+  align-items: end;
+  padding: 16px;
+  border: 1px solid #dbe6f4;
+  border-radius: 18px;
+  background: #f8fbff;
+}
+
+.visit-manual-json-remove {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  border: 1px solid #c8d8ee;
+  background: #fff;
+  color: #264d7e;
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.visit-manual-json-summary-list {
+  display: grid;
+  gap: 12px;
+}
+
+.visit-manual-json-summary-item {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid #dbe6f4;
+  border-radius: 18px;
+  background: #f8fbff;
+}
+
+.visit-manual-json-summary-item strong {
+  color: #264d7e;
+}
+
+.visit-manual-json-summary-item span {
+  color: #203c66;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
 .visit-autonomy-grid {
   display: flex;
   flex-direction: column;

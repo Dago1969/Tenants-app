@@ -1,3 +1,9 @@
+import { Injectable } from '@angular/core';
+interface PatientDto {
+  id: number;
+  firstName: string;
+  lastName: string;
+}
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Component, OnInit } from '@angular/core';
@@ -71,6 +77,7 @@ interface SecondaryJsonState {
   styleUrl: './equipment-crud.component.css'
 })
 export class EquipmentCrudComponent implements OnInit {
+    patients: PatientDto[] = [];
   readonly titleKey = 'equipment.title' as const;
   readonly statusOptions = [
     { value: 'in_magazzino', labelKey: 'status.in_magazzino' as const },
@@ -78,6 +85,14 @@ export class EquipmentCrudComponent implements OnInit {
     { value: 'in_revisione', labelKey: 'status.in_revisione' as const },
     { value: 'rotto', labelKey: 'status.rotto' as const }
   ];
+
+  // loadPatients integrato nell'unico costruttore/ngOnInit
+  loadPatients(): void {
+    this.http.get<PatientDto[]>('/api/patients').subscribe({
+      next: (res) => { this.patients = res; },
+      error: () => { this.patients = []; }
+    });
+  }
 
   loading = true;
   saving = false;
@@ -106,6 +121,7 @@ export class EquipmentCrudComponent implements OnInit {
     const idParam = this.route.snapshot.paramMap.get('id');
     this.equipmentId = idParam ? Number(idParam) : null;
     this.loadEquipmentTypes();
+    this.loadPatients();
   }
 
   translate(key: MessageKey): string {

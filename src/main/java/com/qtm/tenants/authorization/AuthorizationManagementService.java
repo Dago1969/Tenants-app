@@ -23,6 +23,7 @@ import com.qtm.tenants.role.entity.RoleEntity;
 import com.qtm.tenants.role.repository.RoleRepository;
 import com.qtm.tenants.structure.StructureModuleCodes;
 import com.qtm.tenants.structure.entity.StructureEntity;
+import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,6 +48,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 @RequiredArgsConstructor
 public class AuthorizationManagementService {
 
+        private static final String MODULE_THERAPEUTIC_PLAN = "THERAPEUTIC_PLAN";
         private static final String MODULE_EQUIPMENT = "EQUIPMENT";
         private static final String MODULE_EQUIPMENT_TYPE = "EQUIPMENT_TYPE";
 
@@ -63,6 +65,12 @@ public class AuthorizationManagementService {
             "clientName",
             "tenantAppUrl",
             "enabled"
+    );
+
+    private static final List<String> THERAPEUTIC_PLAN_FIELDS = resolveEntityFields(
+            TherapeuticPlanDto.class,
+            Set.of("id", "patientDisplayName", "equipmentCodes", "structureName", "nurseName", "doctorName"),
+            Map.of()
     );
 
     private static final List<String> STRUCTURE_FIELDS = resolveEntityFields(StructureEntity.class, Set.of("id"), Map.of());
@@ -94,6 +102,13 @@ public class AuthorizationManagementService {
                     "Infermieri",
                     "nurse",
                     resolveEntityFields(NurseEntity.class, Set.of("id"), Map.of()),
+                    List.of()
+            ),
+            new ModuleDefinition(
+                    MODULE_THERAPEUTIC_PLAN,
+                    "Piani Terapeutici",
+                    "therapeuticPlan",
+                    THERAPEUTIC_PLAN_FIELDS,
                     List.of()
             ),
             new ModuleDefinition(

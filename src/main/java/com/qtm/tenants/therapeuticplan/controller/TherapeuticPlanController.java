@@ -11,6 +11,8 @@ import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanDto;
 import com.qtm.tenants.therapeuticplan.service.TherapeuticPlanActivityBookingService;
 import com.qtm.tenants.therapeuticplan.service.TherapeuticPlanContactRequestService;
 import com.qtm.tenants.therapeuticplan.service.TherapeuticPlanService;
+import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanAttributeDto;
+import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanAttributesResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -58,6 +60,29 @@ public class TherapeuticPlanController {
     ) {
         controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
         return therapeuticPlanService.findAll(patientName, projectCode, status, drugCode);
+        }
+
+        /**
+         * Endpoint che restituisce la lista degli attributi autorizzabili del piano terapeutico.
+         * Può essere usato dalla UI per mostrare i campi autorizzabili nella pagina autorizzazioni.
+         */
+        @GetMapping("/attributes")
+        public TherapeuticPlanAttributesResponse getAuthorizableAttributes() {
+                // Attributi autorizzabili hardcoded per esempio, possono essere resi dinamici in futuro
+                return new TherapeuticPlanAttributesResponse(List.of(
+                                TherapeuticPlanAttributeDto.builder().name("patientId").label("Paziente").description("Identificativo del paziente").type("number").build(),
+                                TherapeuticPlanAttributeDto.builder().name("projectCode").label("Codice progetto").description("Codice del progetto associato").type("string").build(),
+                                TherapeuticPlanAttributeDto.builder().name("equipmentIds").label("Attrezzature").description("Lista delle attrezzature collegate").type("list:number").build(),
+                                TherapeuticPlanAttributeDto.builder().name("structureId").label("Struttura").description("Struttura sanitaria associata").type("number").build(),
+                                TherapeuticPlanAttributeDto.builder().name("nurseId").label("Infermiere").description("Infermiere di riferimento").type("number").build(),
+                                TherapeuticPlanAttributeDto.builder().name("doctorId").label("Medico").description("Medico di riferimento").type("number").build(),
+                                TherapeuticPlanAttributeDto.builder().name("drugCode").label("Codice farmaco").description("Codice AIC del farmaco").type("string").build(),
+                                TherapeuticPlanAttributeDto.builder().name("startDate").label("Data inizio").description("Data di inizio piano terapeutico").type("date").build(),
+                                TherapeuticPlanAttributeDto.builder().name("endDate").label("Data fine").description("Data di fine piano terapeutico").type("date").build(),
+                                TherapeuticPlanAttributeDto.builder().name("status").label("Stato").description("Stato del piano terapeutico").type("string").build(),
+                                TherapeuticPlanAttributeDto.builder().name("notes").label("Note").description("Note operative").type("string").build(),
+                                TherapeuticPlanAttributeDto.builder().name("jsonVisit").label("Template JSON visita").description("Template JSON della visita associato al piano terapeutico").type("json").build()
+                ));
     }
 
     @GetMapping("/{id}")

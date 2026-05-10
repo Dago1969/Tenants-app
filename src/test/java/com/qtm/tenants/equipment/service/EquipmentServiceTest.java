@@ -39,7 +39,7 @@ class EquipmentServiceTest {
 
     @BeforeEach
     void setUp() {
-        equipmentService = new EquipmentService(equipmentRepository, equipmentTypeRepository, new EquipmentMapper());
+        equipmentService = new EquipmentService(equipmentRepository, equipmentTypeRepository, new EquipmentMapper(), null);
     }
 
     @Test

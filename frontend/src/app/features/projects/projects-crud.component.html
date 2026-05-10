@@ -12,6 +12,19 @@
   </div>
 
   <div class="projects-wizard-panel" [ngSwitch]="currentStep.key">
+        <div *ngSwitchCase="'json_visit'" class="projects-section">
+          <div class="projects-field projects-field-wide">
+            <label for="project-json-visit">{{ translate('projects.field.json_visit') }}</label>
+            <textarea
+              id="project-json-visit"
+              rows="8"
+              [placeholder]="translate('projects.field.json_visit.placeholder')"
+              [(ngModel)]="project.json_visit"
+              [disabled]="isViewMode"
+            ></textarea>
+            <div class="projects-field-hint">{{ translate('projects.field.json_visit.hint') }}</div>
+          </div>
+        </div>
     <div *ngSwitchCase="'general'" class="projects-form-grid">
       <div class="projects-field">
         <label for="project-code">{{ translate('projects.field.code') }}</label>
@@ -109,7 +122,7 @@
             <div>
               <strong>{{ option.username }}</strong>
               <span>{{ option.email }}</span>
-              <span class="projects-selection-role">{{ translate('projects.wizard.step.administrators.role') }}: {{ option.roleLabel }}</span>
+              <strong>{{ translate('projects.wizard.step.administrators.role') }}:</strong><span>{{ option.roleLabel }}</span>
             </div>
           </div>
         </label>
