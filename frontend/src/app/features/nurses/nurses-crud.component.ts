@@ -14,6 +14,7 @@ import { CrudField, CrudFolder, CrudPageComponent } from '../../shared/crud-page
       [endpoint]="endpoint"
       [fields]="fields"
       [folders]="folders"
+      [initialFormModel]="initialFormModel"
       [fieldPermissionsEndpoint]="permissionsEndpoint"
       [wizardMode]="true"
       [popupMode]="true"
@@ -26,6 +27,11 @@ export class NursesCrudComponent {
   titleKey = 'nurses.title' as const;
   endpoint = 'nurses';
   permissionsEndpoint = 'nurses/permissions';
+  initialFormModel = {
+    dataProcessingConsent: true,
+    dataProcessingConsentDateTime: '',
+    nurseConsentOtpCode: ''
+  };
   fields: CrudField[] = [
     { key: 'nurseProjectId', labelKey: 'nurses.field.nurseProjectId', type: 'text' },
     { key: 'fullName', labelKey: 'nurses.field.fullName', type: 'text' },
@@ -67,7 +73,25 @@ export class NursesCrudComponent {
     { key: 'coverageArea', labelKey: 'nurses.field.coverageArea', type: 'text' },
     { key: 'referenceProvider', labelKey: 'nurses.field.referenceProvider', type: 'text' },
     { key: 'professionalRegister', labelKey: 'nurses.field.professionalRegister', type: 'text' },
-    { key: 'enabled', labelKey: 'nurses.field.enabled', type: 'checkbox' }
+    { key: 'enabled', labelKey: 'nurses.field.enabled', type: 'checkbox' },
+    { key: 'dataProcessingConsent', labelKey: 'nurses.field.dataProcessingConsent', type: 'checkbox', readonly: true, required: true, hidden: true },
+    { key: 'dataProcessingConsentDateTime', labelKey: 'nurses.field.dataProcessingConsentDateTime', type: 'datetime-local', readonly: true, required: true },
+    {
+      key: 'nurseConsentOtpSendAction',
+      labelKey: 'nurses.privacy.otp.sendAction',
+      type: 'action',
+      transient: true,
+      actionType: 'send-nurse-consent-otp',
+      actionButtonStyle: 'secondary'
+    },
+    { key: 'nurseConsentOtpCode', labelKey: 'nurses.privacy.otp.code', type: 'text', transient: true },
+    {
+      key: 'nurseConsentOtpVerifyAction',
+      labelKey: 'nurses.privacy.otp.verifyAction',
+      type: 'action',
+      transient: true,
+      actionType: 'verify-nurse-consent-otp'
+    }
   ];
 
   folders: CrudFolder[] = [
@@ -119,6 +143,30 @@ export class NursesCrudComponent {
       titleKey: 'nurses.folder.status',
       fields: [
         { key: 'enabled', labelKey: 'nurses.field.enabled', type: 'checkbox' }
+      ]
+    },
+    {
+      key: 'privacy',
+      titleKey: 'nurses.folder.privacy',
+      fields: [
+        { key: 'dataProcessingConsent', labelKey: 'nurses.field.dataProcessingConsent', type: 'checkbox', readonly: true, required: true, hidden: true },
+        { key: 'dataProcessingConsentDateTime', labelKey: 'nurses.field.dataProcessingConsentDateTime', type: 'datetime-local', readonly: true, required: true },
+        {
+          key: 'nurseConsentOtpSendAction',
+          labelKey: 'nurses.privacy.otp.sendAction',
+          type: 'action',
+          transient: true,
+          actionType: 'send-nurse-consent-otp',
+          actionButtonStyle: 'secondary'
+        },
+        { key: 'nurseConsentOtpCode', labelKey: 'nurses.privacy.otp.code', type: 'text', transient: true },
+        {
+          key: 'nurseConsentOtpVerifyAction',
+          labelKey: 'nurses.privacy.otp.verifyAction',
+          type: 'action',
+          transient: true,
+          actionType: 'verify-nurse-consent-otp'
+        }
       ]
     }
   ];

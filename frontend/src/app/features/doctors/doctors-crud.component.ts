@@ -14,6 +14,7 @@ import { CrudField, CrudFolder, CrudPageComponent } from '../../shared/crud-page
       [endpoint]="endpoint"
       [fields]="fields"
       [folders]="folders"
+      [initialFormModel]="initialFormModel"
       [fieldPermissionsEndpoint]="permissionsEndpoint"
       [wizardMode]="true"
       [popupMode]="true"
@@ -26,6 +27,11 @@ export class DoctorsCrudComponent {
   titleKey = 'doctors.title' as const;
   endpoint = 'doctors';
   permissionsEndpoint = 'doctors/permissions';
+  initialFormModel = {
+    dataProcessingConsent: true,
+    dataProcessingConsentDateTime: '',
+    doctorConsentOtpCode: ''
+  };
   fields: CrudField[] = [
     { key: 'doctorFlyerId', labelKey: 'doctors.field.doctorFlyerId', type: 'text' },
     { key: 'fullName', labelKey: 'doctors.field.fullName', type: 'text' },
@@ -68,8 +74,24 @@ export class DoctorsCrudComponent {
     { key: 'secondaryAddresses', labelKey: 'doctors.field.secondaryAddresses', type: 'text' },
     { key: 'structureId', labelKey: 'doctors.field.structureId', type: 'number' },
     { key: 'specialization', labelKey: 'doctors.field.specialization', type: 'text' },
-    { key: 'dataProcessingConsent', labelKey: 'doctors.field.dataProcessingConsent', type: 'checkbox' },
-    { key: 'dataProcessingConsentDateTime', labelKey: 'doctors.field.dataProcessingConsentDateTime', type: 'datetime-local' },
+    { key: 'dataProcessingConsent', labelKey: 'doctors.field.dataProcessingConsent', type: 'checkbox', readonly: true, required: true, hidden: true },
+    { key: 'dataProcessingConsentDateTime', labelKey: 'doctors.field.dataProcessingConsentDateTime', type: 'datetime-local', readonly: true, required: true },
+    {
+      key: 'doctorConsentOtpSendAction',
+      labelKey: 'doctors.privacy.otp.sendAction',
+      type: 'action',
+      transient: true,
+      actionType: 'send-doctor-consent-otp',
+      actionButtonStyle: 'secondary'
+    },
+    { key: 'doctorConsentOtpCode', labelKey: 'doctors.privacy.otp.code', type: 'text', transient: true },
+    {
+      key: 'doctorConsentOtpVerifyAction',
+      labelKey: 'doctors.privacy.otp.verifyAction',
+      type: 'action',
+      transient: true,
+      actionType: 'verify-doctor-consent-otp'
+    },
     { key: 'dataProcessingConsentRevocationLog', labelKey: 'doctors.field.dataProcessingConsentRevocationLog', type: 'text' },
     { key: 'additionalConsents', labelKey: 'doctors.field.additionalConsents', type: 'text' }
   ];
@@ -123,8 +145,24 @@ export class DoctorsCrudComponent {
       key: 'privacy',
       titleKey: 'doctors.folder.privacy',
       fields: [
-        { key: 'dataProcessingConsent', labelKey: 'doctors.field.dataProcessingConsent', type: 'checkbox' },
-        { key: 'dataProcessingConsentDateTime', labelKey: 'doctors.field.dataProcessingConsentDateTime', type: 'datetime-local' },
+        { key: 'dataProcessingConsent', labelKey: 'doctors.field.dataProcessingConsent', type: 'checkbox', readonly: true, required: true, hidden: true },
+        { key: 'dataProcessingConsentDateTime', labelKey: 'doctors.field.dataProcessingConsentDateTime', type: 'datetime-local', readonly: true, required: true },
+        {
+          key: 'doctorConsentOtpSendAction',
+          labelKey: 'doctors.privacy.otp.sendAction',
+          type: 'action',
+          transient: true,
+          actionType: 'send-doctor-consent-otp',
+          actionButtonStyle: 'secondary'
+        },
+        { key: 'doctorConsentOtpCode', labelKey: 'doctors.privacy.otp.code', type: 'text', transient: true },
+        {
+          key: 'doctorConsentOtpVerifyAction',
+          labelKey: 'doctors.privacy.otp.verifyAction',
+          type: 'action',
+          transient: true,
+          actionType: 'verify-doctor-consent-otp'
+        },
         { key: 'dataProcessingConsentRevocationLog', labelKey: 'doctors.field.dataProcessingConsentRevocationLog', type: 'text' },
         { key: 'additionalConsents', labelKey: 'doctors.field.additionalConsents', type: 'text' }
       ]

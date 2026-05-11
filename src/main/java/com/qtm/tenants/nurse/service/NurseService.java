@@ -52,7 +52,7 @@ public class NurseService {
     private static final Set<String> PROTECTED_FIELDS = Set.of(
             "nurseProjectId", "fullName", "email", "primaryPhone", "secondaryPhone",
             "regionId", "region", "provinceId", "province", "cityId", "city", "coverageArea", "referenceProvider",
-            "professionalRegister", "enabled"
+            "professionalRegister", "enabled", "dataProcessingConsent", "dataProcessingConsentDateTime"
     );
 
     private final NurseRepository nurseRepository;
@@ -137,6 +137,8 @@ public class NurseService {
         current.setReferenceProvider(nurseDto.getReferenceProvider());
         current.setProfessionalRegister(nurseDto.getProfessionalRegister());
         current.setEnabled(nurseDto.getEnabled());
+        current.setDataProcessingConsent(nurseDto.getDataProcessingConsent());
+        current.setDataProcessingConsentDateTime(nurseDto.getDataProcessingConsentDateTime());
 
         return applyReadAuthorization(nurseMapper.toDto(nurseRepository.save(current)), policy);
     }

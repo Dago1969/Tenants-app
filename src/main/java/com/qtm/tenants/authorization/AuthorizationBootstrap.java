@@ -82,7 +82,8 @@ public class AuthorizationBootstrap implements CommandLineRunner {
 
             private static final List<String> NURSE_FIELDS = List.of(
                 "nurseProjectId", "fullName", "email", "primaryPhone", "secondaryPhone",
-                "region", "province", "coverageArea", "referenceProvider", "professionalRegister", "enabled"
+                "region", "province", "coverageArea", "referenceProvider", "professionalRegister", "enabled",
+                "dataProcessingConsent", "dataProcessingConsentDateTime"
             );
 
     private final ModuleRepository moduleRepository;

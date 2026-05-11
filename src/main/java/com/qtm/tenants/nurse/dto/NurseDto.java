@@ -4,6 +4,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 /**
  * DTO infermiere tenant.
  */
@@ -28,4 +30,6 @@ public class NurseDto {
     private String referenceProvider;
     private String professionalRegister;
     private Boolean enabled;
+    private Boolean dataProcessingConsent;
+    private LocalDateTime dataProcessingConsentDateTime;
 }

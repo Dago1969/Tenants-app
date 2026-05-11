@@ -28,6 +28,8 @@ public class NurseMapper {
         dto.setReferenceProvider(entity.getReferenceProvider());
         dto.setProfessionalRegister(entity.getProfessionalRegister());
         dto.setEnabled(entity.getEnabled());
+        dto.setDataProcessingConsent(entity.getDataProcessingConsent());
+        dto.setDataProcessingConsentDateTime(entity.getDataProcessingConsentDateTime());
         return dto;
     }
 
@@ -49,6 +51,8 @@ public class NurseMapper {
         entity.setReferenceProvider(dto.getReferenceProvider());
         entity.setProfessionalRegister(dto.getProfessionalRegister());
         entity.setEnabled(dto.getEnabled());
+        entity.setDataProcessingConsent(dto.getDataProcessingConsent());
+        entity.setDataProcessingConsentDateTime(dto.getDataProcessingConsentDateTime());
         return entity;
     }
 }

@@ -10,3 +10,7 @@ databaseChangeLog:
   - include:
       file: 20260430-12-seed-reference-data.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: 20260511-01-add-nurse-consent-fields.yaml
+      relativeToChangelogFile: true

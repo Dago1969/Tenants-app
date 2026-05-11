@@ -10,6 +10,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 /**
  * Entity infermiere tenant con dati identificativi e di contatto.
  */
@@ -68,4 +70,10 @@ public class NurseEntity {
 
     @Column(name = "enabled")
     private Boolean enabled;
+
+    @Column(name = "data_processing_consent")
+    private Boolean dataProcessingConsent;
+
+    @Column(name = "data_processing_consent_datetime")
+    private LocalDateTime dataProcessingConsentDateTime;
 }
