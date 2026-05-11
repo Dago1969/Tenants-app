@@ -945,6 +945,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
     const emptyVisitForm = this.createEmptyVisitForm();
     const parsedVisit = this.parseVisitJsonVisit(visitDto?.jsonVisit);
     const operatorLabel = this.getCurrentOperatorDisplayLabel();
+    const parsedStomiaStatus = this.isVisitObject(parsedVisit?.['stomiaStatus']) ? parsedVisit['stomiaStatus'] : {};
 
     return {
       id: index + 1,
@@ -962,7 +963,9 @@ export class TherapeuticPlanManageComponent implements OnInit {
       nurseSignature: this.getFirstNonBlankString(parsedVisit?.['nurseSignature'], this.buildOperatorSignature(operatorLabel)),
       stomiaStatus: {
         ...emptyVisitForm.stomiaStatus,
-        ...(this.isVisitObject(parsedVisit?.['stomiaStatus']) ? parsedVisit['stomiaStatus'] : {})
+        ...parsedStomiaStatus,
+        skinPointX: this.normalizeVisitCoordinate(parsedStomiaStatus['skinPointX']),
+        skinPointY: this.normalizeVisitCoordinate(parsedStomiaStatus['skinPointY'])
       },
       stomiaActions: {
         ...emptyVisitForm.stomiaActions,
@@ -2014,9 +2017,12 @@ export class TherapeuticPlanManageComponent implements OnInit {
       return;
     }
 
-    const visitRecord = this.visitJsonSchemaAvailable
-      ? this.buildVisitSchemaJsonRecord()
-      : this.buildManualVisitJsonRecord();
+    const visitRecord = this.mergeVisitJsonRecords(
+      this.createVisitRecordFromForm() as unknown as Record<string, unknown>,
+      this.visitJsonSchemaAvailable
+        ? this.buildVisitSchemaJsonRecord()
+        : this.buildManualVisitJsonRecord()
+    );
 
     const payload = {
       therapeuticPlanId: this.planId,
@@ -2730,6 +2736,28 @@ export class TherapeuticPlanManageComponent implements OnInit {
     }, {});
   }
 
+  private mergeVisitJsonRecords(
+    baseRecord: Record<string, unknown>,
+    overrideRecord: Record<string, unknown>
+  ): Record<string, unknown> {
+    const mergedRecord: Record<string, unknown> = { ...baseRecord };
+
+    for (const [key, overrideValue] of Object.entries(overrideRecord)) {
+      const baseValue = mergedRecord[key];
+      if (this.isVisitObject(baseValue) && this.isVisitObject(overrideValue)) {
+        mergedRecord[key] = this.mergeVisitJsonRecords(
+          baseValue as Record<string, unknown>,
+          overrideValue as Record<string, unknown>
+        );
+        continue;
+      }
+
+      mergedRecord[key] = overrideValue;
+    }
+
+    return mergedRecord;
+  }
+
   private parseVisitManualJsonValue(rawValue: string): unknown {
     const trimmedValue = rawValue.trim();
     if (!trimmedValue) {
@@ -3203,6 +3231,29 @@ export class TherapeuticPlanManageComponent implements OnInit {
 
     this.visitForm.stomiaStatus.skinPointX = Math.min(100, Math.max(0, Number(x.toFixed(2))));
     this.visitForm.stomiaStatus.skinPointY = Math.min(100, Math.max(0, Number(y.toFixed(2))));
+
+    if (Object.prototype.hasOwnProperty.call(this.visitFormDynamic, 'stomiaStatus.skinPointX')) {
+      this.visitFormDynamic['stomiaStatus.skinPointX'] = this.visitForm.stomiaStatus.skinPointX;
+    }
+
+    if (Object.prototype.hasOwnProperty.call(this.visitFormDynamic, 'stomiaStatus.skinPointY')) {
+      this.visitFormDynamic['stomiaStatus.skinPointY'] = this.visitForm.stomiaStatus.skinPointY;
+    }
+  }
+
+  private normalizeVisitCoordinate(value: unknown): number | null {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return Math.min(100, Math.max(0, value));
+    }
+
+    if (typeof value === 'string' && value.trim().length > 0) {
+      const numericValue = Number(value.trim());
+      if (Number.isFinite(numericValue)) {
+        return Math.min(100, Math.max(0, numericValue));
+      }
+    }
+
+    return null;
   }
 
   private createMockVisitAutonomyStatus(overrides: Partial<TherapeuticPlanVisitAutonomyStatus> = {}): TherapeuticPlanVisitAutonomyStatus {
@@ -3791,11 +3842,14 @@ export class TherapeuticPlanManageComponent implements OnInit {
   }
 
   private buildVisitStatusSkinPoint(x: number | null, y: number | null): string {
-    if (x == null || y == null) {
+    const normalizedX = this.normalizeVisitCoordinate(x);
+    const normalizedY = this.normalizeVisitCoordinate(y);
+
+    if (normalizedX == null || normalizedY == null) {
       return '';
     }
 
-    return `<span class="status-skin-point" style="left:${x}%; top:${y}%;"></span>`;
+    return `<span class="status-skin-point" style="left:${normalizedX}%; top:${normalizedY}%;"></span>`;
   }
 
   private buildVisitStatusAutonomyRow(item: TherapeuticPlanVisitAutonomyItem, selected: TherapeuticPlanVisitAutonomyLevel): string {
@@ -3951,7 +4005,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
         try {
           const nestedParsed = JSON.parse(parsed['jsonVisit']);
           if (this.isVisitObject(nestedParsed)) {
-            return { ...parsed, ...nestedParsed };
+            return { ...nestedParsed, ...parsed };
           }
         } catch {
           return parsed;

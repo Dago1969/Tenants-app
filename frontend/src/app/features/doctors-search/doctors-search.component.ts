@@ -15,6 +15,7 @@ import { SearchField, SearchPageComponent } from '../../shared/search-page.compo
       [fieldPermissionsEndpoint]="permissionsEndpoint"
       [filters]="filters"
       [resultColumns]="resultColumns"
+      [autoSearch]="true"
     />
   `
 })

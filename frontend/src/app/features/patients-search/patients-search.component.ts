@@ -20,6 +20,7 @@ import { SearchField, SearchPageComponent } from '../../shared/search-page.compo
       [detailRouteBase]="detailRouteBase"
       [filters]="filters"
       [resultColumns]="resultColumns"
+      [autoSearch]="true"
     />
 
     <router-outlet (deactivate)="refreshAfterWizardClose()"></router-outlet>
