@@ -51,6 +51,17 @@ export class PatientsCrudComponent implements OnInit {
 
     { key: 'firstName', labelKey: 'patients.field.firstName', type: 'text' },
     { key: 'lastName', labelKey: 'patients.field.lastName', type: 'text' },
+    { key: 'birthDate', labelKey: 'patients.field.birthDate', type: 'date' },
+    {
+      key: 'gender',
+      labelKey: 'patients.field.gender',
+      type: 'select',
+      options: [
+        { value: 'M', label: 'patients.gender.male' },
+        { value: 'F', label: 'patients.gender.female' },
+        { value: 'OTHER', label: 'patients.gender.other' }
+      ]
+    },
     { key: 'email', labelKey: 'patients.field.email', type: 'text', columnSpan: 2 },
     { key: 'primaryPhone', labelKey: 'patients.field.primaryPhone', type: 'text', columnSpan: 2 },
     { key: 'secondaryPhone', labelKey: 'patients.field.secondaryPhone', type: 'text', columnSpan: 2 },
@@ -118,6 +129,17 @@ export class PatientsCrudComponent implements OnInit {
         { key: 'fiscalCode', labelKey: 'patients.field.fiscalCode', type: 'text' },
         { key: 'firstName', labelKey: 'patients.field.firstName', type: 'text' },
         { key: 'lastName', labelKey: 'patients.field.lastName', type: 'text' },
+        { key: 'birthDate', labelKey: 'patients.field.birthDate', type: 'date' },
+        {
+          key: 'gender',
+          labelKey: 'patients.field.gender',
+          type: 'select',
+          options: [
+            { value: 'M', label: 'patients.gender.male' },
+            { value: 'F', label: 'patients.gender.female' },
+            { value: 'OTHER', label: 'patients.gender.other' }
+          ]
+        },
         { key: 'email', labelKey: 'patients.field.email', type: 'text', columnSpan: 2 },
         { key: 'primaryPhone', labelKey: 'patients.field.primaryPhone', type: 'text', columnSpan: 2 },
         { key: 'secondaryPhone', labelKey: 'patients.field.secondaryPhone', type: 'text', columnSpan: 2 },
@@ -171,8 +193,6 @@ export class PatientsCrudComponent implements OnInit {
       titleKey: 'patients.folder.privacy',
       fields: [
         { key: 'dataProcessingConsent', labelKey: 'patients.field.dataProcessingConsent', type: 'checkbox', readonly: true, required: true },
-        { key: 'dataProcessingConsentDateTime', labelKey: 'patients.field.dataProcessingConsentDateTime', type: 'datetime-local', required: true },
-        { key: 'patientConsentOtpCode', labelKey: 'patients.privacy.otp.code', type: 'text', transient: true, columnSpan: 2 },
         {
           key: 'patientConsentOtpSendAction',
           labelKey: 'patients.privacy.otp.sendAction',
@@ -181,6 +201,7 @@ export class PatientsCrudComponent implements OnInit {
           actionType: 'send-patient-consent-otp',
           actionButtonStyle: 'secondary'
         },
+        { key: 'patientConsentOtpCode', labelKey: 'patients.privacy.otp.code', type: 'text', transient: true, columnSpan: 2 },
         {
           key: 'patientConsentOtpVerifyAction',
           labelKey: 'patients.privacy.otp.verifyAction',
@@ -188,6 +209,7 @@ export class PatientsCrudComponent implements OnInit {
           transient: true,
           actionType: 'verify-patient-consent-otp'
         },
+        { key: 'dataProcessingConsentDateTime', labelKey: 'patients.field.dataProcessingConsentDateTime', type: 'datetime-local', readonly: true, required: true },
         { key: 'dataProcessingConsentRevocationLog', labelKey: 'patients.field.dataProcessingConsentRevocationLog', type: 'text' },
         { key: 'additionalConsents', labelKey: 'patients.field.additionalConsents', type: 'text' }
       ]

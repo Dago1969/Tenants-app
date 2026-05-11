@@ -306,7 +306,7 @@ interface ConsentOtpConfig {
               {{ translate('projects.wizard.actions.previous') }}
             </button>
 
-            <button *ngIf="!isLastFolder && !isViewMode" class="crud-btn crud-btn-primary" type="button" (click)="goToNextFolder()">
+            <button *ngIf="!isLastFolder && !isViewMode" class="crud-btn crud-btn-primary" type="button" (click)="goToNextFolder()" [disabled]="isNextFolderDisabled()">
               {{ translate('crud.actions.next') }}
             </button>
 
@@ -519,6 +519,14 @@ export class CrudPageComponent implements OnInit, OnChanges {
       return;
     }
 
+    if (this.requiresConsentOtpVerificationForCurrentFolder() && !this.consentOtpState.verified) {
+      const consentOtpConfig = this.getConsentOtpConfig();
+      if (consentOtpConfig) {
+        this.pushOperationLog('error', this.getConsentOtpMessageKey(consentOtpConfig, 'error.verifyBeforeSave'));
+      }
+      return;
+    }
+
     this.submissionAttempted = true;
     this.markPhoneFieldsTouched();
     if (this.hasCurrentFolderValidationErrors()) {
@@ -530,6 +538,14 @@ export class CrudPageComponent implements OnInit, OnChanges {
       this.submissionAttempted = false;
       this.activeFolder = nextFolder.key;
     }
+  }
+
+  isNextFolderDisabled(): boolean {
+    if (this.isViewMode || this.isLastFolder) {
+      return true;
+    }
+
+    return this.consentOtpState.pending;
   }
 
   goToPreviousFolder(): void {
@@ -554,6 +570,14 @@ export class CrudPageComponent implements OnInit, OnChanges {
   save(form: NgForm): void {
     this.submissionAttempted = true;
     this.markPhoneFieldsTouched();
+    if (this.hasConsentOtpSaveBlock()) {
+      const consentOtpConfig = this.getConsentOtpConfig();
+      if (consentOtpConfig) {
+        this.pushOperationLog('error', this.getConsentOtpMessageKey(consentOtpConfig, 'error.verifyBeforeSave'));
+      }
+      return;
+    }
+
     if (form.invalid || this.hasPhoneValidationErrors() || this.hasCurrentFolderValidationErrors()) {
       form.control.markAllAsTouched();
       return;
@@ -905,7 +929,8 @@ export class CrudPageComponent implements OnInit, OnChanges {
   }
 
   private isReadonlyDisabledField(field: CrudField): boolean {
-    return field.readonly === true && (field.type === 'checkbox' || field.type === 'select' || this.isViewMode);
+    return field.readonly === true
+      && (field.type === 'checkbox' || field.type === 'select' || field.type === 'date' || field.type === 'datetime-local' || this.isViewMode);
   }
 
   private hasCurrentFolderValidationErrors(): boolean {
@@ -976,6 +1001,16 @@ export class CrudPageComponent implements OnInit, OnChanges {
     }
 
     return this.formModel['dataProcessingConsent'] !== true || !this.hasValue(this.formModel['dataProcessingConsentDateTime']);
+  }
+
+  private hasConsentOtpSaveBlock(): boolean {
+    return this.hasConsentOtpFlow()
+      && !this.consentOtpState.verified
+      && !this.hasValue(this.formModel['dataProcessingConsentDateTime']);
+  }
+
+  private requiresConsentOtpVerificationForCurrentFolder(): boolean {
+    return this.hasConsentOtpFlow() && this.activeFolder === 'privacy';
   }
 
   private sendConsentOtp(consentOtpConfig: ConsentOtpConfig): void {

@@ -952,17 +952,29 @@
     linear-gradient(transparent calc(50% - 0.5px), rgba(196, 171, 123, 0.72) calc(50% - 0.5px), rgba(196, 171, 123, 0.72) calc(50% + 0.5px), transparent calc(50% + 0.5px));
 }
 
+
 .visit-status-skin-point {
   display: block;
   position: absolute;
   width: 12px;
   height: 12px;
   border-radius: 999px;
-  background: #d84d4d;
   border: 2px solid #ffffff;
   transform: translate(-50%, -50%);
-  box-shadow: 0 0 0 1px rgba(216, 77, 77, 0.35);
   pointer-events: none;
+}
+
+/* Puntino rosso in dettaglio (edit/readonly) */
+.visit-status-skin-point--edit,
+.visit-status-skin-point--readonly {
+  background: #d84d4d;
+  box-shadow: 0 0 0 1px rgba(216, 77, 77, 0.35);
+}
+
+/* Puntino nero in stampa/summary */
+.visit-status-skin-point--print {
+  background: #111;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.35);
 }
 
 .visit-status-subpanel {

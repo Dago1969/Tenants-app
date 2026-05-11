@@ -1398,7 +1398,7 @@
                 <div class="visit-status-skin-figure visit-status-skin-figure-readonly" aria-hidden="true">
                   <span
                     *ngIf="visit.stomiaStatus.skinPointX !== null && visit.stomiaStatus.skinPointY !== null"
-                    class="visit-status-skin-point"
+                    class="visit-status-skin-point visit-status-skin-point--readonly"
                     [style.left.%]="visit.stomiaStatus.skinPointX"
                     [style.top.%]="visit.stomiaStatus.skinPointY"
                   ></span>
@@ -2060,7 +2060,7 @@
               <button type="button" class="visit-status-skin-figure" (click)="setVisitStomiaSkinPoint($event)" [attr.aria-label]="translate('therapeuticPlan.visits.status.stomia.skinVisualization')">
                 <span
                   *ngIf="visitForm.stomiaStatus.skinPointX !== null && visitForm.stomiaStatus.skinPointY !== null"
-                  class="visit-status-skin-point"
+                  class="visit-status-skin-point visit-status-skin-point--edit"
                   [style.left.%]="visitForm.stomiaStatus.skinPointX"
                   [style.top.%]="visitForm.stomiaStatus.skinPointY"
                 ></span>
