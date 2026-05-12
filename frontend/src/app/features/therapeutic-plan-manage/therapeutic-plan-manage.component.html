@@ -881,8 +881,45 @@
 
     <section *ngIf="activeTab === 'modules'" class="manage-panel-grid">
       <article class="manage-panel-card manage-panel-card-wide">
-        <h2>{{ translate('therapeuticPlan.manage.section.modules') }}</h2>
-        <p class="section-copy">{{ translate('therapeuticPlan.manage.section.modules.description') }}</p>
+        <div class="manage-section-header">
+          <div>
+            <h2>{{ translate('therapeuticPlan.manage.section.modules') }}</h2>
+            <p class="section-copy">{{ translate('therapeuticPlan.manage.section.modules.description') }}</p>
+          </div>
+        </div>
+
+        <div class="module-equipment-toolbar">
+          <label class="module-equipment-field">
+            <span>{{ translate('therapeuticPlan.manage.modules.addLabel') }}</span>
+            <select [(ngModel)]="moduleEquipmentSelection" [disabled]="moduleEquipmentSaving || assignableEquipmentOptions.length === 0">
+              <option [ngValue]="null"></option>
+              <option *ngFor="let equipment of assignableEquipmentOptions" [ngValue]="equipment.id">
+                {{ equipment.code }} - {{ equipment.equipmentTypeName || translate('common.notAvailable') }}
+              </option>
+            </select>
+          </label>
+
+          <button
+            type="button"
+            class="manage-add-button"
+            [disabled]="moduleEquipmentSaving || moduleEquipmentSelection === null"
+            (click)="assignSelectedEquipment()"
+          >
+            {{ translate('therapeuticPlan.manage.modules.addAction') }}
+          </button>
+        </div>
+
+        <p *ngIf="assignableEquipmentOptions.length === 0" class="note-box">
+          {{ translate('therapeuticPlan.manage.modules.noAvailableEquipment') }}
+        </p>
+
+        <p
+          *ngIf="moduleEquipmentMessage"
+          class="note-box"
+          [class.module-equipment-message-error]="moduleEquipmentMessageType === 'error'"
+        >
+          {{ moduleEquipmentMessage }}
+        </p>
 
         <ul *ngIf="selectedEquipment.length > 0; else modulesEmpty" class="resource-list">
           <li *ngFor="let equipment of selectedEquipment" class="resource-list-item">
@@ -890,9 +927,17 @@
               <strong>{{ equipment.code }}</strong>
               <span>{{ equipment.equipmentTypeName || translate('common.notAvailable') }}</span>
             </div>
-            <div class="resource-list-meta">
+            <div class="resource-list-meta resource-list-meta-actions">
               <span>{{ equipment.serialNumber || translate('common.notAvailable') }}</span>
               <span class="status-badge" [ngClass]="'status-' + equipment.status">{{ equipment.status }}</span>
+              <button
+                type="button"
+                class="therapeutic-plan-btn therapeutic-plan-btn-secondary therapeutic-plan-btn-small"
+                [disabled]="moduleEquipmentSaving"
+                (click)="removeEquipment(equipment.id)"
+              >
+                {{ translate('therapeuticPlan.manage.modules.removeAction') }}
+              </button>
             </div>
           </li>
         </ul>

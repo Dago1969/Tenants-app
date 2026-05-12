@@ -581,6 +581,37 @@
   text-align: right;
 }
 
+.resource-list-meta-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.module-equipment-toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  margin-bottom: 18px;
+}
+
+.module-equipment-field {
+  flex: 1 1 320px;
+}
+
+.module-equipment-field span {
+  display: block;
+  margin-bottom: 8px;
+  color: #314867;
+  font-weight: 600;
+}
+
+.module-equipment-message-error {
+  background: #fff1f2;
+  border-color: #fecdd3;
+  color: #b42318;
+}
+
 .manage-section-header {
   display: flex;
   justify-content: space-between;
@@ -1251,6 +1282,15 @@
 
   .resource-list-meta {
     text-align: left;
+  }
+
+  .resource-list-meta-actions,
+  .module-equipment-toolbar {
+    align-items: stretch;
+  }
+
+  .module-equipment-toolbar {
+    flex-direction: column;
   }
 
   .therapeutic-plan-btn {

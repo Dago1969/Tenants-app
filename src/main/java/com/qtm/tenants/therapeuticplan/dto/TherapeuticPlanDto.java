@@ -25,8 +25,18 @@ public class TherapeuticPlanDto {
     private Long structureId;
     private String structureType;
     private String structureName;
+    private List<Long> nurseIds;
+    private List<String> nurseNames;
+    private List<TherapeuticPlanProfessionalAssignmentDto> nurseAssignments;
+    private Long prevalentNurseId;
+    private String prevalentNurseName;
     private Long nurseId;
     private String nurseName;
+    private List<Long> doctorIds;
+    private List<String> doctorNames;
+    private List<TherapeuticPlanProfessionalAssignmentDto> doctorAssignments;
+    private Long prevalentDoctorId;
+    private String prevalentDoctorName;
     private Long doctorId;
     private String doctorName;
     private String drugCode;

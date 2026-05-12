@@ -63,49 +63,100 @@
         {{ translate('therapeuticPlan.field.structureType') }}: {{ selectedStructure.structureType }}
       </div>
 
-      <label class="therapeutic-plan-field">
-        <span>{{ translate('therapeuticPlan.field.nurse') }}</span>
-        <select [(ngModel)]="formModel.nurseId">
-          <option [ngValue]="null"></option>
-          <option *ngFor="let nurse of nurses" [ngValue]="nurse.id">
-            {{ nurse.fullName }}
-          </option>
-        </select>
-      </label>
+      <div class="therapeutic-plan-field therapeutic-plan-field-full therapeutic-plan-operator-panel">
+        <span>{{ translate('therapeuticPlan.clinical.nurses') }}</span>
 
-      <label class="therapeutic-plan-field">
-        <span>{{ translate('therapeuticPlan.field.doctor') }}</span>
-        <select [(ngModel)]="formModel.doctorId">
-          <option [ngValue]="null"></option>
-          <option *ngFor="let doctor of doctors" [ngValue]="doctor.id">
-            {{ doctor.fullName }}
-          </option>
-        </select>
-      </label>
-    </section>
+        <div class="therapeutic-plan-operator-selector">
+          <label *ngFor="let nurse of nurses" class="therapeutic-plan-operator-option">
+            <input
+              type="checkbox"
+              [checked]="formModel.nurseIds.includes(nurse.id)"
+              (change)="toggleNurseSelection(nurse.id)"
+            />
+            <span>{{ nurse.fullName }}</span>
+          </label>
+        </div>
 
-    <section *ngIf="currentStep.key === 'equipment'" class="therapeutic-plan-equipment-step">
-      <div class="therapeutic-plan-inline-hint">
-        {{ translate('therapeuticPlan.equipment.available') }}: {{ selectedEquipmentCount }}
+        <div *ngIf="selectedNurses.length > 0; else noSelectedNurses" class="therapeutic-plan-selected-list">
+          <div *ngFor="let nurse of selectedNurses; let index = index" class="therapeutic-plan-selected-item">
+            <div>
+              <strong>{{ nurse.fullName }}</strong>
+              <span>
+                {{ index === 0 ? translate('therapeuticPlan.clinical.prevalentBadge') : translate('therapeuticPlan.clinical.priorityBadge') + ' ' + (index + 1) }}
+              </span>
+            </div>
+
+            <div class="therapeutic-plan-selected-actions">
+              <button
+                *ngIf="!isPrevalentNurse(nurse.id)"
+                type="button"
+                class="therapeutic-plan-btn therapeutic-plan-btn-secondary therapeutic-plan-btn-small"
+                (click)="setPrevalentNurse(nurse.id)"
+              >
+                {{ translate('therapeuticPlan.clinical.setPrevalentNurse') }}
+              </button>
+              <button
+                type="button"
+                class="therapeutic-plan-btn therapeutic-plan-btn-secondary therapeutic-plan-btn-small"
+                (click)="toggleNurseSelection(nurse.id)"
+              >
+                {{ translate('therapeuticPlan.clinical.removeProfessional') }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <ng-template #noSelectedNurses>
+          <div class="therapeutic-plan-inline-hint">{{ translate('therapeuticPlan.clinical.noSelectedNurses') }}</div>
+        </ng-template>
       </div>
 
-      <div *ngIf="visibleEquipmentOptions.length === 0" class="therapeutic-plan-alert therapeutic-plan-alert-info">
-        {{ translate('therapeuticPlan.equipment.empty') }}
-      </div>
+      <div class="therapeutic-plan-field therapeutic-plan-field-full therapeutic-plan-operator-panel">
+        <span>{{ translate('therapeuticPlan.clinical.doctors') }}</span>
 
-      <div class="therapeutic-plan-equipment-grid" *ngIf="visibleEquipmentOptions.length > 0">
-        <button
-          type="button"
-          class="therapeutic-plan-equipment-card"
-          *ngFor="let equipment of visibleEquipmentOptions"
-          [class.therapeutic-plan-equipment-card-selected]="isEquipmentSelected(equipment.id)"
-          (click)="toggleEquipment(equipment.id)"
-        >
-          <span class="therapeutic-plan-equipment-code">{{ equipment.code }}</span>
-          <span class="therapeutic-plan-equipment-detail">{{ equipment.equipmentTypeName || '-' }}</span>
-          <span class="therapeutic-plan-equipment-detail">{{ equipment.serialNumber || '-' }}</span>
-          <span class="therapeutic-plan-equipment-status">{{ translate('status.' + equipment.status) }}</span>
-        </button>
+        <div class="therapeutic-plan-operator-selector">
+          <label *ngFor="let doctor of doctors" class="therapeutic-plan-operator-option">
+            <input
+              type="checkbox"
+              [checked]="formModel.doctorIds.includes(doctor.id)"
+              (change)="toggleDoctorSelection(doctor.id)"
+            />
+            <span>{{ doctor.fullName }}</span>
+          </label>
+        </div>
+
+        <div *ngIf="selectedDoctors.length > 0; else noSelectedDoctors" class="therapeutic-plan-selected-list">
+          <div *ngFor="let doctor of selectedDoctors; let index = index" class="therapeutic-plan-selected-item">
+            <div>
+              <strong>{{ doctor.fullName }}</strong>
+              <span>
+                {{ index === 0 ? translate('therapeuticPlan.clinical.prevalentBadge') : translate('therapeuticPlan.clinical.priorityBadge') + ' ' + (index + 1) }}
+              </span>
+            </div>
+
+            <div class="therapeutic-plan-selected-actions">
+              <button
+                *ngIf="!isPrevalentDoctor(doctor.id)"
+                type="button"
+                class="therapeutic-plan-btn therapeutic-plan-btn-secondary therapeutic-plan-btn-small"
+                (click)="setPrevalentDoctor(doctor.id)"
+              >
+                {{ translate('therapeuticPlan.clinical.setPrevalentDoctor') }}
+              </button>
+              <button
+                type="button"
+                class="therapeutic-plan-btn therapeutic-plan-btn-secondary therapeutic-plan-btn-small"
+                (click)="toggleDoctorSelection(doctor.id)"
+              >
+                {{ translate('therapeuticPlan.clinical.removeProfessional') }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <ng-template #noSelectedDoctors>
+          <div class="therapeutic-plan-inline-hint">{{ translate('therapeuticPlan.clinical.noSelectedDoctors') }}</div>
+        </ng-template>
       </div>
     </section>
 

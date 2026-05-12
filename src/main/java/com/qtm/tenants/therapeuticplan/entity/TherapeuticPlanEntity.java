@@ -1,8 +1,6 @@
 package com.qtm.tenants.therapeuticplan.entity;
 
-import com.qtm.tenants.doctor.entity.DoctorEntity;
 import com.qtm.tenants.equipment.entity.EquipmentEntity;
-import com.qtm.tenants.nurse.entity.NurseEntity;
 import com.qtm.tenants.structure.entity.StructureEntity;
 import jakarta.persistence.ConstraintMode;
 import jakarta.persistence.Column;
@@ -12,8 +10,10 @@ import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -28,7 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Entity del piano terapeutico con associazioni a paziente, struttura, operatori sanitari e attrezzature.
+ * Entity del piano terapeutico con riferimenti clinici, operatori sanitari ordinati e attrezzature collegate.
  */
 @Entity
 @Table(name = "therapeutic_plan")
@@ -48,21 +48,23 @@ public class TherapeuticPlanEntity {
     @Column(name = "project_code", nullable = false, length = 128)
     private String projectCode;
 
-        @OneToMany(mappedBy = "assignedTo", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "assignedTo", fetch = FetchType.LAZY)
     @Builder.Default
     private List<EquipmentEntity> equipments = new ArrayList<>();
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-        @jakarta.persistence.JoinColumn(name = "structure_id", nullable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
+    @jakarta.persistence.JoinColumn(name = "structure_id", nullable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
     private StructureEntity structure;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-        @jakarta.persistence.JoinColumn(name = "nurse_id", nullable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
-    private NurseEntity nurse;
+    @OneToMany(mappedBy = "therapeuticPlan", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("priorityIndex ASC")
+    @Builder.Default
+    private List<TherapeuticPlanNurseAssignmentEntity> nurseAssignments = new ArrayList<>();
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-        @jakarta.persistence.JoinColumn(name = "doctor_id", nullable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
-    private DoctorEntity doctor;
+    @OneToMany(mappedBy = "therapeuticPlan", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("priorityIndex ASC")
+    @Builder.Default
+    private List<TherapeuticPlanDoctorAssignmentEntity> doctorAssignments = new ArrayList<>();
 
     @Column(name = "drug_code", nullable = false, length = 128)
     private String drugCode;
@@ -95,5 +97,13 @@ public class TherapeuticPlanEntity {
     @PreUpdate
     public void preUpdate() {
         this.updatedAt = LocalDateTime.now();
+    }
+
+    public TherapeuticPlanNurseAssignmentEntity getPrevalentNurseAssignment() {
+        return nurseAssignments == null || nurseAssignments.isEmpty() ? null : nurseAssignments.get(0);
+    }
+
+    public TherapeuticPlanDoctorAssignmentEntity getPrevalentDoctorAssignment() {
+        return doctorAssignments == null || doctorAssignments.isEmpty() ? null : doctorAssignments.get(0);
     }
 }

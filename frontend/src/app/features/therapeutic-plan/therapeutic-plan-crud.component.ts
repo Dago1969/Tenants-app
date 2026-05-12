@@ -5,7 +5,6 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { Select2, type Select2Data, type Select2Option, type Select2SearchEvent, type Select2UpdateEvent } from 'ng-select2-component';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../core/auth.service';
 import { MedicineApiService, type MedicineLookupDto } from '../../core/medicine-api.service';
@@ -32,12 +31,10 @@ interface DoctorOption {
   specialization?: string;
 }
 
-interface EquipmentOption {
-  id: number;
-  code: string;
-  equipmentTypeName?: string;
-  status: string;
-  serialNumber?: string;
+interface TherapeuticPlanProfessionalAssignment {
+  professionalId: number;
+  professionalName: string;
+  priorityIndex: number;
 }
 
 interface TherapeuticPlanPayload {
@@ -45,8 +42,12 @@ interface TherapeuticPlanPayload {
   projectCode: string;
   equipmentIds: number[];
   structureId: number | null;
-  nurseId: number | null;
-  doctorId: number | null;
+  nurseIds: number[];
+  prevalentNurseId: number | null;
+  nurseId?: number | null;
+  doctorIds: number[];
+  prevalentDoctorId: number | null;
+  doctorId?: number | null;
   drugCode: string;
   startDate: string;
   endDate: string;
@@ -56,21 +57,25 @@ interface TherapeuticPlanPayload {
 
 interface TherapeuticPlanResponse extends TherapeuticPlanPayload {
   id?: number;
+  nurseNames?: string[];
+  doctorNames?: string[];
+  nurseAssignments?: TherapeuticPlanProfessionalAssignment[];
+  doctorAssignments?: TherapeuticPlanProfessionalAssignment[];
 }
 
 interface WizardStep {
-  key: 'main' | 'clinical' | 'equipment' | 'schedule';
+  key: 'main' | 'clinical' | 'schedule';
   title: MessageKey;
   description: MessageKey;
 }
 
 /**
- * Wizard popup del piano terapeutico con selezione guidata di riferimenti clinici e attrezzature.
+ * Wizard popup del piano terapeutico con selezione guidata dei riferimenti clinici.
  */
 @Component({
   selector: 'app-therapeutic-plan-crud',
   standalone: true,
-  imports: [CommonModule, FormsModule, Select2, QtmStepModalComponent],
+  imports: [CommonModule, FormsModule, QtmStepModalComponent],
   templateUrl: './therapeutic-plan-crud.component.html',
   styleUrl: './therapeutic-plan-crud.component.css'
 })
@@ -79,7 +84,6 @@ export class TherapeuticPlanCrudComponent implements OnInit {
   readonly steps: WizardStep[] = [
     { key: 'main', title: 'therapeuticPlan.folder.main', description: 'therapeuticPlan.folder.main.desc' },
     { key: 'clinical', title: 'therapeuticPlan.folder.clinical', description: 'therapeuticPlan.folder.clinical.desc' },
-    { key: 'equipment', title: 'therapeuticPlan.folder.equipment', description: 'therapeuticPlan.folder.equipment.desc' },
     { key: 'schedule', title: 'therapeuticPlan.folder.schedule', description: 'therapeuticPlan.folder.schedule.desc' }
   ];
   readonly statusOptions = [
@@ -100,7 +104,6 @@ export class TherapeuticPlanCrudComponent implements OnInit {
   structures: StructureDto[] = [];
   nurses: NurseOption[] = [];
   doctors: DoctorOption[] = [];
-  equipmentOptions: EquipmentOption[] = [];
   medicineOptions: { value: string, label: string }[] = [];
 
   formModel: TherapeuticPlanPayload = this.createEmptyFormModel();
@@ -141,23 +144,20 @@ export class TherapeuticPlanCrudComponent implements OnInit {
     return this.currentStepIndex === this.steps.length - 1;
   }
 
-  get visibleEquipmentOptions(): EquipmentOption[] {
-    const selectedIds = new Set(this.formModel.equipmentIds);
-    return this.equipmentOptions
-      .filter((equipment) => equipment.status === 'in_magazzino' || selectedIds.has(equipment.id))
-      .sort((left, right) => {
-        const leftSelected = selectedIds.has(left.id) ? 0 : 1;
-        const rightSelected = selectedIds.has(right.id) ? 0 : 1;
-        return leftSelected - rightSelected || left.code.localeCompare(right.code, 'it', { sensitivity: 'base' });
-      });
-  }
-
   get selectedStructure(): StructureDto | null {
     return this.structures.find((structure) => structure.id === this.formModel.structureId) ?? null;
   }
 
-  get selectedEquipmentCount(): number {
-    return this.formModel.equipmentIds.length;
+  get selectedNurses(): NurseOption[] {
+    return this.formModel.nurseIds
+      .map((nurseId) => this.nurses.find((nurse) => nurse.id === nurseId) ?? null)
+      .filter((nurse): nurse is NurseOption => nurse !== null);
+  }
+
+  get selectedDoctors(): DoctorOption[] {
+    return this.formModel.doctorIds
+      .map((doctorId) => this.doctors.find((doctor) => doctor.id === doctorId) ?? null)
+      .filter((doctor): doctor is DoctorOption => doctor !== null);
   }
 
   get medicineSelectionInfo(): string {
@@ -182,17 +182,60 @@ export class TherapeuticPlanCrudComponent implements OnInit {
     this.currentStepIndex += 1;
   }
 
-  toggleEquipment(equipmentId: number): void {
-    if (this.formModel.equipmentIds.includes(equipmentId)) {
-      this.formModel.equipmentIds = this.formModel.equipmentIds.filter((currentId) => currentId !== equipmentId);
+  toggleNurseSelection(nurseId: number): void {
+    if (this.formModel.nurseIds.includes(nurseId)) {
+      this.formModel.nurseIds = this.formModel.nurseIds.filter((currentNurseId) => currentNurseId !== nurseId);
+      if (this.formModel.prevalentNurseId === nurseId) {
+        this.formModel.prevalentNurseId = this.formModel.nurseIds[0] ?? null;
+      }
       return;
     }
 
-    this.formModel.equipmentIds = [...this.formModel.equipmentIds, equipmentId];
+    this.formModel.nurseIds = [...this.formModel.nurseIds, nurseId];
+    if (this.formModel.prevalentNurseId === null) {
+      this.setPrevalentNurse(nurseId);
+    }
   }
 
-  isEquipmentSelected(equipmentId: number): boolean {
-    return this.formModel.equipmentIds.includes(equipmentId);
+  toggleDoctorSelection(doctorId: number): void {
+    if (this.formModel.doctorIds.includes(doctorId)) {
+      this.formModel.doctorIds = this.formModel.doctorIds.filter((currentDoctorId) => currentDoctorId !== doctorId);
+      if (this.formModel.prevalentDoctorId === doctorId) {
+        this.formModel.prevalentDoctorId = this.formModel.doctorIds[0] ?? null;
+      }
+      return;
+    }
+
+    this.formModel.doctorIds = [...this.formModel.doctorIds, doctorId];
+    if (this.formModel.prevalentDoctorId === null) {
+      this.setPrevalentDoctor(doctorId);
+    }
+  }
+
+  setPrevalentNurse(nurseId: number): void {
+    if (!this.formModel.nurseIds.includes(nurseId)) {
+      return;
+    }
+
+    this.formModel.prevalentNurseId = nurseId;
+    this.formModel.nurseIds = this.reorderWithPrevalentFirst(this.formModel.nurseIds, nurseId);
+  }
+
+  setPrevalentDoctor(doctorId: number): void {
+    if (!this.formModel.doctorIds.includes(doctorId)) {
+      return;
+    }
+
+    this.formModel.prevalentDoctorId = doctorId;
+    this.formModel.doctorIds = this.reorderWithPrevalentFirst(this.formModel.doctorIds, doctorId);
+  }
+
+  isPrevalentNurse(nurseId: number): boolean {
+    return this.formModel.prevalentNurseId === nurseId;
+  }
+
+  isPrevalentDoctor(doctorId: number): boolean {
+    return this.formModel.prevalentDoctorId === doctorId;
   }
 
   save(): void {
@@ -240,17 +283,15 @@ export class TherapeuticPlanCrudComponent implements OnInit {
       specialistClinics: this.structureApiService.getStructuresByType('SPECIALIST_CLINIC', true).pipe(catchError(() => of([] as StructureDto[]))),
       nurses: this.http.get<NurseOption[]>(`${environment.apiBaseUrl}/nurses`).pipe(catchError(() => of([] as NurseOption[]))),
       doctors: this.http.get<DoctorOption[]>(`${environment.apiBaseUrl}/doctors`).pipe(catchError(() => of([] as DoctorOption[]))),
-      equipment: this.http.get<EquipmentOption[]>(`${environment.apiBaseUrl}/equipment`).pipe(catchError(() => of([] as EquipmentOption[]))),
       medicines: this.medicineApiService.lookupMedicines().pipe(catchError(() => of([] as MedicineLookupDto[])))
     }).subscribe({
-      next: ({ patients, hospitals, specialistClinics, nurses, doctors, equipment, medicines }) => {
+      next: ({ patients, hospitals, specialistClinics, nurses, doctors, medicines }) => {
         this.patients = [...patients].sort((left, right) => this.getPatientLabel(left).localeCompare(this.getPatientLabel(right), 'it', { sensitivity: 'base' }));
         this.structures = [...hospitals, ...specialistClinics].sort((left, right) => this.getStructureLabel(left).localeCompare(this.getStructureLabel(right), 'it', { sensitivity: 'base' }));
         this.nurses = [...nurses]
           .filter((nurse) => nurse.enabled !== false)
           .sort((left, right) => left.fullName.localeCompare(right.fullName, 'it', { sensitivity: 'base' }));
         this.doctors = [...doctors].sort((left, right) => left.fullName.localeCompare(right.fullName, 'it', { sensitivity: 'base' }));
-        this.equipmentOptions = equipment ?? [];
         this.medicineOptions = (medicines ?? [])
           .filter((medicine) => !!medicine?.codiceAic)
           .map((medicine) => ({
@@ -280,7 +321,11 @@ export class TherapeuticPlanCrudComponent implements OnInit {
           projectCode: typeof plan.projectCode === 'string' && plan.projectCode.trim().length ? plan.projectCode : this.authService.getSelectedProject().trim(),
           equipmentIds: Array.isArray(plan.equipmentIds) ? plan.equipmentIds.filter((currentId): currentId is number => typeof currentId === 'number') : [],
           structureId: typeof plan.structureId === 'number' ? plan.structureId : null,
+          nurseIds: this.normalizeLoadedProfessionalIds(plan.nurseIds, plan.prevalentNurseId, plan.nurseId),
+          prevalentNurseId: this.resolveLoadedPrevalentId(plan.nurseIds, plan.prevalentNurseId, plan.nurseId),
           nurseId: typeof plan.nurseId === 'number' ? plan.nurseId : null,
+          doctorIds: this.normalizeLoadedProfessionalIds(plan.doctorIds, plan.prevalentDoctorId, plan.doctorId),
+          prevalentDoctorId: this.resolveLoadedPrevalentId(plan.doctorIds, plan.prevalentDoctorId, plan.doctorId),
           doctorId: typeof plan.doctorId === 'number' ? plan.doctorId : null,
           drugCode: typeof plan.drugCode === 'string' ? plan.drugCode : '',
           startDate: typeof plan.startDate === 'string' ? plan.startDate : '',
@@ -325,19 +370,14 @@ export class TherapeuticPlanCrudComponent implements OnInit {
         this.errorMessage = this.translate('therapeuticPlan.validation.structureRequired');
         return false;
       }
-      if (!this.formModel.nurseId) {
+      if (this.formModel.nurseIds.length === 0 || this.formModel.prevalentNurseId === null) {
         this.errorMessage = this.translate('therapeuticPlan.validation.nurseRequired');
         return false;
       }
-      if (!this.formModel.doctorId) {
+      if (this.formModel.doctorIds.length === 0 || this.formModel.prevalentDoctorId === null) {
         this.errorMessage = this.translate('therapeuticPlan.validation.doctorRequired');
         return false;
       }
-    }
-
-    if (this.currentStep.key === 'equipment' && this.formModel.equipmentIds.length === 0) {
-      this.errorMessage = this.translate('therapeuticPlan.validation.equipmentRequired');
-      return false;
     }
 
     if (this.currentStep.key === 'schedule') {
@@ -360,8 +400,12 @@ export class TherapeuticPlanCrudComponent implements OnInit {
       projectCode: this.formModel.projectCode.trim(),
       equipmentIds: [...this.formModel.equipmentIds],
       structureId: this.formModel.structureId,
-      nurseId: this.formModel.nurseId,
-      doctorId: this.formModel.doctorId,
+      nurseIds: [...this.formModel.nurseIds],
+      prevalentNurseId: this.formModel.prevalentNurseId,
+      nurseId: this.formModel.prevalentNurseId,
+      doctorIds: [...this.formModel.doctorIds],
+      prevalentDoctorId: this.formModel.prevalentDoctorId,
+      doctorId: this.formModel.prevalentDoctorId,
       drugCode: this.formModel.drugCode.trim(),
       startDate: this.formModel.startDate,
       endDate: this.formModel.endDate,
@@ -376,7 +420,11 @@ export class TherapeuticPlanCrudComponent implements OnInit {
       projectCode: '',
       equipmentIds: [],
       structureId: null,
+      nurseIds: [],
+      prevalentNurseId: null,
       nurseId: null,
+      doctorIds: [],
+      prevalentDoctorId: null,
       doctorId: null,
       drugCode: '',
       startDate: '',
@@ -400,24 +448,49 @@ export class TherapeuticPlanCrudComponent implements OnInit {
     return this.translate('crud.error.load');
   }
 
+  private normalizeLoadedProfessionalIds(
+    ids: number[] | undefined,
+    prevalentId: number | null | undefined,
+    legacyId: number | null | undefined
+  ): number[] {
+    const normalizedIds = Array.isArray(ids)
+      ? ids.filter((currentId): currentId is number => typeof currentId === 'number')
+      : [];
+    const fallbackId = typeof legacyId === 'number' ? legacyId : null;
+    const resolvedPrevalentId = typeof prevalentId === 'number' ? prevalentId : fallbackId;
+
+    if (fallbackId !== null && !normalizedIds.includes(fallbackId)) {
+      normalizedIds.push(fallbackId);
+    }
+
+    return resolvedPrevalentId === null ? normalizedIds : this.reorderWithPrevalentFirst(normalizedIds, resolvedPrevalentId);
+  }
+
+  private resolveLoadedPrevalentId(
+    ids: number[] | undefined,
+    prevalentId: number | null | undefined,
+    legacyId: number | null | undefined
+  ): number | null {
+    if (typeof prevalentId === 'number') {
+      return prevalentId;
+    }
+    if (typeof legacyId === 'number') {
+      return legacyId;
+    }
+
+    const normalizedIds = Array.isArray(ids)
+      ? ids.filter((currentId): currentId is number => typeof currentId === 'number')
+      : [];
+    return normalizedIds[0] ?? null;
+  }
+
+  private reorderWithPrevalentFirst(ids: number[], prevalentId: number): number[] {
+    const otherIds = ids.filter((currentId) => currentId !== prevalentId);
+    return [prevalentId, ...otherIds];
+  }
+
   private close(): void {
     void this.router.navigateByUrl('/therapeutic-plans/search');
-  }
-
-
-  private buildMedicineSelectData(medicines: MedicineLookupDto[]): Select2Data {
-    // non più usato
-    return [];
-  }
-
-  private mergeMedicineOptions(medicines: MedicineLookupDto[]): Select2Data {
-    // non più usato
-    return [];
-  }
-
-  private toMedicineOption(medicine: MedicineLookupDto): Select2Option {
-    // non più usato
-    return { value: '', label: '' };
   }
 
   private getMedicineLabel(medicine: MedicineLookupDto): string {

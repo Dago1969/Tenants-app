@@ -17,16 +17,14 @@ import java.util.Optional;
 public interface TherapeuticPlanRepository extends JpaRepository<TherapeuticPlanEntity, Long> {
 
     @Override
-  @EntityGraph(attributePaths = {"structure", "nurse", "doctor", "equipments", "equipments.equipmentType"})
+    @EntityGraph(attributePaths = {"structure"})
     Optional<TherapeuticPlanEntity> findById(Long id);
 
-  @EntityGraph(attributePaths = {"structure", "nurse", "doctor", "equipments", "equipments.equipmentType"})
+    @EntityGraph(attributePaths = {"structure"})
     @Query("""
         SELECT DISTINCT therapeuticPlan
         FROM TherapeuticPlanEntity therapeuticPlan
         JOIN therapeuticPlan.structure structure
-        JOIN therapeuticPlan.nurse nurse
-        JOIN therapeuticPlan.doctor doctor
         LEFT JOIN therapeuticPlan.equipments equipment
     WHERE (:projectCode = '' OR LOWER(COALESCE(therapeuticPlan.projectCode, '')) LIKE LOWER(CONCAT('%', :projectCode, '%')))
           AND (:status = '' OR LOWER(COALESCE(therapeuticPlan.status, '')) = LOWER(:status))

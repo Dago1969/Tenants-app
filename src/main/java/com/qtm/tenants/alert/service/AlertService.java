@@ -113,7 +113,10 @@ public class AlertService {
     }
 
     private void validateDoctorMatchesTherapeuticPlan(TherapeuticPlanEntity therapeuticPlan, DoctorEntity doctor) {
-        Long therapeuticPlanDoctorId = therapeuticPlan.getDoctor() != null ? therapeuticPlan.getDoctor().getId() : null;
+        Long therapeuticPlanDoctorId = therapeuticPlan.getPrevalentDoctorAssignment() != null
+                && therapeuticPlan.getPrevalentDoctorAssignment().getDoctor() != null
+                ? therapeuticPlan.getPrevalentDoctorAssignment().getDoctor().getId()
+                : null;
         if (!Objects.equals(therapeuticPlanDoctorId, doctor.getId())) {
             throw new ResponseStatusException(BAD_REQUEST,
                     "Il medico dell'alert deve coincidere con il medico associato al piano terapeutico");

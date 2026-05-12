@@ -1,0 +1,147 @@
+databaseChangeLog:
+  # Crea le nuove tabelle di assegnazione ordinate per infermieri e medici del piano terapeutico.
+  - changeSet:
+      id: 20260512-01-create-therapeutic-plan-nurse-assignment
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            tableExists:
+              tableName: therapeutic_plan_nurse
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              CREATE TABLE IF NOT EXISTS therapeutic_plan_nurse (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                therapeutic_plan_id BIGINT NOT NULL,
+                nurse_id BIGINT NOT NULL,
+                priority_index INT NOT NULL,
+                UNIQUE KEY uk_therapeutic_plan_nurse_plan_nurse (therapeutic_plan_id, nurse_id),
+                UNIQUE KEY uk_therapeutic_plan_nurse_plan_priority (therapeutic_plan_id, priority_index),
+                KEY idx_therapeutic_plan_nurse_plan_id (therapeutic_plan_id),
+                KEY idx_therapeutic_plan_nurse_nurse_id (nurse_id)
+              );
+
+  - changeSet:
+      id: 20260512-02-create-therapeutic-plan-doctor-assignment
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - not:
+            tableExists:
+              tableName: therapeutic_plan_doctor
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              CREATE TABLE IF NOT EXISTS therapeutic_plan_doctor (
+                id BIGINT AUTO_INCREMENT PRIMARY KEY,
+                therapeutic_plan_id BIGINT NOT NULL,
+                doctor_id BIGINT NOT NULL,
+                priority_index INT NOT NULL,
+                UNIQUE KEY uk_therapeutic_plan_doctor_plan_doctor (therapeutic_plan_id, doctor_id),
+                UNIQUE KEY uk_therapeutic_plan_doctor_plan_priority (therapeutic_plan_id, priority_index),
+                KEY idx_therapeutic_plan_doctor_plan_id (therapeutic_plan_id),
+                KEY idx_therapeutic_plan_doctor_doctor_id (doctor_id)
+              );
+
+  # Migra l'assegnazione legacy di infermiere e medico come elemento prevalente con priorita 0.
+  - changeSet:
+      id: 20260512-03-backfill-therapeutic-plan-nurse-assignment
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: therapeutic_plan
+        - tableExists:
+            tableName: therapeutic_plan_nurse
+        - columnExists:
+            tableName: therapeutic_plan
+            columnName: nurse_id
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              INSERT INTO therapeutic_plan_nurse (therapeutic_plan_id, nurse_id, priority_index)
+              SELECT plan.id, plan.nurse_id, 0
+              FROM therapeutic_plan plan
+              LEFT JOIN therapeutic_plan_nurse assignment
+                ON assignment.therapeutic_plan_id = plan.id
+               AND assignment.nurse_id = plan.nurse_id
+              WHERE plan.nurse_id IS NOT NULL
+                AND assignment.id IS NULL;
+
+  - changeSet:
+      id: 20260512-04-backfill-therapeutic-plan-doctor-assignment
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: therapeutic_plan
+        - tableExists:
+            tableName: therapeutic_plan_doctor
+        - columnExists:
+            tableName: therapeutic_plan
+            columnName: doctor_id
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              INSERT INTO therapeutic_plan_doctor (therapeutic_plan_id, doctor_id, priority_index)
+              SELECT plan.id, plan.doctor_id, 0
+              FROM therapeutic_plan plan
+              LEFT JOIN therapeutic_plan_doctor assignment
+                ON assignment.therapeutic_plan_id = plan.id
+               AND assignment.doctor_id = plan.doctor_id
+              WHERE plan.doctor_id IS NOT NULL
+                AND assignment.id IS NULL;
+
+  # Elimina eventuali assegnazioni orfane prodotte da dati legacy senza record anagrafico corrispondente.
+  - changeSet:
+      id: 20260512-05-delete-orphan-therapeutic-plan-nurse-assignment
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: therapeutic_plan_nurse
+        - tableExists:
+            tableName: nurses
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              DELETE assignment
+              FROM therapeutic_plan_nurse assignment
+              LEFT JOIN nurses nurse_record ON nurse_record.id = assignment.nurse_id
+              WHERE nurse_record.id IS NULL;
+
+  - changeSet:
+      id: 20260512-06-delete-orphan-therapeutic-plan-doctor-assignment
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: therapeutic_plan_doctor
+        - tableExists:
+            tableName: doctors
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              DELETE assignment
+              FROM therapeutic_plan_doctor assignment
+              LEFT JOIN doctors doctor_record ON doctor_record.id = assignment.doctor_id
+              WHERE doctor_record.id IS NULL;

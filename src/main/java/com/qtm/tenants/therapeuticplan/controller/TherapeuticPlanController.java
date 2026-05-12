@@ -53,13 +53,15 @@ public class TherapeuticPlanController {
     @GetMapping
     public List<TherapeuticPlanDto> findAll(
             @RequestParam(required = false) String patientName,
+                        @RequestParam(required = false) String nurseName,
+                        @RequestParam(required = false) String doctorName,
             @RequestParam(required = false) String projectCode,
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String drugCode,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
         controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
-        return therapeuticPlanService.findAll(patientName, projectCode, status, drugCode);
+                return therapeuticPlanService.findAll(patientName, nurseName, doctorName, projectCode, status, drugCode);
         }
 
         /**
@@ -74,8 +76,10 @@ public class TherapeuticPlanController {
                                 TherapeuticPlanAttributeDto.builder().name("projectCode").label("Codice progetto").description("Codice del progetto associato").type("string").build(),
                                 TherapeuticPlanAttributeDto.builder().name("equipmentIds").label("Attrezzature").description("Lista delle attrezzature collegate").type("list:number").build(),
                                 TherapeuticPlanAttributeDto.builder().name("structureId").label("Struttura").description("Struttura sanitaria associata").type("number").build(),
-                                TherapeuticPlanAttributeDto.builder().name("nurseId").label("Infermiere").description("Infermiere di riferimento").type("number").build(),
-                                TherapeuticPlanAttributeDto.builder().name("doctorId").label("Medico").description("Medico di riferimento").type("number").build(),
+                                TherapeuticPlanAttributeDto.builder().name("nurseIds").label("Infermieri").description("Lista ordinata degli infermieri associati").type("list:number").build(),
+                                TherapeuticPlanAttributeDto.builder().name("prevalentNurseId").label("Infermiere prevalente").description("Infermiere prevalente del piano terapeutico").type("number").build(),
+                                TherapeuticPlanAttributeDto.builder().name("doctorIds").label("Medici").description("Lista ordinata dei medici associati").type("list:number").build(),
+                                TherapeuticPlanAttributeDto.builder().name("prevalentDoctorId").label("Medico prevalente").description("Medico prevalente del piano terapeutico").type("number").build(),
                                 TherapeuticPlanAttributeDto.builder().name("drugCode").label("Codice farmaco").description("Codice AIC del farmaco").type("string").build(),
                                 TherapeuticPlanAttributeDto.builder().name("startDate").label("Data inizio").description("Data di inizio piano terapeutico").type("date").build(),
                                 TherapeuticPlanAttributeDto.builder().name("endDate").label("Data fine").description("Data di fine piano terapeutico").type("date").build(),

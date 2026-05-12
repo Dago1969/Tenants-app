@@ -14,3 +14,7 @@ databaseChangeLog:
   - include:
       file: 20260511-01-add-nurse-consent-fields.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: 20260512-01-therapeutic-plan-professional-assignments.yaml
+      relativeToChangelogFile: true

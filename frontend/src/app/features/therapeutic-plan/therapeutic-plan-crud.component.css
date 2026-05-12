@@ -50,47 +50,60 @@
   font-size: 0.92rem;
 }
 
-.therapeutic-plan-equipment-step {
+.therapeutic-plan-operator-panel {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
 
-.therapeutic-plan-equipment-grid {
+.therapeutic-plan-operator-selector {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  gap: 10px 14px;
 }
 
-.therapeutic-plan-equipment-card {
+.therapeutic-plan-operator-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid #d3e5f8;
+  border-radius: 14px;
+  background: #f8fbff;
+}
+
+.therapeutic-plan-selected-list {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  padding: 14px 16px;
-  border: 1.5px solid #d3e5f8;
-  border-radius: 18px;
-  background: #f8fbff;
-  color: #355277;
-  text-align: left;
-  cursor: pointer;
+  gap: 10px;
 }
 
-.therapeutic-plan-equipment-card-selected {
-  border-color: #1870e8;
-  background: #eef6ff;
-  box-shadow: 0 10px 24px rgba(24, 112, 232, 0.14);
+.therapeutic-plan-selected-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #d3e5f8;
+  border-radius: 14px;
+  background: #ffffff;
 }
 
-.therapeutic-plan-equipment-code {
-  font-weight: 700;
-  color: #1a3a5d;
+.therapeutic-plan-selected-item strong,
+.therapeutic-plan-selected-item span {
+  display: block;
 }
 
-.therapeutic-plan-equipment-detail,
-.therapeutic-plan-equipment-status {
-  font-size: 0.9rem;
+.therapeutic-plan-selected-item span {
   color: #466487;
+  font-size: 0.88rem;
+}
+
+.therapeutic-plan-selected-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .therapeutic-plan-alert {
@@ -128,9 +141,22 @@
 }
 
 @media (max-width: 900px) {
-  .therapeutic-plan-grid,
-  .therapeutic-plan-equipment-grid {
+  .therapeutic-plan-grid {
     grid-template-columns: 1fr;
+  }
+
+  .therapeutic-plan-operator-selector {
+    grid-template-columns: 1fr;
+  }
+
+  .therapeutic-plan-selected-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .therapeutic-plan-selected-actions {
+    width: 100%;
+    justify-content: stretch;
   }
 
   .therapeutic-plan-actions {

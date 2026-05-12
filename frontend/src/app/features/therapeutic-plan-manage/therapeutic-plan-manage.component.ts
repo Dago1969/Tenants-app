@@ -18,7 +18,11 @@ interface TherapeuticPlanManageResponse {
   projectCode: string;
   equipmentIds: number[];
   structureId: number | null;
+  nurseIds?: number[];
+  prevalentNurseId?: number | null;
   nurseId: number | null;
+  doctorIds?: number[];
+  prevalentDoctorId?: number | null;
   doctorId: number | null;
   drugCode: string;
   startDate: string;
@@ -65,6 +69,24 @@ interface TherapeuticPlanEquipment {
   equipmentTypeName?: string;
   status: string;
   serialNumber?: string;
+}
+
+interface TherapeuticPlanManageUpdatePayload {
+  patientId: number | null;
+  projectCode: string;
+  equipmentIds: number[];
+  structureId: number | null;
+  nurseIds: number[];
+  prevalentNurseId: number | null;
+  nurseId: number | null;
+  doctorIds: number[];
+  prevalentDoctorId: number | null;
+  doctorId: number | null;
+  drugCode: string;
+  startDate: string;
+  endDate: string;
+  status: string;
+  notes: string;
 }
 
 interface TherapeuticPlanManageTab {
@@ -775,7 +797,12 @@ export class TherapeuticPlanManageComponent implements OnInit {
   structure: StructureDto | null = null;
   nurse: TherapeuticPlanNurse | null = null;
   doctor: TherapeuticPlanDoctor | null = null;
+  availableEquipment: TherapeuticPlanEquipment[] = [];
   selectedEquipment: TherapeuticPlanEquipment[] = [];
+  moduleEquipmentSelection: number | null = null;
+  moduleEquipmentSaving = false;
+  moduleEquipmentMessage = '';
+  moduleEquipmentMessageType: 'success' | 'error' = 'success';
   notifications: TherapeuticPlanNotification[] = [];
   notificationFilters: TherapeuticPlanNotificationFilters = this.createEmptyNotificationFilters();
   showNotificationFilters = false;
@@ -1091,6 +1118,13 @@ export class TherapeuticPlanManageComponent implements OnInit {
     return String(this.selectedEquipment.length);
   }
 
+  get assignableEquipmentOptions(): TherapeuticPlanEquipment[] {
+    const selectedIds = new Set(this.selectedEquipment.map((equipment) => equipment.id));
+    return this.availableEquipment
+      .filter((equipment) => !selectedIds.has(equipment.id))
+      .sort((left, right) => left.code.localeCompare(right.code, 'it', { sensitivity: 'base' }));
+  }
+
   get canCreateAlert(): boolean {
     return !!this.planId && !!this.plan?.doctorId;
   }
@@ -1111,6 +1145,24 @@ export class TherapeuticPlanManageComponent implements OnInit {
 
   get notificationConfirmationSelected(): boolean {
     return this.notificationForm.confirmedChoice !== '';
+  }
+
+  assignSelectedEquipment(): void {
+    if (this.moduleEquipmentSelection === null) {
+      return;
+    }
+
+    const equipmentId = this.moduleEquipmentSelection;
+    this.moduleEquipmentSelection = null;
+    this.updateModuleEquipment([...this.selectedEquipment.map((equipment) => equipment.id), equipmentId]);
+  }
+
+  removeEquipment(equipmentId: number): void {
+    this.updateModuleEquipment(
+      this.selectedEquipment
+        .map((equipment) => equipment.id)
+        .filter((currentEquipmentId) => currentEquipmentId !== equipmentId)
+    );
   }
 
   get notificationNotesRequired(): boolean {
@@ -2354,7 +2406,10 @@ export class TherapeuticPlanManageComponent implements OnInit {
         this.structure = [...hospitals, ...specialistClinics].find((currentStructure) => currentStructure.id === plan.structureId) ?? null;
         this.nurse = nurses.find((currentNurse) => currentNurse.id === plan.nurseId) ?? null;
         this.doctor = doctors.find((currentDoctor) => currentDoctor.id === plan.doctorId) ?? null;
+        this.availableEquipment = (equipment ?? []).filter((currentEquipment) => currentEquipment.status === 'in_magazzino' || plan.equipmentIds?.includes(currentEquipment.id));
         this.selectedEquipment = (equipment ?? []).filter((currentEquipment) => plan.equipmentIds?.includes(currentEquipment.id));
+        this.moduleEquipmentSelection = null;
+        this.moduleEquipmentMessage = '';
         this.notifications = this.sortNotifications(notifications ?? []);
         this.alerts = this.sortAlerts(alerts ?? []);
         this.loading = false;
@@ -2382,6 +2437,69 @@ export class TherapeuticPlanManageComponent implements OnInit {
     }
 
     return this.translate('crud.error.load');
+  }
+
+  private updateModuleEquipment(equipmentIds: number[]): void {
+    if (!this.planId || !this.plan) {
+      return;
+    }
+
+    this.moduleEquipmentSaving = true;
+    this.moduleEquipmentMessage = '';
+
+    this.http.put<TherapeuticPlanManageResponse>(
+      `${environment.apiBaseUrl}/therapeutic-plans/${this.planId}`,
+      this.buildPlanUpdatePayload(equipmentIds)
+    ).subscribe({
+      next: (updatedPlan) => {
+        this.plan = updatedPlan;
+        this.selectedEquipment = this.availableEquipment.filter((equipment) => updatedPlan.equipmentIds?.includes(equipment.id));
+        this.availableEquipment = this.availableEquipment.filter((equipment) => equipment.status === 'in_magazzino' || updatedPlan.equipmentIds?.includes(equipment.id));
+        this.moduleEquipmentSaving = false;
+        this.moduleEquipmentMessageType = 'success';
+        this.moduleEquipmentMessage = this.translate('therapeuticPlan.manage.modules.updateSuccess');
+      },
+      error: (error: HttpErrorResponse) => {
+        this.moduleEquipmentSaving = false;
+        this.moduleEquipmentMessageType = 'error';
+        this.moduleEquipmentMessage = this.resolveErrorMessage(error);
+      }
+    });
+  }
+
+  private buildPlanUpdatePayload(equipmentIds: number[]): TherapeuticPlanManageUpdatePayload {
+    const nurseIds = this.normalizeProfessionalIds(this.plan?.nurseIds, this.plan?.prevalentNurseId ?? this.plan?.nurseId ?? null);
+    const doctorIds = this.normalizeProfessionalIds(this.plan?.doctorIds, this.plan?.prevalentDoctorId ?? this.plan?.doctorId ?? null);
+
+    return {
+      patientId: this.plan?.patientId ?? null,
+      projectCode: this.plan?.projectCode ?? '',
+      equipmentIds,
+      structureId: this.plan?.structureId ?? null,
+      nurseIds,
+      prevalentNurseId: nurseIds[0] ?? null,
+      nurseId: this.plan?.nurseId ?? null,
+      doctorIds,
+      prevalentDoctorId: doctorIds[0] ?? null,
+      doctorId: this.plan?.doctorId ?? null,
+      drugCode: this.plan?.drugCode ?? '',
+      startDate: this.plan?.startDate ?? '',
+      endDate: this.plan?.endDate ?? '',
+      status: this.plan?.status ?? 'draft',
+      notes: this.plan?.notes ?? ''
+    };
+  }
+
+  private normalizeProfessionalIds(ids: number[] | undefined, fallbackId: number | null): number[] {
+    const normalizedIds = Array.isArray(ids)
+      ? ids.filter((currentId): currentId is number => typeof currentId === 'number')
+      : [];
+
+    if (typeof fallbackId === 'number' && !normalizedIds.includes(fallbackId)) {
+      normalizedIds.unshift(fallbackId);
+    }
+
+    return normalizedIds;
   }
 
   private createEmptyAlertForm(): TherapeuticPlanAlertForm {

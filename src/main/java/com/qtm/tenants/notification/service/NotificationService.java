@@ -122,8 +122,11 @@ public class NotificationService {
                     .build();
         }
 
-        if (therapeuticPlan.getDoctor() == null || therapeuticPlan.getDoctor().getFullName() == null
-                || therapeuticPlan.getDoctor().getFullName().isBlank()) {
+        String prevalentDoctorFullName = therapeuticPlan.getPrevalentDoctorAssignment() != null
+            && therapeuticPlan.getPrevalentDoctorAssignment().getDoctor() != null
+            ? therapeuticPlan.getPrevalentDoctorAssignment().getDoctor().getFullName()
+            : null;
+        if (prevalentDoctorFullName == null || prevalentDoctorFullName.isBlank()) {
             throw new ResponseStatusException(BAD_REQUEST,
                     "Il piano terapeutico deve avere un medico associato per registrare la conferma della notifica");
         }
@@ -137,7 +140,7 @@ public class NotificationService {
                 .message(dto.getMessage())
                 .confirmed(dto.getConfirmed())
                 .confirmationDate(dto.getConfirmationDate())
-                .confirmedByDoctor(therapeuticPlan.getDoctor().getFullName().trim())
+                .confirmedByDoctor(prevalentDoctorFullName.trim())
                 .notes(dto.getNotes())
                 .build();
     }

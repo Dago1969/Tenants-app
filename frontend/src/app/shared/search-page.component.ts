@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../core/auth.service';
@@ -361,7 +361,7 @@ type DeleteDialogMode = 'confirm' | 'reassign';
     </div>
   `
 })
-export class SearchPageComponent implements OnInit {
+export class SearchPageComponent implements OnInit, OnChanges {
   showFilters = true;
   showTableSearch = false;
   tableSearchText = '';
@@ -428,6 +428,12 @@ export class SearchPageComponent implements OnInit {
     void this.loadActionPermissions();
     if (this.autoSearch) {
       this.search(false);
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['filters']) {
+      this.loadSelectOptions();
     }
   }
 

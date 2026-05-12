@@ -14,8 +14,11 @@ import com.qtm.tenants.patient.service.DashboardPatientClient;
 import com.qtm.tenants.structure.entity.StructureEntity;
 import com.qtm.tenants.structure.repository.StructureRepository;
 import com.qtm.tenants.therapeuticplan.TherapeuticPlanStatusRules;
+import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanProfessionalAssignmentDto;
 import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanDto;
+import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanDoctorAssignmentEntity;
 import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanEntity;
+import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanNurseAssignmentEntity;
 import com.qtm.tenants.therapeuticplan.mapper.TherapeuticPlanMapper;
 import com.qtm.tenants.therapeuticplan.repository.TherapeuticPlanRepository;
 import com.qtm.commonlib.dto.PatientDto;
@@ -61,8 +64,10 @@ public class TherapeuticPlanService {
     private final NotificationRepository notificationRepository;
 
     @Transactional(readOnly = true)
-    public List<TherapeuticPlanDto> findAll(String patientName, String projectCode, String status, String drugCode) {
+    public List<TherapeuticPlanDto> findAll(String patientName, String nurseName, String doctorName, String projectCode, String status, String drugCode) {
         String normalizedPatientName = normalizeFilter(patientName);
+        String normalizedNurseName = normalizeFilter(nurseName);
+        String normalizedDoctorName = normalizeFilter(doctorName);
         List<TherapeuticPlanEntity> therapeuticPlans = therapeuticPlanRepository.searchByFilters(
                         normalizeFilter(projectCode),
                         normalizeStatusFilter(status),
@@ -78,6 +83,8 @@ public class TherapeuticPlanService {
                 therapeuticPlanMapper.toDto(entity, buildPatientDisplayName(patientsById.get(entity.getPatientId())))
             ))
             .filter(dto -> matchesPatientName(dto.getPatientDisplayName(), normalizedPatientName))
+            .filter(dto -> matchesAssignmentNames(dto.getNurseAssignments(), dto.getNurseName(), normalizedNurseName))
+            .filter(dto -> matchesAssignmentNames(dto.getDoctorAssignments(), dto.getDoctorName(), normalizedDoctorName))
             .toList();
     }
 
@@ -95,14 +102,14 @@ public class TherapeuticPlanService {
         TherapeuticPlanDto normalizedDto = normalizeDto(dto);
         validatePatientExists(normalizedDto.getPatientId());
         StructureEntity structure = resolveStructure(normalizedDto.getStructureId());
-        NurseEntity nurse = resolveNurse(normalizedDto.getNurseId());
-        DoctorEntity doctor = resolveDoctor(normalizedDto.getDoctorId());
+        List<TherapeuticPlanNurseAssignmentEntity> nurseAssignments = buildNurseAssignments(normalizedDto.getNurseIds());
+        List<TherapeuticPlanDoctorAssignmentEntity> doctorAssignments = buildDoctorAssignments(normalizedDto.getDoctorIds());
         List<EquipmentEntity> selectedEquipments = resolveEquipments(normalizedDto.getEquipmentIds(), null);
         TherapeuticPlanEntity entity = therapeuticPlanMapper.toNewEntity(
                 normalizedDto,
                 structure,
-                nurse,
-                doctor,
+            nurseAssignments,
+            doctorAssignments,
                 selectedEquipments
         );
         TherapeuticPlanEntity savedEntity = therapeuticPlanRepository.save(entity);
@@ -122,19 +129,27 @@ public class TherapeuticPlanService {
         TherapeuticPlanDto normalizedDto = normalizeDto(dto);
         validatePatientExists(normalizedDto.getPatientId());
         StructureEntity structure = resolveStructure(normalizedDto.getStructureId());
-        NurseEntity nurse = resolveNurse(normalizedDto.getNurseId());
-        DoctorEntity doctor = resolveDoctor(normalizedDto.getDoctorId());
+        List<TherapeuticPlanNurseAssignmentEntity> nurseAssignments = buildNurseAssignments(normalizedDto.getNurseIds());
+        List<TherapeuticPlanDoctorAssignmentEntity> doctorAssignments = buildDoctorAssignments(normalizedDto.getDoctorIds());
         List<EquipmentEntity> currentEquipments = entity.getEquipments() == null
                 ? List.of()
                 : List.copyOf(entity.getEquipments());
         List<EquipmentEntity> selectedEquipments = resolveEquipments(normalizedDto.getEquipmentIds(), therapeuticPlanId);
 
+        if (entity.getNurseAssignments() != null) {
+            entity.getNurseAssignments().clear();
+        }
+        if (entity.getDoctorAssignments() != null) {
+            entity.getDoctorAssignments().clear();
+        }
+        therapeuticPlanRepository.flush();
+
         therapeuticPlanMapper.updateEntity(
                 entity,
                 normalizedDto,
                 structure,
-                nurse,
-                doctor,
+            nurseAssignments,
+            doctorAssignments,
                 selectedEquipments
         );
         TherapeuticPlanEntity savedEntity = therapeuticPlanRepository.save(entity);
@@ -170,14 +185,39 @@ public class TherapeuticPlanService {
             throw new ResponseStatusException(BAD_REQUEST, "La data fine non puo precedere la data inizio");
         }
 
+        List<Long> normalizedNurseIds = reorderWithPrevalentFirst(
+            normalizeProfessionalIds(dto.getNurseIds(), dto.getNurseId()),
+            normalizePrevalentProfessionalId(
+                normalizeProfessionalIds(dto.getNurseIds(), dto.getNurseId()),
+                dto.getPrevalentNurseId(),
+                dto.getNurseId(),
+                "Infermiere obbligatorio",
+                "Infermiere prevalente non valido"
+            )
+        );
+        List<Long> normalizedDoctorIds = reorderWithPrevalentFirst(
+            normalizeProfessionalIds(dto.getDoctorIds(), dto.getDoctorId()),
+            normalizePrevalentProfessionalId(
+                normalizeProfessionalIds(dto.getDoctorIds(), dto.getDoctorId()),
+                dto.getPrevalentDoctorId(),
+                dto.getDoctorId(),
+                "Medico obbligatorio",
+                "Medico prevalente non valido"
+            )
+        );
+
         return TherapeuticPlanDto.builder()
                 .id(dto.getId())
                 .patientId(dto.getPatientId())
                 .projectCode(normalizeRequiredText(dto.getProjectCode(), "Progetto obbligatorio"))
                 .equipmentIds(normalizeEquipmentIds(dto.getEquipmentIds()))
                 .structureId(dto.getStructureId())
-                .nurseId(dto.getNurseId())
-                .doctorId(dto.getDoctorId())
+            .nurseIds(normalizedNurseIds)
+            .prevalentNurseId(normalizedNurseIds.get(0))
+            .nurseId(normalizedNurseIds.get(0))
+            .doctorIds(normalizedDoctorIds)
+            .prevalentDoctorId(normalizedDoctorIds.get(0))
+            .doctorId(normalizedDoctorIds.get(0))
                 .drugCode(normalizeRequiredText(dto.getDrugCode(), "Codice farmaco obbligatorio"))
                 .startDate(startDate)
                 .endDate(endDate)
@@ -251,14 +291,36 @@ public class TherapeuticPlanService {
     }
 
     private boolean matchesPatientName(String patientDisplayName, String patientNameFilter) {
-        if (patientNameFilter == null || patientNameFilter.isBlank()) {
+        return matchesTextFilter(patientDisplayName, patientNameFilter);
+    }
+
+    private boolean matchesAssignmentNames(
+            List<TherapeuticPlanProfessionalAssignmentDto> assignments,
+            String fallbackValue,
+            String filter
+    ) {
+        if (filter == null || filter.isBlank()) {
             return true;
         }
-        if (patientDisplayName == null || patientDisplayName.isBlank()) {
+
+        if (assignments != null && !assignments.isEmpty()) {
+            return assignments.stream()
+                    .map(TherapeuticPlanProfessionalAssignmentDto::getProfessionalName)
+                    .anyMatch(name -> matchesTextFilter(name, filter));
+        }
+
+        return matchesTextFilter(fallbackValue, filter);
+    }
+
+    private boolean matchesTextFilter(String value, String filter) {
+        if (filter == null || filter.isBlank()) {
+            return true;
+        }
+        if (value == null || value.isBlank()) {
             return false;
         }
 
-        return patientDisplayName.toLowerCase(Locale.ROOT).contains(patientNameFilter.toLowerCase(Locale.ROOT));
+        return value.toLowerCase(Locale.ROOT).contains(filter.toLowerCase(Locale.ROOT));
     }
 
     private TherapeuticPlanDto enrichWithProjectJsonVisit(TherapeuticPlanDto dto) {
@@ -306,34 +368,78 @@ public class TherapeuticPlanService {
         return structure;
     }
 
-    private NurseEntity resolveNurse(Long nurseId) {
-        if (nurseId == null) {
+    private List<TherapeuticPlanNurseAssignmentEntity> buildNurseAssignments(List<Long> nurseIds) {
+        Map<Long, NurseEntity> nursesById = resolveNursesById(nurseIds);
+        List<TherapeuticPlanNurseAssignmentEntity> assignments = new ArrayList<>();
+
+        for (int index = 0; index < nurseIds.size(); index++) {
+            Long nurseId = nurseIds.get(index);
+            assignments.add(TherapeuticPlanNurseAssignmentEntity.builder()
+                    .nurse(nursesById.get(nurseId))
+                    .priorityIndex(index)
+                    .build());
+        }
+
+        return assignments;
+    }
+
+    private Map<Long, NurseEntity> resolveNursesById(List<Long> nurseIds) {
+        if (nurseIds.isEmpty()) {
             throw new ResponseStatusException(BAD_REQUEST, "Infermiere obbligatorio");
         }
 
-        NurseEntity nurse = nurseRepository.findById(nurseId)
-                .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Infermiere non trovato"));
+        Map<Long, NurseEntity> nursesById = nurseRepository.findAllById(nurseIds).stream()
+                .collect(Collectors.toMap(NurseEntity::getId, Function.identity()));
 
-        if (Boolean.FALSE.equals(nurse.getEnabled())) {
-            throw new ResponseStatusException(BAD_REQUEST, "Infermiere non abilitato");
+        for (Long nurseId : nurseIds) {
+            NurseEntity nurse = nursesById.get(nurseId);
+            if (nurse == null) {
+                throw new ResponseStatusException(BAD_REQUEST, "Infermiere non trovato");
+            }
+            if (Boolean.FALSE.equals(nurse.getEnabled())) {
+                throw new ResponseStatusException(BAD_REQUEST, "Infermiere non abilitato");
+            }
         }
 
-        return nurse;
+        return nursesById;
     }
 
-    private DoctorEntity resolveDoctor(Long doctorId) {
-        if (doctorId == null) {
+    private List<TherapeuticPlanDoctorAssignmentEntity> buildDoctorAssignments(List<Long> doctorIds) {
+        Map<Long, DoctorEntity> doctorsById = resolveDoctorsById(doctorIds);
+        List<TherapeuticPlanDoctorAssignmentEntity> assignments = new ArrayList<>();
+
+        for (int index = 0; index < doctorIds.size(); index++) {
+            Long doctorId = doctorIds.get(index);
+            assignments.add(TherapeuticPlanDoctorAssignmentEntity.builder()
+                    .doctor(doctorsById.get(doctorId))
+                    .priorityIndex(index)
+                    .build());
+        }
+
+        return assignments;
+    }
+
+    private Map<Long, DoctorEntity> resolveDoctorsById(List<Long> doctorIds) {
+        if (doctorIds.isEmpty()) {
             throw new ResponseStatusException(BAD_REQUEST, "Medico obbligatorio");
         }
 
-        return doctorRepository.findById(doctorId)
-                .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Medico non trovato"));
+        Map<Long, DoctorEntity> doctorsById = doctorRepository.findAllById(doctorIds).stream()
+                .collect(Collectors.toMap(DoctorEntity::getId, Function.identity()));
+
+        for (Long doctorId : doctorIds) {
+            if (!doctorsById.containsKey(doctorId)) {
+                throw new ResponseStatusException(BAD_REQUEST, "Medico non trovato");
+            }
+        }
+
+        return doctorsById;
     }
 
     private List<EquipmentEntity> resolveEquipments(List<Long> equipmentIds, Long currentTherapeuticPlanId) {
         List<Long> normalizedEquipmentIds = normalizeEquipmentIds(equipmentIds);
         if (normalizedEquipmentIds.isEmpty()) {
-            throw new ResponseStatusException(BAD_REQUEST, "Selezionare almeno una attrezzatura disponibile");
+            return List.of();
         }
 
         Map<Long, EquipmentEntity> equipmentsById = equipmentRepository.findAllById(normalizedEquipmentIds).stream()
@@ -405,6 +511,53 @@ public class TherapeuticPlanService {
                         Collectors.toCollection(LinkedHashSet::new),
                         ArrayList::new
                 ));
+    }
+
+    private List<Long> normalizeProfessionalIds(List<Long> professionalIds, Long singleProfessionalId) {
+        LinkedHashSet<Long> normalizedIds = new LinkedHashSet<>();
+
+        if (professionalIds != null) {
+            professionalIds.stream()
+                    .filter(Objects::nonNull)
+                    .filter(currentId -> currentId > 0)
+                    .forEach(normalizedIds::add);
+        }
+
+        if (singleProfessionalId != null && singleProfessionalId > 0) {
+            normalizedIds.add(singleProfessionalId);
+        }
+
+        return new ArrayList<>(normalizedIds);
+    }
+
+    private Long normalizePrevalentProfessionalId(
+            List<Long> professionalIds,
+            Long prevalentProfessionalId,
+            Long legacyProfessionalId,
+            String requiredMessage,
+            String invalidMessage
+    ) {
+        if (professionalIds.isEmpty()) {
+            throw new ResponseStatusException(BAD_REQUEST, requiredMessage);
+        }
+
+        Long candidateId = prevalentProfessionalId != null ? prevalentProfessionalId : legacyProfessionalId;
+        if (candidateId == null) {
+            return professionalIds.get(0);
+        }
+
+        if (!professionalIds.contains(candidateId)) {
+            throw new ResponseStatusException(BAD_REQUEST, invalidMessage);
+        }
+
+        return candidateId;
+    }
+
+    private List<Long> reorderWithPrevalentFirst(List<Long> professionalIds, Long prevalentProfessionalId) {
+        List<Long> orderedIds = new ArrayList<>(professionalIds);
+        orderedIds.remove(prevalentProfessionalId);
+        orderedIds.add(0, prevalentProfessionalId);
+        return orderedIds;
     }
 
     private String normalizeFilter(String value) {
