@@ -887,6 +887,10 @@ export class TherapeuticPlanManageComponent implements OnInit {
   visitModalStep = 1;
   visitErrorMessage = '';
   visitForm: TherapeuticPlanVisitForm = this.createEmptyVisitForm();
+  private readonly visitSchemaArrayConfigCache = new Map<string, { hours: string[]; options: Array<{ value: string; label: string }> }>();
+  visitSchemaArrayHoursByKey: Record<string, string[]> = {};
+  visitSchemaArrayOptionsByKey: Record<string, Array<{ value: string; label: string }>> = {};
+  visitSchemaArrayCheckedByKey: Record<string, Record<string, boolean>> = {};
   visitSummaryModalOpen = false;
   visitSummaryModalStep = 1;
   visitSummarySelectedVisit: TherapeuticPlanVisitRecord | null = null;
@@ -1397,6 +1401,10 @@ export class TherapeuticPlanManageComponent implements OnInit {
     }
 
     if (this.useLegacyVisitSchemaLayout) {
+      if (this.visitModalStep > this.legacyVisitModalSteps) {
+        return 'therapeuticPlan.visits.modal.generatedJson.title';
+      }
+
       return this.visitModalStep === 1
         ? 'therapeuticPlan.visits.modal.step1.title'
         : 'therapeuticPlan.visits.modal.step2.title';
@@ -1415,6 +1423,10 @@ export class TherapeuticPlanManageComponent implements OnInit {
     }
 
     if (this.useLegacyVisitSchemaLayout) {
+      if (this.visitModalStep > this.legacyVisitModalSteps) {
+        return 'therapeuticPlan.visits.modal.generatedJson.description';
+      }
+
       return this.visitModalStep === 1
         ? 'therapeuticPlan.visits.modal.step1.description'
         : 'therapeuticPlan.visits.modal.step2.description';
@@ -1430,7 +1442,9 @@ export class TherapeuticPlanManageComponent implements OnInit {
       return 2;
     }
 
-    return this.useLegacyVisitSchemaLayout ? 2 : Math.max(1, 1 + this.visitSchemaFieldPages.length);
+    return this.useLegacyVisitSchemaLayout
+      ? this.legacyVisitModalSteps + this.visitSchemaFieldPages.length
+      : Math.max(1, 1 + this.visitSchemaFieldPages.length);
   }
 
   get isLastVisitModalStep(): boolean {
@@ -1821,11 +1835,16 @@ export class TherapeuticPlanManageComponent implements OnInit {
     this.visitSchemaRequired = this.visitVisibleSchemaFields
       .filter((field) => field.value?.required === true)
       .map((field) => field.key);
+    this.visitSchemaArrayConfigCache.clear();
+    this.visitSchemaArrayHoursByKey = {};
+    this.visitSchemaArrayOptionsByKey = {};
+    this.visitSchemaArrayCheckedByKey = {};
     // Inizializza i valori del form dinamico
     this.visitFormDynamic = {};
     for (const key of this.visitVisibleSchemaFields.map((field) => field.key)) {
       this.visitFormDynamic[key] = this.getInitialVisitSchemaFieldValue(key);
     }
+    this.refreshVisitSchemaArrayViews();
     this.syncVisitFormFromDynamic();
     this.visitModalOpen = true;
   }
@@ -2042,6 +2061,10 @@ export class TherapeuticPlanManageComponent implements OnInit {
     this.visitJsonSchemaAvailable = false;
     this.visitManualJsonEntries = [{ key: '', value: '' }];
     this.visitForm = this.createEmptyVisitForm();
+    this.visitSchemaArrayConfigCache.clear();
+    this.visitSchemaArrayHoursByKey = {};
+    this.visitSchemaArrayOptionsByKey = {};
+    this.visitSchemaArrayCheckedByKey = {};
   }
 
   goToNextVisitModalStep(): void {
@@ -2060,7 +2083,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
 
   saveVisit(): void {
     this.visitErrorMessage = '';
-    this.syncVisitFormFromDynamic();
+    this.syncVisitDynamicFromForm();
     if (!this.validateVisitBaseStep()) {
       return;
     }
@@ -2207,7 +2230,9 @@ export class TherapeuticPlanManageComponent implements OnInit {
     if (this.useLegacyVisitSchemaLayout) {
       return this.visitSummaryModalStep === 1
         ? 'therapeuticPlan.visits.preview.step1.title'
-        : 'therapeuticPlan.visits.preview.step2.title';
+        : (this.visitSummaryModalStep <= this.legacyVisitSummarySteps
+            ? 'therapeuticPlan.visits.preview.step2.title'
+            : 'therapeuticPlan.visits.preview.generatedJson.title');
     }
 
     return this.visitSummaryModalStep === 1
@@ -2225,7 +2250,9 @@ export class TherapeuticPlanManageComponent implements OnInit {
     if (this.useLegacyVisitSchemaLayout) {
       return this.visitSummaryModalStep === 1
         ? 'therapeuticPlan.visits.preview.step1.description'
-        : 'therapeuticPlan.visits.preview.step2.description';
+        : (this.visitSummaryModalStep <= this.legacyVisitSummarySteps
+            ? 'therapeuticPlan.visits.preview.step2.description'
+            : 'therapeuticPlan.visits.preview.generatedJson.description');
     }
 
     return this.visitSummaryModalStep === 1
@@ -2238,7 +2265,9 @@ export class TherapeuticPlanManageComponent implements OnInit {
       return 2;
     }
 
-    return this.useLegacyVisitSchemaLayout ? 2 : Math.max(1, 1 + this.visitSummarySchemaFieldPages.length);
+    return this.useLegacyVisitSchemaLayout
+      ? this.legacyVisitSummarySteps + this.visitSummarySchemaFieldPages.length
+      : Math.max(1, 1 + this.visitSummarySchemaFieldPages.length);
   }
 
   get isLastVisitSummaryModalStep(): boolean {
@@ -2253,8 +2282,22 @@ export class TherapeuticPlanManageComponent implements OnInit {
     return this.hasLegacyVisitSchemaLayout(this.resolveVisitSchemaFromPlan());
   }
 
+  get legacyVisitModalSteps(): number {
+    return 7;
+  }
+
+  get legacyVisitSummarySteps(): number {
+    return 3;
+  }
+
   get visitSchemaGeneratedFields(): TherapeuticPlanVisitSchemaField[] {
-    return this.visitVisibleSchemaFields.filter((field) => !this.isVisitSchemaBaseField(field.key));
+    return this.visitVisibleSchemaFields.filter((field) => {
+      if (this.isVisitSchemaBaseField(field.key) || this.isVisitSchemaManualField(field.key)) {
+        return false;
+      }
+
+      return !this.useLegacyVisitSchemaLayout || !this.isLegacyVisitSchemaField(field.key);
+    });
   }
 
   get visitSchemaFieldPages(): TherapeuticPlanVisitSchemaField[][] {
@@ -2262,6 +2305,10 @@ export class TherapeuticPlanManageComponent implements OnInit {
   }
 
   get currentVisitSchemaPageFields(): TherapeuticPlanVisitSchemaField[] {
+    if (this.useLegacyVisitSchemaLayout) {
+      return this.visitSchemaFieldPages[this.visitModalStep - this.legacyVisitModalSteps - 1] ?? [];
+    }
+
     return this.visitSchemaFieldPages[this.visitModalStep - 2] ?? [];
   }
 
@@ -2270,6 +2317,10 @@ export class TherapeuticPlanManageComponent implements OnInit {
   }
 
   get currentVisitSummarySchemaPageFields(): TherapeuticPlanVisitJsonEntry[] {
+    if (this.useLegacyVisitSchemaLayout) {
+      return this.visitSummarySchemaFieldPages[this.visitSummaryModalStep - this.legacyVisitSummarySteps - 1] ?? [];
+    }
+
     return this.visitSummarySchemaFieldPages[this.visitSummaryModalStep - 2] ?? [];
   }
 
@@ -2890,7 +2941,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
   }
 
   private validateVisitBaseStep(): boolean {
-    this.syncVisitFormFromDynamic();
+    this.syncVisitDynamicFromForm();
 
     if (!this.visitForm.date.trim()) {
       this.visitErrorMessage = `${this.translate('therapeuticPlan.visits.field.date')}: ${this.translate('crud.validation.required')}`;
@@ -2918,6 +2969,22 @@ export class TherapeuticPlanManageComponent implements OnInit {
       }
     }
 
+    for (const field of this.visitVisibleSchemaFields) {
+      if (!this.isVisitSchemaArrayField(field.key)) {
+        continue;
+      }
+
+      const rawValue = this.visitFormDynamic[field.key];
+      if (typeof rawValue !== 'string' || rawValue.trim().length === 0) {
+        continue;
+      }
+
+      if (this.parseVisitSchemaArrayValue(rawValue) === null) {
+        this.visitErrorMessage = `${this.getVisitSchemaFieldLabel(field.key)}: JSON array non valido`;
+        return false;
+      }
+    }
+
     return true;
   }
 
@@ -2926,6 +2993,24 @@ export class TherapeuticPlanManageComponent implements OnInit {
       || key === 'patientLastName'
       || key === 'duodopaTherapyStartDate'
       || key === 'date';
+  }
+
+  private isLegacyVisitSchemaField(key: string): boolean {
+    return key.startsWith('stomiaStatus.')
+      || key.startsWith('stomiaActions.')
+      || key.startsWith('pegjStatus.')
+      || key.startsWith('pegjActions.')
+      || key.startsWith('autonomyStatus.')
+      || key.startsWith('autonomyActions.');
+  }
+
+  private isVisitSchemaManualField(key: string): boolean {
+    return key === 'caregiver'
+      || key === 'clinicalCenter'
+      || key === 'neurologist'
+      || key === 'gastroenterologist'
+      || key === 'type'
+      || key === 'priority';
   }
 
   getVisitSchemaFieldLabel(key: string): string {
@@ -2977,15 +3062,62 @@ export class TherapeuticPlanManageComponent implements OnInit {
     return 'text';
   }
 
+  isVisitSchemaArrayField(key: string): boolean {
+    const schemaProperty = this.visitSchemaProperties[key];
+    return schemaProperty?.type === 'array' || (Array.isArray(schemaProperty?.type) && schemaProperty.type.includes('array'));
+  }
+
+  isVisitSchemaObservationMatrixField(key: string): boolean {
+    const items = this.getVisitSchemaArrayItems(key);
+    const properties = items?.properties;
+    return !!properties && typeof properties === 'object' && 'hour' in properties && 'status' in properties;
+  }
+
+  getVisitSchemaArrayStatusOptions(key: string): Array<{ value: string; label: string }> {
+    return this.getVisitSchemaArrayConfig(key).options;
+  }
+
+  getVisitSchemaArrayHours(key: string): string[] {
+    return this.getVisitSchemaArrayConfig(key).hours;
+  }
+
+  isVisitSchemaArrayCellChecked(key: string, hour: string, status: string): boolean {
+    return this.getVisitSchemaArrayEntries(key).some((entry) => entry.hour === hour && entry.status === status);
+  }
+
+  onVisitSchemaArrayCellChange(key: string, hour: string, status: string, checked: boolean): void {
+    const entries = this.getVisitSchemaArrayEntries(key)
+      .filter((entry) => !(entry.hour === hour && entry.status === status))
+      .filter((entry) => entry.hour !== hour || !checked);
+
+    if (checked) {
+      entries.push({ hour, status });
+    }
+
+    const sortedEntries = this.sortVisitSchemaArrayEntries(key, entries);
+    this.onVisitDynamicFieldChange(key, sortedEntries);
+  }
+
   onVisitDynamicFieldChange(key: string, value: unknown): void {
     this.visitFormDynamic[key] = value;
     this.assignVisitFormValue(key, value);
+    if (this.isVisitSchemaObservationMatrixField(key)) {
+      this.refreshVisitSchemaArrayView(key);
+    }
   }
 
   private syncVisitFormFromDynamic(): void {
     for (const key of Object.keys(this.visitFormDynamic)) {
       this.assignVisitFormValue(key, this.visitFormDynamic[key]);
     }
+  }
+
+  private syncVisitDynamicFromForm(): void {
+    for (const key of Object.keys(this.visitFormDynamic)) {
+      this.visitFormDynamic[key] = this.getVisitFormValue(key);
+    }
+
+    this.refreshVisitSchemaArrayViews();
   }
 
   private getVisitFormValue(key: string): unknown {
@@ -3048,8 +3180,12 @@ export class TherapeuticPlanManageComponent implements OnInit {
       return true;
     }
 
+    if (property.type === 'array') {
+      return true;
+    }
+
     if (Array.isArray(property.type)) {
-      return property.type.some((entry: unknown) => entry === 'string' || entry === 'number' || entry === 'boolean');
+      return property.type.some((entry: unknown) => entry === 'string' || entry === 'number' || entry === 'boolean' || entry === 'array');
     }
 
     return !property.type || property.type === 'string' || property.type === 'number' || property.type === 'boolean';
@@ -3057,6 +3193,18 @@ export class TherapeuticPlanManageComponent implements OnInit {
 
   private normalizeVisitSchemaFieldValue(key: string, value: unknown): unknown {
     const schemaProperty = this.visitSchemaProperties[key];
+    if (this.isVisitSchemaArrayField(key)) {
+      if (this.isVisitSchemaObservationMatrixField(key)) {
+        return this.getNormalizedVisitSchemaArrayEntries(value);
+      }
+
+      if (Array.isArray(value)) {
+        return JSON.stringify(value, null, 2);
+      }
+
+      return typeof value === 'string' ? value : '';
+    }
+
     if (schemaProperty?.type === 'boolean') {
       if (typeof value === 'boolean') {
         return value;
@@ -3114,6 +3262,24 @@ export class TherapeuticPlanManageComponent implements OnInit {
 
   private normalizeVisitSchemaPayloadValue(key: string, value: unknown): unknown {
     const schemaProperty = this.visitSchemaProperties[key];
+
+    if (this.isVisitSchemaArrayField(key)) {
+      if (Array.isArray(value)) {
+        return value;
+      }
+
+      if (typeof value === 'string') {
+        const trimmedValue = value.trim();
+        if (trimmedValue.length === 0) {
+          return [];
+        }
+
+        const parsedValue = this.parseVisitSchemaArrayValue(trimmedValue);
+        return parsedValue ?? trimmedValue;
+      }
+
+      return value;
+    }
 
     if (value === undefined) {
       return undefined;
@@ -3173,6 +3339,128 @@ export class TherapeuticPlanManageComponent implements OnInit {
     }
 
     return this.toVisitManualJsonDisplayValue(value) || this.translate('common.notAvailable');
+  }
+
+  private parseVisitSchemaArrayValue(rawValue: string): unknown[] | null {
+    try {
+      const parsedValue = JSON.parse(rawValue);
+      return Array.isArray(parsedValue) ? parsedValue : null;
+    } catch {
+      return null;
+    }
+  }
+
+  private getVisitSchemaArrayItems(key: string): any {
+    return this.visitSchemaProperties[key]?.items;
+  }
+
+  private getVisitSchemaArrayConfig(key: string): { hours: string[]; options: Array<{ value: string; label: string }> } {
+    const existingConfig = this.visitSchemaArrayConfigCache.get(key);
+    if (existingConfig) {
+      return existingConfig;
+    }
+
+    const items = this.getVisitSchemaArrayItems(key);
+    const statusProperty = items?.properties?.['status'];
+    const values = Array.isArray(statusProperty?.enum)
+      ? statusProperty.enum.filter((entry: unknown): entry is string => typeof entry === 'string')
+      : [];
+    const options = values.map((value: string) => ({
+      value,
+      label: this.getVisitSchemaArrayStatusLabel(statusProperty, value)
+    }));
+
+    const defaultHours = ['05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00'];
+    const existingHours = this.getNormalizedVisitSchemaArrayEntries(this.visitFormDynamic[key])
+      .map((entry) => entry.hour)
+      .filter((hour, index, valuesList) => hour.trim().length > 0 && valuesList.indexOf(hour) === index && !defaultHours.includes(hour));
+
+    const config = {
+      hours: [...defaultHours, ...existingHours],
+      options
+    };
+
+    this.visitSchemaArrayConfigCache.set(key, config);
+    return config;
+  }
+
+  private getVisitSchemaArrayStatusLabel(statusProperty: any, value: string): string {
+    const optionIndex = Array.isArray(statusProperty?.enum)
+      ? statusProperty.enum.findIndex((entry: unknown) => entry === value)
+      : -1;
+
+    if (optionIndex >= 0 && Array.isArray(statusProperty?.enumNames) && typeof statusProperty.enumNames[optionIndex] === 'string') {
+      return statusProperty.enumNames[optionIndex];
+    }
+
+    if (optionIndex >= 0 && Array.isArray(statusProperty?.enumTitles) && typeof statusProperty.enumTitles[optionIndex] === 'string') {
+      return statusProperty.enumTitles[optionIndex];
+    }
+
+    return value;
+  }
+
+  private getVisitSchemaArrayEntries(key: string): Array<{ hour: string; status: string }> {
+    return this.getNormalizedVisitSchemaArrayEntries(this.visitFormDynamic[key]);
+  }
+
+  private refreshVisitSchemaArrayViews(): void {
+    for (const field of this.visitVisibleSchemaFields) {
+      if (this.isVisitSchemaObservationMatrixField(field.key)) {
+        this.refreshVisitSchemaArrayView(field.key);
+      }
+    }
+  }
+
+  private refreshVisitSchemaArrayView(key: string): void {
+    const config = this.getVisitSchemaArrayConfig(key);
+    const entries = this.getVisitSchemaArrayEntries(key);
+    const checkedMap = entries.reduce<Record<string, boolean>>((accumulator, entry) => {
+      accumulator[`${entry.hour}__${entry.status}`] = true;
+      return accumulator;
+    }, {});
+
+    this.visitSchemaArrayHoursByKey[key] = config.hours;
+    this.visitSchemaArrayOptionsByKey[key] = config.options;
+    this.visitSchemaArrayCheckedByKey[key] = checkedMap;
+  }
+
+  private getNormalizedVisitSchemaArrayEntries(value: unknown): Array<{ hour: string; status: string }> {
+    const rawEntries = typeof value === 'string'
+      ? (this.parseVisitSchemaArrayValue(value) ?? [])
+      : Array.isArray(value)
+        ? value
+        : [];
+
+    return rawEntries
+      .filter((entry): entry is Record<string, unknown> => typeof entry === 'object' && entry !== null && !Array.isArray(entry))
+      .map((entry) => ({
+        hour: typeof entry['hour'] === 'string' ? entry['hour'] : '',
+        status: typeof entry['status'] === 'string' ? entry['status'] : ''
+      }))
+      .filter((entry) => entry.hour.trim().length > 0 && entry.status.trim().length > 0);
+  }
+
+  private sortVisitSchemaArrayEntries(
+    key: string,
+    entries: Array<{ hour: string; status: string }>
+  ): Array<{ hour: string; status: string }> {
+    const hourOrder = this.getVisitSchemaArrayHours(key);
+    const statusOrder = this.getVisitSchemaArrayStatusOptions(key).map((option) => option.value);
+
+    return [...entries].sort((left, right) => {
+      const hourDelta = this.getSortIndex(hourOrder, left.hour) - this.getSortIndex(hourOrder, right.hour);
+      if (hourDelta !== 0) {
+        return hourDelta;
+      }
+
+      return this.getSortIndex(statusOrder, left.status) - this.getSortIndex(statusOrder, right.status);
+    });
+  }
+
+  private getSortIndex(values: string[], target: string): number {
+    const index = values.indexOf(target);
+    return index >= 0 ? index : Number.MAX_SAFE_INTEGER;
   }
 
   private flattenVisitSchemaProperties(
@@ -3403,9 +3691,12 @@ export class TherapeuticPlanManageComponent implements OnInit {
     const coverPages = this.paginateVisitPrintPages(visits);
     const patientHeader = this.visitPatientHeader;
     const detailVisit = visits[0] ?? null;
+    const detailSchemaPages = detailVisit
+      ? this.getVisitPrintSchemaFieldPages(detailVisit).filter((page) => page.length > 0)
+      : [];
     const detailPagesCount = detailVisit
       ? (this.hasVisitProjectJsonSchema
-          ? (this.useLegacyVisitSchemaLayout ? 1 : Math.max(1, this.getVisitPrintSchemaFieldPages(detailVisit).length))
+          ? (this.useLegacyVisitSchemaLayout ? 1 + detailSchemaPages.length : Math.max(1, detailSchemaPages.length))
           : 1)
       : 0;
     const totalPages = coverPages.length + detailPagesCount;
@@ -3415,10 +3706,17 @@ export class TherapeuticPlanManageComponent implements OnInit {
     const statusMarkup = detailVisit
       ? this.hasVisitProjectJsonSchema
         ? (this.useLegacyVisitSchemaLayout
-            ? this.buildVisitLegacySchemaPrintPage(detailVisit, coverPages.length + 1, totalPages)
-            : this.getVisitPrintSchemaFieldPages(detailVisit)
-                .map((pageEntries, pageIndex) => this.buildVisitSchemaPrintPage(detailVisit, pageEntries, coverPages.length + pageIndex + 1, totalPages))
-                .join(''))
+            ? [
+                this.buildVisitLegacySchemaPrintPage(detailVisit, coverPages.length + 1, totalPages),
+                ...detailSchemaPages.map((pageEntries, pageIndex) =>
+                  this.buildVisitSchemaPrintPage(detailVisit, pageEntries, coverPages.length + pageIndex + 2, totalPages)
+                )
+              ].join('')
+            : (detailSchemaPages.length > 0
+                ? detailSchemaPages
+                    .map((pageEntries, pageIndex) => this.buildVisitSchemaPrintPage(detailVisit, pageEntries, coverPages.length + pageIndex + 1, totalPages))
+                    .join('')
+                : this.buildVisitSchemaPrintPage(detailVisit, [], coverPages.length + 1, totalPages)))
         : this.buildVisitManualJsonPrintPage(detailVisit, coverPages.length + 1, totalPages)
       : '';
     const printMarkup = `${coverMarkup}${statusMarkup}`;

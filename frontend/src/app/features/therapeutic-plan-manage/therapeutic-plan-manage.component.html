@@ -984,7 +984,7 @@
           <table class="peg-history-list-table movement-list-table">
             <thead>
               <tr>
-                <th>{{ translate('therapeuticPlan.visits.field.duodopaTherapyStartDate') }}</th>
+                 <th>{{ translate('therapeuticPlan.visits.field.date') }}</th>
                 <th>{{ translate('therapeuticPlan.visits.field.caregiver') }}</th>
                 <th>{{ translate('therapeuticPlan.visits.field.clinicalCenter') }}</th>
                 <th>{{ translate('therapeuticPlan.visits.field.neurologist') }}</th>
@@ -996,7 +996,7 @@
             </thead>
             <tbody>
               <tr *ngFor="let entry of visitEntries">
-                <td class="peg-history-list-date">{{ formatDate(entry.duodopaTherapyStartDate) }}</td>
+                <td class="peg-history-list-date">{{ formatDate(entry.date) }}</td>
                 <td>{{ getVisitCaregiverLabel(entry.caregiver) }}</td>
                 <td>{{ entry.clinicalCenter }}</td>
                 <td>{{ entry.neurologist }}</td>
@@ -1386,7 +1386,10 @@
       </ng-template>
     </section>
 
-    <section *ngIf="hasVisitProjectJsonSchema && !useLegacyVisitSchemaLayout && visitSummaryModalStep === 2" class="visit-manual-json-shell">
+    <section
+      *ngIf="hasVisitProjectJsonSchema && ((!useLegacyVisitSchemaLayout && visitSummaryModalStep === 2) || (useLegacyVisitSchemaLayout && visitSummaryModalStep > legacyVisitSummarySteps))"
+      class="visit-manual-json-shell"
+    >
       <div *ngIf="currentVisitSummarySchemaPageFields.length > 0; else visitSchemaSummaryEmpty" class="visit-manual-json-summary-list">
         <div *ngFor="let entry of currentVisitSummarySchemaPageFields" class="visit-manual-json-summary-item">
           <strong>{{ entry.key }}</strong>
@@ -1613,7 +1616,7 @@
       </article>
     </section>
 
-    <section *ngIf="hasVisitProjectJsonSchema && useLegacyVisitSchemaLayout && (visitSummaryModalStep === 2 || visitSummaryModalStep === 3)" class="visit-summary-three-column-grid">
+    <section *ngIf="hasVisitProjectJsonSchema && useLegacyVisitSchemaLayout && visitSummaryModalStep === 3" class="visit-summary-three-column-grid">
       <article class="visit-status-panel visit-status-panel-blue">
         <div class="visit-barra-stomia">
           <span class="visit-barra-title">{{ translate('therapeuticPlan.visits.status.stomia.title') }}</span>
@@ -2032,19 +2035,51 @@
       </div>
     </section>
 
-    <section *ngIf="visitJsonSchemaAvailable && !useLegacyVisitSchemaLayout && visitModalStep === 2" class="visit-manual-json-shell">
+    <section *ngIf="visitJsonSchemaAvailable && ((!useLegacyVisitSchemaLayout && visitModalStep === 2) || (useLegacyVisitSchemaLayout && visitModalStep > legacyVisitModalSteps))" class="visit-manual-json-shell">
       <div *ngIf="currentVisitSchemaPageFields.length > 0; else visitGeneratedSchemaEmpty" class="visit-manual-json-summary-list">
         <ng-container *ngFor="let field of currentVisitSchemaPageFields; let index = index">
           <p *ngIf="shouldRenderVisitSchemaSectionTitle(currentVisitSchemaPageFields, index)" class="visit-manual-json-hint">
             {{ getVisitSchemaSectionTitle(field.key) }}
           </p>
-          <label class="alert-modal-field" [ngClass]="{'alert-modal-field-full': visitSchemaProperties[field.key]?.fullWidth}">
+          <div *ngIf="!visitSchemaProperties[field.key]?.enum && isVisitSchemaObservationMatrixField(field.key)" class="visit-schema-block visit-schema-block-full">
+            <div class="visit-schema-block-title">{{ getVisitSchemaFieldLabel(field.key) }}</div>
+            <div class="visit-schema-matrix-field">
+              <div class="visit-schema-matrix-legend">
+                <div *ngFor="let option of visitSchemaArrayOptionsByKey[field.key] ?? []" class="visit-schema-matrix-legend-row">
+                  <strong>{{ option.value }}</strong>
+                  <span>{{ option.label }}</span>
+                </div>
+              </div>
+              <div class="visit-schema-matrix-scroll">
+                <div class="visit-schema-matrix-grid">
+                  <div class="visit-schema-matrix-header"></div>
+                  <div *ngFor="let hour of visitSchemaArrayHoursByKey[field.key] ?? []" class="visit-schema-matrix-header">{{ hour }}</div>
+
+                  <ng-container *ngFor="let option of visitSchemaArrayOptionsByKey[field.key] ?? []">
+                    <div class="visit-schema-matrix-row-label">{{ option.value }}</div>
+                    <label *ngFor="let hour of visitSchemaArrayHoursByKey[field.key] ?? []" class="visit-schema-matrix-cell">
+                      <input
+                        type="checkbox"
+                        [checked]="visitSchemaArrayCheckedByKey[field.key][hour + '__' + option.value] === true"
+                        (change)="onVisitSchemaArrayCellChange(field.key, hour, option.value, $any($event.target).checked)"
+                      />
+                    </label>
+                  </ng-container>
+                </div>
+              </div>
+            </div>
+          </div>
+          <label *ngIf="visitSchemaProperties[field.key]?.enum || !isVisitSchemaObservationMatrixField(field.key)" class="alert-modal-field" [ngClass]="{'alert-modal-field-full': visitSchemaProperties[field.key]?.fullWidth}">
             {{ getVisitSchemaFieldLabel(field.key) }}
             <input *ngIf="!visitSchemaProperties[field.key]?.enum && visitSchemaProperties[field.key]?.type === 'boolean'"
                    type="checkbox"
                    [ngModel]="visitFormDynamic[field.key]"
                    (ngModelChange)="onVisitDynamicFieldChange(field.key, $event)" />
-            <input *ngIf="!visitSchemaProperties[field.key]?.enum && visitSchemaProperties[field.key]?.type !== 'boolean'"
+            <textarea *ngIf="!visitSchemaProperties[field.key]?.enum && isVisitSchemaArrayField(field.key) && !isVisitSchemaObservationMatrixField(field.key)"
+                      [ngModel]="visitFormDynamic[field.key]"
+                      (ngModelChange)="onVisitDynamicFieldChange(field.key, $event)"
+                      rows="8"></textarea>
+            <input *ngIf="!visitSchemaProperties[field.key]?.enum && visitSchemaProperties[field.key]?.type !== 'boolean' && !isVisitSchemaArrayField(field.key)"
                    [ngModel]="visitFormDynamic[field.key]"
                    (ngModelChange)="onVisitDynamicFieldChange(field.key, $event)"
                    [type]="getVisitSchemaInputType(field.key)"
@@ -2147,7 +2182,7 @@
       </article>
     </section>
 
-    <section *ngIf="visitJsonSchemaAvailable && useLegacyVisitSchemaLayout && (visitModalStep === 2 || visitModalStep === 5)" class="visit-status-step-shell">
+    <section *ngIf="visitJsonSchemaAvailable && useLegacyVisitSchemaLayout && visitModalStep === 5" class="visit-status-step-shell">
       <article class="visit-status-panel visit-status-panel-blue">
         <header class="visit-status-panel-header">{{ translate('therapeuticPlan.visits.status.stomia.title') }}</header>
         <div class="visit-status-panel-body visit-status-panel-body-compact">
@@ -2184,7 +2219,7 @@
       </article>
     </section>
 
-    <section *ngIf="visitJsonSchemaAvailable && useLegacyVisitSchemaLayout && (visitModalStep === 2 || visitModalStep === 3)" class="visit-status-step-shell">
+    <section *ngIf="visitJsonSchemaAvailable && useLegacyVisitSchemaLayout && visitModalStep === 3" class="visit-status-step-shell">
       <article class="visit-status-panel visit-status-panel-red">
         <header class="visit-status-panel-header">{{ translate('therapeuticPlan.visits.status.pegj.title') }}</header>
         <div class="visit-status-panel-body">
@@ -2294,7 +2329,7 @@
       </article>
     </section>
 
-    <section *ngIf="visitJsonSchemaAvailable && useLegacyVisitSchemaLayout && (visitModalStep === 2 || visitModalStep === 6)" class="visit-status-step-shell">
+    <section *ngIf="visitJsonSchemaAvailable && useLegacyVisitSchemaLayout && visitModalStep === 6" class="visit-status-step-shell">
       <article class="visit-status-panel visit-status-panel-red">
         <header class="visit-status-panel-header">{{ translate('therapeuticPlan.visits.status.pegj.title') }}</header>
         <div class="visit-status-panel-body visit-status-panel-body-compact">
@@ -2361,7 +2396,7 @@
       </article>
     </section>
 
-    <section *ngIf="visitJsonSchemaAvailable && useLegacyVisitSchemaLayout && (visitModalStep === 2 || visitModalStep === 4)" class="visit-status-step-shell">
+    <section *ngIf="visitJsonSchemaAvailable && useLegacyVisitSchemaLayout && visitModalStep === 4" class="visit-status-step-shell">
       <article class="visit-status-panel visit-status-panel-blue">
         <header class="visit-status-panel-header">{{ translate('therapeuticPlan.visits.status.autonomy.title') }}</header>
         <div class="visit-status-panel-body">
@@ -2385,7 +2420,7 @@
       </article>
     </section>
 
-    <section *ngIf="visitJsonSchemaAvailable && useLegacyVisitSchemaLayout && (visitModalStep === 2 || visitModalStep === 7)" class="visit-status-step-shell">
+    <section *ngIf="visitJsonSchemaAvailable && useLegacyVisitSchemaLayout && visitModalStep === 7" class="visit-status-step-shell">
       <article class="visit-status-panel visit-status-panel-blue">
         <header class="visit-status-panel-header">{{ translate('therapeuticPlan.visits.status.autonomy.title') }}</header>
         <div class="visit-status-panel-body visit-status-panel-body-compact">
