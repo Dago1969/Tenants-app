@@ -1378,7 +1378,17 @@
       <div *ngIf="getVisitManualJsonSummaryEntries(visit).length > 0; else visitManualJsonEmpty" class="visit-manual-json-summary-list">
         <div *ngFor="let entry of getVisitManualJsonSummaryEntries(visit)" class="visit-manual-json-summary-item">
           <strong>{{ entry.key }}</strong>
-          <span>{{ entry.value || translate('common.notAvailable') }}</span>
+          <ng-container *ngIf="getManualJsonTableRows(entry.value); else rawJson">
+            <table class="visit-manual-json-table">
+              <thead>
+                <tr><th>Ora</th><th>Stato</th></tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of getManualJsonTableRows(entry.value)"><td>{{ row.hour }}</td><td>{{ row.status }}</td></tr>
+              </tbody>
+            </table>
+          </ng-container>
+          <ng-template #rawJson><span>{{ entry.value || translate('common.notAvailable') }}</span></ng-template>
         </div>
       </div>
       <ng-template #visitManualJsonEmpty>
@@ -1393,7 +1403,36 @@
       <div *ngIf="currentVisitSummarySchemaPageFields.length > 0; else visitSchemaSummaryEmpty" class="visit-manual-json-summary-list">
         <div *ngFor="let entry of currentVisitSummarySchemaPageFields" class="visit-manual-json-summary-item">
           <strong>{{ entry.key }}</strong>
-          <span>{{ entry.value || translate('common.notAvailable') }}</span>
+          <ng-container *ngIf="getVisitSchemaSummaryMatrix(entry) as matrix; else rawSchemaEntry">
+            <div class="visit-schema-matrix-scroll">
+              <table class="visit-schema-summary-table">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th *ngFor="let hour of matrix.hours">{{ hour }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let option of matrix.options">
+                    <th>{{ option.value }}</th>
+                    <td *ngFor="let hour of matrix.hours" class="visit-schema-summary-checkbox-cell">
+                      <input type="checkbox" [checked]="matrix.checkedMap[hour + '__' + option.value] === true" disabled />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </ng-container>
+          <ng-template #rawSchemaEntry>
+            <ng-container *ngIf="getManualJsonTableRows(entry.rawValue ?? entry.value); else rawSchemaJson">
+              <table class="visit-manual-json-table">
+                <tbody>
+                  <tr *ngFor="let row of getManualJsonTableRows(entry.rawValue ?? entry.value)"><td>{{ row.hour }}</td><td>{{ row.status }}</td></tr>
+                </tbody>
+              </table>
+            </ng-container>
+          </ng-template>
+          <ng-template #rawSchemaJson><span>{{ entry.value || translate('common.notAvailable') }}</span></ng-template>
         </div>
       </div>
       <ng-template #visitSchemaSummaryEmpty>

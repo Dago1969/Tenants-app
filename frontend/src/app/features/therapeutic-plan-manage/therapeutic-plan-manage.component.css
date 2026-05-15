@@ -670,6 +670,37 @@
   accent-color: #2368cc;
 }
 
+.visit-schema-summary-table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+}
+
+.visit-schema-summary-table th,
+.visit-schema-summary-table td {
+  padding: 8px 10px;
+  text-align: center;
+  border-bottom: 1px solid #e4edf8;
+}
+
+.visit-schema-summary-table th {
+  color: #17365f;
+  font-size: 0.95rem;
+  font-weight: 700;
+  background: #f8fbff;
+}
+
+.visit-schema-summary-table tbody th {
+  text-align: left;
+  white-space: nowrap;
+}
+
+.visit-schema-summary-checkbox-cell input {
+  width: 18px;
+  height: 18px;
+  accent-color: #2368cc;
+}
+
 .resource-list-item strong,
 .resource-list-item span {
   display: block;

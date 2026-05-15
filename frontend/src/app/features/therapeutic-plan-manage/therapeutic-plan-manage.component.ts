@@ -278,6 +278,15 @@ interface TherapeuticPlanVisitForm {
 interface TherapeuticPlanVisitJsonEntry {
   key: string;
   value: string;
+  rawValue?: unknown;
+  schemaKey?: string;
+  sectionTitle?: string;
+}
+
+interface TherapeuticPlanVisitSchemaMatrixView {
+  hours: string[];
+  options: Array<{ value: string; label: string }>;
+  checkedMap: Record<string, boolean>;
 }
 
 interface TherapeuticPlanVisitSchemaField {
@@ -2291,7 +2300,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
   }
 
   get visitSchemaGeneratedFields(): TherapeuticPlanVisitSchemaField[] {
-    return this.visitVisibleSchemaFields.filter((field) => {
+    return this.getResolvedVisitVisibleSchemaFields().filter((field) => {
       if (this.isVisitSchemaBaseField(field.key) || this.isVisitSchemaManualField(field.key)) {
         return false;
       }
@@ -2325,7 +2334,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
   }
 
   getVisitSchemaSectionTitle(key: string): string {
-    const schemaProperty = this.visitSchemaProperties[key];
+    const schemaProperty = this.getResolvedVisitSchemaProperties()[key];
     return typeof schemaProperty?.sectionTitle === 'string' ? schemaProperty.sectionTitle : '';
   }
 
@@ -2354,6 +2363,35 @@ export class TherapeuticPlanManageComponent implements OnInit {
 
   hasVisitActionSelection(selectedValue: string, optionValue: string): boolean {
     return selectedValue === optionValue;
+  }
+
+  /**
+   * Se il valore è un array di oggetti {hour, status}, restituisce una struttura tabellare per il template.
+   * Altrimenti restituisce null.
+   */
+  getManualJsonTableRows(value: unknown): Array<{ hour: string; status: string }> | null {
+    if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object' && value[0] !== null && 'hour' in value[0] && 'status' in value[0]) {
+      return (value as Array<{ hour: string; status: string }>).map((row) => ({
+        hour: String(row.hour ?? ''),
+        status: String(row.status ?? '')
+      }));
+    }
+
+    if (typeof value === 'string') {
+      try {
+        const parsedRows = JSON.parse(value);
+        if (Array.isArray(parsedRows) && parsedRows.length > 0 && typeof parsedRows[0] === 'object' && parsedRows[0] !== null && 'hour' in parsedRows[0] && 'status' in parsedRows[0]) {
+          return parsedRows.map((row: any) => ({
+            hour: String(row.hour ?? ''),
+            status: String(row.status ?? '')
+          }));
+        }
+      } catch {
+        return null;
+      }
+    }
+
+    return null;
   }
 
   getVisitManualJsonSummaryEntries(visit: TherapeuticPlanVisitRecord): TherapeuticPlanVisitJsonEntry[] {
@@ -3014,7 +3052,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
   }
 
   getVisitSchemaFieldLabel(key: string): string {
-    const schemaProperty = this.visitSchemaProperties[key];
+    const schemaProperty = this.getResolvedVisitSchemaProperties()[key];
     if (schemaProperty && typeof schemaProperty.title === 'string' && schemaProperty.title.trim().length > 0) {
       return schemaProperty.title.trim();
     }
@@ -3027,7 +3065,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
   }
 
   getVisitSchemaOptionLabel(key: string, option: unknown): string {
-    const schemaProperty = this.visitSchemaProperties[key];
+    const schemaProperty = this.getResolvedVisitSchemaProperties()[key];
     const optionIndex = Array.isArray(schemaProperty?.enum)
       ? schemaProperty.enum.findIndex((entry: unknown) => entry === option)
       : -1;
@@ -3063,7 +3101,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
   }
 
   isVisitSchemaArrayField(key: string): boolean {
-    const schemaProperty = this.visitSchemaProperties[key];
+    const schemaProperty = this.getResolvedVisitSchemaProperties()[key];
     return schemaProperty?.type === 'array' || (Array.isArray(schemaProperty?.type) && schemaProperty.type.includes('array'));
   }
 
@@ -3079,6 +3117,10 @@ export class TherapeuticPlanManageComponent implements OnInit {
 
   getVisitSchemaArrayHours(key: string): string[] {
     return this.getVisitSchemaArrayConfig(key).hours;
+  }
+
+  getVisitSchemaSummaryMatrix(entry: TherapeuticPlanVisitJsonEntry): TherapeuticPlanVisitSchemaMatrixView | null {
+    return this.getVisitSchemaMatrixView(entry.schemaKey, entry.rawValue ?? entry.value);
   }
 
   isVisitSchemaArrayCellChecked(key: string, hour: string, status: string): boolean {
@@ -3252,7 +3294,9 @@ export class TherapeuticPlanManageComponent implements OnInit {
 
     return this.visitSchemaGeneratedFields.map((field) => ({
       key: this.getVisitSchemaFieldLabel(field.key),
-      value: this.getVisitSchemaSummaryValue(selectedVisit, field.key)
+      value: this.getVisitSchemaSummaryValue(selectedVisit, field.key),
+      rawValue: selectedVisit.manualJsonData ? this.getVisitValueByPath(selectedVisit.manualJsonData, field.key) : undefined,
+      schemaKey: field.key
     }));
   }
 
@@ -3325,7 +3369,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
       return this.translate('common.notAvailable');
     }
 
-    const schemaProperty = this.visitSchemaProperties[key];
+    const schemaProperty = this.getResolvedVisitSchemaProperties()[key];
     if (schemaProperty?.enum) {
       return this.getVisitSchemaOptionLabel(key, value);
     }
@@ -3351,7 +3395,28 @@ export class TherapeuticPlanManageComponent implements OnInit {
   }
 
   private getVisitSchemaArrayItems(key: string): any {
-    return this.visitSchemaProperties[key]?.items;
+    return this.getResolvedVisitSchemaProperties()[key]?.items;
+  }
+
+  private getVisitSchemaMatrixView(
+    schemaKey: string | undefined,
+    value: unknown
+  ): TherapeuticPlanVisitSchemaMatrixView | null {
+    if (!schemaKey || !this.isVisitSchemaObservationMatrixField(schemaKey)) {
+      return null;
+    }
+
+    const config = this.buildVisitSchemaArrayConfig(schemaKey, value);
+    const checkedMap = this.getNormalizedVisitSchemaArrayEntries(value).reduce<Record<string, boolean>>((accumulator, entry) => {
+      accumulator[`${entry.hour}__${entry.status}`] = true;
+      return accumulator;
+    }, {});
+
+    return {
+      hours: config.hours,
+      options: config.options,
+      checkedMap
+    };
   }
 
   private getVisitSchemaArrayConfig(key: string): { hours: string[]; options: Array<{ value: string; label: string }> } {
@@ -3359,6 +3424,14 @@ export class TherapeuticPlanManageComponent implements OnInit {
     if (existingConfig) {
       return existingConfig;
     }
+
+    const config = this.buildVisitSchemaArrayConfig(key, this.visitFormDynamic[key]);
+
+    this.visitSchemaArrayConfigCache.set(key, config);
+    return config;
+  }
+
+  private buildVisitSchemaArrayConfig(key: string, value: unknown): { hours: string[]; options: Array<{ value: string; label: string }> } {
 
     const items = this.getVisitSchemaArrayItems(key);
     const statusProperty = items?.properties?.['status'];
@@ -3371,17 +3444,14 @@ export class TherapeuticPlanManageComponent implements OnInit {
     }));
 
     const defaultHours = ['05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00'];
-    const existingHours = this.getNormalizedVisitSchemaArrayEntries(this.visitFormDynamic[key])
+    const existingHours = this.getNormalizedVisitSchemaArrayEntries(value)
       .map((entry) => entry.hour)
       .filter((hour, index, valuesList) => hour.trim().length > 0 && valuesList.indexOf(hour) === index && !defaultHours.includes(hour));
 
-    const config = {
+    return {
       hours: [...defaultHours, ...existingHours],
       options
     };
-
-    this.visitSchemaArrayConfigCache.set(key, config);
-    return config;
   }
 
   private getVisitSchemaArrayStatusLabel(statusProperty: any, value: string): string {
@@ -3512,6 +3582,33 @@ export class TherapeuticPlanManageComponent implements OnInit {
     }
 
     return '';
+  }
+
+  private getResolvedVisitVisibleSchemaFields(): TherapeuticPlanVisitSchemaField[] {
+    if (this.visitVisibleSchemaFields.length > 0) {
+      return this.visitVisibleSchemaFields;
+    }
+
+    const schema = this.resolveVisitSchemaFromPlan();
+    if (!schema) {
+      return [];
+    }
+
+    return this.flattenVisitSchemaProperties(
+      this.getVisitSchemaRootProperties(schema),
+      this.getVisitSchemaRequiredFields(schema)
+    );
+  }
+
+  private getResolvedVisitSchemaProperties(): Record<string, any> {
+    if (Object.keys(this.visitSchemaProperties).length > 0) {
+      return this.visitSchemaProperties;
+    }
+
+    return this.getResolvedVisitVisibleSchemaFields().reduce<Record<string, any>>((accumulator, field) => {
+      accumulator[field.key] = field.value;
+      return accumulator;
+    }, {});
   }
 
   private getVisitValueByPath(source: Record<string, unknown>, path: string): unknown {
@@ -3691,12 +3788,15 @@ export class TherapeuticPlanManageComponent implements OnInit {
     const coverPages = this.paginateVisitPrintPages(visits);
     const patientHeader = this.visitPatientHeader;
     const detailVisit = visits[0] ?? null;
+    const legacyDetailPages = detailVisit && this.hasVisitProjectJsonSchema && this.useLegacyVisitSchemaLayout
+      ? this.buildVisitLegacySchemaPrintPages(detailVisit)
+      : [];
     const detailSchemaPages = detailVisit
       ? this.getVisitPrintSchemaFieldPages(detailVisit).filter((page) => page.length > 0)
       : [];
     const detailPagesCount = detailVisit
       ? (this.hasVisitProjectJsonSchema
-          ? (this.useLegacyVisitSchemaLayout ? 1 + detailSchemaPages.length : Math.max(1, detailSchemaPages.length))
+          ? (this.useLegacyVisitSchemaLayout ? legacyDetailPages.length + detailSchemaPages.length : Math.max(1, detailSchemaPages.length))
           : 1)
       : 0;
     const totalPages = coverPages.length + detailPagesCount;
@@ -3707,17 +3807,17 @@ export class TherapeuticPlanManageComponent implements OnInit {
       ? this.hasVisitProjectJsonSchema
         ? (this.useLegacyVisitSchemaLayout
             ? [
-                this.buildVisitLegacySchemaPrintPage(detailVisit, coverPages.length + 1, totalPages),
-                ...detailSchemaPages.map((pageEntries, pageIndex) =>
-                  this.buildVisitSchemaPrintPage(detailVisit, pageEntries, coverPages.length + pageIndex + 2, totalPages)
+                ...legacyDetailPages,
+                ...detailSchemaPages.map((pageEntries) =>
+                  this.buildVisitSchemaPrintPage(detailVisit, pageEntries, 0, totalPages)
                 )
               ].join('')
             : (detailSchemaPages.length > 0
                 ? detailSchemaPages
-                    .map((pageEntries, pageIndex) => this.buildVisitSchemaPrintPage(detailVisit, pageEntries, coverPages.length + pageIndex + 1, totalPages))
+                    .map((pageEntries) => this.buildVisitSchemaPrintPage(detailVisit, pageEntries, 0, totalPages))
                     .join('')
-                : this.buildVisitSchemaPrintPage(detailVisit, [], coverPages.length + 1, totalPages)))
-        : this.buildVisitManualJsonPrintPage(detailVisit, coverPages.length + 1, totalPages)
+                : this.buildVisitSchemaPrintPage(detailVisit, [], 0, totalPages)))
+        : this.buildVisitManualJsonPrintPage(detailVisit, 0, totalPages)
       : '';
     const printMarkup = `${coverMarkup}${statusMarkup}`;
 
@@ -3753,20 +3853,22 @@ export class TherapeuticPlanManageComponent implements OnInit {
       .visit-list-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
       .visit-list-table th, .visit-list-table td { border: 1px solid #cfcfcf; padding: 12px 14px; text-align: left; vertical-align: top; font-size: 14px; }
       .visit-list-table th { background: #f3f3f3; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; }
-      .status-page-title { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; margin: 0 0 16px; }
-      .status-page-title h2 { margin: 0; font-size: 30px; font-weight: 800; }
-      .status-page-subtitle { margin: 0 0 4px; color: #444; font-size: 15px; }
-      .status-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+      .status-page-title { display: flex; justify-content: flex-start; align-items: baseline; gap: 12px; margin: 0 0 10px; }
+      .status-page-title h2 { margin: 0; font-size: 24px; font-weight: 800; }
+      .status-page-subtitle { margin: 0 0 2px; color: #444; font-size: 13px; }
+      .status-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
       .status-grid + .status-grid { margin-top: 18px; }
+      .legacy-columns-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-items: start; margin-top: 8px; }
       .status-panel { border: 2px solid #de9090; min-height: 100%; }
-      .status-panel-header { padding: 10px 12px; color: #fff; font-size: 15px; font-weight: 800; text-align: center; text-transform: uppercase; }
+      .status-panel { break-inside: avoid; page-break-inside: avoid; }
+      .status-panel-header { padding: 8px 10px; color: #fff; font-size: 13px; font-weight: 800; text-align: center; text-transform: uppercase; }
       .status-panel-header.blue { background: #2d4f91; }
       .status-panel-header.red { background: #d85d5d; }
-      .status-panel-body { padding: 10px 12px 12px; }
-      .status-group { margin-bottom: 14px; }
+      .status-panel-body { padding: 8px 10px 10px; }
+      .status-group { margin-bottom: 10px; }
       .status-group:last-child { margin-bottom: 0; }
-      .status-group-title { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 800; text-align: center; }
-      .status-options { display: grid; gap: 8px; }
+      .status-group-title { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 800; text-align: center; }
+      .status-options { display: grid; gap: 6px; }
       .status-options.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .status-options.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .status-options.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -3790,6 +3892,20 @@ export class TherapeuticPlanManageComponent implements OnInit {
       .status-autonomy-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; width: 100%; }
       .status-autonomy-choice { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 2px; min-height: 34px; padding: 2px 4px; font-size: 11px; text-align: center; white-space: normal; overflow-wrap: anywhere; }
       .status-autonomy-choice-label { line-height: 1.1; }
+      .visit-json-print-sections { display: grid; gap: 18px; margin-top: 8px; }
+      .visit-json-print-section { display: grid; gap: 10px; }
+      .visit-json-print-section-title { margin: 0; color: #49627d; font-size: 18px; font-weight: 700; }
+      .visit-json-print-field-title { margin: 0; color: #203c66; font-size: 14px; font-weight: 700; }
+      .visit-json-print-matrix-layout { display: grid; grid-template-columns: minmax(160px, 190px) minmax(0, 1fr); gap: 12px; align-items: start; }
+      .visit-json-print-legend { display: grid; gap: 8px; padding: 8px 10px; border: 1px solid #dbe6f4; border-radius: 12px; background: #f8fbff; }
+      .visit-json-print-legend-row { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 8px; align-items: start; color: #203c66; font-size: 12px; }
+      .visit-json-print-legend-row strong { color: #264d7e; }
+      .visit-json-print-value { padding: 10px 12px; border: 1px solid #dbe6f4; border-radius: 12px; background: #f8fbff; color: #203c66; font-size: 14px; white-space: pre-wrap; word-break: break-word; }
+      .visit-json-matrix-print-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+      .visit-json-matrix-print-table th, .visit-json-matrix-print-table td { border: 1px solid #cfcfcf; padding: 6px 4px; text-align: center; vertical-align: middle; font-size: 12px; }
+      .visit-json-matrix-print-table thead th { background: #f3f3f3; font-weight: 700; }
+      .visit-json-matrix-print-table tbody th { background: #fafafa; font-weight: 700; text-align: left; }
+      .visit-json-matrix-checkbox-cell { font-size: 16px; line-height: 1; }
       @media print {
         .page { border: none; }
       }
@@ -3811,7 +3927,6 @@ export class TherapeuticPlanManageComponent implements OnInit {
     return `<section class="page">
       <h1 class="title">${this.escapeHtml(this.translate('therapeuticPlan.visits.print.coverTitle'))}</h1>
       <div class="page-meta">
-        <span>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.pageLabel'))} ${pageNumber} / ${totalPages}</span>
         <span>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.generatedOn'))}: ${this.escapeHtml(this.formatDate(this.getTodayDateInputValue()))}</span>
       </div>
       <p class="subtitle">${this.escapeHtml(this.translate('therapeuticPlan.visits.print.coverSubtitle'))}</p>
@@ -3837,7 +3952,6 @@ export class TherapeuticPlanManageComponent implements OnInit {
     return `<section class="page">
       <div class="status-page-title">
         <h2>${this.escapeHtml(this.translate('therapeuticPlan.visits.status.reportTitle'))}</h2>
-        <span>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.pageLabel'))} ${pageNumber} / ${totalPages}</span>
       </div>
       <p class="status-page-subtitle">${this.escapeHtml(this.getVisitPatientFullName(visit))} - ${this.escapeHtml(this.formatDate(visit.date))} - ${this.escapeHtml(this.getVisitTypeLabel(visit.type))}</p>
       ${this.buildVisitStatusStomiaPrintPanel(visit.stomiaStatus)}
@@ -3848,7 +3962,6 @@ export class TherapeuticPlanManageComponent implements OnInit {
     return `<section class="page">
       <div class="status-page-title">
         <h2>${this.escapeHtml(this.translate('therapeuticPlan.visits.actionsTaken.title'))}</h2>
-        <span>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.pageLabel'))} ${pageNumber} / ${totalPages}</span>
       </div>
       <p class="status-page-subtitle">${this.escapeHtml(this.getVisitPatientFullName(visit))} - ${this.escapeHtml(this.formatDate(visit.date))} - ${this.escapeHtml(this.getVisitTypeLabel(visit.type))}</p>
       ${this.buildVisitStomiaActionsPanel(visit.stomiaActions)}
@@ -3859,7 +3972,6 @@ export class TherapeuticPlanManageComponent implements OnInit {
     return `<section class="page">
       <div class="status-page-title">
         <h2>${this.escapeHtml(this.translate('therapeuticPlan.visits.status.reportTitle'))}</h2>
-        <span>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.pageLabel'))} ${pageNumber} / ${totalPages}</span>
       </div>
       <p class="status-page-subtitle">${this.escapeHtml(this.getVisitPatientFullName(visit))} - ${this.escapeHtml(this.formatDate(visit.date))} - ${this.escapeHtml(this.getVisitTypeLabel(visit.type))}</p>
       ${this.buildVisitStatusPegjPrintPanel(visit.pegjStatus)}
@@ -3870,7 +3982,6 @@ export class TherapeuticPlanManageComponent implements OnInit {
     return `<section class="page">
       <div class="status-page-title">
         <h2>${this.escapeHtml(this.translate('therapeuticPlan.visits.actionsTaken.title'))}</h2>
-        <span>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.pageLabel'))} ${pageNumber} / ${totalPages}</span>
       </div>
       <p class="status-page-subtitle">${this.escapeHtml(this.getVisitPatientFullName(visit))} - ${this.escapeHtml(this.formatDate(visit.date))} - ${this.escapeHtml(this.getVisitTypeLabel(visit.type))}</p>
       ${this.buildVisitPegjActionsPanel(visit.pegjActions)}
@@ -3881,7 +3992,6 @@ export class TherapeuticPlanManageComponent implements OnInit {
     return `<section class="page">
       <div class="status-page-title">
         <h2>${this.escapeHtml(this.translate('therapeuticPlan.visits.status.reportTitle'))}</h2>
-        <span>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.pageLabel'))} ${pageNumber} / ${totalPages}</span>
       </div>
       <p class="status-page-subtitle">${this.escapeHtml(this.getVisitPatientFullName(visit))} - ${this.escapeHtml(this.formatDate(visit.date))} - ${this.escapeHtml(this.getVisitTypeLabel(visit.type))}</p>
       ${this.buildVisitStatusAutonomyPrintPanel(visit.autonomyStatus)}
@@ -3892,7 +4002,6 @@ export class TherapeuticPlanManageComponent implements OnInit {
     return `<section class="page">
       <div class="status-page-title">
         <h2>${this.escapeHtml(this.translate('therapeuticPlan.visits.actionsTaken.title'))}</h2>
-        <span>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.pageLabel'))} ${pageNumber} / ${totalPages}</span>
       </div>
       <p class="status-page-subtitle">${this.escapeHtml(this.getVisitPatientFullName(visit))} - ${this.escapeHtml(this.formatDate(visit.date))} - ${this.escapeHtml(this.getVisitTypeLabel(visit.type))}</p>
       ${this.buildVisitAutonomyActionsPanel(visit.autonomyActions)}
@@ -3913,7 +4022,6 @@ export class TherapeuticPlanManageComponent implements OnInit {
     return `<section class="page">
       <div class="status-page-title">
         <h2>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.manualJson.title'))}</h2>
-        <span>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.pageLabel'))} ${pageNumber} / ${totalPages}</span>
       </div>
       <p class="status-page-subtitle">${this.escapeHtml(this.getVisitPatientFullName(visit))} - ${this.escapeHtml(this.formatDate(visit.date))} - ${this.escapeHtml(this.getVisitTypeLabel(visit.type))}</p>
       <p class="subtitle">${this.escapeHtml(this.translate('therapeuticPlan.visits.print.manualJson.description'))}</p>
@@ -3931,34 +4039,67 @@ export class TherapeuticPlanManageComponent implements OnInit {
     </section>`;
   }
 
-  private buildVisitLegacySchemaPrintPage(visit: TherapeuticPlanVisitRecord, pageNumber: number, totalPages: number): string {
-    return `<section class="page">
-      <div class="status-page-title">
-        <h2>${this.escapeHtml(this.translate('therapeuticPlan.visits.status.reportTitle'))}</h2>
-        <span>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.pageLabel'))} ${pageNumber} / ${totalPages}</span>
-      </div>
+  private buildVisitLegacySchemaPrintPages(visit: TherapeuticPlanVisitRecord): string[] {
+    const panels = [
+      this.buildVisitStatusStomiaPrintPanel(visit.stomiaStatus),
+      this.buildVisitStatusPegjPrintPanel(visit.pegjStatus),
+      this.buildVisitStatusAutonomyPrintPanel(visit.autonomyStatus),
+      ...(this.hasVisitPrintSelections(visit.stomiaActions) ? [this.buildVisitStomiaActionsPanel(visit.stomiaActions)] : []),
+      ...(this.hasVisitPrintSelections(visit.pegjActions) ? [this.buildVisitPegjActionsPanel(visit.pegjActions)] : []),
+      ...(this.hasVisitPrintSelections(visit.autonomyActions) ? [this.buildVisitAutonomyActionsPanel(visit.autonomyActions)] : [])
+    ];
+
+    return this.chunkArray(panels, 2).map((pagePanels) => `<section class="page">
       <p class="status-page-subtitle">${this.escapeHtml(this.getVisitPatientFullName(visit))} - ${this.escapeHtml(this.formatDate(visit.date))} - ${this.escapeHtml(this.getVisitTypeLabel(visit.type))}</p>
-      <div class="status-grid">
-        ${this.buildVisitStatusStomiaPrintPanel(visit.stomiaStatus)}
-        ${this.buildVisitStatusPegjPrintPanel(visit.pegjStatus)}
-        ${this.buildVisitStatusAutonomyPrintPanel(visit.autonomyStatus)}
+      <div class="legacy-columns-grid">
+        ${pagePanels.join('')}
       </div>
-      <div class="status-grid">
-        ${this.buildVisitStomiaActionsPanel(visit.stomiaActions)}
-        ${this.buildVisitPegjActionsPanel(visit.pegjActions)}
-        ${this.buildVisitAutonomyActionsPanel(visit.autonomyActions)}
-      </div>
-    </section>`;
+    </section>`);
   }
 
   private getVisitPrintSchemaFieldPages(visit: TherapeuticPlanVisitRecord): TherapeuticPlanVisitJsonEntry[][] {
     const entries = this.visitSchemaGeneratedFields.map((field) => ({
       key: this.getVisitSchemaFieldLabel(field.key),
-      value: this.getVisitSchemaSummaryValue(visit, field.key)
-    }));
+      value: this.getVisitSchemaSummaryValue(visit, field.key),
+      rawValue: visit.manualJsonData ? this.getVisitValueByPath(visit.manualJsonData, field.key) : undefined,
+      schemaKey: field.key,
+      sectionTitle: field.sectionTitle
+    })).filter((entry) => this.hasMeaningfulVisitPrintValue(entry.rawValue ?? entry.value));
 
     const pages = this.chunkVisitSchemaFields(entries);
     return pages.length > 0 ? pages : [[]];
+  }
+
+  private hasVisitPrintSelections(values: object | null | undefined): boolean {
+    if (!values) {
+      return false;
+    }
+
+    return Object.values(values).some((value) => this.hasMeaningfulVisitPrintValue(value));
+  }
+
+  private hasMeaningfulVisitPrintValue(value: unknown): boolean {
+    if (value == null) {
+      return false;
+    }
+
+    if (typeof value === 'string') {
+      return value.trim().length > 0;
+    }
+
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return true;
+    }
+
+    if (Array.isArray(value)) {
+      return value.length > 0 && value.some((item) => this.hasMeaningfulVisitPrintValue(item));
+    }
+
+    if (typeof value === 'object') {
+      return Object.values(value as Record<string, unknown>).some((item) => this.hasMeaningfulVisitPrintValue(item));
+    }
+
+    return false;
   }
 
   private buildVisitSchemaPrintPage(
@@ -3967,34 +4108,95 @@ export class TherapeuticPlanManageComponent implements OnInit {
     pageNumber: number,
     totalPages: number
   ): string {
-    const rowsMarkup = entries.length > 0
-      ? entries.map((entry) => `<tr>
-          <td>${this.escapeHtml(entry.key)}</td>
-          <td>${this.escapeHtml(entry.value || this.translate('common.notAvailable'))}</td>
-        </tr>`).join('')
-      : `<tr>
-          <td colspan="2">${this.escapeHtml(this.translate('therapeuticPlan.visits.manualJson.empty'))}</td>
-        </tr>`;
+    const sectionsMarkup = entries.length > 0
+      ? entries.map((entry, index) => this.renderVisitJsonPrintEntry(entry, index > 0 ? entries[index - 1] : undefined)).join('')
+      : `<div class="visit-json-print-value">${this.escapeHtml(this.translate('therapeuticPlan.visits.manualJson.empty'))}</div>`;
 
     return `<section class="page">
-      <div class="status-page-title">
-        <h2>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.generatedJson.title'))}</h2>
-        <span>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.pageLabel'))} ${pageNumber} / ${totalPages}</span>
-      </div>
       <p class="status-page-subtitle">${this.escapeHtml(this.getVisitPatientFullName(visit))} - ${this.escapeHtml(this.formatDate(visit.date))} - ${this.escapeHtml(this.getVisitTypeLabel(visit.type))}</p>
-      <p class="subtitle">${this.escapeHtml(this.translate('therapeuticPlan.visits.print.generatedJson.description'))}</p>
-      <table class="visit-list-table">
-        <thead>
-          <tr>
-            <th>${this.escapeHtml(this.translate('therapeuticPlan.visits.manualJson.field.key'))}</th>
-            <th>${this.escapeHtml(this.translate('therapeuticPlan.visits.manualJson.field.value'))}</th>
-          </tr>
-        </thead>
+      <div class="visit-json-print-sections">
+        ${sectionsMarkup}
+      </div>
+    </section>`;
+  }
+
+  private renderVisitJsonPrintEntry(entry: TherapeuticPlanVisitJsonEntry, previousEntry?: TherapeuticPlanVisitJsonEntry): string {
+    const normalizedSectionTitle = entry.sectionTitle?.trim() ?? '';
+    const previousSectionTitle = previousEntry?.sectionTitle?.trim() ?? '';
+    const sectionTitleMarkup = normalizedSectionTitle && normalizedSectionTitle !== previousSectionTitle
+      ? `<h3 class="visit-json-print-section-title">${this.escapeHtml(normalizedSectionTitle)}</h3>`
+      : '';
+
+    return `<section class="visit-json-print-section">
+      ${sectionTitleMarkup}
+      ${this.renderVisitJsonPrintValue(entry)}
+    </section>`;
+  }
+
+  private renderVisitJsonPrintValue(entry: TherapeuticPlanVisitJsonEntry): string {
+    const matrixView = this.getVisitSchemaMatrixView(entry.schemaKey, entry.rawValue ?? entry.value);
+    if (matrixView) {
+      return this.renderVisitJsonPrintMatrix(entry, matrixView);
+    }
+
+    const rows = this.getManualJsonTableRows(entry.rawValue ?? entry.value);
+    if (!rows || rows.length === 0) {
+      return `<div class="visit-json-print-value">
+        <p class="visit-json-print-field-title">${this.escapeHtml(entry.key)}</p>
+        ${this.escapeHtml(entry.value || this.translate('common.notAvailable'))}
+      </div>`;
+    }
+
+    const tableRowsMarkup = rows.map((row) => `<tr>
+        <td>${this.escapeHtml(row.hour)}</td>
+        <td>${this.escapeHtml(row.status)}</td>
+      </tr>`).join('');
+
+    return `<div class="visit-json-print-value">
+      <p class="visit-json-print-field-title">${this.escapeHtml(entry.key)}</p>
+      <table class="visit-list-table visit-json-nested-table">
         <tbody>
-          ${rowsMarkup}
+          ${tableRowsMarkup}
         </tbody>
       </table>
-    </section>`;
+    </div>`;
+  }
+
+  private renderVisitJsonPrintMatrix(entry: TherapeuticPlanVisitJsonEntry, matrixView: TherapeuticPlanVisitSchemaMatrixView): string {
+    const headerMarkup = matrixView.hours
+      .map((hour) => `<th>${this.escapeHtml(hour)}</th>`)
+      .join('');
+    const legendMarkup = matrixView.options
+      .map((option) => `<div class="visit-json-print-legend-row"><strong>${this.escapeHtml(option.value)}</strong><span>${this.escapeHtml(option.label)}</span></div>`)
+      .join('');
+    const rowsMarkup = matrixView.options
+      .map((option) => `<tr>
+          <th>${this.escapeHtml(option.value)}</th>
+          ${matrixView.hours
+            .map((hour) => `<td class="visit-json-matrix-checkbox-cell">${matrixView.checkedMap[`${hour}__${option.value}`] === true ? '&#9745;' : '&#9744;'}</td>`)
+            .join('')}
+        </tr>`)
+      .join('');
+
+    return `<div class="visit-json-print-section-body">
+      <p class="visit-json-print-field-title">${this.escapeHtml(entry.key)}</p>
+      <div class="visit-json-print-matrix-layout">
+        <div class="visit-json-print-legend">
+          ${legendMarkup}
+        </div>
+        <table class="visit-json-matrix-print-table">
+          <thead>
+            <tr>
+              <th></th>
+              ${headerMarkup}
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsMarkup}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
   }
 
   private hasLegacyVisitSchemaLayout(schema: Record<string, unknown> | null): boolean {
