@@ -417,8 +417,24 @@ public class AuthorizationManagementService {
     }
 
     private RoleEntity findRole(String roleId) {
-        return roleRepository.findById(java.util.Objects.requireNonNull(roleId, "roleId"))
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Ruolo non trovato"));
+        // Prova a trovare il ruolo nel database locale
+        Optional<RoleEntity> localRole = roleRepository.findById(java.util.Objects.requireNonNull(roleId, "roleId"));
+        if (localRole.isPresent()) {
+            return localRole.get();
+        }
+
+        // Se non trovato localmente, prova a recuperarlo da QTMDB e sincronizzarlo
+        try {
+            com.qtm.commonlib.dto.RoleDto remoteRole = dashboardRoleClient.findById(roleId);
+            // Sincronizza il ruolo da QTMDB nel database locale di TENAPP
+            RoleEntity entity = new RoleEntity();
+            entity.setId(remoteRole.getId());
+            entity.setName(remoteRole.getName());
+            entity.setDescription(remoteRole.getDescription());
+            return roleRepository.save(entity);
+        } catch (Exception e) {
+            throw new ResponseStatusException(NOT_FOUND, "Ruolo non trovato in QTMDB: " + roleId);
+        }
     }
 
     private ModuleEntity ensureModule(ModuleDefinition definition) {

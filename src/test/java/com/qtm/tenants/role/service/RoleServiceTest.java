@@ -1,4 +1,3 @@
-
 package com.qtm.tenants.role.service;
 import com.qtm.tenants.user.service.UserRemoteService;
 

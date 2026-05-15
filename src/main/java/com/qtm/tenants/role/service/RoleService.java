@@ -41,9 +41,21 @@ public class RoleService {
 
     @Transactional
     public RoleDto create(RoleDto roleDto) {
-        RoleEntity saved = roleRepository.save(roleMapper.toEntity(roleDto));
-        authorizationManagementService.initializeRoleAuthorizations(saved.getId(), roleDto.getSourceRoleId());
-        return roleMapper.toDto(saved);
+        // Salva il ruolo solo su QTMDB (database centralizzato)
+        com.qtm.commonlib.dto.RoleDto remoteRole = new com.qtm.commonlib.dto.RoleDto();
+        remoteRole.setId(roleDto.getId());
+        remoteRole.setName(roleDto.getName());
+        remoteRole.setDescription(roleDto.getDescription());
+        remoteRole.setFather(roleDto.getSourceRoleId());
+        com.qtm.commonlib.dto.RoleDto createdRole = dashboardRoleClient.create(remoteRole);
+        
+        // Converte il DTO remoto nel DTO locale per la risposta
+        RoleDto responseDto = new RoleDto();
+        responseDto.setId(createdRole.getId());
+        responseDto.setName(createdRole.getName());
+        responseDto.setDescription(createdRole.getDescription());
+        responseDto.setSourceRoleId(createdRole.getFather());
+        return responseDto;
     }
 
     @Transactional(readOnly = true)
