@@ -35,7 +35,9 @@ export class NursesCrudComponent {
   fields: CrudField[] = [
     { key: 'nurseProjectId', labelKey: 'nurses.field.nurseProjectId', type: 'text' },
     { key: 'fullName', labelKey: 'nurses.field.fullName', type: 'text' },
+    { key: 'username', labelKey: 'nurses.field.username', type: 'text' },
     { key: 'email', labelKey: 'nurses.field.email', type: 'text' },
+    { key: 'userid', labelKey: 'nurses.field.userid', type: 'text' },
     { key: 'primaryPhone', labelKey: 'nurses.field.primaryPhone', type: 'text' },
     { key: 'secondaryPhone', labelKey: 'nurses.field.secondaryPhone', type: 'text' },
     {
@@ -101,7 +103,9 @@ export class NursesCrudComponent {
       fields: [
         { key: 'nurseProjectId', labelKey: 'nurses.field.nurseProjectId', type: 'text' },
         { key: 'fullName', labelKey: 'nurses.field.fullName', type: 'text' },
+        { key: 'username', labelKey: 'nurses.field.username', type: 'text' },
         { key: 'email', labelKey: 'nurses.field.email', type: 'text' },
+        { key: 'userid', labelKey: 'nurses.field.userid', type: 'text' },
         { key: 'primaryPhone', labelKey: 'nurses.field.primaryPhone', type: 'text' },
         { key: 'secondaryPhone', labelKey: 'nurses.field.secondaryPhone', type: 'text' },
         {

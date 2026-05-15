@@ -18,6 +18,7 @@ interface AuthorizationModuleDto {
 interface AuthorizationRoleMatrixDto {
   roleId: string;
   modules: AuthorizationModuleDto[];
+  isNurseRole: boolean;
 }
 
 interface MenuItem {
@@ -45,6 +46,7 @@ export class AppComponent implements OnDestroy {
   selectedRole = '';
   selectedClient = '';
   selectedProject: string | null = null;
+  isNurseRole = false;
     projectFooterText: string | null = null;
   hiddenModuleCodes = new Set<string>();
   managementMenuOpen = false;
@@ -317,20 +319,27 @@ export class AppComponent implements OnDestroy {
   private loadModuleVisibility(): void {
     if (!this.selectedRole) {
       this.hiddenModuleCodes.clear();
+      this.isNurseRole = false;
       return;
     }
     this.http
       .get<AuthorizationRoleMatrixDto>(`${environment.apiBaseUrl}/authorizations/roles/${this.selectedRole}`)
       .subscribe({
         next: (matrix) => {
+          console.log('[TENANTS-APP] Autorizzazioni ricevute:', matrix);
+          console.log('[TENANTS-APP] isNurseRole:', matrix.isNurseRole);
           this.hiddenModuleCodes = new Set(
             (matrix.modules ?? [])
               .filter((module) => module.moduleAuthorization === 'deny')
               .map((module) => module.moduleCode)
           );
+          this.isNurseRole = matrix.isNurseRole || false;
+          console.log('[TENANTS-APP] Sidebar visibile:', !this.isNurseRole);
         },
         error: () => {
+          console.error('[TENANTS-APP] Errore caricamento autorizzazioni');
           this.hiddenModuleCodes.clear();
+          this.isNurseRole = false;
         }
       });
   }

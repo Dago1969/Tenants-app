@@ -36,6 +36,7 @@ public class UserOnboardingService {
         validateRequest(request);
 
         request.setTemporaryPassword(false);
+        request.setSkipOnboardingMail(true); // Disabilita mail automatica da QTMDB: TENAPP gestisce l'invio personalizzato
         UserDto createdUser = userRemoteService.create(request);
         if (createdUser.getId() == null) {
             throw new ResponseStatusException(BAD_REQUEST, "Creazione utente completata senza identificativo restituito");

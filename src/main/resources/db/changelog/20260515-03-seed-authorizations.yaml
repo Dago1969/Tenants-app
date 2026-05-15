@@ -1,0 +1,30 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260515-03-seed-module-role-authorizations
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: module_role_authorizations
+      changes:
+        - sqlFile:
+            path: sql/20260515-03-module-role-authorizations-seed.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: false
+
+  - changeSet:
+      id: 20260515-04-seed-role-function-authorizations
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: function_module_role_authorizations
+      changes:
+        - sqlFile:
+            path: sql/20260515-04-role-function-authorizations-seed.sql
+            relativeToChangelogFile: true
+            splitStatements: true
+            stripComments: false

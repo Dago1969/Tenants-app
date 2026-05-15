@@ -8,6 +8,7 @@ import com.qtm.tenants.otp.dto.OtpVerificationCheckRequest;
 import com.qtm.tenants.otp.dto.OtpVerificationResultResponse;
 import com.qtm.tenants.otp.service.UserOtpService;
 import com.qtm.tenants.user.dto.UserOnboardingRequest;
+import com.qtm.tenants.user.service.UserDeletionCascadeService;
 import com.qtm.tenants.user.service.UserOnboardingService;
 import com.qtm.tenants.user.service.UserRemoteService;
 import jakarta.validation.Valid;
@@ -45,6 +46,7 @@ public class UserController {
         private final UserRemoteService userRemoteService;
         private final UserOnboardingService userOnboardingService;
         private final UserOtpService userOtpService;
+        private final UserDeletionCascadeService userDeletionCascadeService;
     private final ControllerFunctionAuthorizationService controllerFunctionAuthorizationService;
 
     @PostMapping
@@ -213,7 +215,8 @@ public class UserController {
                 MODULE_CODE,
                 ControllerFunctionAuthorizationService.DELETE_FUNCTION_CODE
         );
-        userRemoteService.delete(id);
+        // Utilizza il servizio di eliminazione cascata che gestisce relazioni piano-infermiera e infermiere
+        userDeletionCascadeService.deleteUserWithCascade(id);
         return ResponseEntity.noContent().build();
     }
 }

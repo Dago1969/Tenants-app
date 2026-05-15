@@ -50,4 +50,26 @@ public class ApiExceptionHandler {
         problemDetail.setTitle(HttpStatus.BAD_REQUEST.getReasonPhrase());
         return problemDetail;
     }
+
+    @ExceptionHandler(RuntimeException.class)
+    public ProblemDetail handleRuntimeException(RuntimeException exception) {
+        log.error("[ApiExceptionHandler] RuntimeException gestita: message={}", exception.getMessage(), exception);
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                exception.getMessage()
+        );
+        problemDetail.setTitle(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());
+        return problemDetail;
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ProblemDetail handleGenericException(Exception exception) {
+        log.error("[ApiExceptionHandler] Exception generica gestita: type={}, message={}", exception.getClass().getSimpleName(), exception.getMessage(), exception);
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.INTERNAL_SERVER_ERROR,
+                "Errore interno del server: " + exception.getMessage()
+        );
+        problemDetail.setTitle(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase());
+        return problemDetail;
+    }
 }

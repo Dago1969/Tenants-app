@@ -17,6 +17,7 @@ public class NurseDto {
     private Long id;
     private String nurseProjectId;
     private String fullName;
+    private String username;
     private String email;
     private String primaryPhone;
     private String secondaryPhone;
@@ -32,4 +33,5 @@ public class NurseDto {
     private Boolean enabled;
     private Boolean dataProcessingConsent;
     private LocalDateTime dataProcessingConsentDateTime;
+    private String userid;
 }

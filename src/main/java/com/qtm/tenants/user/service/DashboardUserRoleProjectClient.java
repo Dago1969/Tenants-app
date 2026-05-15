@@ -46,6 +46,14 @@ public class DashboardUserRoleProjectClient {
                 .body(USER_ROLE_PROJECT_LIST_TYPE));
     }
 
+    public List<UserRoleProjectDto> findByUserId(Long userId) {
+        return execute(() -> restClient.get()
+                .uri("/user-role-project/user/{userId}", userId)
+                .headers(this::applyForwardedHeaders)
+                .retrieve()
+                .body(USER_ROLE_PROJECT_LIST_TYPE));
+    }
+
     public UserRoleProjectDto create(UserRoleProjectDto dto) {
         return execute(() -> restClient.post()
                 .uri("/user-role-project")
@@ -58,6 +66,14 @@ public class DashboardUserRoleProjectClient {
     public void delete(Long userId, Long tenantId, String roleId, Long projectId) {
         executeVoid(() -> restClient.delete()
                 .uri("/user-role-project/user/{userId}/tenant/{tenantId}/role/{roleId}/project/{projectId}", userId, tenantId, roleId, projectId)
+                .headers(this::applyForwardedHeaders)
+                .retrieve()
+                .toBodilessEntity());
+    }
+
+    public void deleteByUserId(Long userId) {
+        executeVoid(() -> restClient.delete()
+                .uri("/user-role-project/user/{userId}", userId)
                 .headers(this::applyForwardedHeaders)
                 .retrieve()
                 .toBodilessEntity());

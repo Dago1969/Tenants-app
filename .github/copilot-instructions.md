@@ -26,7 +26,10 @@ Questo garantisce che tutte le modifiche, inclusi i sorgenti backend e frontend,
 1. Eseguire `git add .` su tutti i progetti della workspace dalla root del progetto.
 2. Eseguire `git commit -m "<messaggio>"` su tutti i progetti (usa un messaggio coerente con le modifiche).
 3. Eseguire `git push` su tutti i progetti.
-
+## ⚠️ IMPORTANTE: Non committare automaticamente
+**NON fare automaticamente `git add`, `git commit` e `git push` se l'utente non lo chiede esplicitamente.**
+Solo se l'utente dice "committa tutto" o "add commit push" o simili, allora eseguire i comandi git.
+In caso contrario, limitarsi a fare le modifiche ai file senza versionare su remoto.
 ## Stile di interazione
 - Quando ti uso la risposta deve sempre iniziare con "ok Boss QTM"
 

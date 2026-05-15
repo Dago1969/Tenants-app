@@ -30,6 +30,7 @@ public class NurseMapper {
         dto.setEnabled(entity.getEnabled());
         dto.setDataProcessingConsent(entity.getDataProcessingConsent());
         dto.setDataProcessingConsentDateTime(entity.getDataProcessingConsentDateTime());
+        dto.setUserid(entity.getUserid());
         return dto;
     }
 
@@ -53,6 +54,7 @@ public class NurseMapper {
         entity.setEnabled(dto.getEnabled());
         entity.setDataProcessingConsent(dto.getDataProcessingConsent());
         entity.setDataProcessingConsentDateTime(dto.getDataProcessingConsentDateTime());
+        entity.setUserid(dto.getUserid());
         return entity;
     }
 }

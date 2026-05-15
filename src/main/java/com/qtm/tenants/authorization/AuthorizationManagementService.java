@@ -1,34 +1,7 @@
 package com.qtm.tenants.authorization;
 
-import com.qtm.commonlib.dto.ProjectDto;
-import com.qtm.commonlib.dto.UserDto;
-import com.qtm.tenants.authorization.dto.AuthorizationFieldDto;
-import com.qtm.tenants.authorization.dto.AuthorizationFunctionDto;
-import com.qtm.tenants.authorization.dto.AuthorizationModuleDto;
-import com.qtm.tenants.authorization.dto.AuthorizationRoleMatrixDto;
-import com.qtm.tenants.authorization.dto.AuthorizationUpdateRequestDto;
-import com.qtm.tenants.authorization.entity.FunctionModuleRoleAuthorizationEntity;
-import com.qtm.tenants.authorization.repository.FunctionModuleRoleAuthorizationRepository;
-import com.qtm.tenants.equipment.dto.EquipmentDTO;
-import com.qtm.tenants.authorization.service.ControllerFunctionAuthorizationService;
-import com.qtm.tenants.equipment.dto.EquipmentTypeDTO;
-import com.qtm.tenants.function.entity.FunctionEntity;
-import com.qtm.tenants.function.repository.FunctionRepository;
-import com.qtm.tenants.doctor.entity.DoctorEntity;
-import com.qtm.tenants.module.entity.ModuleEntity;
-import com.qtm.tenants.module.repository.ModuleRepository;
-import com.qtm.tenants.nurse.entity.NurseEntity;
-import com.qtm.tenants.patient.entity.PatientEntity;
-import com.qtm.tenants.role.entity.RoleEntity;
-import com.qtm.tenants.role.repository.RoleRepository;
-import com.qtm.tenants.role.service.DashboardRoleClient;
-import com.qtm.tenants.structure.StructureModuleCodes;
-import com.qtm.tenants.structure.entity.StructureEntity;
-import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanDto;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
@@ -39,8 +12,37 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.qtm.commonlib.dto.ProjectDto;
+import com.qtm.commonlib.dto.UserDto;
+import com.qtm.tenants.authorization.dto.AuthorizationFieldDto;
+import com.qtm.tenants.authorization.dto.AuthorizationFunctionDto;
+import com.qtm.tenants.authorization.dto.AuthorizationModuleDto;
+import com.qtm.tenants.authorization.dto.AuthorizationRoleMatrixDto;
+import com.qtm.tenants.authorization.dto.AuthorizationUpdateRequestDto;
+import com.qtm.tenants.authorization.entity.FunctionModuleRoleAuthorizationEntity;
+import com.qtm.tenants.authorization.repository.FunctionModuleRoleAuthorizationRepository;
+import com.qtm.tenants.authorization.service.ControllerFunctionAuthorizationService;
+import com.qtm.tenants.doctor.entity.DoctorEntity;
+import com.qtm.tenants.equipment.dto.EquipmentDTO;
+import com.qtm.tenants.equipment.dto.EquipmentTypeDTO;
+import com.qtm.tenants.function.entity.FunctionEntity;
+import com.qtm.tenants.function.repository.FunctionRepository;
+import com.qtm.tenants.module.entity.ModuleEntity;
+import com.qtm.tenants.module.repository.ModuleRepository;
+import com.qtm.tenants.nurse.entity.NurseEntity;
+import com.qtm.tenants.patient.entity.PatientEntity;
+import com.qtm.tenants.role.entity.RoleEntity;
+import com.qtm.tenants.role.repository.RoleRepository;
+import com.qtm.tenants.role.service.DashboardRoleClient;
+import com.qtm.tenants.structure.StructureModuleCodes;
+import com.qtm.tenants.structure.entity.StructureEntity;
+import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanDto;
+
+import lombok.RequiredArgsConstructor;
 
 /**
  * Service di gestione matrice autorizzazioni per ruolo con raggruppamento per modulo.
@@ -186,7 +188,11 @@ public class AuthorizationManagementService {
                     );
                 })
                 .toList();
-        return new AuthorizationRoleMatrixDto(role.getId(), modules);
+        
+        // Verifica se il ruolo è NURSE o derivato da NURSE (controlla su QTMDB via DTO remoto)
+        boolean isNurseRole = isNurseRole(roleId);
+        
+        return new AuthorizationRoleMatrixDto(role.getId(), modules, isNurseRole);
     }
 
     /**
@@ -575,6 +581,44 @@ public class AuthorizationManagementService {
                         }
                         throw exception;
                 }
+        }
+
+        /**
+         * Verifica ricorsivamente se un ruolo è NURSE_QTM o derivato da NURSE_QTM.
+         * Utilizza il DTO remoto da QTMDB per controllare il campo 'father'.
+         * @param roleId L'ID del ruolo da verificare
+         * @return true se il ruolo è NURSE_QTM o ha come ancestor NURSE_QTM, false altrimenti
+         */
+        /**
+         * Verifica ricorsivamente se un ruolo è NURSE_QTM o derivato da NURSE_QTM.
+         * Utilizza il DTO remoto da QTMDB per controllare il campo 'father'.
+         * @param roleId L'ID del ruolo da verificare
+         * @return true se il ruolo è NURSE_QTM o ha come ancestor NURSE_QTM, false altrimenti
+         */
+        private boolean isNurseRole(String roleId) {
+                if (roleId == null || roleId.isBlank()) {
+                        return false;
+                }
+                
+                // Se il ruolo ID è NURSE_QTM, ritorna true
+                if ("NURSE_QTM".equalsIgnoreCase(roleId)) {
+                        return true;
+                }
+                
+                // Recupera il DTO remoto da QTMDB
+                try {
+                        com.qtm.commonlib.dto.RoleDto remoteRole = dashboardRoleClient.findById(roleId);
+                        
+                        // Se il ruolo ha un padre, verifica ricorsivamente
+                        if (remoteRole.getFather() != null && !remoteRole.getFather().isBlank()) {
+                                return isNurseRole(remoteRole.getFather());
+                        }
+                } catch (Exception e) {
+                        // Se non riesci a recuperare il ruolo remoto, non è NURSE_QTM
+                        return false;
+                }
+                
+                return false;
         }
 
         private record ModuleDefinition(

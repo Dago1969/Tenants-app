@@ -6,6 +6,7 @@ import com.qtm.tenants.nurse.dto.NurseDto;
 import com.qtm.tenants.nurse.entity.NurseEntity;
 import com.qtm.tenants.nurse.mapper.NurseMapper;
 import com.qtm.tenants.nurse.repository.NurseRepository;
+import com.qtm.tenants.project.service.DashboardProjectClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +35,12 @@ class NurseServiceTest {
     @Mock
     private FieldAuthorizationRepository fieldAuthorizationRepository;
 
+    @Mock
+    private DashboardProjectClient dashboardProjectClient;
+
+    @Mock
+    private UserOnboardingService userOnboardingService;
+
     private NurseService nurseService;
 
     @BeforeEach
@@ -42,7 +49,9 @@ class NurseServiceTest {
                 nurseRepository,
                 new NurseMapper(),
                 moduleRoleAuthorizationRepository,
-                fieldAuthorizationRepository
+            fieldAuthorizationRepository,
+            dashboardProjectClient,
+            userOnboardingService
         );
     }
 

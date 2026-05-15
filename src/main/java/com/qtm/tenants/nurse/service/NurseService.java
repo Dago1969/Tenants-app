@@ -1,5 +1,7 @@
 package com.qtm.tenants.nurse.service;
 
+import com.qtm.commonlib.dto.ProjectDto;
+import com.qtm.commonlib.dto.UserDto;
 import com.qtm.tenants.authorization.AuthorizationScope;
 import com.qtm.tenants.authorization.FieldAuthorizationEntity;
 import com.qtm.tenants.authorization.FieldAuthorizationRepository;
@@ -9,6 +11,9 @@ import com.qtm.tenants.nurse.dto.NurseDto;
 import com.qtm.tenants.nurse.entity.NurseEntity;
 import com.qtm.tenants.nurse.mapper.NurseMapper;
 import com.qtm.tenants.nurse.repository.NurseRepository;
+import com.qtm.tenants.project.service.DashboardProjectClient;
+import com.qtm.tenants.user.dto.UserOnboardingRequest;
+import com.qtm.tenants.user.service.UserOnboardingService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -52,19 +57,27 @@ public class NurseService {
     private static final Set<String> PROTECTED_FIELDS = Set.of(
             "nurseProjectId", "fullName", "email", "primaryPhone", "secondaryPhone",
             "regionId", "region", "provinceId", "province", "cityId", "city", "coverageArea", "referenceProvider",
-            "professionalRegister", "enabled", "dataProcessingConsent", "dataProcessingConsentDateTime"
+            "professionalRegister", "enabled", "dataProcessingConsent", "dataProcessingConsentDateTime", "userid"
     );
 
     private final NurseRepository nurseRepository;
     private final NurseMapper nurseMapper;
     private final ModuleRoleAuthorizationRepository moduleRoleAuthorizationRepository;
     private final FieldAuthorizationRepository fieldAuthorizationRepository;
+    private final DashboardProjectClient dashboardProjectClient;
+    private final UserOnboardingService userOnboardingService;
 
     @Transactional
     public NurseDto create(NurseDto nurseDto) {
         AuthorizationPolicy policy = resolveAuthorizationPolicy();
         enforceModuleWriteAllowed(policy);
         enforceFieldWriteAllowed(nurseDto, null, policy.fieldScopes());
+
+        // Se il frontend fornisce l'email (e altri dati utente), crea l'utente via onboarding
+        // e associa il userid all'infermiere
+        if (nurseDto.getEmail() != null && !nurseDto.getEmail().isBlank()) {
+            nurseDto.setUserid(createUserAndReturnId(nurseDto));
+        }
 
         NurseEntity saved = nurseRepository.save(nurseMapper.toEntity(nurseDto));
 
@@ -74,6 +87,122 @@ public class NurseService {
         }
 
         return applyReadAuthorization(nurseMapper.toDto(saved), policy);
+    }
+
+    /**
+     * Crea un utente tramite UserOnboardingService con ruolo NURSE_QTM (o derivato).
+     * Ritorna l'ID dell'utente creato.
+     * @param nurseDto DTO infermiere con dati necessari (email, fullName, etc.)
+     * @return ID dell'utente creato su QTMDB
+     */
+    private String createUserAndReturnId(NurseDto nurseDto) {
+        try {
+            String selectedClient = extractSelectedClientFromContext();
+            ProjectDto selectedProject = extractProjectFromContext();
+            Long tenantId = selectedProject != null ? selectedProject.getTenantId() : null;
+            Long projectId = selectedProject != null ? selectedProject.getId() : null;
+
+            if (selectedClient == null || tenantId == null || projectId == null) {
+                log.warn("[NurseService] Impossibile completare l'onboarding dell'utente: selectedClient={}, tenantId={}, projectId={}",
+                        selectedClient,
+                        tenantId,
+                        projectId);
+                return null;
+            }
+
+            // Crea la richiesta di onboarding con ruolo NURSE_QTM
+            UserOnboardingRequest onboardingRequest = new UserOnboardingRequest();
+            onboardingRequest.setUsername(resolveUsername(nurseDto));
+            onboardingRequest.setEmail(nurseDto.getEmail());
+            onboardingRequest.setEnabled(true);
+            onboardingRequest.setTenantId(tenantId);
+            onboardingRequest.setProjectId(projectId);
+            onboardingRequest.setClientId(selectedClient);
+            onboardingRequest.setRoleId("NURSE_QTM");
+
+            // Esegui l'onboarding che crea l'utente, la relazione role-project e invia la mail
+            UserDto createdUser = userOnboardingService.onboard(onboardingRequest);
+
+            log.info("[NurseService] Utente creato con successo per infermiere: username={}, email={}, userId={}", 
+                    createdUser.getUsername(), createdUser.getEmail(), createdUser.getId());
+
+            return createdUser.getId().toString();
+        } catch (Exception e) {
+            log.error("[NurseService] Errore durante la creazione dell'utente per infermiere: email={}", nurseDto.getEmail(), e);
+            throw new ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "Errore durante la creazione dell'utente associato all'infermiere: " + e.getMessage(),
+                    e
+            );
+        }
+    }
+
+    private String extractSelectedClientFromContext() {
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attributes == null) {
+            return null;
+        }
+
+        HttpServletRequest request = attributes.getRequest();
+        String selectedClientHeader = request.getHeader("X-Selected-Client");
+        if (selectedClientHeader == null || selectedClientHeader.isBlank()) {
+            return null;
+        }
+        return selectedClientHeader.trim();
+    }
+
+    private ProjectDto extractProjectFromContext() {
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attributes == null) {
+            return null;
+        }
+
+        HttpServletRequest request = attributes.getRequest();
+        String selectedProjectHeader = request.getHeader("X-Selected-Project");
+        if (selectedProjectHeader == null || selectedProjectHeader.isBlank()) {
+            return null;
+        }
+
+        try {
+            return dashboardProjectClient.findByCodeAndCurrentTenant(selectedProjectHeader.trim());
+        } catch (ResponseStatusException exception) {
+            log.warn("[NurseService] Impossibile risolvere il progetto selezionato per onboarding: projectCode={} reason={}",
+                    selectedProjectHeader,
+                    exception.getReason());
+            return null;
+        }
+    }
+
+    private String generateUsernameFromEmail(String email) {
+        // Estrai la parte prima di @ per generare uno username
+        String username = email.split("@")[0];
+        return username.replaceAll("[^a-zA-Z0-9._]", "").toLowerCase();
+    }
+
+    private String resolveUsername(NurseDto nurseDto) {
+        if (nurseDto.getUsername() != null && !nurseDto.getUsername().isBlank()) {
+            return nurseDto.getUsername().trim();
+        }
+        return generateUsernameFromEmail(nurseDto.getEmail());
+    }
+
+    private String extractFirstName(String fullName) {
+        if (fullName == null || fullName.isBlank()) {
+            return "Infermiere";
+        }
+        String[] parts = fullName.trim().split("\\s+");
+        return parts.length > 0 ? parts[0] : "Infermiere";
+    }
+
+    private String extractLastName(String fullName) {
+        if (fullName == null || fullName.isBlank()) {
+            return "";
+        }
+        String[] parts = fullName.trim().split("\\s+");
+        if (parts.length < 2) {
+            return "";
+        }
+        return String.join(" ", java.util.Arrays.copyOfRange(parts, 1, parts.length));
     }
 
     @Transactional(readOnly = true)
@@ -139,6 +268,10 @@ public class NurseService {
         current.setEnabled(nurseDto.getEnabled());
         current.setDataProcessingConsent(nurseDto.getDataProcessingConsent());
         current.setDataProcessingConsentDateTime(nurseDto.getDataProcessingConsentDateTime());
+        // Preserva userid se già impostato, altrimenti assegna quello dal DTO
+        if (nurseDto.getUserid() != null && !nurseDto.getUserid().isBlank()) {
+            current.setUserid(nurseDto.getUserid());
+        }
 
         return applyReadAuthorization(nurseMapper.toDto(nurseRepository.save(current)), policy);
     }

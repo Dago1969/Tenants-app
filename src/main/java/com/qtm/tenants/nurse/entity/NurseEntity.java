@@ -76,4 +76,7 @@ public class NurseEntity {
 
     @Column(name = "data_processing_consent_datetime")
     private LocalDateTime dataProcessingConsentDateTime;
+
+    @Column(name = "userid")
+    private String userid;
 }
