@@ -48,7 +48,16 @@ public class RoleService {
 
     @Transactional(readOnly = true)
     public List<RoleDto> findAll() {
-        return roleRepository.findAll().stream().map(roleMapper::toDto).toList();
+        // Recupera i ruoli da QTMDB utilizzando il client remoto
+        return dashboardRoleClient.findAll().stream()
+                .map(remoteDto -> {
+                    RoleDto dto = new RoleDto();
+                    dto.setId(remoteDto.getId());
+                    dto.setName(remoteDto.getName());
+                    dto.setDescription(remoteDto.getDescription());
+                    return dto;
+                })
+                .toList();
     }
 
     @Transactional(readOnly = true)

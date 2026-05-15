@@ -1,5 +1,6 @@
 package com.qtm.tenants.authorization;
 
+import com.qtm.commonlib.dto.RoleDto;
 import com.qtm.tenants.authorization.dto.AuthorizationRoleMatrixDto;
 import com.qtm.tenants.authorization.dto.AuthorizationUpdateRequestDto;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 /**
  * Controller REST per gestione autorizzazioni per ruolo raggruppate per modulo.
  */
@@ -20,6 +23,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthorizationManagementController {
 
     private final AuthorizationManagementService authorizationManagementService;
+
+    @GetMapping("/roles")
+    public ResponseEntity<List<RoleDto>> getAvailableRoles() {
+        return ResponseEntity.ok(authorizationManagementService.getAvailableRoles());
+    }
 
     @GetMapping("/roles/{roleId}")
     public ResponseEntity<AuthorizationRoleMatrixDto> getRoleMatrix(@PathVariable String roleId) {

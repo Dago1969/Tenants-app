@@ -21,6 +21,7 @@ import com.qtm.tenants.nurse.entity.NurseEntity;
 import com.qtm.tenants.patient.entity.PatientEntity;
 import com.qtm.tenants.role.entity.RoleEntity;
 import com.qtm.tenants.role.repository.RoleRepository;
+import com.qtm.tenants.role.service.DashboardRoleClient;
 import com.qtm.tenants.structure.StructureModuleCodes;
 import com.qtm.tenants.structure.entity.StructureEntity;
 import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanDto;
@@ -148,6 +149,7 @@ public class AuthorizationManagementService {
     private final FieldAuthorizationRepository fieldAuthorizationRepository;
     private final FunctionModuleRoleAuthorizationRepository functionModuleRoleAuthorizationRepository;
     private final ControllerFunctionAuthorizationService controllerFunctionAuthorizationService;
+    private final DashboardRoleClient dashboardRoleClient;
 
         private static ModuleDefinition structureModuleDefinition(String moduleCode) {
                 return new ModuleDefinition(
@@ -185,6 +187,16 @@ public class AuthorizationManagementService {
                 })
                 .toList();
         return new AuthorizationRoleMatrixDto(role.getId(), modules);
+    }
+
+    /**
+     * Recupera la lista dei ruoli disponibili da QTMDB.
+     * Questo metodo delega il recupero dei ruoli al service remoto QTMDB.
+     * @return Lista dei ruoli disponibili
+     */
+    @Transactional(readOnly = true)
+    public List<com.qtm.commonlib.dto.RoleDto> getAvailableRoles() {
+        return dashboardRoleClient.findAll();
     }
 
     @Transactional

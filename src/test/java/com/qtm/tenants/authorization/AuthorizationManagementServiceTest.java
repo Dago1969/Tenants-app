@@ -12,6 +12,7 @@ import com.qtm.tenants.module.entity.ModuleEntity;
 import com.qtm.tenants.module.repository.ModuleRepository;
 import com.qtm.tenants.role.entity.RoleEntity;
 import com.qtm.tenants.role.repository.RoleRepository;
+import com.qtm.tenants.role.service.DashboardRoleClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,6 +59,9 @@ class AuthorizationManagementServiceTest {
     @Mock
     private ControllerFunctionAuthorizationService controllerFunctionAuthorizationService;
 
+    @Mock
+    private DashboardRoleClient dashboardRoleClient;
+
     private AuthorizationManagementService service;
 
     @BeforeEach
@@ -69,7 +73,8 @@ class AuthorizationManagementServiceTest {
                 moduleRoleAuthorizationRepository,
                 fieldAuthorizationRepository,
                 functionModuleRoleAuthorizationRepository,
-                controllerFunctionAuthorizationService
+                controllerFunctionAuthorizationService,
+                dashboardRoleClient
         );
     }
 
