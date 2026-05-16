@@ -26,3 +26,19 @@ databaseChangeLog:
   - include:
       file: 20260515-04-add-nurse-userid.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: 20260516-01-create-appointment-tables.yaml
+      relativeToChangelogFile: true
+
+  - include:
+      file: 20260516-02-seed-appointment-types.yaml
+      relativeToChangelogFile: true
+
+  - include:
+      file: 20260516-03-add-appointment-modules.yaml
+      relativeToChangelogFile: true
+
+  - include:
+      file: 20260516-04-fix-appointment-table-creation.yaml
+      relativeToChangelogFile: true

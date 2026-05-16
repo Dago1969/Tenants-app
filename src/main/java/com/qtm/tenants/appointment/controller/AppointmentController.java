@@ -26,7 +26,7 @@ import java.util.List;
  * Controller REST per la gestione degli appuntamenti nel piano terapeutico.
  */
 @RestController
-@RequestMapping("/api/appointments")
+@RequestMapping({"/api/tenants/appointments", "/api/appointments"})
 @RequiredArgsConstructor
 public class AppointmentController {
 

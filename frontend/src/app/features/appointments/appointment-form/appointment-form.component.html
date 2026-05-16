@@ -1,6 +1,6 @@
 <div class="form-container">
-  <div class="header">
-    <h2>{{ 'appointment.title.create' | translate }}</h2>
+  <div class="header" *ngIf="!embedded">
+    <h2>{{ translate(titleKey) }}</h2>
   </div>
 
   <!-- Messaggi errore/successo -->
@@ -13,38 +13,55 @@
 
   <!-- Loading -->
   <div *ngIf="loading" class="loading">
-    {{ 'crud.loading' | translate }}
+    {{ translate('crud.loading') }}
   </div>
+
+  <p *ngIf="isEditMode" class="info-message">
+    {{ translate('appointment.help.editLimitedFields') }}
+  </p>
 
   <form (ngSubmit)="submitForm()" [ngClass]="{ loading: saving }">
     <!-- Tipo Appuntamento -->
-    <div class="form-group">
-      <label for="appointmentType">{{ 'appointment.field.type' | translate }} <span class="required">*</span></label>
+    <div *ngIf="!isEditMode; else appointmentTypeReadonly" class="form-group">
+      <label for="appointmentType">{{ translate('appointment.field.type') }} <span class="required">*</span></label>
       <select 
         id="appointmentType" 
         [(ngModel)]="form.appointmentTypeId" 
-        (change)="onAppointmentTypeChange()"
+          (ngModelChange)="onAppointmentTypeChange()"
         name="appointmentTypeId" 
         class="form-control"
         [disabled]="loading || saving">
-        <option value="null" selected disabled>{{ 'appointment.placeholder.selectType' | translate }}</option>
-        <option *ngFor="let type of appointmentTypes" [value]="type.id">
+        <option [ngValue]="null" selected disabled>{{ translate('appointment.placeholder.selectType') }}</option>
+          <option *ngFor="let type of appointmentTypes" [ngValue]="type.id">
           {{ type.name }} ({{ type.durationMinutes }}min)
         </option>
       </select>
     </div>
 
+    <ng-template #appointmentTypeReadonly>
+      <div class="form-group">
+        <label for="appointmentTypeReadonly">{{ translate('appointment.field.type') }}</label>
+        <input
+          id="appointmentTypeReadonly"
+          type="text"
+          class="form-control"
+          [value]="selectedAppointmentTypeLabel"
+          disabled
+        />
+      </div>
+    </ng-template>
+
     <!-- Infermiere -->
     <div class="form-group">
-      <label for="nurse">{{ 'appointment.field.nurse' | translate }} <span class="required">*</span></label>
+      <label for="nurse">{{ translate('appointment.field.nurse') }} <span class="required">*</span></label>
       <select 
         id="nurse" 
         [(ngModel)]="form.nurseId" 
         name="nurseId" 
         class="form-control"
         [disabled]="loading || saving">
-        <option value="null" selected disabled>{{ 'appointment.placeholder.selectNurse' | translate }}</option>
-        <option *ngFor="let nurse of planNurses" [value]="nurse.id">
+        <option [ngValue]="null" selected disabled>{{ translate('appointment.placeholder.selectNurse') }}</option>
+        <option *ngFor="let nurse of planNurses" [ngValue]="nurse.id">
           {{ nurse.fullName }}
         </option>
       </select>
@@ -52,12 +69,12 @@
 
     <!-- Data/Ora Inizio -->
     <div class="form-group">
-      <label for="startDateTime">{{ 'appointment.field.startDateTime' | translate }} <span class="required">*</span></label>
+      <label for="startDateTime">{{ translate('appointment.field.startDateTime') }} <span class="required">*</span></label>
       <input 
         type="datetime-local" 
         id="startDateTime" 
         [(ngModel)]="form.startDateTime" 
-        (change)="onStartDateTimeChange()"
+        (ngModelChange)="onStartDateTimeChange()"
         name="startDateTime" 
         class="form-control"
         [disabled]="loading || saving" />
@@ -65,19 +82,19 @@
 
     <!-- Ora Fine (calcolata automaticamente) -->
     <div class="form-group">
-      <label for="endDateTime">{{ 'appointment.field.endDateTime' | translate }}</label>
+      <label for="endDateTime">{{ translate('appointment.field.endDateTime') }}</label>
       <input 
         type="datetime-local" 
         id="endDateTime" 
         [value]="estimatedEndTime" 
         class="form-control" 
         disabled />
-      <small class="form-text">{{ 'appointment.help.estimatedEnd' | translate }}</small>
+      <small class="form-text">{{ translate('appointment.help.estimatedEnd') }}</small>
     </div>
 
     <!-- Ricorrenza -->
-    <div class="form-group">
-      <label for="recurrence">{{ 'appointment.field.recurrence' | translate }} <span class="required">*</span></label>
+    <div *ngIf="!isEditMode" class="form-group">
+      <label for="recurrence">{{ translate('appointment.field.recurrence') }} <span class="required">*</span></label>
       <select 
         id="recurrence" 
         [(ngModel)]="form.recurrenceType" 
@@ -85,14 +102,14 @@
         class="form-control"
         [disabled]="loading || saving">
         <option *ngFor="let type of recurrenceTypes" [value]="type.value">
-          {{ type.label | translate }}
+          {{ translate(type.label) }}
         </option>
       </select>
     </div>
 
     <!-- Data Fine Ricorrenza (solo se ricorrente) -->
-    <div *ngIf="isRecurrent()" class="form-group">
-      <label for="recurrenceEndDate">{{ 'appointment.field.recurrenceEndDate' | translate }} <span class="required">*</span></label>
+    <div *ngIf="!isEditMode && isRecurrent()" class="form-group">
+      <label for="recurrenceEndDate">{{ translate('appointment.field.recurrenceEndDate') }} <span class="required">*</span></label>
       <input 
         type="date" 
         id="recurrenceEndDate" 
@@ -103,20 +120,20 @@
     </div>
 
     <!-- Promemoria -->
-    <div class="form-group">
+    <div *ngIf="!isEditMode" class="form-group">
       <label class="checkbox-label">
         <input 
           type="checkbox" 
           [(ngModel)]="form.reminderEnabled" 
           name="reminderEnabled"
           [disabled]="loading || saving" />
-        {{ 'appointment.field.reminderEnabled' | translate }}
+        {{ translate('appointment.field.reminderEnabled') }}
       </label>
     </div>
 
     <!-- Minuti prima promemoria -->
-    <div *ngIf="form.reminderEnabled" class="form-group">
-      <label for="reminderMinutes">{{ 'appointment.field.reminderMinutesBefore' | translate }}</label>
+    <div *ngIf="!isEditMode && form.reminderEnabled" class="form-group">
+      <label for="reminderMinutes">{{ translate('appointment.field.reminderMinutesBefore') }}</label>
       <input 
         type="number" 
         id="reminderMinutes" 
@@ -128,8 +145,8 @@
     </div>
 
     <!-- Note -->
-    <div class="form-group">
-      <label for="notes">{{ 'appointment.field.notes' | translate }}</label>
+    <div *ngIf="!isEditMode" class="form-group">
+      <label for="notes">{{ translate('appointment.field.notes') }}</label>
       <textarea 
         id="notes" 
         [(ngModel)]="form.notes" 
@@ -142,10 +159,13 @@
     <!-- Bottoni -->
     <div class="form-actions">
       <button type="submit" class="btn-primary" [disabled]="loading || saving">
-        {{ saving ? ('crud.saving' | translate) : ('appointment.button.create' | translate) }}
+        {{ saving ? translate('crud.saving') : translate(submitButtonKey) }}
       </button>
-      <button type="button" (click)="resetForm()" class="btn-secondary" [disabled]="loading || saving">
-        {{ 'crud.reset' | translate }}
+      <button type="button" (click)="cancel()" class="btn-secondary" [disabled]="loading || saving">
+        {{ translate('crud.actions.cancel') }}
+      </button>
+      <button *ngIf="isEditMode" type="button" (click)="deleteAppointment()" class="btn-danger" [disabled]="loading || saving">
+        {{ translate('appointment.button.delete') }}
       </button>
     </div>
   </form>

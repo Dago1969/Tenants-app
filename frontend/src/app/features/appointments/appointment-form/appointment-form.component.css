@@ -44,6 +44,15 @@ form.loading {
   margin-bottom: 20px;
 }
 
+.info-message {
+  padding: 12px;
+  background-color: #eef6ff;
+  border: 1px solid #d5e5f7;
+  color: #31577e;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
 .loading {
   text-align: center;
   padding: 40px;
@@ -121,7 +130,8 @@ textarea.form-control {
 }
 
 .btn-primary,
-.btn-secondary {
+.btn-secondary,
+.btn-danger {
   flex: 1;
   padding: 12px 20px;
   border: none;
@@ -146,12 +156,22 @@ textarea.form-control {
   color: white;
 }
 
+.btn-danger {
+  background-color: #c62828;
+  color: white;
+}
+
 .btn-secondary:hover:not(:disabled) {
   background-color: #5a6268;
 }
 
+.btn-danger:hover:not(:disabled) {
+  background-color: #a61f1f;
+}
+
 .btn-primary:disabled,
-.btn-secondary:disabled {
+.btn-secondary:disabled,
+.btn-danger:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -166,7 +186,8 @@ textarea.form-control {
   }
 
   .btn-primary,
-  .btn-secondary {
+  .btn-secondary,
+  .btn-danger {
     width: 100%;
   }
 }

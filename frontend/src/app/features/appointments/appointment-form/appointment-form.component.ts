@@ -1,8 +1,8 @@
-import { Component, OnInit, Input } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AppointmentService, Appointment, AppointmentType } from '../../services/appointment.service';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { AppointmentService, Appointment, AppointmentType } from '../../../services/appointment.service';
+import { MessageKey, t } from '../../../i18n/messages';
 
 /**
  * Component per creare un nuovo appuntamento nel piano terapeutico.
@@ -17,25 +17,23 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 @Component({
   selector: 'app-appointment-form',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './appointment-form.component.html',
   styleUrls: ['./appointment-form.component.css']
 })
-export class AppointmentFormComponent implements OnInit {
+export class AppointmentFormComponent implements OnInit, OnChanges {
   @Input() therapeuticPlanId: number | null = null;
   @Input() planNurses: any[] = []; // Array di infermieri del piano
+  @Input() embedded = false;
+  @Input() mode: 'create' | 'edit' = 'create';
+  @Input() appointmentToEdit: Appointment | null = null;
+  @Output() appointmentCreated = new EventEmitter<Appointment>();
+  @Output() appointmentSaved = new EventEmitter<Appointment>();
+  @Output() appointmentDeleted = new EventEmitter<number>();
+  @Output() cancelled = new EventEmitter<void>();
 
   appointmentTypes: AppointmentType[] = [];
-  form = {
-    appointmentTypeId: null as number | null,
-    nurseId: null as number | null,
-    startDateTime: '' as string,
-    recurrenceType: 'SINGLE' as string,
-    recurrenceEndDate: null as string | null,
-    reminderEnabled: true as boolean,
-    reminderMinutesBefore: 15 as number,
-    notes: '' as string
-  };
+  form = this.createEmptyForm();
 
   loading = false;
   saving = false;
@@ -51,22 +49,59 @@ export class AppointmentFormComponent implements OnInit {
   ];
 
   constructor(
-    private appointmentService: AppointmentService,
-    private translate: TranslateService
+    private readonly appointmentService: AppointmentService
   ) {}
+
+  get isEditMode(): boolean {
+    return this.mode === 'edit' && this.appointmentToEdit !== null;
+  }
+
+  get titleKey(): MessageKey {
+    return this.isEditMode ? 'appointment.title.edit' : 'appointment.title.create';
+  }
+
+  get submitButtonKey(): MessageKey {
+    return this.isEditMode ? 'appointment.button.update' : 'appointment.button.create';
+  }
+
+  get selectedAppointmentTypeLabel(): string {
+    const appointmentTypeId = this.form.appointmentTypeId;
+    if (!appointmentTypeId) {
+      return this.translate('common.notAvailable');
+    }
+
+    const appointmentType = this.appointmentTypes.find((type) => type.id === appointmentTypeId);
+    if (!appointmentType) {
+      return this.translate('common.notAvailable');
+    }
+
+    return `${appointmentType.name} (${appointmentType.durationMinutes}min)`;
+  }
+
+  translate(key: MessageKey): string {
+    return t(key);
+  }
 
   ngOnInit(): void {
     this.loadAppointmentTypes();
+    this.syncFormWithInputs();
+  }
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['appointmentToEdit'] || changes['mode']) {
+      this.syncFormWithInputs();
+    }
   }
 
   loadAppointmentTypes(): void {
     this.loading = true;
     this.appointmentService.getAllAppointmentTypes().subscribe({
-      next: (data) => {
+      next: (data: AppointmentType[]) => {
         this.appointmentTypes = data;
+        this.calculateEndDateTime();
         this.loading = false;
       },
-      error: (error) => {
+      error: (error: unknown) => {
         this.loading = false;
         this.errorMessage = this.resolveErrorMessage(error);
       }
@@ -74,24 +109,59 @@ export class AppointmentFormComponent implements OnInit {
   }
 
   onAppointmentTypeChange(): void {
+    this.calculateEndDateTime();
+  }
+
+  onStartDateTimeChange(): void {
+    this.calculateEndDateTime();
+  }
+
+  /**
+   * Calcola l'ora di fine appuntamento in base alla durata del tipo selezionato e all'ora di inizio.
+   * Gestisce correttamente il formato datetime-local HTML.
+   */
+  private calculateEndDateTime(): void {
+    // Validazione: devono essere presenti tipo appuntamento e ora inizio
     if (!this.form.appointmentTypeId || !this.form.startDateTime) {
       this.estimatedEndTime = '';
       return;
     }
 
-    const selectedType = this.appointmentTypes.find(t => t.id === this.form.appointmentTypeId);
-    if (!selectedType) {
+    const appointmentTypeId = Number(this.form.appointmentTypeId);
+    if (Number.isNaN(appointmentTypeId)) {
+      this.estimatedEndTime = '';
       return;
     }
 
-    // Calcola l'ora di fine basata sulla durata del tipo appuntamento
-    const startDate = new Date(this.form.startDateTime);
-    const endDate = new Date(startDate.getTime() + selectedType.durationMinutes * 60000);
-    this.estimatedEndTime = endDate.toISOString().substring(0, 16);
-  }
+    const selectedType = this.appointmentTypes.find(t => t.id === appointmentTypeId);
+    if (!selectedType || !selectedType.durationMinutes) {
+      this.estimatedEndTime = '';
+      return;
+    }
 
-  onStartDateTimeChange(): void {
-    this.onAppointmentTypeChange();
+    try {
+      // Converte il formato datetime-local (YYYY-MM-DDTHH:MM) a Date
+      // Il valore da input datetime-local è nel formato locale ma senza timezone
+      const startDateTimeStr = this.form.startDateTime;
+      
+      // Crea una Date dall'input datetime-local
+      // datetime-local ritorna formato "YYYY-MM-DDTHH:mm" senza timezone
+      const startDate = new Date(startDateTimeStr + ':00');
+      
+      // Calcola la data di fine aggiungendo i minuti di durata
+      const endDate = new Date(startDate.getTime() + selectedType.durationMinutes * 60000);
+      
+      // Formato datetime-local: YYYY-MM-DDTHH:mm
+      const year = endDate.getFullYear();
+      const month = String(endDate.getMonth() + 1).padStart(2, '0');
+      const day = String(endDate.getDate()).padStart(2, '0');
+      const hours = String(endDate.getHours()).padStart(2, '0');
+      const minutes = String(endDate.getMinutes()).padStart(2, '0');
+      
+      this.estimatedEndTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+    } catch {
+      this.estimatedEndTime = '';
+    }
   }
 
   isRecurrent(): boolean {
@@ -99,87 +169,201 @@ export class AppointmentFormComponent implements OnInit {
   }
 
   submitForm(): void {
+    const therapeuticPlanId = this.resolveTherapeuticPlanId();
+
     // Validazioni base
-    if (!this.therapeuticPlanId) {
-      this.errorMessage = this.translate.instant('appointment.error.therapeuticPlanRequired');
+    if (!therapeuticPlanId) {
+      this.errorMessage = this.translate('appointment.error.therapeuticPlanRequired');
       return;
     }
     if (!this.form.appointmentTypeId) {
-      this.errorMessage = this.translate.instant('appointment.error.appointmentTypeRequired');
+      this.errorMessage = this.translate('appointment.error.appointmentTypeRequired');
       return;
     }
     if (!this.form.nurseId) {
-      this.errorMessage = this.translate.instant('appointment.error.nurseRequired');
+      this.errorMessage = this.translate('appointment.error.nurseRequired');
       return;
     }
     if (!this.form.startDateTime) {
-      this.errorMessage = this.translate.instant('appointment.error.startDateTimeRequired');
+      this.errorMessage = this.translate('appointment.error.startDateTimeRequired');
       return;
     }
     if (!this.estimatedEndTime) {
-      this.errorMessage = this.translate.instant('appointment.error.endDateTimeRequired');
+      this.errorMessage = this.translate('appointment.error.endDateTimeRequired');
       return;
     }
     if (this.isRecurrent() && !this.form.recurrenceEndDate) {
-      this.errorMessage = this.translate.instant('appointment.error.recurrenceEndDateRequired');
+      this.errorMessage = this.translate('appointment.error.recurrenceEndDateRequired');
       return;
     }
 
-    // Prepara il payload
-    const selectedType = this.appointmentTypes.find(t => t.id === this.form.appointmentTypeId);
     const payload = {
-      therapeuticPlanId: this.therapeuticPlanId,
+      therapeuticPlanId,
       appointmentTypeId: this.form.appointmentTypeId,
       nurseId: this.form.nurseId,
-      startDateTime: new Date(this.form.startDateTime).toISOString(),
-      endDateTime: new Date(this.estimatedEndTime).toISOString(),
+      startDateTime: this.toLocalDateTimePayload(this.form.startDateTime),
+      endDateTime: this.toLocalDateTimePayload(this.estimatedEndTime),
       recurrenceType: this.form.recurrenceType,
       recurrenceEndDate: this.form.recurrenceEndDate || null,
       reminderEnabled: this.form.reminderEnabled,
       reminderMinutesBefore: this.form.reminderMinutesBefore,
+      status: this.appointmentToEdit?.status ?? 'SCHEDULED',
       notes: this.form.notes || null
     };
+
+    const request = this.isEditMode && this.appointmentToEdit?.id
+      ? this.appointmentService.updateAppointment(this.appointmentToEdit.id, payload)
+      : this.appointmentService.createAppointment(payload);
 
     this.saving = true;
     this.errorMessage = '';
     this.successMessage = '';
 
-    this.appointmentService.createAppointment(payload).subscribe({
-      next: (created) => {
+    request.subscribe({
+      next: (saved: Appointment) => {
         this.saving = false;
-        this.successMessage = this.translate.instant('appointment.message.created');
-        this.resetForm();
+        this.successMessage = this.translate(this.isEditMode ? 'appointment.message.updated' : 'appointment.message.created');
+        if (!this.isEditMode) {
+          this.appointmentCreated.emit(saved);
+          this.resetForm();
+        }
+        this.appointmentSaved.emit(saved);
       },
-      error: (error) => {
+      error: (error: unknown) => {
         this.saving = false;
         this.errorMessage = this.resolveErrorMessage(error);
       }
     });
   }
 
+  deleteAppointment(): void {
+    if (!this.isEditMode || !this.appointmentToEdit?.id) {
+      return;
+    }
+
+    if (!window.confirm(this.translate('appointment.confirm.delete'))) {
+      return;
+    }
+
+    this.saving = true;
+    this.errorMessage = '';
+
+    this.appointmentService.deleteAppointment(this.appointmentToEdit.id).subscribe({
+      next: () => {
+        this.saving = false;
+        this.successMessage = this.translate('appointment.message.deleted');
+        this.appointmentDeleted.emit(this.appointmentToEdit?.id ?? 0);
+      },
+      error: (error: unknown) => {
+        this.saving = false;
+        this.errorMessage = this.resolveErrorMessage(error);
+      }
+    });
+  }
+
+  cancel(): void {
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    this.cancelled.emit();
+  }
+
   resetForm(): void {
-    this.form = {
-      appointmentTypeId: null,
-      nurseId: null,
-      startDateTime: '',
-      recurrenceType: 'SINGLE',
-      recurrenceEndDate: null,
-      reminderEnabled: true,
-      reminderMinutesBefore: 15,
-      notes: ''
-    };
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    if (this.isEditMode) {
+      this.syncFormWithInputs();
+      return;
+    }
+
+    this.form = this.createEmptyForm();
     this.estimatedEndTime = '';
   }
 
-  private resolveErrorMessage(error: any): string {
-    const detail = typeof error?.error?.detail === 'string' ? error.error.detail.trim() : '';
+  private createEmptyForm() {
+    return {
+      appointmentTypeId: null as number | null,
+      nurseId: null as number | null,
+      startDateTime: '' as string,
+      recurrenceType: 'SINGLE' as Appointment['recurrenceType'],
+      recurrenceEndDate: null as string | null,
+      reminderEnabled: true as boolean,
+      reminderMinutesBefore: 15 as number,
+      notes: '' as string
+    };
+  }
+
+  private syncFormWithInputs(): void {
+    this.errorMessage = '';
+    this.successMessage = '';
+
+    if (!this.isEditMode || !this.appointmentToEdit) {
+      this.form = this.createEmptyForm();
+      this.estimatedEndTime = '';
+      return;
+    }
+
+    this.form = {
+      appointmentTypeId: this.appointmentToEdit.appointmentTypeId,
+      nurseId: this.appointmentToEdit.nurseId,
+      startDateTime: this.toDateTimeLocalValue(this.appointmentToEdit.startDateTime),
+      recurrenceType: this.appointmentToEdit.recurrenceType,
+      recurrenceEndDate: this.toDateInputValue(this.appointmentToEdit.recurrenceEndDate),
+      reminderEnabled: this.appointmentToEdit.reminderEnabled,
+      reminderMinutesBefore: this.appointmentToEdit.reminderMinutesBefore,
+      notes: this.appointmentToEdit.notes ?? ''
+    };
+
+    this.estimatedEndTime = this.toDateTimeLocalValue(this.appointmentToEdit.endDateTime);
+    this.calculateEndDateTime();
+  }
+
+  private resolveTherapeuticPlanId(): number | null {
+    return this.therapeuticPlanId ?? this.appointmentToEdit?.therapeuticPlanId ?? null;
+  }
+
+  private toDateTimeLocalValue(dateTime: string | null | undefined): string {
+    if (!dateTime) {
+      return '';
+    }
+
+    const parsedDate = new Date(dateTime);
+    if (Number.isNaN(parsedDate.getTime())) {
+      return '';
+    }
+
+    const year = parsedDate.getFullYear();
+    const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
+    const day = String(parsedDate.getDate()).padStart(2, '0');
+    const hours = String(parsedDate.getHours()).padStart(2, '0');
+    const minutes = String(parsedDate.getMinutes()).padStart(2, '0');
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  }
+
+  private toDateInputValue(dateValue: string | null | undefined): string | null {
+    if (!dateValue) {
+      return null;
+    }
+
+    return dateValue.slice(0, 10);
+  }
+
+  private toLocalDateTimePayload(dateTime: string): string {
+    return dateTime.length === 16 ? `${dateTime}:00` : dateTime;
+  }
+
+  private resolveErrorMessage(error: unknown): string {
+    const typedError = error as { error?: { detail?: string; message?: string } };
+    const detail = typeof typedError?.error?.detail === 'string' ? typedError.error.detail.trim() : '';
     if (detail) {
       return detail;
     }
-    const message = typeof error?.error?.message === 'string' ? error.error.message.trim() : '';
+    const message = typeof typedError?.error?.message === 'string' ? typedError.error.message.trim() : '';
     if (message) {
       return message;
     }
-    return this.translate.instant('crud.error.save');
+    return this.translate('crud.error.save');
   }
 }

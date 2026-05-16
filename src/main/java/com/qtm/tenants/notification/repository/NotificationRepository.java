@@ -17,10 +17,10 @@ import java.util.Optional;
 public interface NotificationRepository extends JpaRepository<NotificationEntity, Long> {
 
     @Override
-    @EntityGraph(attributePaths = {"therapeuticPlan", "therapeuticPlan.doctor"})
+    @EntityGraph(attributePaths = {"therapeuticPlan", "therapeuticPlan.doctorAssignments", "therapeuticPlan.doctorAssignments.doctor"})
     Optional<NotificationEntity> findById(Long id);
 
-    @EntityGraph(attributePaths = {"therapeuticPlan", "therapeuticPlan.doctor"})
+    @EntityGraph(attributePaths = {"therapeuticPlan", "therapeuticPlan.doctorAssignments", "therapeuticPlan.doctorAssignments.doctor"})
     @Query("""
         SELECT notification
         FROM NotificationEntity notification

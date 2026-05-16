@@ -66,16 +66,16 @@
       <div class="therapeutic-plan-field therapeutic-plan-field-full therapeutic-plan-operator-panel">
         <span>{{ translate('therapeuticPlan.clinical.nurses') }}</span>
 
-        <div class="therapeutic-plan-operator-selector">
-          <label *ngFor="let nurse of nurses" class="therapeutic-plan-operator-option">
-            <input
-              type="checkbox"
-              [checked]="formModel.nurseIds.includes(nurse.id)"
-              (change)="toggleNurseSelection(nurse.id)"
-            />
-            <span>{{ nurse.fullName }}</span>
-          </label>
-        </div>
+        <select
+          [(ngModel)]="formModel.nurseIds"
+          (change)="onNurseSelectionChange(formModel.nurseIds)"
+          multiple
+          class="therapeutic-plan-select"
+        >
+          <option *ngFor="let nurse of nurses" [ngValue]="nurse.id">
+            {{ nurse.fullName }}
+          </option>
+        </select>
 
         <div *ngIf="selectedNurses.length > 0; else noSelectedNurses" class="therapeutic-plan-selected-list">
           <div *ngFor="let nurse of selectedNurses; let index = index" class="therapeutic-plan-selected-item">
@@ -114,16 +114,16 @@
       <div class="therapeutic-plan-field therapeutic-plan-field-full therapeutic-plan-operator-panel">
         <span>{{ translate('therapeuticPlan.clinical.doctors') }}</span>
 
-        <div class="therapeutic-plan-operator-selector">
-          <label *ngFor="let doctor of doctors" class="therapeutic-plan-operator-option">
-            <input
-              type="checkbox"
-              [checked]="formModel.doctorIds.includes(doctor.id)"
-              (change)="toggleDoctorSelection(doctor.id)"
-            />
-            <span>{{ doctor.fullName }}</span>
-          </label>
-        </div>
+        <select
+          [(ngModel)]="formModel.doctorIds"
+          (change)="onDoctorSelectionChange(formModel.doctorIds)"
+          multiple
+          class="therapeutic-plan-select"
+        >
+          <option *ngFor="let doctor of doctors" [ngValue]="doctor.id">
+            {{ doctor.fullName }}
+          </option>
+        </select>
 
         <div *ngIf="selectedDoctors.length > 0; else noSelectedDoctors" class="therapeutic-plan-selected-list">
           <div *ngFor="let doctor of selectedDoctors; let index = index" class="therapeutic-plan-selected-item">

@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260516-09-add-appointment-modules
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: modules
+      changes:
+        - sql:
+            splitStatements: true
+            stripComments: false
+            sql: |
+              INSERT IGNORE INTO modules (code, name) VALUES
+                ('APPOINTMENT', 'Appuntamenti'),
+                ('APPOINTMENT_TYPE', 'Tipi Appuntamento');

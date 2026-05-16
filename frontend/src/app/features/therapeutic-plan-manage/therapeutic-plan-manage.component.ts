@@ -9,6 +9,8 @@ import { catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { StructureApiService, StructureDto } from '../../core/structure-api.service';
 import { MessageKey, t } from '../../i18n/messages';
+import { AppointmentService, type Appointment } from '../../services/appointment.service';
+import { AppointmentFormComponent } from '../appointments/appointment-form/appointment-form.component';
 import { PatientContactsSearchComponent } from '../patient-contacts-search/patient-contacts-search.component';
 import { QtmStepModalComponent } from '../../shared/qtm-step-modal.component';
 
@@ -89,8 +91,10 @@ interface TherapeuticPlanManageUpdatePayload {
   notes: string;
 }
 
+type TherapeuticPlanAppointmentRecord = Appointment;
+
 interface TherapeuticPlanManageTab {
-  key: 'summary' | 'patient' | 'modules' | 'visits' | 'activity-booking' | 'contact-requests';
+  key: 'summary' | 'patient' | 'modules' | 'visits' | 'activity-booking' | 'contact-requests' | 'appointments';
   titleKey: MessageKey;
 }
 
@@ -497,7 +501,7 @@ interface TherapeuticPlanMedicalRecordContentForm {
 @Component({
   selector: 'app-therapeutic-plan-manage',
   standalone: true,
-  imports: [CommonModule, FormsModule, PatientContactsSearchComponent, QtmStepModalComponent],
+  imports: [CommonModule, FormsModule, AppointmentFormComponent, PatientContactsSearchComponent, QtmStepModalComponent],
   templateUrl: './therapeutic-plan-manage.component.html',
   styleUrl: './therapeutic-plan-manage.component.css'
 })
@@ -772,7 +776,8 @@ export class TherapeuticPlanManageComponent implements OnInit {
     { key: 'modules', titleKey: 'therapeuticPlan.manage.tab.modules' },
     { key: 'visits', titleKey: 'therapeuticPlan.manage.tab.visits' },
     { key: 'activity-booking', titleKey: 'therapeuticPlan.manage.tab.activityBooking' },
-    { key: 'contact-requests', titleKey: 'therapeuticPlan.manage.tab.contactRequests' }
+    { key: 'contact-requests', titleKey: 'therapeuticPlan.manage.tab.contactRequests' },
+    { key: 'appointments', titleKey: 'therapeuticPlan.manage.tab.appointments' }
   ];
 
   // Sotto-sezioni del riepilogo per separare contenuti informativi e segnalazioni operative.
@@ -805,6 +810,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
   patient: TherapeuticPlanPatient | null = null;
   structure: StructureDto | null = null;
   nurse: TherapeuticPlanNurse | null = null;
+  availableNurses: TherapeuticPlanNurse[] = [];
   doctor: TherapeuticPlanDoctor | null = null;
   availableEquipment: TherapeuticPlanEquipment[] = [];
   selectedEquipment: TherapeuticPlanEquipment[] = [];
@@ -891,6 +897,10 @@ export class TherapeuticPlanManageComponent implements OnInit {
   contactRequestSaving = false;
   contactRequestErrorMessage = '';
   contactRequestForm: TherapeuticPlanContactRequestForm = this.createEmptyContactRequestForm();
+  appointmentEntries: TherapeuticPlanAppointmentRecord[] = [];
+  appointmentModalOpen = false;
+  appointmentModalMode: 'create' | 'edit' = 'create';
+  selectedAppointment: TherapeuticPlanAppointmentRecord | null = null;
   visitEntries: TherapeuticPlanVisitRecord[] = this.createMockVisitEntries();
   visitModalOpen = false;
   visitModalStep = 1;
@@ -909,7 +919,8 @@ export class TherapeuticPlanManageComponent implements OnInit {
     private readonly router: Router,
     private readonly http: HttpClient,
     private readonly structureApiService: StructureApiService,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
+    private readonly appointmentService: AppointmentService
   ) {}
 
   ngOnInit(): void {
@@ -949,6 +960,13 @@ export class TherapeuticPlanManageComponent implements OnInit {
     this.http.get<any[]>(url).pipe(catchError(() => of([]))).subscribe((list) => {
       const mapped = (list || []).map((entry) => this.mapContactRequestDtoToRecord(entry));
       this.contactRequestEntries = this.sortContactRequestEntries(mapped);
+    });
+  }
+
+  private fetchAppointments(planId: number): void {
+    const url = `${environment.apiBaseUrl}/appointments/therapeutic-plan/${planId}`;
+    this.http.get<TherapeuticPlanAppointmentRecord[]>(url).pipe(catchError(() => of([] as TherapeuticPlanAppointmentRecord[]))).subscribe((list) => {
+      this.appointmentEntries = [...(list ?? [])].sort((left, right) => right.startDateTime.localeCompare(left.startDateTime));
     });
   }
 
@@ -2493,6 +2511,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
         this.plan = plan;
         this.patient = patients.find((currentPatient) => currentPatient.id === plan.patientId) ?? null;
         this.structure = [...hospitals, ...specialistClinics].find((currentStructure) => currentStructure.id === plan.structureId) ?? null;
+        this.availableNurses = nurses ?? [];
         this.nurse = nurses.find((currentNurse) => currentNurse.id === plan.nurseId) ?? null;
         this.doctor = doctors.find((currentDoctor) => currentDoctor.id === plan.doctorId) ?? null;
         this.availableEquipment = (equipment ?? []).filter((currentEquipment) => currentEquipment.status === 'in_magazzino' || plan.equipmentIds?.includes(currentEquipment.id));
@@ -2506,6 +2525,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
         this.fetchVisits(planId);
         this.fetchActivityBookings(planId);
         this.fetchContactRequests(planId);
+        this.fetchAppointments(planId);
       },
       error: (error: HttpErrorResponse) => {
         this.loading = false;
@@ -2589,6 +2609,102 @@ export class TherapeuticPlanManageComponent implements OnInit {
     }
 
     return normalizedIds;
+  }
+
+  get planAssignedNurses(): TherapeuticPlanNurse[] {
+    const nurseIds = this.normalizeProfessionalIds(this.plan?.nurseIds, this.plan?.prevalentNurseId ?? this.plan?.nurseId ?? null);
+    return this.availableNurses.filter((currentNurse) => nurseIds.includes(currentNurse.id));
+  }
+
+  get appointmentModalTitleKey(): MessageKey {
+    return this.appointmentModalMode === 'edit' ? 'appointment.title.edit' : 'appointment.title.create';
+  }
+
+  get appointmentModalStepTitleKey(): MessageKey {
+    return this.appointmentModalMode === 'edit'
+      ? 'therapeuticPlan.manage.appointmentWizard.editStepTitle'
+      : 'therapeuticPlan.manage.appointmentWizard.stepTitle';
+  }
+
+  get appointmentModalStepDescriptionKey(): MessageKey {
+    return this.appointmentModalMode === 'edit'
+      ? 'therapeuticPlan.manage.appointmentWizard.editStepDescription'
+      : 'therapeuticPlan.manage.appointmentWizard.stepDescription';
+  }
+
+  openAppointmentModal(appointment?: TherapeuticPlanAppointmentRecord): void {
+    this.selectedAppointment = appointment ?? null;
+    this.appointmentModalMode = appointment ? 'edit' : 'create';
+    this.appointmentModalOpen = true;
+  }
+
+  closeAppointmentModal(): void {
+    this.appointmentModalOpen = false;
+    this.appointmentModalMode = 'create';
+    this.selectedAppointment = null;
+  }
+
+  handleAppointmentSaved(): void {
+    this.closeAppointmentModal();
+    if (this.planId !== null) {
+      this.fetchAppointments(this.planId);
+    }
+  }
+
+  handleAppointmentDeleted(): void {
+    this.handleAppointmentSaved();
+  }
+
+  deleteAppointment(appointment: TherapeuticPlanAppointmentRecord): void {
+    if (!appointment.id) {
+      return;
+    }
+
+    if (!window.confirm(this.translate('appointment.confirm.delete'))) {
+      return;
+    }
+
+    this.appointmentService.deleteAppointment(appointment.id).subscribe({
+      next: () => {
+        if (this.planId !== null) {
+          this.fetchAppointments(this.planId);
+        }
+      },
+      error: (error: unknown) => {
+        const typedError = error as { error?: { detail?: string; message?: string } };
+        const detail = typeof typedError?.error?.detail === 'string' ? typedError.error.detail.trim() : '';
+        const message = typeof typedError?.error?.message === 'string' ? typedError.error.message.trim() : '';
+        this.errorMessage = detail || message || this.translate('crud.error.save');
+      }
+    });
+  }
+
+  getAppointmentStatusLabel(status: string | null | undefined): string {
+    const normalizedStatus = this.normalizeAppointmentStatus(status);
+    const statusKeyByValue: Record<string, MessageKey> = {
+      scheduled: 'appointment.status.scheduled',
+      completed: 'appointment.status.completed',
+      cancelled: 'appointment.status.cancelled'
+    };
+
+    const statusKey = normalizedStatus ? statusKeyByValue[normalizedStatus] : undefined;
+    if (statusKey) {
+      return this.translate(statusKey);
+    }
+
+    return status?.trim() || this.translate('common.notAvailable');
+  }
+
+  getAppointmentStatusClass(status: string | null | undefined): string {
+    const normalizedStatus = this.normalizeAppointmentStatus(status);
+    return normalizedStatus ? `status-${normalizedStatus}` : 'status-unknown';
+  }
+
+  private normalizeAppointmentStatus(status: string | null | undefined): string {
+    return (status ?? '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_');
   }
 
   private createEmptyAlertForm(): TherapeuticPlanAlertForm {
@@ -4817,4 +4933,5 @@ export class TherapeuticPlanManageComponent implements OnInit {
     this.medicalRecordContentForm.dalleOreF3 = '';
     this.medicalRecordContentForm.alleOreF3 = '';
   }
+
 }

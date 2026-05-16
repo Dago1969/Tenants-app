@@ -35,6 +35,7 @@ import { EquipmentTypesCrudComponent } from './features/equipment-types/equipmen
 import { TherapeuticPlansSearchComponent } from './features/therapeutic-plans-search/therapeutic-plans-search.component';
 import { TherapeuticPlanCrudComponent } from './features/therapeutic-plan/therapeutic-plan-crud.component';
 import { TherapeuticPlanManageComponent } from './features/therapeutic-plan-manage/therapeutic-plan-manage.component';
+import { AppointmentTypesSearchComponent } from './features/appointment-types-search/appointment-types-search.component';
 import { StructureTypesCrudComponent } from './features/structure-types-crud/structure-types-crud.component';
 import { OperationLogsSearchComponent } from './features/operation-logs-search/operation-logs-search.component';
 import { STRUCTURE_MODULE_CODES } from './core/structure-module-codes';
@@ -66,6 +67,7 @@ export const appRoutes: Routes = [
   { path: 'equipment-types/search', component: EquipmentTypesSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('EQUIPMENT_TYPE')] },
   { path: 'equipment-types/manage', component: EquipmentTypesCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('EQUIPMENT_TYPE')] },
   { path: 'equipment-types/manage/:code', component: EquipmentTypesCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('EQUIPMENT_TYPE')] },
+  { path: 'appointment-types/search', component: AppointmentTypesSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('APPOINTMENT_TYPE')] },
   { path: 'users/configure/:id', component: UsersConfigureComponent, canActivate: [authGuard, moduleVisibilityGuard('USER')] },
   {
     path: 'users',

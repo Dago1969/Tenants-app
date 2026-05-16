@@ -1,5 +1,7 @@
 package com.qtm.tenants.authorization;
 
+import com.qtm.tenants.appointment.dto.AppointmentDto;
+import com.qtm.tenants.appointment.dto.AppointmentTypeDto;
 import com.qtm.tenants.equipment.dto.EquipmentDTO;
 import com.qtm.tenants.equipment.dto.EquipmentTypeDTO;
 import com.qtm.tenants.module.entity.ModuleEntity;
@@ -34,6 +36,8 @@ import java.util.stream.Stream;
 @Order(10)
 public class AuthorizationBootstrap implements CommandLineRunner {
 
+    private static final String MODULE_APPOINTMENT = "APPOINTMENT";
+    private static final String MODULE_APPOINTMENT_TYPE = "APPOINTMENT_TYPE";
     private static final String MODULE_EQUIPMENT = "EQUIPMENT";
     private static final String MODULE_EQUIPMENT_TYPE = "EQUIPMENT_TYPE";
     private static final String MODULE_PATIENT = "PATIENT";
@@ -44,10 +48,12 @@ public class AuthorizationBootstrap implements CommandLineRunner {
         private static final List<String> MODULE_CODES = Stream.of(
                 List.of("USER"),
                 StructureModuleCodes.AUTHORIZATION_MODULE_CODES,
-            List.of("ROLE", "MODULE", MODULE_FUNCTION, MODULE_PATIENT, MODULE_DOCTOR, MODULE_NURSE, MODULE_THERAPEUTIC_PLAN, MODULE_EQUIPMENT, MODULE_EQUIPMENT_TYPE)
+            List.of("ROLE", "MODULE", MODULE_FUNCTION, MODULE_PATIENT, MODULE_DOCTOR, MODULE_NURSE, MODULE_THERAPEUTIC_PLAN, MODULE_EQUIPMENT, MODULE_EQUIPMENT_TYPE, MODULE_APPOINTMENT, MODULE_APPOINTMENT_TYPE)
             )
             .flatMap(List::stream)
             .toList();
+        private static final String ENTITY_APPOINTMENT = "appointment";
+    private static final String ENTITY_APPOINTMENT_TYPE = "appointmentType";
         private static final String ENTITY_EQUIPMENT = "equipment";
     private static final String ENTITY_EQUIPMENT_TYPE = "equipmentType";
     private static final String ENTITY_PATIENT = "patient";
@@ -59,6 +65,10 @@ public class AuthorizationBootstrap implements CommandLineRunner {
             Set.of("id", "equipmentTypeCode", "equipmentTypeName")
         );
     private static final List<String> EQUIPMENT_TYPE_FIELDS = resolveEntityFields(EquipmentTypeDTO.class, Set.of("id"));
+        private static final List<String> APPOINTMENT_FIELDS = resolveEntityFields(
+            AppointmentDto.class,
+            Set.of("id", "therapeuticPlanPatientDisplayName", "appointmentTypeName", "appointmentTypeDurationMinutes", "nurseName"));
+        private static final List<String> APPOINTMENT_TYPE_FIELDS = resolveEntityFields(AppointmentTypeDto.class, Set.of("id"));
     private static final List<String> THERAPEUTIC_PLAN_FIELDS = resolveEntityFields(
             TherapeuticPlanDto.class,
             Set.of("id", "patientDisplayName", "equipmentCodes", "structureName", "nurseName", "doctorName")
@@ -126,6 +136,12 @@ public class AuthorizationBootstrap implements CommandLineRunner {
                 if (MODULE_EQUIPMENT_TYPE.equals(moduleCode)) {
                     ensureEquipmentTypeFieldAuthorizations(moduleRoleAuthorization, adminRole);
                 }
+                if (MODULE_APPOINTMENT.equals(moduleCode)) {
+                    ensureAppointmentFieldAuthorizations(moduleRoleAuthorization, adminRole);
+                }
+                if (MODULE_APPOINTMENT_TYPE.equals(moduleCode)) {
+                    ensureAppointmentTypeFieldAuthorizations(moduleRoleAuthorization, adminRole);
+                }
             }
         }
     }
@@ -163,10 +179,66 @@ public class AuthorizationBootstrap implements CommandLineRunner {
         if (MODULE_EQUIPMENT_TYPE.equals(moduleCode)) {
             return "Tipi Attrezzature";
         }
+        if (MODULE_APPOINTMENT.equals(moduleCode)) {
+            return "Appuntamenti";
+        }
+        if (MODULE_APPOINTMENT_TYPE.equals(moduleCode)) {
+            return "Tipi Appuntamento";
+        }
         if (MODULE_THERAPEUTIC_PLAN.equals(moduleCode)) {
             return "Piani Terapeutici";
         }
         return StructureModuleCodes.resolveModuleName(moduleCode);
+    }
+
+    private void ensureAppointmentFieldAuthorizations(
+            ModuleRoleAuthorizationEntity moduleRoleAuthorization,
+            boolean adminRole
+    ) {
+        Map<String, FieldAuthorizationEntity> existingByField = fieldAuthorizationRepository
+                .findAllByModuleRoleAuthorizationModuleCodeAndModuleRoleAuthorizationRoleIdAndEntityName(
+                        MODULE_APPOINTMENT,
+                        moduleRoleAuthorization.getRole().getId(),
+                        ENTITY_APPOINTMENT
+                ).stream().collect(Collectors.toMap(FieldAuthorizationEntity::getFieldName, Function.identity()));
+
+        for (String field : APPOINTMENT_FIELDS) {
+            if (existingByField.containsKey(field)) {
+                continue;
+            }
+
+            FieldAuthorizationEntity fieldAuthorization = new FieldAuthorizationEntity();
+            fieldAuthorization.setModuleRoleAuthorization(moduleRoleAuthorization);
+            fieldAuthorization.setEntityName(ENTITY_APPOINTMENT);
+            fieldAuthorization.setFieldName(field);
+            fieldAuthorization.setAuthorization(adminRole ? AuthorizationScope.FULL_EDIT : AuthorizationScope.READ_ONLY);
+            fieldAuthorizationRepository.save(fieldAuthorization);
+        }
+    }
+
+    private void ensureAppointmentTypeFieldAuthorizations(
+            ModuleRoleAuthorizationEntity moduleRoleAuthorization,
+            boolean adminRole
+    ) {
+        Map<String, FieldAuthorizationEntity> existingByField = fieldAuthorizationRepository
+                .findAllByModuleRoleAuthorizationModuleCodeAndModuleRoleAuthorizationRoleIdAndEntityName(
+                        MODULE_APPOINTMENT_TYPE,
+                        moduleRoleAuthorization.getRole().getId(),
+                        ENTITY_APPOINTMENT_TYPE
+                ).stream().collect(Collectors.toMap(FieldAuthorizationEntity::getFieldName, Function.identity()));
+
+        for (String field : APPOINTMENT_TYPE_FIELDS) {
+            if (existingByField.containsKey(field)) {
+                continue;
+            }
+
+            FieldAuthorizationEntity fieldAuthorization = new FieldAuthorizationEntity();
+            fieldAuthorization.setModuleRoleAuthorization(moduleRoleAuthorization);
+            fieldAuthorization.setEntityName(ENTITY_APPOINTMENT_TYPE);
+            fieldAuthorization.setFieldName(field);
+            fieldAuthorization.setAuthorization(adminRole ? AuthorizationScope.FULL_EDIT : AuthorizationScope.READ_ONLY);
+            fieldAuthorizationRepository.save(fieldAuthorization);
+        }
     }
 
     private void ensureTherapeuticPlanFieldAuthorizations(

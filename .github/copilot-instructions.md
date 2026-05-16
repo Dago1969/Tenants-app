@@ -1,6 +1,27 @@
 # Logging
 - Non usare mai System.out.println o System.err.println per loggare nei progetti Java: usa sempre un logger (es. SLF4J, Lombok @Slf4j, LoggerFactory, ecc.)
 
+# 🗄️ Liquibase - Modifiche Database (OBBLIGATORIO)
+**REGOLA ASSOLUTA:** Tutte le modifiche al database DEVONO essere gestite ESCLUSIVAMENTE tramite Liquibase.
+- ❌ NO modifiche manuali o script SQL diretti
+- ❌ NO Entity Java senza changelog Liquibase
+- ✅ SÌ changelog YAML in `src/main/resources/db/changelog/`
+- ✅ SÌ include del changelog nel file master `db.changelog-master.yaml`
+
+**QUANDO CREI ENTITY JAVA:**
+1. Crea la Entity con @Entity, @Table, @Column
+2. Crea IMMEDIATAMENTE il changelog Liquibase per la tabella/campi
+3. Includi il changelog nel master.yaml
+4. Non committare mai Entity senza changelog Liquibase corrispondente
+
+**FORMATO changelog:**
+- File: `YYYYMMDD-XX-descrizione.yaml` (es. `20260516-01-create-users-table.yaml`)
+- Author: `copilot`
+- PreConditions: controlla che tabella/campo non esista già
+- OnFail: `MARK_RAN`, OnError: `HALT`
+
+**Non rispettare questa regola comporta la non accettazione della modifica.**
+
 #QTM CUSTOM INSTRUCTIONS
 Quando l’utente chiede "compila tutto" devi SEMPRE:
 - Quando devi compilare o buildare una componente frontend, esegui sempre il comando dalla directory `frontend` del progetto.

@@ -182,6 +182,46 @@ export class TherapeuticPlanCrudComponent implements OnInit {
     this.currentStepIndex += 1;
   }
 
+  /**
+   * Gestisce il cambio di selezione infermieri da ng-select
+   */
+  onNurseSelectionChange(selectedIds: number[]): void {
+    const removedIds = this.formModel.nurseIds.filter(id => !selectedIds.includes(id));
+    const addedIds = selectedIds.filter(id => !this.formModel.nurseIds.includes(id));
+
+    // Se rimosso infermiere prevalente, imposta il primo della nuova lista
+    if (removedIds.includes(this.formModel.prevalentNurseId ?? -1)) {
+      this.formModel.prevalentNurseId = selectedIds[0] ?? null;
+    }
+
+    // Se aggiunto il primo infermiere, impostalo come prevalente
+    if (addedIds.length > 0 && this.formModel.prevalentNurseId === null) {
+      this.formModel.prevalentNurseId = addedIds[0] ?? null;
+    }
+
+    this.formModel.nurseIds = selectedIds;
+  }
+
+  /**
+   * Gestisce il cambio di selezione dottori da ng-select
+   */
+  onDoctorSelectionChange(selectedIds: number[]): void {
+    const removedIds = this.formModel.doctorIds.filter(id => !selectedIds.includes(id));
+    const addedIds = selectedIds.filter(id => !this.formModel.doctorIds.includes(id));
+
+    // Se rimosso dottore prevalente, imposta il primo della nuova lista
+    if (removedIds.includes(this.formModel.prevalentDoctorId ?? -1)) {
+      this.formModel.prevalentDoctorId = selectedIds[0] ?? null;
+    }
+
+    // Se aggiunto il primo dottore, impostalo come prevalente
+    if (addedIds.length > 0 && this.formModel.prevalentDoctorId === null) {
+      this.formModel.prevalentDoctorId = addedIds[0] ?? null;
+    }
+
+    this.formModel.doctorIds = selectedIds;
+  }
+
   toggleNurseSelection(nurseId: number): void {
     if (this.formModel.nurseIds.includes(nurseId)) {
       this.formModel.nurseIds = this.formModel.nurseIds.filter((currentNurseId) => currentNurseId !== nurseId);

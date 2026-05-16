@@ -18,6 +18,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.qtm.commonlib.dto.ProjectDto;
 import com.qtm.commonlib.dto.UserDto;
+import com.qtm.tenants.appointment.dto.AppointmentDto;
+import com.qtm.tenants.appointment.dto.AppointmentTypeDto;
 import com.qtm.tenants.authorization.dto.AuthorizationFieldDto;
 import com.qtm.tenants.authorization.dto.AuthorizationFunctionDto;
 import com.qtm.tenants.authorization.dto.AuthorizationModuleDto;
@@ -51,6 +53,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuthorizationManagementService {
 
+        private static final String MODULE_APPOINTMENT = "APPOINTMENT";
+        private static final String MODULE_APPOINTMENT_TYPE = "APPOINTMENT_TYPE";
         private static final String MODULE_THERAPEUTIC_PLAN = "THERAPEUTIC_PLAN";
         private static final String MODULE_EQUIPMENT = "EQUIPMENT";
         private static final String MODULE_EQUIPMENT_TYPE = "EQUIPMENT_TYPE";
@@ -113,6 +117,20 @@ public class AuthorizationManagementService {
                     "therapeuticPlan",
                     THERAPEUTIC_PLAN_FIELDS,
                     List.of()
+            ),
+            new ModuleDefinition(
+                    MODULE_APPOINTMENT,
+                    "Appuntamenti",
+                    "appointment",
+                    resolveEntityFields(AppointmentDto.class, Set.of("id", "therapeuticPlanPatientDisplayName", "appointmentTypeName", "appointmentTypeDurationMinutes", "nurseName"), Map.of()),
+                    DEFAULT_COMMON_FUNCTION_CODES
+            ),
+            new ModuleDefinition(
+                    MODULE_APPOINTMENT_TYPE,
+                    "Tipi Appuntamento",
+                    "appointmentType",
+                    resolveEntityFields(AppointmentTypeDto.class, Set.of("id"), Map.of()),
+                    DEFAULT_COMMON_FUNCTION_CODES
             ),
             new ModuleDefinition(
                     MODULE_EQUIPMENT,

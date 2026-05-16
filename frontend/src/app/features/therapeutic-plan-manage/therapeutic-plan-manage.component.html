@@ -1251,6 +1251,64 @@
         </ng-template>
       </article>
     </section>
+
+    <section *ngIf="activeTab === 'appointments'" class="manage-panel-grid">
+      <article class="manage-panel-card manage-panel-card-wide">
+        <div class="manage-section-header">
+          <div>
+            <h2>{{ translate('therapeuticPlan.manage.section.appointments') }}</h2>
+            <p class="section-copy">{{ translate('therapeuticPlan.manage.section.appointments.description') }}</p>
+          </div>
+          <button type="button" class="btn btn-primary" (click)="openAppointmentModal()">
+            {{ translate('appointment.button.create') }}
+          </button>
+        </div>
+
+        <ng-container *ngIf="appointmentEntries.length > 0; else emptyAppointmentsState">
+          <table class="manage-list-table">
+            <thead>
+              <tr>
+                <th>{{ translate('appointment.field.type') }}</th>
+                <th>{{ translate('appointment.field.nurse') }}</th>
+                <th class="appointment-date-column">{{ translate('appointment.field.startDateTime') }}</th>
+                <th class="appointment-date-column">{{ translate('appointment.field.endDateTime') }}</th>
+                <th>{{ translate('search.column.status') }}</th>
+                <th>{{ translate('appointment.field.notes') }}</th>
+                <th>{{ translate('appointment.field.actions') }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let appointment of appointmentEntries">
+                <td>{{ appointment.appointmentTypeName || translate('common.notAvailable') }}</td>
+                <td>{{ appointment.nurseName || translate('common.notAvailable') }}</td>
+                <td class="appointment-date-column">{{ formatDate(appointment.startDateTime) }}</td>
+                <td class="appointment-date-column">{{ formatDate(appointment.endDateTime) }}</td>
+                <td>
+                  <span class="status-badge" [ngClass]="getAppointmentStatusClass(appointment.status)">
+                    {{ getAppointmentStatusLabel(appointment.status) }}
+                  </span>
+                </td>
+                <td>{{ appointment.notes || '-' }}</td>
+                <td class="appointment-list-actions-cell">
+                  <div class="appointment-list-actions">
+                    <button type="button" class="appointment-action-btn" (click)="openAppointmentModal(appointment)">
+                      {{ translate('appointment.button.edit') }}
+                    </button>
+                    <button type="button" class="appointment-action-btn appointment-action-btn-danger" (click)="deleteAppointment(appointment)">
+                      {{ translate('appointment.button.delete') }}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </ng-container>
+
+        <ng-template #emptyAppointmentsState>
+          <p class="empty-state">{{ translate('therapeuticPlan.manage.empty.appointments') }}</p>
+        </ng-template>
+      </article>
+    </section>
   </ng-container>
 </div>
 
@@ -1268,6 +1326,27 @@
     </div>
   </div>
 </ng-template>
+
+<qtm-step-modal
+  *ngIf="appointmentModalOpen"
+  [title]="translate(appointmentModalTitleKey)"
+  [step]="1"
+  [totalSteps]="1"
+  [stepTitle]="translate(appointmentModalStepTitleKey)"
+  [stepDescription]="translate(appointmentModalStepDescriptionKey)"
+  (close)="closeAppointmentModal()"
+>
+  <app-appointment-form
+    [embedded]="true"
+    [mode]="appointmentModalMode"
+    [appointmentToEdit]="selectedAppointment"
+    [therapeuticPlanId]="planId"
+    [planNurses]="planAssignedNurses"
+    (appointmentSaved)="handleAppointmentSaved()"
+    (appointmentDeleted)="handleAppointmentDeleted()"
+    (cancelled)="closeAppointmentModal()"
+  ></app-appointment-form>
+</qtm-step-modal>
 
 <qtm-step-modal
   *ngIf="alertModalOpen"
