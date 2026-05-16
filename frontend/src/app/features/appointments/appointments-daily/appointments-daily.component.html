@@ -1,0 +1,50 @@
+<div class="appointments-container">
+  <div class="header">
+    <h2>{{ 'appointment.title.daily' | translate }}</h2>
+    <p class="date-info">{{ selectedDate | date: 'fullDate' }}</p>
+  </div>
+
+  <!-- Selezione data -->
+  <div class="date-selector">
+    <button (click)="previousDay()" class="btn-nav">{{ '&larr;' | translate }}</button>
+    <input type="date" [(ngModel)]="selectedDate" (change)="onDateChange()" class="date-input" />
+    <button (click)="nextDay()" class="btn-nav">{{ '&rarr;' | translate }}</button>
+    <button (click)="goToToday()" class="btn-today">{{ 'appointment.button.today' | translate }}</button>
+  </div>
+
+  <!-- Messaggio errore -->
+  <div *ngIf="errorMessage" class="error-message">
+    {{ errorMessage }}
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading">
+    {{ 'crud.loading' | translate }}
+  </div>
+
+  <!-- Elenco appuntamenti -->
+  <div *ngIf="!loading && appointments.length > 0" class="appointments-list">
+    <div *ngFor="let appointment of appointments" class="appointment-item">
+      <div class="appointment-time">
+        <span class="time-start">{{ getFormattedDate(appointment.startDateTime) }}</span>
+        <span class="time-separator">-</span>
+        <span class="time-end">{{ getFormattedDate(appointment.endDateTime) }}</span>
+        <span class="duration">({{ getDurationInMinutes(appointment.startDateTime, appointment.endDateTime) }}min)</span>
+      </div>
+      <div class="appointment-details">
+        <h3>{{ appointment.appointmentTypeName }}</h3>
+        <p class="nurse-name">{{ 'appointment.field.nurse' | translate }}: {{ appointment.nurseName }}</p>
+        <p class="patient-name">{{ 'appointment.field.patient' | translate }}: {{ appointment.therapeuticPlanPatientDisplayName }}</p>
+        <p *ngIf="appointment.notes" class="notes">{{ 'appointment.field.notes' | translate }}: {{ appointment.notes }}</p>
+        <span class="status" [ngClass]="'status-' + appointment.status.toLowerCase()">
+          {{ getStatusLabel(appointment.status) | translate }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nessun appuntamento -->
+  <div *ngIf="!loading && appointments.length === 0" class="no-appointments">
+    {{ 'appointment.message.noAppointments' | translate }}
+  </div>
+</div>

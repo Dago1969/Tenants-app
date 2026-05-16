@@ -7,6 +7,7 @@ import com.qtm.tenants.nurse.entity.NurseEntity;
 import com.qtm.tenants.nurse.mapper.NurseMapper;
 import com.qtm.tenants.nurse.repository.NurseRepository;
 import com.qtm.tenants.project.service.DashboardProjectClient;
+import com.qtm.tenants.user.service.UserOnboardingService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

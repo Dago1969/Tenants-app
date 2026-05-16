@@ -1,0 +1,61 @@
+<div class="calendar-container">
+  <div class="header">
+    <h2>{{ 'appointment.title.calendar' | translate }}</h2>
+  </div>
+
+  <!-- Messaggi errore -->
+  <div *ngIf="errorMessage" class="error-message">
+    {{ errorMessage }}
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading">
+    {{ 'crud.loading' | translate }}
+  </div>
+
+  <!-- Navigazione mese -->
+  <div class="month-navigation">
+    <button (click)="previousMonth()" class="btn-nav" [disabled]="loading">{{ '&larr;' | translate }}</button>
+    <h3>{{ monthYear }}</h3>
+    <button (click)="nextMonth()" class="btn-nav" [disabled]="loading">{{ '&rarr;' | translate }}</button>
+    <button (click)="goToToday()" class="btn-today" [disabled]="loading">{{ 'appointment.button.today' | translate }}</button>
+  </div>
+
+  <!-- Calendario -->
+  <div class="calendar">
+    <!-- Intestazione giorni settimana -->
+    <div class="calendar-header">
+      <div *ngFor="let day of weekDays" class="week-day">{{ day }}</div>
+    </div>
+
+    <!-- Griglia giorni -->
+    <div class="calendar-grid">
+      <div *ngFor="let day of daysInMonth" 
+           class="day-cell" 
+           [ngClass]="{ 'empty': day === null, 'today': isToday(day), 'with-appointments': (day !== null && getApptCountForDay(day) > 0) }">
+        <div *ngIf="day !== null" class="day-content">
+          <div class="day-number">{{ day }}</div>
+          <div *ngIf="getApptCountForDay(day) > 0" class="appointment-count">
+            {{ getApptCountForDay(day) }} {{ 'appointment.label.appointments' | translate }}
+          </div>
+          <div *ngFor="let apt of getAppointmentsForDay(day)" class="appointment-preview">
+            <span class="time">{{ apt.startDateTime | date: 'HH:mm' }}</span>
+            <span class="type">{{ apt.appointmentTypeName }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legenda -->
+  <div class="calendar-legend">
+    <div class="legend-item">
+      <div class="legend-box today"></div>
+      <span>{{ 'appointment.legend.today' | translate }}</span>
+    </div>
+    <div class="legend-item">
+      <div class="legend-box with-appointments"></div>
+      <span>{{ 'appointment.legend.withAppointments' | translate }}</span>
+    </div>
+  </div>
+</div>
