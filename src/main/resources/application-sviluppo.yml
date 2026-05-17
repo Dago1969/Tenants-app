@@ -3,7 +3,7 @@ server:
 
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:QTMTenant_${APP_KEYCLOAK_REALM_CODE}}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:QTMTenant_${APP_KEYCLOAK_REALM_CODE}}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true}
     username: ${SPRING_DATASOURCE_USERNAME:${DB_USERNAME:root}}
     password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:dago}}
     driver-class-name: com.mysql.cj.jdbc.Driver

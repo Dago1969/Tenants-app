@@ -6,6 +6,8 @@ import { AuthService } from '../../core/auth.service';
 import { STRUCTURE_MODULE_CODES } from '../../core/structure-module-codes';
 import { MessageKey, t } from '../../i18n/messages';
 import { environment } from '../../../environments/environment';
+import { AppointmentsDailyComponent } from '../appointments/appointments-daily/appointments-daily.component';
+import { AppointmentsCalendarComponent } from '../appointments/appointments-calendar/appointments-calendar.component';
 
 interface AuthorizationModuleDto {
   moduleCode: string;
@@ -15,6 +17,7 @@ interface AuthorizationModuleDto {
 interface AuthorizationRoleMatrixDto {
   roleId: string;
   modules: AuthorizationModuleDto[];
+  isNurseRole?: boolean;
 }
 
 interface DashboardLink {
@@ -29,7 +32,7 @@ interface DashboardLink {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink],
+  imports: [CommonModule, RouterLink, AppointmentsDailyComponent, AppointmentsCalendarComponent],
   template: `
     <div class="card">
       <h2>{{ translate('dashboard.tenant.title') }}</h2>
@@ -38,17 +41,30 @@ interface DashboardLink {
         <strong>{{ translate('common.role') }}:</strong> {{ selectedRole || '-' }}
       </p>
 
-      <p style="margin: 0 0 16px 0;">{{ translate('dashboard.tenant.selectArea') }}</p>
-
-      <div class="dashboard-grid">
-        <a
-          class="dashboard-link"
-          *ngFor="let link of visibleDashboardLinks"
-          [routerLink]="link.route"
-        >
-          {{ translate(link.labelKey) }}
-        </a>
-      </div>
+      <ng-container *ngIf="roleLoaded">
+        <ng-container *ngIf="!isNurseRole">
+          <p style="margin: 0 0 16px 0;">{{ translate('dashboard.tenant.selectArea') }}</p>
+          <div class="dashboard-grid">
+            <a
+              class="dashboard-link"
+              *ngFor="let link of visibleDashboardLinks"
+              [routerLink]="link.route"
+            >
+              {{ translate(link.labelKey) }}
+            </a>
+          </div>
+        </ng-container>
+        <ng-container *ngIf="isNurseRole">
+          <div style="display: flex; gap: 24px; margin-top: 24px; align-items: flex-start;">
+            <div class="dashboard-card" style="min-width:420px;max-width:600px;flex:2;">
+              <app-appointments-daily></app-appointments-daily>
+            </div>
+            <div class="dashboard-card" style="min-width:420px;max-width:600px;flex:2;">
+              <app-appointments-calendar></app-appointments-calendar>
+            </div>
+          </div>
+        </ng-container>
+      </ng-container>
     </div>
   `,
   styles: [
@@ -69,10 +85,33 @@ interface DashboardLink {
         color: #111827;
         background: #f9fafb;
         font-weight: 600;
+        margin-bottom: 8px;
       }
 
       .dashboard-link:hover {
         background: #f3f4f6;
+      }
+
+      .dashboard-card {
+        flex: 1 1 0;
+        background: #f3f4f6;
+        border-radius: 12px;
+        padding: 24px 20px;
+        min-width: 260px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+      .dashboard-card h3 {
+        margin-top: 0;
+        margin-bottom: 8px;
+        font-size: 1.2rem;
+        color: #2563eb;
+      }
+      .dashboard-card p {
+        margin: 0;
+        color: #374151;
       }
     `
   ]
@@ -81,6 +120,8 @@ export class DashboardComponent implements OnInit {
   selectedRole = '';
   selectedClient = '';
   hiddenModuleCodes = new Set<string>();
+  isNurseRole = false;
+  roleLoaded = false;
 
   readonly dashboardLinks: DashboardLink[] = [
     { route: '/users', labelKey: 'menu.usersSearch', moduleCode: 'USER' },
@@ -100,6 +141,8 @@ export class DashboardComponent implements OnInit {
   ) {}
 
   get visibleDashboardLinks(): DashboardLink[] {
+    // Se ruolo infermiere, nessun pulsante
+    if (this.isNurseRole) return [];
     return this.dashboardLinks.filter((link) => !link.moduleCode || !this.hiddenModuleCodes.has(link.moduleCode));
   }
 
@@ -116,6 +159,8 @@ export class DashboardComponent implements OnInit {
   private loadModuleVisibility(): void {
     if (!this.selectedRole) {
       this.hiddenModuleCodes.clear();
+      this.isNurseRole = false;
+      this.roleLoaded = true;
       return;
     }
 
@@ -128,9 +173,13 @@ export class DashboardComponent implements OnInit {
               .filter((module) => module.moduleAuthorization === 'hide-field')
               .map((module) => module.moduleCode)
           );
+          this.isNurseRole = !!matrix.isNurseRole;
+          this.roleLoaded = true;
         },
         error: () => {
           this.hiddenModuleCodes.clear();
+          this.isNurseRole = false;
+          this.roleLoaded = true;
         }
       });
   }

@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MessageKey, t } from '../../i18n/messages';
+import { formatQtmLocalDate } from '../../shared/local-date-time.util';
 
 type PatientContactType = 'phoneCall' | 'homeVisit' | 'message' | 'caregiverUpdate';
 
@@ -154,15 +155,6 @@ export class PatientContactsSearchComponent {
   }
 
   formatDate(value: string): string {
-    const parsedDate = new Date(value);
-    if (Number.isNaN(parsedDate.getTime())) {
-      return value;
-    }
-
-    return new Intl.DateTimeFormat(undefined, {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    }).format(parsedDate);
+    return formatQtmLocalDate(value) || value;
   }
 }

@@ -128,6 +128,12 @@ export class AppComponent implements OnDestroy {
     { labelKey: 'menu.therapeuticPlansSearch', route: '/therapeutic-plans/search', moduleCode: 'THERAPEUTIC_PLAN' }
   ];
 
+  nurseMenuItems: MenuItem[] = [
+    { labelKey: 'menu.dashboard', route: '/dashboard' },
+    { labelKey: 'menu.appointmentsDaily', route: '/appointments/daily' },
+    { labelKey: 'menu.appointmentsCalendar', route: '/appointments/calendar' }
+  ];
+
   structureMenuItems: MenuItem[] = [
     { labelKey: 'menu.structure.aslSearch', route: '/structures/asl', moduleCode: STRUCTURE_MODULE_CODES.ASL, iconSrc: 'assets/asl.png' },
     { labelKey: 'menu.structure.hospitalSearch', route: '/structures/hospitals', moduleCode: STRUCTURE_MODULE_CODES.HOSPITAL, iconSrc: 'assets/hospital.png' },

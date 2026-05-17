@@ -1,6 +1,6 @@
 <div class="calendar-container">
   <div class="header">
-    <h2>{{ 'appointment.title.calendar' | translate }}</h2>
+    <h2>{{ translate('appointment.title.calendar') }}</h2>
   </div>
 
   <!-- Messaggi errore -->
@@ -10,22 +10,22 @@
 
   <!-- Loading -->
   <div *ngIf="loading" class="loading">
-    {{ 'crud.loading' | translate }}
+    {{ translate('crud.loading') }}
   </div>
 
   <!-- Navigazione mese -->
   <div class="month-navigation">
-    <button (click)="previousMonth()" class="btn-nav" [disabled]="loading">{{ '&larr;' | translate }}</button>
+    <button (click)="previousMonth()" class="btn-nav" [disabled]="loading">&larr;</button>
     <h3>{{ monthYear }}</h3>
-    <button (click)="nextMonth()" class="btn-nav" [disabled]="loading">{{ '&rarr;' | translate }}</button>
-    <button (click)="goToToday()" class="btn-today" [disabled]="loading">{{ 'appointment.button.today' | translate }}</button>
+    <button (click)="nextMonth()" class="btn-nav" [disabled]="loading">&rarr;</button>
+    <button (click)="goToToday()" class="btn-today" [disabled]="loading">{{ translate('appointment.button.today') }}</button>
   </div>
 
   <!-- Calendario -->
   <div class="calendar">
     <!-- Intestazione giorni settimana -->
     <div class="calendar-header">
-      <div *ngFor="let day of weekDays" class="week-day">{{ day }}</div>
+      <div *ngFor="let day of weekDayKeys" class="week-day">{{ translate(day) }}</div>
     </div>
 
     <!-- Griglia giorni -->
@@ -36,11 +36,19 @@
         <div *ngIf="day !== null" class="day-content">
           <div class="day-number">{{ day }}</div>
           <div *ngIf="getApptCountForDay(day) > 0" class="appointment-count">
-            {{ getApptCountForDay(day) }} {{ 'appointment.label.appointments' | translate }}
+            {{ getApptCountForDay(day) }} {{ translate('appointment.label.appointments') }}
           </div>
           <div *ngFor="let apt of getAppointmentsForDay(day)" class="appointment-preview">
-            <span class="time">{{ apt.startDateTime | date: 'HH:mm' }}</span>
-            <span class="type">{{ apt.appointmentTypeName }}</span>
+            <div class="appointment-preview-main">
+              <span class="time">{{ getFormattedTime(apt.startDateTime) }}</span>
+              <span class="type">{{ apt.appointmentTypeName }}</span>
+            </div>
+            <div class="patient" [title]="apt.therapeuticPlanPatientDisplayName">
+              {{ apt.therapeuticPlanPatientDisplayName }}
+            </div>
+            <span class="status" [ngClass]="'status-' + apt.status.toLowerCase()">
+              {{ translate(getStatusLabel(apt.status)) }}
+            </span>
           </div>
         </div>
       </div>
@@ -51,11 +59,11 @@
   <div class="calendar-legend">
     <div class="legend-item">
       <div class="legend-box today"></div>
-      <span>{{ 'appointment.legend.today' | translate }}</span>
+      <span>{{ translate('appointment.legend.today') }}</span>
     </div>
     <div class="legend-item">
       <div class="legend-box with-appointments"></div>
-      <span>{{ 'appointment.legend.withAppointments' | translate }}</span>
+      <span>{{ translate('appointment.legend.withAppointments') }}</span>
     </div>
   </div>
 </div>

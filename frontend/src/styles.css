@@ -219,6 +219,68 @@ textarea {
   transform: scale(1.05);
 }
 
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.visit-images-step-shell,
+.visit-images-list,
+.visit-images-summary-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.visit-images-upload-section {
+  align-items: start;
+}
+
+.visit-images-upload-section .alert-modal-field > span {
+  color: #355277;
+  font-weight: 700;
+}
+
+.visit-images-table-wrapper {
+  overflow-x: auto;
+}
+
+.visit-images-summary-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.visit-image-summary-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #dbe6f4;
+  border-radius: 18px;
+  background: #f8fbff;
+}
+
+.visit-image-summary-preview {
+  display: block;
+  width: 100%;
+  height: 180px;
+  object-fit: contain;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #dbe6f4;
+}
+
+.visit-image-summary-meta {
+  display: grid;
+  gap: 4px;
+  color: #203c66;
+  font-size: 14px;
+}
+
 .phone-intl-input.phone-field-invalid .iti__tel-input {
   border-color: #d32f2f;
 }

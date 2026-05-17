@@ -40,6 +40,9 @@ import { StructureTypesCrudComponent } from './features/structure-types-crud/str
 import { OperationLogsSearchComponent } from './features/operation-logs-search/operation-logs-search.component';
 import { STRUCTURE_MODULE_CODES } from './core/structure-module-codes';
 import { moduleVisibilityGuard } from './core/module-visibility.guard';
+import { AppointmentsDailyComponent } from './features/appointments/appointments-daily/appointments-daily.component';
+import { AppointmentsCalendarComponent } from './features/appointments/appointments-calendar/appointments-calendar.component';
+import { AppointmentDetailsComponent } from './features/appointments/appointment-details/appointment-details.component';
 
 /**
  * Routing applicativo tenants con protezione JWT e pagine CRUD.
@@ -142,6 +145,9 @@ export const appRoutes: Routes = [
   { path: 'nurses', component: NursesCrudComponent, canActivate: [authGuard, moduleVisibilityGuard('NURSE')] },
   { path: 'not-authorized', component: NotAuthorizedComponent },
   { path: 'forbidden', component: ForbiddenComponent },
+  { path: 'appointments/daily', component: AppointmentsDailyComponent, canActivate: [authGuard] },
+  { path: 'appointments/calendar', component: AppointmentsCalendarComponent, canActivate: [authGuard] },
+  { path: 'appointments/details/:id', component: AppointmentDetailsComponent, canActivate: [authGuard] },
   // { path: 'structures/asl/add', component: AddWizardComponentAsl, canActivate: [authGuard, moduleVisibilityGuard('STRUCTURE')] },
   { path: '**', redirectTo: 'dashboard' },
 ];

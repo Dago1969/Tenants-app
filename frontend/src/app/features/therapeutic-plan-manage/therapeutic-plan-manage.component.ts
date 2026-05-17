@@ -13,6 +13,13 @@ import { AppointmentService, type Appointment } from '../../services/appointment
 import { AppointmentFormComponent } from '../appointments/appointment-form/appointment-form.component';
 import { PatientContactsSearchComponent } from '../patient-contacts-search/patient-contacts-search.component';
 import { QtmStepModalComponent } from '../../shared/qtm-step-modal.component';
+import {
+  formatQtmFlexibleDate,
+  getQtmCurrentDateInputValue,
+  getQtmCurrentDateTimeLocalInputValue,
+  toQtmDateTimeLocalValue,
+  toQtmLocalDateTimePayload
+} from '../../shared/local-date-time.util';
 
 interface TherapeuticPlanManageResponse {
   id?: number;
@@ -258,6 +265,18 @@ interface TherapeuticPlanVisitRecord {
   autonomyStatus: TherapeuticPlanVisitAutonomyStatus;
   autonomyActions: TherapeuticPlanVisitAutonomyActions;
   manualJsonData?: Record<string, unknown> | null;
+}
+
+interface TherapeuticPlanVisitImageEntry {
+  id: number;
+  visitDate: string;
+  imageName: string;
+  imageType: string;
+  description: string;
+  uploadDate: string;
+  persisted: boolean;
+  previewUrl?: string;
+  file?: File;
 }
 
 interface TherapeuticPlanVisitForm {
@@ -804,6 +823,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
   loading = true;
   errorMessage = '';
   activeTab: TherapeuticPlanManageTab['key'] = 'summary';
+  selectedRole = '';
   activeSummarySubTab: TherapeuticPlanSummarySubTab['key'] = 'notifications';
   planId: number | null = null;
   plan: TherapeuticPlanManageResponse | null = null;
@@ -913,6 +933,18 @@ export class TherapeuticPlanManageComponent implements OnInit {
   visitSummaryModalOpen = false;
   visitSummaryModalStep = 1;
   visitSummarySelectedVisit: TherapeuticPlanVisitRecord | null = null;
+  // Proprietà per la gestione delle immagini delle visite
+  visitImageEntries: TherapeuticPlanVisitImageEntry[] = [];
+  visitSummaryImageEntries: TherapeuticPlanVisitImageEntry[] = [];
+  visitImageUploading = false;
+  visitImageErrorMessage = '';
+  visitImageDescriptionForm = '';
+  private nextVisitImageTempId = -1;
+  private pendingRequestedTab: TherapeuticPlanManageTab['key'] | null = null;
+  private shouldOpenVisitWizard = false;
+  private pendingAppointmentId: number | null = null;
+  private pendingAppointmentStartedAt: string | null = null;
+  private pendingAppointmentDateTime: string | null = null;
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -923,7 +955,20 @@ export class TherapeuticPlanManageComponent implements OnInit {
     private readonly appointmentService: AppointmentService
   ) {}
 
+  get isNurseQtmRole(): boolean {
+    return this.selectedRole === 'NURSE_QTM';
+  }
+
+  get visibleTabs(): TherapeuticPlanManageTab[] {
+    if (this.isNurseQtmRole) {
+      return this.tabs.filter((tab) => tab.key === 'visits');
+    }
+
+    return this.tabs;
+  }
+
   ngOnInit(): void {
+    this.selectedRole = this.authService.getSelectedRole();
     const idParam = this.route.snapshot.paramMap.get('id');
     const normalizedId = idParam ? Number(idParam) : Number.NaN;
     if (Number.isNaN(normalizedId) || normalizedId <= 0) {
@@ -931,6 +976,18 @@ export class TherapeuticPlanManageComponent implements OnInit {
       this.errorMessage = this.translate('therapeuticPlan.manage.error.invalidId');
       return;
     }
+
+    const requestedTab = this.route.snapshot.queryParamMap.get('tab');
+    if (this.isManageTabKey(requestedTab)) {
+      this.pendingRequestedTab = requestedTab;
+    } else if (this.route.snapshot.fragment === 'visits') {
+      this.pendingRequestedTab = 'visits';
+    }
+
+    this.shouldOpenVisitWizard = this.route.snapshot.queryParamMap.get('openVisitWizard') === 'true';
+    this.pendingAppointmentId = this.parsePositiveNumber(this.route.snapshot.queryParamMap.get('appointmentId'));
+    this.pendingAppointmentStartedAt = this.route.snapshot.queryParamMap.get('appointmentStartedAt');
+    this.pendingAppointmentDateTime = this.route.snapshot.queryParamMap.get('appointmentDateTime');
 
     this.planId = normalizedId;
     this.loadManageData(normalizedId);
@@ -1058,6 +1115,11 @@ export class TherapeuticPlanManageComponent implements OnInit {
   }
 
   setActiveTab(tabKey: TherapeuticPlanManageTab['key']): void {
+    if (this.isNurseQtmRole && tabKey !== 'visits') {
+      this.activeTab = 'visits';
+      return;
+    }
+
     this.activeTab = tabKey;
   }
 
@@ -1421,6 +1483,10 @@ export class TherapeuticPlanManageComponent implements OnInit {
   }
 
   get visitModalStepTitleKey(): MessageKey | string {
+    if (this.isVisitImagesStep) {
+      return 'therapeuticPlan.visits.modal.step8.images.title';
+    }
+
     if (!this.visitJsonSchemaAvailable) {
       return this.visitModalStep === 2
         ? 'therapeuticPlan.visits.modal.manualJson.title'
@@ -1443,6 +1509,10 @@ export class TherapeuticPlanManageComponent implements OnInit {
   }
 
   get visitModalStepDescriptionKey(): MessageKey | string {
+    if (this.isVisitImagesStep) {
+      return 'therapeuticPlan.visits.modal.step8.images.description';
+    }
+
     if (!this.visitJsonSchemaAvailable) {
       return this.visitModalStep === 2
         ? 'therapeuticPlan.visits.modal.manualJson.description'
@@ -1466,15 +1536,19 @@ export class TherapeuticPlanManageComponent implements OnInit {
 
   get visitModalTotalSteps(): number {
     if (!this.visitJsonSchemaAvailable) {
-      return 2;
+      return 3;
     }
 
     return this.useLegacyVisitSchemaLayout
-      ? this.legacyVisitModalSteps + this.visitSchemaFieldPages.length
-      : Math.max(1, 1 + this.visitSchemaFieldPages.length);
+      ? this.legacyVisitModalSteps + this.visitSchemaFieldPages.length + 1
+      : Math.max(1, 1 + this.visitSchemaFieldPages.length + 1);
   }
 
   get isLastVisitModalStep(): boolean {
+    return this.visitModalStep === this.visitModalTotalSteps;
+  }
+
+  get isVisitImagesStep(): boolean {
     return this.visitModalStep === this.visitModalTotalSteps;
   }
 
@@ -1495,19 +1569,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
       return this.translate('common.notAvailable');
     }
 
-    const parsedDate = new Date(value);
-    if (Number.isNaN(parsedDate.getTime())) {
-      return value;
-    }
-
-    const includeTime = value.includes('T') || /\d{2}:\d{2}/.test(value);
-
-    return new Intl.DateTimeFormat(undefined, {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      ...(includeTime ? { hour: '2-digit', minute: '2-digit' } : {})
-    }).format(parsedDate);
+    return formatQtmFlexibleDate(value) || value;
   }
 
   openAlertModal(): void {
@@ -1828,6 +1890,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
   openVisitModal(): void {
     this.visitErrorMessage = '';
     this.visitModalStep = 1;
+    this.resetVisitImageState();
     this.visitForm = this.createEmptyVisitForm();
     this.visitManualJsonEntries = [{ key: '', value: '' }];
     // Inizializza i dati paziente nei campi del form visita step1
@@ -1873,6 +1936,15 @@ export class TherapeuticPlanManageComponent implements OnInit {
     }
     this.refreshVisitSchemaArrayViews();
     this.syncVisitFormFromDynamic();
+
+    if (this.pendingAppointmentDateTime) {
+      const appointmentDateTime = this.toDateTimeLocalInputValue(this.pendingAppointmentDateTime);
+      if (appointmentDateTime) {
+        this.visitForm.date = appointmentDateTime;
+      }
+      this.pendingAppointmentDateTime = null;
+    }
+
     this.visitModalOpen = true;
   }
 
@@ -2085,6 +2157,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
     this.visitModalOpen = false;
     this.visitModalStep = 1;
     this.visitErrorMessage = '';
+    this.resetVisitImageState();
     this.visitJsonSchemaAvailable = false;
     this.visitManualJsonEntries = [{ key: '', value: '' }];
     this.visitForm = this.createEmptyVisitForm();
@@ -2106,6 +2179,128 @@ export class TherapeuticPlanManageComponent implements OnInit {
   goToPreviousVisitModalStep(): void {
     this.visitErrorMessage = '';
     this.visitModalStep = Math.max(1, this.visitModalStep - 1);
+  }
+
+  /**
+   * Accoda un'immagine per il caricamento dopo il salvataggio della visita.
+   */
+  onVisitImageFileSelected(event: any): void {
+    const inputElement = event.target as HTMLInputElement;
+    const file = inputElement.files?.[0];
+    if (!file) {
+      return;
+    }
+
+    this.visitImageErrorMessage = '';
+
+    this.visitImageEntries = [
+      ...this.visitImageEntries,
+      {
+        id: this.nextVisitImageTempId--,
+        visitDate: this.visitForm.date,
+        imageName: file.name,
+        imageType: file.type || 'application/octet-stream',
+        description: this.visitImageDescriptionForm.trim(),
+        uploadDate: new Date().toISOString(),
+        persisted: false,
+        previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+        file
+      }
+    ];
+
+    this.visitImageDescriptionForm = '';
+    inputElement.value = '';
+  }
+
+  /**
+   * Elimina un'immagine dalla visita
+   */
+  deleteVisitImage(image: TherapeuticPlanVisitImageEntry): void {
+    if (!image.persisted) {
+      this.revokeImagePreview(image);
+      this.visitImageEntries = this.visitImageEntries.filter((entry) => entry.id !== image.id);
+      return;
+    }
+
+    const visitDate = this.encodeVisitDateForPath(image.visitDate);
+    const url = `${environment.apiBaseUrl}/therapeutic-plans/${this.planId}/visits/${visitDate}/images/${image.id}`;
+
+    this.http.delete(url)
+      .pipe(
+        catchError(() => {
+          this.visitImageErrorMessage = this.translate('therapeuticPlan.visits.images.error.deleteFailed');
+          return of(null);
+        })
+      )
+      .subscribe((result) => {
+        if (result === null) {
+          return;
+        }
+
+        this.revokeImagePreview(image);
+        this.visitImageEntries = this.visitImageEntries.filter((entry) => entry.id !== image.id);
+      });
+  }
+
+  /**
+   * Scarica un'immagine
+   */
+  downloadVisitImage(image: TherapeuticPlanVisitImageEntry): void {
+    if (!image.persisted && image.previewUrl) {
+      window.open(image.previewUrl, '_blank');
+      return;
+    }
+
+    const visitDate = this.encodeVisitDateForPath(image.visitDate);
+    const url = `${environment.apiBaseUrl}/therapeutic-plans/${this.planId}/visits/${visitDate}/images/${image.id}/download`;
+    window.open(url, '_blank');
+  }
+
+  /**
+   * Carica le immagini persistite di una visita.
+   */
+  private loadVisitImages(visitDate: string, target: 'modal' | 'summary', includePreview: boolean): void {
+    if (!this.planId || !visitDate) {
+      this.assignVisitImages(target, []);
+      return;
+    }
+
+    const encodedVisitDate = this.encodeVisitDateForPath(visitDate);
+    const url = `${environment.apiBaseUrl}/therapeutic-plans/${this.planId}/visits/${encodedVisitDate}/images`;
+
+    this.http.get<any[]>(url)
+      .pipe(catchError(() => of([])))
+      .subscribe((images) => {
+        const mapped: TherapeuticPlanVisitImageEntry[] = (images || []).map((img) => ({
+          id: Number(img.id),
+          visitDate,
+          imageName: img.imageName,
+          imageType: img.imageType,
+          description: img.description || '',
+          uploadDate: img.uploadDate,
+          persisted: true
+        }));
+
+        if (!includePreview || mapped.length === 0) {
+          this.assignVisitImages(target, mapped);
+          return;
+        }
+
+        forkJoin(
+          mapped.map((image) =>
+            this.http.get(`${environment.apiBaseUrl}/therapeutic-plans/${this.planId}/visits/${encodedVisitDate}/images/${image.id}/download`, { responseType: 'blob' })
+              .pipe(catchError(() => of(null)))
+          )
+        ).subscribe((blobs) => {
+          this.assignVisitImages(
+            target,
+            mapped.map((image, index) => ({
+              ...image,
+              previewUrl: blobs[index] instanceof Blob ? URL.createObjectURL(blobs[index] as Blob) : undefined
+            }))
+          );
+        });
+      });
   }
 
   saveVisit(): void {
@@ -2143,11 +2338,14 @@ export class TherapeuticPlanManageComponent implements OnInit {
     const url = `${environment.apiBaseUrl}/therapeutic-plans/${this.planId}/visits`;
     this.http.post<any>(url, payload).subscribe({
       next: (saved) => {
-        // after successful persist, reload visits from DB
-        if (this.planId != null) {
-          this.fetchVisits(this.planId);
-        }
-        this.closeVisitModal();
+        const persistedVisitDate = this.getFirstNonBlankString(saved?.date, payload.date);
+        this.uploadQueuedVisitImages(persistedVisitDate, () => {
+          if (this.planId != null) {
+            this.fetchVisits(this.planId);
+          }
+          this.completePendingAppointmentAfterVisitSave();
+          this.closeVisitModal();
+        });
       },
       error: (err) => {
         this.visitErrorMessage = this.translate('therapeuticPlan.visits.saveError') || 'Errore durante il salvataggio della visita';
@@ -2196,44 +2394,65 @@ export class TherapeuticPlanManageComponent implements OnInit {
       return;
     }
 
-    const iframe = window.document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.opacity = '0';
-    iframe.style.pointerEvents = 'none';
-    iframe.style.border = '0';
-    iframe.setAttribute('aria-hidden', 'true');
-    window.document.body.appendChild(iframe);
+    const detailVisit = visitsToPrint[0] ?? null;
+    const getPdfFileName = (v: TherapeuticPlanVisitRecord): string => {
+      const name = `${v.patientFirstName ?? ''}_${v.patientLastName ?? ''}`.replace(/\s+/g, '_');
+      const date = (v.date ?? '').replace(/[^0-9]/g, '').slice(0, 8); // YYYYMMDD
+      return `visita_${name}_${date || 'data'}`.replace(/_+/g, '_') + '.pdf';
+    };
 
-    const iframeWindow = iframe.contentWindow;
-    if (!iframeWindow) {
-      iframe.remove();
+    const renderPrint = (visitImages: TherapeuticPlanVisitImageEntry[]): void => {
+      // Solo stampa tramite dialog con titolo personalizzato
+      const iframe = window.document.createElement('iframe');
+      iframe.style.position = 'fixed';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.opacity = '0';
+      iframe.style.pointerEvents = 'none';
+      iframe.style.border = '0';
+      iframe.setAttribute('aria-hidden', 'true');
+      window.document.body.appendChild(iframe);
+
+      const iframeWindow = iframe.contentWindow;
+      if (!iframeWindow) {
+        iframe.remove();
+        return;
+      }
+
+      const cleanup = (): void => {
+        this.revokeImagePreviews(visitImages);
+        window.setTimeout(() => iframe.remove(), 0);
+      };
+
+      iframeWindow.onafterprint = cleanup;
+      iframeWindow.document.open();
+      iframeWindow.document.write(this.buildVisitPrintDocument(visitsToPrint, visitImages, detailVisit));
+      iframeWindow.document.close();
+
+      window.setTimeout(() => {
+        iframeWindow.focus();
+        iframeWindow.print();
+      }, 300);
+    };
+
+    if (!detailVisit) {
+      renderPrint([]);
       return;
     }
 
-    const cleanup = (): void => {
-      window.setTimeout(() => iframe.remove(), 0);
-    };
-
-    iframeWindow.onafterprint = cleanup;
-    iframeWindow.document.open();
-    iframeWindow.document.write(this.buildVisitPrintDocument(visitsToPrint));
-    iframeWindow.document.close();
-
-    window.setTimeout(() => {
-      iframeWindow.focus();
-      iframeWindow.print();
-    }, 300);
+    this.fetchVisitImagesForPrint(detailVisit.date, renderPrint);
   }
 
   openVisitSummaryModal(visit: TherapeuticPlanVisitRecord): void {
+    this.resetVisitSummaryImageState();
     this.visitSummarySelectedVisit = visit;
     this.visitSummaryModalStep = 1;
     this.visitSummaryModalOpen = true;
+    this.loadVisitImages(visit.date, 'summary', true);
   }
 
   closeVisitSummaryModal(): void {
+    this.resetVisitSummaryImageState();
     this.visitSummaryModalOpen = false;
     this.visitSummaryModalStep = 1;
     this.visitSummarySelectedVisit = null;
@@ -2248,6 +2467,10 @@ export class TherapeuticPlanManageComponent implements OnInit {
   }
 
   get visitSummaryModalStepTitleKey(): MessageKey | string {
+    if (this.isVisitSummaryImagesStep) {
+      return 'therapeuticPlan.visits.preview.images.title';
+    }
+
     if (!this.hasVisitProjectJsonSchema) {
       return this.visitSummaryModalStep === 2
         ? 'therapeuticPlan.visits.preview.manualJson.title'
@@ -2268,6 +2491,10 @@ export class TherapeuticPlanManageComponent implements OnInit {
   }
 
   get visitSummaryModalStepDescriptionKey(): MessageKey | string {
+    if (this.isVisitSummaryImagesStep) {
+      return 'therapeuticPlan.visits.preview.images.description';
+    }
+
     if (!this.hasVisitProjectJsonSchema) {
       return this.visitSummaryModalStep === 2
         ? 'therapeuticPlan.visits.preview.manualJson.description'
@@ -2289,15 +2516,19 @@ export class TherapeuticPlanManageComponent implements OnInit {
 
   get visitSummaryModalTotalSteps(): number {
     if (!this.hasVisitProjectJsonSchema) {
-      return 2;
+      return 3;
     }
 
     return this.useLegacyVisitSchemaLayout
-      ? this.legacyVisitSummarySteps + this.visitSummarySchemaFieldPages.length
-      : Math.max(1, 1 + this.visitSummarySchemaFieldPages.length);
+      ? this.legacyVisitSummarySteps + this.visitSummarySchemaFieldPages.length + 1
+      : Math.max(1, 1 + this.visitSummarySchemaFieldPages.length + 1);
   }
 
   get isLastVisitSummaryModalStep(): boolean {
+    return this.visitSummaryModalStep === this.visitSummaryModalTotalSteps;
+  }
+
+  get isVisitSummaryImagesStep(): boolean {
     return this.visitSummaryModalStep === this.visitSummaryModalTotalSteps;
   }
 
@@ -2521,6 +2752,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
         this.notifications = this.sortNotifications(notifications ?? []);
         this.alerts = this.sortAlerts(alerts ?? []);
         this.loading = false;
+        this.applyInitialViewState();
         // load visits from backend
         this.fetchVisits(planId);
         this.fetchActivityBookings(planId);
@@ -2609,6 +2841,98 @@ export class TherapeuticPlanManageComponent implements OnInit {
     }
 
     return normalizedIds;
+  }
+
+  private applyInitialViewState(): void {
+    if (this.isNurseQtmRole) {
+      this.activeTab = 'visits';
+    } else if (this.pendingRequestedTab) {
+      this.activeTab = this.pendingRequestedTab;
+    }
+
+    if (this.shouldOpenVisitWizard) {
+      this.activeTab = 'visits';
+      this.openVisitModal();
+      this.shouldOpenVisitWizard = false;
+    }
+  }
+
+  private completePendingAppointmentAfterVisitSave(): void {
+    if (this.pendingAppointmentId === null || this.planId === null) {
+      return;
+    }
+
+    this.appointmentService.getByTherapeuticPlan(this.planId).subscribe({
+      next: (appointments) => {
+        const appointmentToComplete = appointments.find((appointment) => appointment.id === this.pendingAppointmentId);
+        if (!appointmentToComplete) {
+          this.clearVisitWizardQueryParams();
+          return;
+        }
+
+        const actualVisitStartDateTime = this.pendingAppointmentStartedAt
+          ?? appointmentToComplete.startDateTime
+          ?? this.normalizeLocalDateTimeForBackend(this.visitForm.date);
+        const actualVisitEndDateTime = this.normalizeLocalDateTimeForBackend(this.getCurrentDateTimeLocalInputValue());
+
+        this.appointmentService.updateAppointment(appointmentToComplete.id, {
+          ...appointmentToComplete,
+          status: 'COMPLETED',
+          startDateTime: actualVisitStartDateTime,
+          endDateTime: actualVisitEndDateTime
+        }).subscribe({
+          next: () => {
+            if (this.planId !== null) {
+              this.fetchAppointments(this.planId);
+            }
+            this.clearVisitWizardQueryParams();
+          },
+          error: () => {
+            this.clearVisitWizardQueryParams();
+          }
+        });
+      },
+      error: () => {
+        this.clearVisitWizardQueryParams();
+      }
+    });
+  }
+
+  private clearVisitWizardQueryParams(): void {
+    this.pendingAppointmentId = null;
+    this.pendingAppointmentStartedAt = null;
+    this.pendingAppointmentDateTime = null;
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {
+        tab: 'visits',
+        openVisitWizard: null,
+        appointmentId: null,
+        appointmentStartedAt: null,
+        appointmentDateTime: null
+      },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
+  }
+
+  private isManageTabKey(value: string | null): value is TherapeuticPlanManageTab['key'] {
+    return value === 'summary'
+      || value === 'patient'
+      || value === 'modules'
+      || value === 'visits'
+      || value === 'activity-booking'
+      || value === 'contact-requests'
+      || value === 'appointments';
+  }
+
+  private parsePositiveNumber(value: string | null): number | null {
+    if (!value) {
+      return null;
+    }
+
+    const parsedValue = Number(value);
+    return Number.isInteger(parsedValue) && parsedValue > 0 ? parsedValue : null;
   }
 
   get planAssignedNurses(): TherapeuticPlanNurse[] {
@@ -3758,26 +4082,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
   }
 
   private toDateTimeLocalInputValue(value: string): string {
-    const trimmedValue = value.trim();
-    if (!trimmedValue) {
-      return '';
-    }
-
-    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(trimmedValue)) {
-      return trimmedValue;
-    }
-
-    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmedValue)) {
-      return `${trimmedValue}T00:00`;
-    }
-
-    const parsedDate = new Date(trimmedValue);
-    if (Number.isNaN(parsedDate.getTime())) {
-      return trimmedValue;
-    }
-
-    const timezoneOffset = parsedDate.getTimezoneOffset() * 60_000;
-    return new Date(parsedDate.getTime() - timezoneOffset).toISOString().slice(0, 16);
+    return toQtmDateTimeLocalValue(value) || value;
   }
 
   private createMockVisitStomiaStatus(overrides: Partial<TherapeuticPlanVisitStomiaStatus> = {}): TherapeuticPlanVisitStomiaStatus {
@@ -3900,10 +4205,14 @@ export class TherapeuticPlanManageComponent implements OnInit {
     };
   }
 
-  private buildVisitPrintDocument(visits: TherapeuticPlanVisitRecord[]): string {
+  private buildVisitPrintDocument(
+    visits: TherapeuticPlanVisitRecord[],
+    visitImages: TherapeuticPlanVisitImageEntry[] = [],
+    detailVisit?: TherapeuticPlanVisitRecord
+  ): string {
     const coverPages = this.paginateVisitPrintPages(visits);
     const patientHeader = this.visitPatientHeader;
-    const detailVisit = visits[0] ?? null;
+    // detailVisit ora è parametro
     const legacyDetailPages = detailVisit && this.hasVisitProjectJsonSchema && this.useLegacyVisitSchemaLayout
       ? this.buildVisitLegacySchemaPrintPages(detailVisit)
       : [];
@@ -3915,7 +4224,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
           ? (this.useLegacyVisitSchemaLayout ? legacyDetailPages.length + detailSchemaPages.length : Math.max(1, detailSchemaPages.length))
           : 1)
       : 0;
-    const totalPages = coverPages.length + detailPagesCount;
+    const totalPages = coverPages.length + detailPagesCount + (visitImages.length > 0 ? 1 : 0);
     const coverMarkup = coverPages
       .map((pageVisits, pageIndex) => this.buildVisitPrintPage(pageVisits, patientHeader, pageIndex + 1, totalPages, pageIndex === 0))
       .join('');
@@ -3935,13 +4244,23 @@ export class TherapeuticPlanManageComponent implements OnInit {
                 : this.buildVisitSchemaPrintPage(detailVisit, [], 0, totalPages)))
         : this.buildVisitManualJsonPrintPage(detailVisit, 0, totalPages)
       : '';
-    const printMarkup = `${coverMarkup}${statusMarkup}`;
+    const imagesMarkup = detailVisit && visitImages.length > 0
+      ? this.buildVisitImagesPrintPage(detailVisit, visitImages)
+      : '';
+    const printMarkup = `${coverMarkup}${statusMarkup}${imagesMarkup}`;
 
+    // Compose filename for suggestion in title
+    let fileName = 'visit';
+    if (detailVisit) {
+      const name = `${detailVisit.patientFirstName ?? ''} ${detailVisit.patientLastName ?? ''}`.trim().replace(/\s+/g, '_');
+      const date = (detailVisit.date ?? '').replace(/[^0-9]/g, '').slice(0, 8);
+      fileName = `visit_${name}_${date || 'data'}`.replace(/_+/g, '_');
+    }
     return `<!DOCTYPE html>
 <html lang="it">
   <head>
     <meta charset="utf-8" />
-    <title>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.documentTitle'))}</title>
+    <title>${fileName}</title>
     <style>
       @page { size: A4; margin: 12mm; }
       * { box-sizing: border-box; }
@@ -4022,6 +4341,10 @@ export class TherapeuticPlanManageComponent implements OnInit {
       .visit-json-matrix-print-table thead th { background: #f3f3f3; font-weight: 700; }
       .visit-json-matrix-print-table tbody th { background: #fafafa; font-weight: 700; text-align: left; }
       .visit-json-matrix-checkbox-cell { font-size: 16px; line-height: 1; }
+      .visit-images-print-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 12px; }
+      .visit-images-print-card { border: 1px solid #dbe6f4; border-radius: 14px; padding: 12px; background: #f8fbff; }
+      .visit-images-print-card img { display: block; width: 100%; max-height: 240px; object-fit: contain; background: #fff; border-radius: 10px; border: 1px solid #dbe6f4; }
+      .visit-images-print-meta { margin-top: 10px; display: grid; gap: 4px; font-size: 12px; color: #203c66; }
       @media print {
         .page { border: none; }
       }
@@ -4122,6 +4445,137 @@ export class TherapeuticPlanManageComponent implements OnInit {
       <p class="status-page-subtitle">${this.escapeHtml(this.getVisitPatientFullName(visit))} - ${this.escapeHtml(this.formatDate(visit.date))} - ${this.escapeHtml(this.getVisitTypeLabel(visit.type))}</p>
       ${this.buildVisitAutonomyActionsPanel(visit.autonomyActions)}
     </section>`;
+  }
+
+  private buildVisitImagesPrintPage(visit: TherapeuticPlanVisitRecord, images: TherapeuticPlanVisitImageEntry[]): string {
+    return `<section class="page">
+      <div class="status-page-title">
+        <h2>${this.escapeHtml(this.translate('therapeuticPlan.visits.print.images.title'))}</h2>
+      </div>
+      <p class="status-page-subtitle">${this.escapeHtml(this.getVisitPatientFullName(visit))} - ${this.escapeHtml(this.formatDate(visit.date))} - ${this.escapeHtml(this.getVisitTypeLabel(visit.type))}</p>
+      <div class="visit-images-print-grid">
+        ${images.map((image) => `<article class="visit-images-print-card">
+          ${image.previewUrl ? `<img src="${this.escapeHtml(image.previewUrl)}" alt="${this.escapeHtml(image.imageName)}" />` : ''}
+          <div class="visit-images-print-meta">
+            <strong>${this.escapeHtml(image.imageName)}</strong>
+            <span>${this.escapeHtml(image.description || this.translate('common.notAvailable'))}</span>
+            <span>${this.escapeHtml(this.formatDate(image.uploadDate))}</span>
+          </div>
+        </article>`).join('')}
+      </div>
+    </section>`;
+  }
+
+  private uploadQueuedVisitImages(visitDate: string, onComplete: () => void): void {
+    const queuedImages = this.visitImageEntries.filter((image) => !image.persisted && image.file);
+    if (!this.planId || queuedImages.length === 0) {
+      onComplete();
+      return;
+    }
+
+    this.visitImageUploading = true;
+    const encodedVisitDate = this.encodeVisitDateForPath(visitDate);
+
+    forkJoin(
+      queuedImages.map((image) => {
+        const formData = new FormData();
+        formData.append('file', image.file as File);
+        if (image.description) {
+          formData.append('description', image.description);
+        }
+
+        return this.http.post<any>(
+          `${environment.apiBaseUrl}/therapeutic-plans/${this.planId}/visits/${encodedVisitDate}/images`,
+          formData
+        ).pipe(catchError(() => of(null)));
+      })
+    ).subscribe((results) => {
+      this.visitImageUploading = false;
+      if (results.some((result) => result === null)) {
+        this.visitErrorMessage = this.translate('therapeuticPlan.visits.images.error.uploadFailed');
+      }
+      onComplete();
+    });
+  }
+
+  private fetchVisitImagesForPrint(visitDate: string, onComplete: (images: TherapeuticPlanVisitImageEntry[]) => void): void {
+    if (!this.planId || !visitDate) {
+      onComplete([]);
+      return;
+    }
+
+    const encodedVisitDate = this.encodeVisitDateForPath(visitDate);
+    const url = `${environment.apiBaseUrl}/therapeutic-plans/${this.planId}/visits/${encodedVisitDate}/images`;
+    this.http.get<any[]>(url)
+      .pipe(catchError(() => of([])))
+      .subscribe((images) => {
+        const mapped: TherapeuticPlanVisitImageEntry[] = (images || []).map((img) => ({
+          id: Number(img.id),
+          visitDate,
+          imageName: img.imageName,
+          imageType: img.imageType,
+          description: img.description || '',
+          uploadDate: img.uploadDate,
+          persisted: true
+        }));
+
+        if (mapped.length === 0) {
+          onComplete([]);
+          return;
+        }
+
+        forkJoin(
+          mapped.map((image) =>
+            this.http.get(`${environment.apiBaseUrl}/therapeutic-plans/${this.planId}/visits/${encodedVisitDate}/images/${image.id}/download`, { responseType: 'blob' })
+              .pipe(catchError(() => of(null)))
+          )
+        ).subscribe((blobs) => {
+          onComplete(
+            mapped.map((image, index) => ({
+              ...image,
+              previewUrl: blobs[index] instanceof Blob ? URL.createObjectURL(blobs[index] as Blob) : undefined
+            }))
+          );
+        });
+      });
+  }
+
+  private assignVisitImages(target: 'modal' | 'summary', images: TherapeuticPlanVisitImageEntry[]): void {
+    if (target === 'modal') {
+      this.revokeImagePreviews(this.visitImageEntries.filter((image) => image.persisted));
+      this.visitImageEntries = [...this.visitImageEntries.filter((image) => !image.persisted), ...images];
+      return;
+    }
+
+    this.revokeImagePreviews(this.visitSummaryImageEntries);
+    this.visitSummaryImageEntries = images;
+  }
+
+  private resetVisitImageState(): void {
+    this.revokeImagePreviews(this.visitImageEntries);
+    this.visitImageEntries = [];
+    this.visitImageUploading = false;
+    this.visitImageErrorMessage = '';
+    this.visitImageDescriptionForm = '';
+  }
+
+  private resetVisitSummaryImageState(): void {
+    this.revokeImagePreviews(this.visitSummaryImageEntries);
+    this.visitSummaryImageEntries = [];
+  }
+
+  private revokeImagePreviews(images: TherapeuticPlanVisitImageEntry[]): void {
+    images.forEach((image) => this.revokeImagePreview(image));
+  }
+
+  private revokeImagePreview(image: TherapeuticPlanVisitImageEntry): void {
+    if (image.previewUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(image.previewUrl);
+    }
+  }
+
+  private encodeVisitDateForPath(value: string): string {
+    return encodeURIComponent(this.normalizeLocalDateTimeForBackend(value));
   }
 
   private buildVisitManualJsonPrintPage(visit: TherapeuticPlanVisitRecord, pageNumber: number, totalPages: number): string {
@@ -4662,24 +5116,15 @@ export class TherapeuticPlanManageComponent implements OnInit {
   }
 
   private getTodayDateInputValue(): string {
-    const today = new Date();
-    const timezoneOffset = today.getTimezoneOffset() * 60_000;
-    return new Date(today.getTime() - timezoneOffset).toISOString().slice(0, 10);
+    return getQtmCurrentDateInputValue();
   }
 
   private getCurrentDateTimeLocalInputValue(): string {
-    const now = new Date();
-    const timezoneOffset = now.getTimezoneOffset() * 60_000;
-    return new Date(now.getTime() - timezoneOffset).toISOString().slice(0, 16);
+    return getQtmCurrentDateTimeLocalInputValue();
   }
 
   private normalizeLocalDateTimeForBackend(value: string): string {
-    const trimmedValue = value.trim();
-    if (!trimmedValue) {
-      return trimmedValue;
-    }
-
-    return trimmedValue.length === 16 ? `${trimmedValue}:00` : trimmedValue;
+    return toQtmLocalDateTimePayload(value.trim());
   }
 
   private normalizeConfirmationSent(value?: string): 'yes' | 'no' | 'na' {

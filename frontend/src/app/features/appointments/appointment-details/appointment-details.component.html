@@ -1,0 +1,109 @@
+<div class="appointment-details-container">
+  <!-- Header -->
+  <div class="header">
+    <button (click)="goBack()" class="btn-back">← {{ translate('common.back') }}</button>
+    <h1>{{ translate('appointment.title.details') }}</h1>
+  </div>
+
+  <!-- Messaggi di successo/errore -->
+  <div *ngIf="successMessage" class="success-message">
+    {{ successMessage }}
+  </div>
+  <div *ngIf="errorMessage" class="error-message">
+    {{ errorMessage }}
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="loading">
+    {{ translate('crud.loading') }}
+  </div>
+
+  <!-- Contenuto principale -->
+  <div *ngIf="!loading && appointment && therapeuticPlanHeader" class="details-content">
+    <!-- Sezione Piano Terapeutico -->
+    <div class="section plan-section">
+      <h2>{{ translate('appointment.label.therapeuticPlan') }}</h2>
+      <div class="plan-header">
+        <div class="plan-row">
+          <span class="label">{{ translate('therapeuticPlan.field.patient') }}:</span>
+          <span class="value">{{ therapeuticPlanHeader.patientDisplayName }}</span>
+        </div>
+        <div class="plan-row">
+          <span class="label">{{ translate('therapeuticPlan.field.drugCode') }}:</span>
+          <span class="value">{{ therapeuticPlanHeader.drugCode }}</span>
+        </div>
+        <div class="plan-row">
+          <span class="label">{{ translate('therapeuticPlan.field.startDate') }}:</span>
+          <span class="value">{{ formatPageDate(therapeuticPlanHeader.startDate) }}</span>
+        </div>
+        <div class="plan-row">
+          <span class="label">{{ translate('therapeuticPlan.field.endDate') }}:</span>
+          <span class="value">{{ formatPageDate(therapeuticPlanHeader.endDate) }}</span>
+        </div>
+        <div class="plan-row">
+          <span class="label">{{ translate('therapeuticPlan.field.status') }}:</span>
+          <span class="value status" [ngClass]="'status-' + therapeuticPlanHeader.status.toLowerCase()">
+            {{ translate(getTherapeuticPlanStatusLabel()) }}
+          </span>
+        </div>
+        <div class="plan-row" *ngIf="therapeuticPlanHeader.notes">
+          <span class="label">{{ translate('therapeuticPlan.field.notes') }}:</span>
+          <span class="value">{{ therapeuticPlanHeader.notes }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sezione Appuntamento -->
+    <div class="section appointment-section">
+      <h2>{{ translate('appointment.title.details') }}</h2>
+      <div class="appointment-info">
+        <div class="info-row">
+          <span class="label">{{ translate('appointment.field.type') }}:</span>
+          <span class="value">{{ appointment.appointmentTypeName }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">{{ translate('appointment.field.startDateTime') }}:</span>
+          <span class="value">{{ formatPageDate(appointment.startDateTime) }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">{{ translate('appointment.field.endDateTime') }}:</span>
+          <span class="value">{{ formatPageDate(appointment.endDateTime) }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">{{ translate('appointment.field.duration') }}:</span>
+          <span class="value">{{ appointment.appointmentTypeDurationMinutes }} {{ translate('appointment.label.minutes') }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">{{ translate('appointment.field.nurse') }}:</span>
+          <span class="value">{{ appointment.nurseName }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">{{ translate('appointment.field.status') }}:</span>
+          <span class="value status" [ngClass]="'status-' + appointment.status.toLowerCase()">
+            {{ translate(getAppointmentStatusLabel()) }}
+          </span>
+        </div>
+        <div class="info-row" *ngIf="appointment.notes">
+          <span class="label">{{ translate('appointment.field.notes') }}:</span>
+          <span class="value">{{ appointment.notes }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Azione principale -->
+    <div class="action-section">
+      <button
+        (click)="performAction()"
+        class="btn-primary"
+        [disabled]="appointment.status === 'IN_PROGRESS' || appointment.status === 'COMPLETED'"
+      >
+        {{ translate(getActionButtonLabel()) }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Stato non caricato -->
+  <div *ngIf="!loading && !errorMessage && !appointment" class="no-data">
+    {{ translate('appointment.error.appointmentNotFound') }}
+  </div>
+</div>

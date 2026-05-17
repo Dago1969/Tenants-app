@@ -9,6 +9,41 @@ const QTMDASHBOARD_LOGIN_URL = 'http://localhost:4200/login';
  */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+    getTokenPayload(): Record<string, unknown> | null {
+      const token = this.getToken();
+      if (!token) {
+        return null;
+      }
+
+      try {
+        const payload = this.decodeBase64Url(token.split('.')[1]);
+        return JSON.parse(payload) as Record<string, unknown>;
+      } catch {
+        return null;
+      }
+    }
+
+    getCurrentUserIdentifiers(): string[] {
+      const payload = this.getTokenPayload();
+      if (!payload) {
+        return [];
+      }
+
+      const values = [
+        payload['preferred_username'],
+        payload['username'],
+        payload['email'],
+        payload['sub'],
+        payload['userId'],
+        payload['userid']
+      ];
+
+      return values
+        .filter((value): value is string => typeof value === 'string')
+        .map((value) => value.trim())
+        .filter((value, index, array) => value.length > 0 && array.indexOf(value) === index);
+    }
+
     /**
      * Estrae il nome completo (name) dal JWT.
      */

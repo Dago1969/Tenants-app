@@ -2,6 +2,18 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
+import {
+  formatQtmLocalDate,
+  formatQtmLocalDateTime,
+  formatQtmLocalTime,
+  getQtmCurrentLocalDateTimePayload,
+  getQtmDayOfMonth,
+  getQtmDurationInMinutes,
+  parseQtmLocalDateTime,
+  toQtmDateTimeLocalValue,
+  toQtmLocalDateTimePayload,
+  addMinutesToQtmDateTimeLocalValue
+} from '../shared/local-date-time.util';
 
 export interface AppointmentType {
   id: number;
@@ -108,6 +120,46 @@ export class AppointmentService {
       .set('startDate', this.formatDate(startDate))
       .set('endDate', this.formatDate(endDate));
     return this.http.get<Appointment[]>(`${this.apiBase}/therapeutic-plan/${planId}/range`, { params });
+  }
+
+  parseLocalDateTime(value?: string | null): Date | null {
+    return parseQtmLocalDateTime(value);
+  }
+
+  formatLocalDateTime(value?: string | null): string {
+    return formatQtmLocalDateTime(value);
+  }
+
+  formatLocalDate(value?: string | null): string {
+    return formatQtmLocalDate(value);
+  }
+
+  formatLocalTime(value?: string | null): string {
+    return formatQtmLocalTime(value);
+  }
+
+  getDurationInMinutes(start?: string | null, end?: string | null): number {
+    return getQtmDurationInMinutes(start, end);
+  }
+
+  getDayOfMonth(value?: string | null): number | null {
+    return getQtmDayOfMonth(value);
+  }
+
+  toDateTimeLocalValue(dateTime?: string | null): string {
+    return toQtmDateTimeLocalValue(dateTime);
+  }
+
+  toLocalDateTimePayload(dateTime: string): string {
+    return toQtmLocalDateTimePayload(dateTime);
+  }
+
+  getCurrentLocalDateTimePayload(): string {
+    return getQtmCurrentLocalDateTimePayload();
+  }
+
+  addMinutesToDateTimeLocalValue(value: string, minutes: number): string {
+    return addMinutesToQtmDateTimeLocalValue(value, minutes);
   }
 
   private formatDate(date: Date): string {

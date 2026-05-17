@@ -140,25 +140,10 @@ export class AppointmentFormComponent implements OnInit, OnChanges {
     }
 
     try {
-      // Converte il formato datetime-local (YYYY-MM-DDTHH:MM) a Date
-      // Il valore da input datetime-local è nel formato locale ma senza timezone
-      const startDateTimeStr = this.form.startDateTime;
-      
-      // Crea una Date dall'input datetime-local
-      // datetime-local ritorna formato "YYYY-MM-DDTHH:mm" senza timezone
-      const startDate = new Date(startDateTimeStr + ':00');
-      
-      // Calcola la data di fine aggiungendo i minuti di durata
-      const endDate = new Date(startDate.getTime() + selectedType.durationMinutes * 60000);
-      
-      // Formato datetime-local: YYYY-MM-DDTHH:mm
-      const year = endDate.getFullYear();
-      const month = String(endDate.getMonth() + 1).padStart(2, '0');
-      const day = String(endDate.getDate()).padStart(2, '0');
-      const hours = String(endDate.getHours()).padStart(2, '0');
-      const minutes = String(endDate.getMinutes()).padStart(2, '0');
-      
-      this.estimatedEndTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+      this.estimatedEndTime = this.appointmentService.addMinutesToDateTimeLocalValue(
+        this.form.startDateTime,
+        selectedType.durationMinutes
+      );
     } catch {
       this.estimatedEndTime = '';
     }
@@ -324,22 +309,7 @@ export class AppointmentFormComponent implements OnInit, OnChanges {
   }
 
   private toDateTimeLocalValue(dateTime: string | null | undefined): string {
-    if (!dateTime) {
-      return '';
-    }
-
-    const parsedDate = new Date(dateTime);
-    if (Number.isNaN(parsedDate.getTime())) {
-      return '';
-    }
-
-    const year = parsedDate.getFullYear();
-    const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
-    const day = String(parsedDate.getDate()).padStart(2, '0');
-    const hours = String(parsedDate.getHours()).padStart(2, '0');
-    const minutes = String(parsedDate.getMinutes()).padStart(2, '0');
-
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
+    return this.appointmentService.toDateTimeLocalValue(dateTime);
   }
 
   private toDateInputValue(dateValue: string | null | undefined): string | null {
@@ -351,7 +321,7 @@ export class AppointmentFormComponent implements OnInit, OnChanges {
   }
 
   private toLocalDateTimePayload(dateTime: string): string {
-    return dateTime.length === 16 ? `${dateTime}:00` : dateTime;
+    return this.appointmentService.toLocalDateTimePayload(dateTime);
   }
 
   private resolveErrorMessage(error: unknown): string {

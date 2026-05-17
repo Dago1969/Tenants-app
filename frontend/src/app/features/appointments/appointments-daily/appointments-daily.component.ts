@@ -1,8 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AppointmentService, Appointment } from '../../services/appointment.service';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { Router } from '@angular/router';
+import { AppointmentService, Appointment } from '../../../services/appointment.service';
+import { AuthService } from '../../../core/auth.service';
+import { CurrentNurseService } from '../../../services/current-nurse.service';
+import { MessageKey, t } from '../../../i18n/messages';
 
 /**
  * Component per visualizzare gli appuntamenti di un infermiere per una giornata specifica.
@@ -12,7 +15,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 @Component({
   selector: 'app-appointments-daily',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './appointments-daily.component.html',
   styleUrls: ['./appointments-daily.component.css']
 })
@@ -25,18 +28,38 @@ export class AppointmentsDailyComponent implements OnInit {
 
   constructor(
     private appointmentService: AppointmentService,
-    private translate: TranslateService
+    private authService: AuthService,
+    private currentNurseService: CurrentNurseService,
+    private router: Router
   ) {}
 
+  translate(key: MessageKey): string {
+    return t(key);
+  }
+
   ngOnInit(): void {
-    // TODO: Recuperare nurseId dal context utente (NURSE_QTM)
-    // this.nurseId = this.currentUserService.getCurrentNurseId();
-    this.loadAppointments();
+    this.loading = true;
+    this.currentNurseService.resolveCurrentNurseId().subscribe({
+      next: (nurseId) => {
+        this.nurseId = nurseId;
+        if (this.nurseId) {
+          this.loadAppointments();
+          return;
+        }
+
+        this.loading = false;
+        this.errorMessage = t('appointment.error.nurseNotConfigured');
+      },
+      error: () => {
+        this.loading = false;
+        this.errorMessage = t('appointment.error.nurseNotConfigured');
+      }
+    });
   }
 
   loadAppointments(): void {
     if (!this.nurseId) {
-      this.errorMessage = 'Infermiere non configurato';
+      this.errorMessage = t('appointment.error.nurseNotConfigured');
       return;
     }
 
@@ -76,18 +99,22 @@ export class AppointmentsDailyComponent implements OnInit {
   }
 
   getFormattedDate(dateString: string): string {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return this.appointmentService.formatLocalTime(dateString);
   }
 
   getDurationInMinutes(start: string, end: string): number {
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    return Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60));
+    return this.appointmentService.getDurationInMinutes(start, end);
   }
 
-  getStatusLabel(status: string): string {
-    return `appointment.status.${status.toLowerCase()}`;
+  getStatusLabel(status: string): MessageKey {
+    return `appointment.status.${status.toLowerCase()}` as MessageKey;
+  }
+
+  viewAppointmentDetails(appointment: Appointment): void {
+    // Naviga al dettaglio appuntamento passando il therapeuticPlanId
+    this.router.navigate(['/appointments/details', appointment.therapeuticPlanId], {
+      queryParams: { appointmentId: appointment.id }
+    });
   }
 
   private resolveErrorMessage(error: any): string {
@@ -99,6 +126,6 @@ export class AppointmentsDailyComponent implements OnInit {
     if (message) {
       return message;
     }
-    return this.translate.instant('crud.error.load');
+    return t('crud.error.load');
   }
 }

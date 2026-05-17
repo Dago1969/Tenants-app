@@ -1,8 +1,9 @@
 import { Component, OnInit, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { AppointmentService, Appointment } from '../../services/appointment.service';
-import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { AppointmentService, Appointment } from '../../../services/appointment.service';
+import { CurrentNurseService } from '../../../services/current-nurse.service';
+import { MessageKey, t } from '../../../i18n/messages';
 
 /**
  * Component per visualizzare gli appuntamenti di un infermiere in un calendario mensile.
@@ -11,7 +12,7 @@ import { TranslateModule, TranslateService } from '@ngx-translate/core';
 @Component({
   selector: 'app-appointments-calendar',
   standalone: true,
-  imports: [CommonModule, FormsModule, TranslateModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './appointments-calendar.component.html',
   styleUrls: ['./appointments-calendar.component.css']
 })
@@ -26,16 +27,49 @@ export class AppointmentsCalendarComponent implements OnInit {
   // Proprietà calendario
   daysInMonth: (number | null)[] = [];
   monthYear = '';
-  weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  weekDayKeys: MessageKey[] = [
+    'appointment.weekDay.sun',
+    'appointment.weekDay.mon',
+    'appointment.weekDay.tue',
+    'appointment.weekDay.wed',
+    'appointment.weekDay.thu',
+    'appointment.weekDay.fri',
+    'appointment.weekDay.sat'
+  ];
   appointmentsByDay: Map<number, Appointment[]> = new Map();
 
   constructor(
     private appointmentService: AppointmentService,
-    private translate: TranslateService
+    private currentNurseService: CurrentNurseService
   ) {}
 
+  translate(key: MessageKey): string {
+    return t(key);
+  }
+
   ngOnInit(): void {
-    this.generateCalendar();
+    if (this.nurseId) {
+      this.generateCalendar();
+      return;
+    }
+
+    this.loading = true;
+    this.currentNurseService.resolveCurrentNurseId().subscribe({
+      next: (nurseId) => {
+        this.nurseId = nurseId;
+        if (this.nurseId) {
+          this.generateCalendar();
+          return;
+        }
+
+        this.loading = false;
+        this.errorMessage = t('appointment.error.nurseNotConfigured');
+      },
+      error: () => {
+        this.loading = false;
+        this.errorMessage = t('appointment.error.nurseNotConfigured');
+      }
+    });
   }
 
   generateCalendar(): void {
@@ -62,7 +96,7 @@ export class AppointmentsCalendarComponent implements OnInit {
 
   loadAppointmentsForMonth(year: number, month: number): void {
     if (!this.nurseId) {
-      this.errorMessage = 'Infermiere non configurato';
+      this.errorMessage = t('appointment.error.nurseNotConfigured');
       return;
     }
 
@@ -87,13 +121,23 @@ export class AppointmentsCalendarComponent implements OnInit {
   groupAppointmentsByDay(appointments: Appointment[]): void {
     this.appointmentsByDay.clear();
     appointments.forEach(apt => {
-      const date = new Date(apt.startDateTime);
-      const day = date.getDate();
+      const day = this.appointmentService.getDayOfMonth(apt.startDateTime);
+      if (day === null) {
+        return;
+      }
       if (!this.appointmentsByDay.has(day)) {
         this.appointmentsByDay.set(day, []);
       }
       this.appointmentsByDay.get(day)!.push(apt);
     });
+  }
+
+  getFormattedTime(value: string): string {
+    return this.appointmentService.formatLocalTime(value);
+  }
+
+  getStatusLabel(status: string): MessageKey {
+    return `appointment.status.${status.toLowerCase()}` as MessageKey;
   }
 
   previousMonth(): void {
@@ -143,6 +187,6 @@ export class AppointmentsCalendarComponent implements OnInit {
     if (message) {
       return message;
     }
-    return this.translate.instant('crud.error.load');
+    return t('crud.error.load');
   }
 }

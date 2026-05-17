@@ -168,6 +168,10 @@
   margin-bottom: 3px;
   border-radius: 2px;
   overflow: hidden;
+}
+
+.appointment-preview-main {
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -180,6 +184,46 @@
 
 .appointment-preview .type {
   color: #555;
+}
+
+.appointment-preview .patient {
+  margin-top: 2px;
+  color: #4f5b66;
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.appointment-preview .status {
+  display: inline-flex;
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.appointment-preview .status-scheduled {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.appointment-preview .status-in_progress {
+  background-color: #d1ecf1;
+  color: #0c5460;
+}
+
+.appointment-preview .status-completed {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.appointment-preview .status-cancelled {
+  background-color: #f8d7da;
+  color: #721c24;
 }
 
 .calendar-legend {

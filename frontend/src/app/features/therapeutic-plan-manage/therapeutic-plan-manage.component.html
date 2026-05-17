@@ -50,7 +50,7 @@
 
     <nav class="manage-tabs" [attr.aria-label]="translate('therapeuticPlan.manage.tabs.ariaLabel')">
       <button
-        *ngFor="let tab of tabs"
+        *ngFor="let tab of visibleTabs"
         type="button"
         class="manage-tab"
         [class.manage-tab-active]="activeTab === tab.key"
@@ -976,7 +976,7 @@
           </label>
           <label>
             {{ translate('therapeuticPlan.field.startDate') }}
-            <div>{{ plan?.startDate | date:'dd/MM/yyyy' }}</div>
+            <div>{{ formatDate(plan?.startDate) }}</div>
           </label>
         </div>
 
@@ -1476,7 +1476,7 @@
     </section>
 
     <section
-      *ngIf="hasVisitProjectJsonSchema && ((!useLegacyVisitSchemaLayout && visitSummaryModalStep === 2) || (useLegacyVisitSchemaLayout && visitSummaryModalStep > legacyVisitSummarySteps))"
+      *ngIf="hasVisitProjectJsonSchema && !isVisitSummaryImagesStep && ((!useLegacyVisitSchemaLayout && visitSummaryModalStep > 1) || (useLegacyVisitSchemaLayout && visitSummaryModalStep > legacyVisitSummarySteps))"
       class="visit-manual-json-shell"
     >
       <div *ngIf="currentVisitSummarySchemaPageFields.length > 0; else visitSchemaSummaryEmpty" class="visit-manual-json-summary-list">
@@ -1856,6 +1856,32 @@
         </div>
       </article>
     </section>
+
+    <section *ngIf="isVisitSummaryImagesStep" class="visit-manual-json-shell">
+      <div *ngIf="visitSummaryImageEntries.length > 0; else visitSummaryImagesEmpty" class="visit-images-summary-grid">
+        <article *ngFor="let image of visitSummaryImageEntries" class="visit-image-summary-card">
+          <img *ngIf="image.previewUrl" [src]="image.previewUrl" [alt]="image.imageName" class="visit-image-summary-preview" />
+          <div class="visit-image-summary-meta">
+            <strong>{{ image.imageName }}</strong>
+            <span>{{ image.description || translate('common.notAvailable') }}</span>
+            <span>{{ formatDate(image.uploadDate) }}</span>
+          </div>
+          <div class="alert-list-actions-cell">
+            <button
+              type="button"
+              class="icon-btn"
+              [attr.title]="translate('common.download')"
+              (click)="downloadVisitImage(image)"
+            >
+              <span class="icon" aria-hidden="true">⬇️</span>
+            </button>
+          </div>
+        </article>
+      </div>
+      <ng-template #visitSummaryImagesEmpty>
+        <p class="empty-state">{{ translate('therapeuticPlan.visits.images.empty') }}</p>
+      </ng-template>
+    </section>
   </div>
 
   <div modal-actions class="therapeutic-plan-actions">
@@ -2153,7 +2179,7 @@
       </div>
     </section>
 
-    <section *ngIf="visitJsonSchemaAvailable && ((!useLegacyVisitSchemaLayout && visitModalStep === 2) || (useLegacyVisitSchemaLayout && visitModalStep > legacyVisitModalSteps))" class="visit-manual-json-shell">
+    <section *ngIf="visitJsonSchemaAvailable && !isVisitImagesStep && ((!useLegacyVisitSchemaLayout && visitModalStep > 1) || (useLegacyVisitSchemaLayout && visitModalStep > legacyVisitModalSteps))" class="visit-manual-json-shell">
       <div *ngIf="currentVisitSchemaPageFields.length > 0; else visitGeneratedSchemaEmpty" class="visit-manual-json-summary-list">
         <ng-container *ngFor="let field of currentVisitSchemaPageFields; let index = index">
           <p *ngIf="shouldRenderVisitSchemaSectionTitle(currentVisitSchemaPageFields, index)" class="visit-manual-json-hint">
@@ -2551,6 +2577,99 @@
               </label>
             </div>
           </section>
+        </div>
+      </article>
+    </section>
+
+    <section *ngIf="isVisitImagesStep" class="visit-images-step-shell">
+      <article class="visit-status-panel visit-status-panel-blue">
+        <header class="visit-status-panel-header">{{ translate('therapeuticPlan.visits.modal.step8.images.title') }}</header>
+        <div class="visit-status-panel-body">
+          <p class="section-copy">{{ translate('therapeuticPlan.visits.modal.step8.images.description') }}</p>
+          
+          <div *ngIf="visitImageErrorMessage" class="therapeutic-plan-alert therapeutic-plan-alert-error">
+            {{ visitImageErrorMessage }}
+          </div>
+
+          <div class="visit-images-upload-section alert-modal-grid">
+            <input
+              #visitImageInput
+              type="file"
+              class="visually-hidden"
+              accept="image/*"
+              (change)="onVisitImageFileSelected($event)"
+              [disabled]="visitImageUploading"
+            />
+
+            <label class="alert-modal-field alert-modal-field-full">
+              <span>{{ translate('therapeuticPlan.visits.images.selectFile') }}</span>
+              <button
+                type="button"
+                class="therapeutic-plan-btn therapeutic-plan-btn-secondary"
+                [disabled]="visitImageUploading"
+                (click)="visitImageInput.click()"
+              >
+                {{ translate('therapeuticPlan.visits.images.button.add') }}
+              </button>
+            </label>
+
+            <label class="alert-modal-field alert-modal-field-full">
+              {{ translate('therapeuticPlan.visits.images.description') }}
+              <textarea 
+                [(ngModel)]="visitImageDescriptionForm" 
+                rows="3"
+                maxlength="500"
+                [disabled]="visitImageUploading"
+              ></textarea>
+            </label>
+          </div>
+
+          <div *ngIf="visitImageEntries.length > 0; else noImagesState" class="visit-images-list">
+            <h3>{{ translate('therapeuticPlan.visits.images.uploadedCount') }} ({{ visitImageEntries.length }})</h3>
+            <div class="visit-images-table-wrapper">
+              <table class="alert-list-table">
+                <thead>
+                  <tr>
+                    <th>{{ translate('therapeuticPlan.visits.images.table.filename') }}</th>
+                    <th>{{ translate('therapeuticPlan.visits.images.table.type') }}</th>
+                    <th>{{ translate('therapeuticPlan.visits.images.table.uploadDate') }}</th>
+                    <th>{{ translate('therapeuticPlan.visits.images.table.description') }}</th>
+                    <th>{{ translate('search.actions') }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let image of visitImageEntries">
+                    <td>{{ image.imageName }}</td>
+                    <td>{{ image.imageType }}</td>
+                    <td>{{ formatDate(image.uploadDate) }}</td>
+                    <td class="visit-image-description">{{ image.description || translate('common.notAvailable') }}</td>
+                    <td class="alert-list-actions-cell">
+                      <button 
+                        type="button"
+                        class="icon-btn"
+                        [attr.title]="translate('common.download')"
+                        (click)="downloadVisitImage(image)"
+                      >
+                        <span class="icon" aria-hidden="true">⬇️</span>
+                      </button>
+                      <button 
+                        type="button"
+                        class="icon-btn"
+                        [attr.title]="translate('common.delete')"
+                        (click)="deleteVisitImage(image)"
+                      >
+                        <span class="icon" aria-hidden="true">🗑️</span>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <ng-template #noImagesState>
+            <p class="empty-state">{{ translate('therapeuticPlan.visits.images.empty') }}</p>
+          </ng-template>
         </div>
       </article>
     </section>

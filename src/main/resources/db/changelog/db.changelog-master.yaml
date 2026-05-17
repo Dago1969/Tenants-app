@@ -42,3 +42,7 @@ databaseChangeLog:
   - include:
       file: 20260516-04-fix-appointment-table-creation.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: 20260517-01-create-therapeutic-plan-visit-image-table.yaml
+      relativeToChangelogFile: true
