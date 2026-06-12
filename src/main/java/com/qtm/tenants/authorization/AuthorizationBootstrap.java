@@ -44,14 +44,15 @@ public class AuthorizationBootstrap implements CommandLineRunner {
     private static final String MODULE_DOCTOR = "DOCTOR";
     private static final String MODULE_NURSE = "NURSE";
     private static final String MODULE_THERAPEUTIC_PLAN = "THERAPEUTIC_PLAN";
-        private static final String MODULE_FUNCTION = "FUNCTION";
-        private static final List<String> MODULE_CODES = Stream.of(
-                List.of("USER"),
-                StructureModuleCodes.AUTHORIZATION_MODULE_CODES,
-            List.of("ROLE", "MODULE", MODULE_FUNCTION, MODULE_PATIENT, MODULE_DOCTOR, MODULE_NURSE, MODULE_THERAPEUTIC_PLAN, MODULE_EQUIPMENT, MODULE_EQUIPMENT_TYPE, MODULE_APPOINTMENT, MODULE_APPOINTMENT_TYPE)
-            )
-            .flatMap(List::stream)
-            .toList();
+    private static final String MODULE_FUNCTION = "FUNCTION";
+    private static final String MODULE_TICKET = "QTM_TICKET";
+    private static final List<String> MODULE_CODES = Stream.of(
+            List.of("USER"),
+            StructureModuleCodes.AUTHORIZATION_MODULE_CODES,
+        List.of("ROLE", "MODULE", MODULE_FUNCTION, MODULE_PATIENT, MODULE_DOCTOR, MODULE_NURSE, MODULE_THERAPEUTIC_PLAN, MODULE_EQUIPMENT, MODULE_EQUIPMENT_TYPE, MODULE_APPOINTMENT, MODULE_APPOINTMENT_TYPE, MODULE_TICKET)
+        )
+        .flatMap(List::stream)
+        .toList();
         private static final String ENTITY_APPOINTMENT = "appointment";
     private static final String ENTITY_APPOINTMENT_TYPE = "appointmentType";
         private static final String ENTITY_EQUIPMENT = "equipment";
@@ -105,12 +106,14 @@ public class AuthorizationBootstrap implements CommandLineRunner {
     @Transactional
     public void run(String... args) {
         Map<String, ModuleEntity> modulesByCode = MODULE_CODES.stream()
-                .map(this::ensureModule)
-                .collect(Collectors.toMap(ModuleEntity::getCode, Function.identity()));
+            .distinct()
+            .map(this::ensureModule)
+            .collect(Collectors.toMap(ModuleEntity::getCode, Function.identity(), (left, right) -> left));
 
         List<RoleEntity> roles = roleRepository.findAll();
         for (RoleEntity role : roles) {
             boolean adminRole = isAdminRole(role.getId());
+            
             for (String moduleCode : MODULE_CODES) {
                 AuthorizationScope defaultScope = resolveDefaultModuleScope(moduleCode, adminRole);
                 ModuleRoleAuthorizationEntity moduleRoleAuthorization = ensureModuleRoleAuthorization(
@@ -150,6 +153,11 @@ public class AuthorizationBootstrap implements CommandLineRunner {
         if (StructureModuleCodes.BULK_IMPORT.equals(moduleCode)) {
             return adminRole ? AuthorizationScope.FULL_EDIT : AuthorizationScope.DENY;
         }
+        
+        // QTMTicket: SUPERADMIN/OperatoreQTM hanno FULL_EDIT, gli altri READ_ONLY (creazione consentita)
+        if (MODULE_TICKET.equals(moduleCode)) {
+            return adminRole ? AuthorizationScope.FULL_EDIT : AuthorizationScope.READ_ONLY;
+        }
 
         return adminRole ? AuthorizationScope.FULL_EDIT : AuthorizationScope.READ_ONLY;
     }
@@ -187,6 +195,9 @@ public class AuthorizationBootstrap implements CommandLineRunner {
         }
         if (MODULE_THERAPEUTIC_PLAN.equals(moduleCode)) {
             return "Piani Terapeutici";
+        }
+        if (MODULE_TICKET.equals(moduleCode)) {
+            return "Ticket";
         }
         return StructureModuleCodes.resolveModuleName(moduleCode);
     }

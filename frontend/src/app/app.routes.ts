@@ -43,6 +43,7 @@ import { moduleVisibilityGuard } from './core/module-visibility.guard';
 import { AppointmentsDailyComponent } from './features/appointments/appointments-daily/appointments-daily.component';
 import { AppointmentsCalendarComponent } from './features/appointments/appointments-calendar/appointments-calendar.component';
 import { AppointmentDetailsComponent } from './features/appointments/appointment-details/appointment-details.component';
+import { TicketsSearchComponent } from './features/tickets-search/tickets-search.component';
 
 /**
  * Routing applicativo tenants con protezione JWT e pagine CRUD.
@@ -107,6 +108,7 @@ export const appRoutes: Routes = [
   { path: 'structures/asl/manage', component: StructureCatalogComponent, canActivate: [authGuard, moduleVisibilityGuard(STRUCTURE_MODULE_CODES.ASL)], data: { structureType: 'ASL', titleKey: 'structures.type.asl.title' } },
   { path: 'structures/asl/manage/:id', component: StructureCatalogComponent, canActivate: [authGuard, moduleVisibilityGuard(STRUCTURE_MODULE_CODES.ASL)], data: { structureType: 'ASL', titleKey: 'structures.type.asl.title' } },
   { path: 'structures/hospitals', component: StructureSearchComponent, canActivate: [authGuard, moduleVisibilityGuard(STRUCTURE_MODULE_CODES.HOSPITAL)], data: { structureType: 'HOSPITAL', moduleCode: STRUCTURE_MODULE_CODES.HOSPITAL, titleKey: 'structures.type.hospital.search.title', manageRoute: '/structures/hospitals/manage' } },
+  { path: 'structures/pharmacies', component: StructureSearchComponent, canActivate: [authGuard, moduleVisibilityGuard(STRUCTURE_MODULE_CODES.PHARMACY)], data: { structureType: 'PHARMACY', moduleCode: STRUCTURE_MODULE_CODES.PHARMACY, titleKey: 'structures.type.pharmacies.search.title', manageRoute: '/structures/pharmacies/manage' } },
   { path: 'structures/hospitals/manage', component: StructureCatalogComponent, canActivate: [authGuard, moduleVisibilityGuard(STRUCTURE_MODULE_CODES.HOSPITAL)], data: { structureType: 'HOSPITAL', titleKey: 'structures.type.hospital.title' } },
   { path: 'structures/hospitals/manage/:id', component: StructureCatalogComponent, canActivate: [authGuard, moduleVisibilityGuard(STRUCTURE_MODULE_CODES.HOSPITAL)], data: { structureType: 'HOSPITAL', titleKey: 'structures.type.hospital.title' } },
   { path: 'structures/hospital-pharmacies', component: StructureSearchComponent, canActivate: [authGuard, moduleVisibilityGuard(STRUCTURE_MODULE_CODES.HOSPITAL_PHARMACY)], data: { structureType: 'HOSPITAL_PHARMACY', moduleCode: STRUCTURE_MODULE_CODES.HOSPITAL_PHARMACY, titleKey: 'structures.type.hospitalPharmacy.search.title', manageRoute: '/structures/hospital-pharmacies/manage' } },
@@ -148,6 +150,8 @@ export const appRoutes: Routes = [
   { path: 'appointments/daily', component: AppointmentsDailyComponent, canActivate: [authGuard] },
   { path: 'appointments/calendar', component: AppointmentsCalendarComponent, canActivate: [authGuard] },
   { path: 'appointments/details/:id', component: AppointmentDetailsComponent, canActivate: [authGuard] },
+  { path: 'tickets/search', component: TicketsSearchComponent, canActivate: [authGuard, moduleVisibilityGuard('QTM_TICKET')] },
+  { path: 'tickets/manage', redirectTo: 'tickets/search', pathMatch: 'full' },
   // { path: 'structures/asl/add', component: AddWizardComponentAsl, canActivate: [authGuard, moduleVisibilityGuard('STRUCTURE')] },
   { path: '**', redirectTo: 'dashboard' },
 ];

@@ -9,6 +9,57 @@ const QTMDASHBOARD_LOGIN_URL = 'http://localhost:4200/login';
  */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
+    /**
+     * Recupera i ruoli presenti nel token JWT (cerca in `realm_access.roles` e in `resource_access[*].roles`).
+     */
+    private getTokenRoles(): string[] {
+      const payload = this.getTokenPayload();
+      if (!payload) return [];
+
+      const roles: string[] = [];
+      try {
+        const realmAccess = payload['realm_access'] as Record<string, unknown> | undefined;
+        if (realmAccess && Array.isArray(realmAccess['roles'])) {
+          roles.push(...(realmAccess['roles'] as string[]));
+        }
+
+        const resourceAccess = payload['resource_access'] as Record<string, unknown> | undefined;
+        if (resourceAccess && typeof resourceAccess === 'object') {
+          for (const client of Object.keys(resourceAccess)) {
+            const clientEntry = resourceAccess[client] as Record<string, unknown> | undefined;
+            if (clientEntry && Array.isArray(clientEntry['roles'])) {
+              roles.push(...(clientEntry['roles'] as string[]));
+            }
+          }
+        }
+      } catch (e) {
+        // ignore and return what we collected so far
+      }
+
+      return roles
+        .filter((r): r is string => typeof r === 'string')
+        .map(r => r.trim())
+        .filter(r => r.length > 0);
+    }
+
+    /**
+     * Restituisce true se l'utente autenticato (dal token) è SuperAdmin.
+     */
+    isSuperAdmin(): boolean {
+      const roles = this.getTokenRoles();
+      return roles.some(r => r.trim().toLowerCase().replace(/[^a-z0-9]/g, '').includes('superadmin'));
+    }
+
+    /**
+     * Controllo generico se il ruolo selezionato contiene la stringa specificata (case-insensitive,
+     * normalizzata rimuovendo caratteri non alfanumerici). Questo è relativo al ruolo *selezionato* nell'app,
+     * non all'utente autenticato.
+     */
+    hasSelectedRoleContains(substring: string): boolean {
+      const selected = this.getSelectedRole() ?? '';
+      const normalized = selected.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+      return normalized.includes((substring ?? '').toLowerCase().replace(/[^a-z0-9]/g, ''));
+    }
     getTokenPayload(): Record<string, unknown> | null {
       const token = this.getToken();
       if (!token) {

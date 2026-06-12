@@ -26,6 +26,7 @@ databaseChangeLog:
   - changeSet:
       id: 20260430-12-seed-modules
       author: copilot
+      validCheckSum: '9:8f518261a0ccb0d9314064f5747c144e'
       preConditions:
         - onFail: MARK_RAN
         - onError: HALT
@@ -39,8 +40,7 @@ databaseChangeLog:
               INSERT IGNORE INTO modules (code, name) VALUES
                 ('USER', 'USER'),
                 ('STRUCTURE-ASL', 'ASL'),
-                ('STRUCTURE-FARMACY-O', 'Farmacie Ospedaliere'),
-                ('STRUCTURE-FARMACY-R', 'Farmacie Retail'),
+                ('STRUCTURE-FARMACY', 'Farmacie'),
                 ('STRUCTURE_LOGISTICS_WAREHOUSE', 'Magazzini Logistica'),
                 ('STRUCTURE_MATERIAL_WAREHOUSE', 'Magazzini Materiale'),
                 ('STRUCTURE_PHARMA_COMPANY', 'Aziende Farmaceutiche'),
@@ -74,6 +74,7 @@ databaseChangeLog:
   - changeSet:
       id: 20260430-12-seed-function-authorizations
       author: copilot
+      validCheckSum: '9:cb5b9f46e3f54305255ed059719ceb87'
       preConditions:
         - onFail: MARK_RAN
         - onError: HALT
@@ -89,6 +90,7 @@ databaseChangeLog:
   - changeSet:
       id: 20260430-12-seed-controller-method-functions
       author: copilot
+      validCheckSum: '9:0c63581191513f1315c64ff587ac0164'
       preConditions:
         - onFail: MARK_RAN
         - onError: HALT

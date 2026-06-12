@@ -61,8 +61,8 @@ const MODULE_TITLE_KEYS: Record<string, MessageKey> = {
   FUNCTION: 'menu.functions',
   [STRUCTURE_MODULE_CODES.ASL]: 'menu.structure.aslSearch',
   [STRUCTURE_MODULE_CODES.GENERIC]: 'menu.structures',
-  [STRUCTURE_MODULE_CODES.HOSPITAL_PHARMACY]: 'menu.structure.hospitalPharmacySearch',
-  [STRUCTURE_MODULE_CODES.RETAIL_PHARMACY]: 'menu.structure.retailPharmacySearch',
+  HOSPITAL_PHARMACY: 'menu.structure.hospitalPharmacySearch',
+  RETAIL_PHARMACY: 'menu.structure.retailPharmacySearch',
   [STRUCTURE_MODULE_CODES.LOGISTICS_WAREHOUSE]: 'menu.structure.logisticsWarehouseSearch',
   [STRUCTURE_MODULE_CODES.MATERIAL_WAREHOUSE]: 'menu.structure.materialWarehouseSearch',
   [STRUCTURE_MODULE_CODES.PHARMA_COMPANY]: 'menu.structure.pharmaCompanySearch',
@@ -85,8 +85,8 @@ const MODULE_MESSAGE_PREFIXES: Record<string, string> = {
   FUNCTION: 'functions',
   [STRUCTURE_MODULE_CODES.ASL]: 'structures',
   [STRUCTURE_MODULE_CODES.GENERIC]: 'structures',
-  [STRUCTURE_MODULE_CODES.HOSPITAL_PHARMACY]: 'structures',
-  [STRUCTURE_MODULE_CODES.RETAIL_PHARMACY]: 'structures',
+  HOSPITAL_PHARMACY: 'structures',
+  RETAIL_PHARMACY: 'structures',
   [STRUCTURE_MODULE_CODES.LOGISTICS_WAREHOUSE]: 'structures',
   [STRUCTURE_MODULE_CODES.MATERIAL_WAREHOUSE]: 'structures',
   [STRUCTURE_MODULE_CODES.PHARMA_COMPANY]: 'structures',
@@ -139,9 +139,33 @@ export class AuthorizationsManagementComponent implements OnInit {
 
   constructor(
     private readonly http: HttpClient,
-    private readonly authService: AuthService,
+    public readonly authService: AuthService,
     readonly notificationService: NotificationService
   ) {}
+
+  /**
+   * Indica se l'utente corrente può modificare le impostazioni per il modulo specificato.
+   * - SUPERADMIN: può modificare tutto
+   * - OPERATORE_QTM: può modificare custom functions del modulo USER
+   * - ADMIN_QTM: considerato con privilegi simili a OPERATORE_QTM per editing
+   */
+  public canEditModule(module: AuthorizationModuleDto): boolean {
+    if (this.authService.isSuperAdmin()) return true;
+    const selected = this.authService.getSelectedRole() ?? '';
+    const normalized = selected.trim().toLowerCase();
+    if (normalized.includes('operatoreqtm') || normalized.includes('admin_qtm')) {
+      return module.moduleCode === 'USER';
+    }
+    return false;
+  }
+
+  public canSave(): boolean {
+    // keep superadmin-only save by default, but allow OPERATORE_QTM and ADMIN_QTM as well
+    if (this.authService.isSuperAdmin()) return true;
+    const selected = this.authService.getSelectedRole() ?? '';
+    const normalized = selected.trim().toLowerCase();
+    return normalized.includes('operatoreqtm') || normalized.includes('admin_qtm');
+  }
 
   ngOnInit(): void {
     this.selectedRoleId = this.authService.getSelectedRole();

@@ -69,6 +69,10 @@ interface ViewDetailSection {
   items: ViewDetailItem[];
 }
 
+interface PagedSearchResponse {
+  content?: SearchResult[];
+}
+
 
 
 type DeleteDialogMode = 'confirm' | 'reassign';
@@ -86,7 +90,7 @@ type DeleteDialogMode = 'confirm' | 'reassign';
       <div class="search-header">
         <h2>{{ translate(titleKey) }}</h2>
         <div class="search-header-actions">
-          <button class="btn btn-primary" (click)="showFilters = !showFilters">
+          <button *ngIf="showSearchAction && canSearch" class="btn btn-primary" (click)="showFilters = !showFilters">
             <span class="icon">☰</span> {{ translate('search.filters') }}
           </button>
           <ng-content select="[search-header-action]"></ng-content>
@@ -107,7 +111,7 @@ type DeleteDialogMode = 'confirm' | 'reassign';
         </div>
       </div>
 
-      <div *ngIf="showFilters" class="search-filters-panel">
+      <div *ngIf="showFilters && showSearchAction && canSearch" class="search-filters-panel">
         <form (ngSubmit)="search()" class="search-filters-form search-filters-form-inline">
           <ng-container *ngFor="let field of filters">
             <label class="search-filter-label search-filter-label-inline">
@@ -150,8 +154,10 @@ type DeleteDialogMode = 'confirm' | 'reassign';
             </label>
           </ng-container>
           <div class="search-filters-actions search-filters-actions-inline">
-            <button type="submit" class="btn btn-primary">{{ translate('crud.actions.search') }}</button>
-            <button type="button" class="btn btn-outline" (click)="resetFilters()">{{ translate('crud.actions.reset') }}</button>
+            <ng-container *ngIf="showSearchAction && canSearch">
+              <button type="submit" class="btn btn-primary">{{ translate('crud.actions.search') }}</button>
+              <button type="button" class="btn btn-outline" (click)="resetFilters()">{{ translate('crud.actions.reset') }}</button>
+            </ng-container>
           </div>
         </form>
       </div>
@@ -207,7 +213,7 @@ type DeleteDialogMode = 'confirm' | 'reassign';
                     {{ translate(getStatusLabelKey(column.key, row[column.key])) }}
                   </span>
                 </ng-container>
-                <ng-template #normalCell>{{ getDisplayValue(column, row[column.key]) }}</ng-template>
+                <ng-template #normalCell>{{ getDisplayValue(column, row[column.key], row) }}</ng-template>
               </td>
               <td *ngIf="hasRowActions" class="actions">
                 <button *ngIf="showEditAction && canEdit" class="icon-btn" type="button" (click)="openEdit(getRowIdentifier(row))" [title]="translate('search.action.edit')">
@@ -228,6 +234,9 @@ type DeleteDialogMode = 'confirm' | 'reassign';
                   [attr.aria-label]="translate(manageActionLabelKey || 'search.action.configure')"
                 >
                   <span class="icon">⚙️</span>
+                </button>
+                <button *ngIf="showCloseAction" class="icon-btn" type="button" (click)="closeRow(getRowIdentifier(row))" [title]="translate('ticket.action.close')">
+                  <span class="icon">🔒</span>
                 </button>
               </td>
             </tr>
@@ -382,15 +391,19 @@ export class SearchPageComponent implements OnInit, OnChanges {
   @Input() autoSearch = false;
   @Input() showCreateAction = true;
   @Input() showEditAction = true;
+  @Input() showSearchAction = true;
+  @Input() searchFunctionCode = 'SEARCH';
   @Input() showViewAction = true;
   @Input() showDeleteAction = true;
   @Input() showManageAction = false;
+  @Input() showCloseAction = false;
   @Input() manageRouteBase = '/users/configure';
   @Input() manageActionLabelKey = '';
   @Input() deleteCheckEndpoint = '';
   @Input() interceptEditAction = false;
   @Input() printSections: SearchPrintSection[] = [];
   @Output() editAction = new EventEmitter<string>();
+  @Output() closeAction = new EventEmitter<string>();
 
   filterModel: Record<string, string> = {};
   results: SearchResult[] = [];
@@ -401,6 +414,7 @@ export class SearchPageComponent implements OnInit, OnChanges {
   fieldPermissions: Record<string, string> = {};
   canCreate = true;
   canEdit = true;
+  canSearch = true;
   canDelete = true;
   viewDialogOpen = false;
   deleteDialogOpen = false;
@@ -425,10 +439,36 @@ export class SearchPageComponent implements OnInit, OnChanges {
     this.selectedClient = this.authService.getSelectedClient();
     this.loadSelectOptions();
     this.loadFieldPermissions();
+    // If moduleCode not provided, try to infer it from the endpoint
+    if (!this.moduleCode && this.endpoint) {
+      this.moduleCode = this.inferModuleCodeFromEndpoint(this.endpoint);
+    }
+
     void this.loadActionPermissions();
     if (this.autoSearch) {
       this.search(false);
     }
+  }
+
+  private inferModuleCodeFromEndpoint(endpoint: string): string {
+    // Take last segment after slash
+    const parts = endpoint.split('/').filter((p) => p.trim().length > 0);
+    if (parts.length === 0) {
+      return '';
+    }
+
+    let candidate = parts[parts.length - 1];
+
+    // Remove common suffixes
+    if (candidate.endsWith('ies')) {
+      // e.g. 'countries' -> 'country'
+      candidate = candidate.slice(0, -3) + 'y';
+    } else if (candidate.endsWith('s')) {
+      candidate = candidate.slice(0, -1);
+    }
+
+    // Replace non-alphanumeric with underscore and uppercase
+    return candidate.replace(/[^a-zA-Z0-9]/g, '_').toUpperCase();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
@@ -545,13 +585,61 @@ export class SearchPageComponent implements OnInit, OnChanges {
     return `search-autocomplete-${field.key}`;
   }
 
-  getDisplayValue(field: SearchField, value: unknown): string {
+  getDisplayValue(field: SearchField, value: unknown, row?: SearchResult): string {
     if (value === undefined || value === null) {
       return '';
     }
 
     const normalizedValue = String(value);
+
+    // If patient column, prefer to show surname + name if available in the row
+    if (field.key === 'patientId' && row) {
+      const lastName = (row['patientLastName'] as string) ?? (row['patientSurname'] as string) ?? (row['patientFamilyName'] as string) ?? (row['lastName'] as string) ?? (row['surname'] as string) ?? (row['cognome'] as string) ?? '';
+      const firstName = (row['patientFirstName'] as string) ?? (row['patientGivenName'] as string) ?? (row['firstName'] as string) ?? (row['givenName'] as string) ?? (row['nome'] as string) ?? '';
+      const displayName = (row['patientDisplayName'] as string) ?? (row['patientFullName'] as string) ?? (row['patient_name'] as string) ?? '';
+      const combined = [lastName.trim(), firstName.trim()].filter((s) => s).join(' ');
+      if (combined) {
+        return combined;
+      }
+      if (displayName) {
+        return displayName;
+      }
+
+      // If no name data available, return raw ID value (do NOT format it as a date)
+      return normalizedValue;
+    }
+
+    // If the field is date-like or the value matches an ISO datetime, format it
+    const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?/;
+    if (field.key === 'updatedAt' || /date|time|at/i.test(field.key) || isoDateRegex.test(normalizedValue)) {
+      const formatted = this.formatIsoDate(normalizedValue);
+      if (formatted) {
+        return formatted;
+      }
+    }
+
     return field.displayValueMap?.[normalizedValue] ?? normalizedValue;
+  }
+
+  private formatIsoDate(value: string): string | null {
+    if (!value || typeof value !== 'string') {
+      return null;
+    }
+
+    // Try to parse the date
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) {
+      return null;
+    }
+
+    const dd = String(parsed.getDate()).padStart(2, '0');
+    const mm = String(parsed.getMonth() + 1).padStart(2, '0');
+    const yyyy = parsed.getFullYear();
+    const hh = String(parsed.getHours()).padStart(2, '0');
+    const min = String(parsed.getMinutes()).padStart(2, '0');
+
+    // Italian format dd/MM/yyyy HH.mm (note the dot between hours and minutes)
+    return `${dd}/${mm}/${yyyy} ${hh}.${min}`;
   }
 
   isStatusLikeColumn(columnKey: string): boolean {
@@ -612,9 +700,9 @@ export class SearchPageComponent implements OnInit, OnChanges {
       params = params.set(filter.key, value);
     }
 
-    this.http.get<SearchResult[]>(`${environment.apiBaseUrl}/${this.endpoint}`, { params }).subscribe({
+    this.http.get<SearchResult[] | PagedSearchResponse>(`${environment.apiBaseUrl}/${this.endpoint}`, { params }).subscribe({
       next: (data) => {
-        this.results = data;
+        this.results = this.normalizeSearchResults(data);
         if (showFeedback) {
           this.pushOperationLog('success', 'search.success.search');
         }
@@ -626,6 +714,18 @@ export class SearchPageComponent implements OnInit, OnChanges {
         }
       }
     });
+  }
+
+  private normalizeSearchResults(data: SearchResult[] | PagedSearchResponse): SearchResult[] {
+    if (Array.isArray(data)) {
+      return data;
+    }
+
+    if (Array.isArray(data?.content)) {
+      return data.content;
+    }
+
+    return [];
   }
 
   resetFilters(): void {
@@ -734,6 +834,15 @@ export class SearchPageComponent implements OnInit, OnChanges {
     }
 
     this.openDeleteConfirmationDialog(normalizedId);
+  }
+
+  closeRow(id: unknown): void {
+    const normalizedId = this.normalizeId(id);
+    if (normalizedId === null) {
+      return;
+    }
+
+    this.closeAction.emit(normalizedId);
   }
 
   private openCrudPage(id: unknown, mode: 'view' | 'edit'): void {
@@ -848,11 +957,49 @@ export class SearchPageComponent implements OnInit, OnChanges {
       return value.map((item) => this.formatViewValue(key, item)).join(', ');
     }
 
+    // If the field has an object value, stringify it
     if (value && typeof value === 'object') {
       return JSON.stringify(value, null, 2);
     }
 
-    return value === undefined || value === null ? '' : String(value);
+    const normalized = value === undefined || value === null ? '' : String(value);
+
+    // Try to decode using a configured displayValueMap from known fields
+    const knownField = [...this.resultColumns, ...this.filters].find((f) => f.key === key);
+    if (knownField && knownField.displayValueMap) {
+      const mapped = knownField.displayValueMap[normalized];
+      if (mapped !== undefined) {
+        return mapped;
+      }
+    }
+
+    // Special handling for patient display in view dialog: prefer lastName + firstName or patientDisplayName
+    if (key === 'patientId' && this.selectedViewRow) {
+      const lastName = (this.selectedViewRow['patientLastName'] as string) ?? (this.selectedViewRow['patientSurname'] as string) ?? (this.selectedViewRow['patientFamilyName'] as string) ?? (this.selectedViewRow['lastName'] as string) ?? (this.selectedViewRow['surname'] as string) ?? (this.selectedViewRow['cognome'] as string) ?? '';
+      const firstName = (this.selectedViewRow['patientFirstName'] as string) ?? (this.selectedViewRow['patientGivenName'] as string) ?? (this.selectedViewRow['firstName'] as string) ?? (this.selectedViewRow['givenName'] as string) ?? (this.selectedViewRow['nome'] as string) ?? '';
+      const displayName = (this.selectedViewRow['patientDisplayName'] as string) ?? (this.selectedViewRow['patientFullName'] as string) ?? (this.selectedViewRow['patient_name'] as string) ?? '';
+      const combined = [lastName.trim(), firstName.trim()].filter((s) => s).join(' ');
+      if (combined) {
+        return combined;
+      }
+      if (displayName) {
+        return displayName;
+      }
+
+      // If no name data available, return raw value (do not format as date)
+      return value === undefined || value === null ? '' : String(value);
+    }
+
+    // Date formatting for view values
+    const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?/;
+    if (key === 'updatedAt' || /date|time|at/i.test(key) || isoDateRegex.test(normalized)) {
+      const formatted = this.formatIsoDate(normalized);
+      if (formatted) {
+        return formatted;
+      }
+    }
+
+    return normalized;
   }
 
   private buildPrintMarkup(): string {
@@ -1177,12 +1324,14 @@ export class SearchPageComponent implements OnInit, OnChanges {
       this.canCreate = true;
       this.canEdit = true;
       this.canDelete = true;
+      this.canSearch = true;
       return;
     }
 
     this.canCreate = await this.resolveActionPermission(this.createFunctionCode);
     this.canEdit = await this.resolveActionPermission(this.editFunctionCode);
     this.canDelete = await this.resolveActionPermission(this.deleteFunctionCode);
+    this.canSearch = await this.resolveActionPermission(this.searchFunctionCode);
   }
 
   private async resolveActionPermission(functionCode: string): Promise<boolean> {

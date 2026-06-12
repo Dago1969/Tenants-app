@@ -115,6 +115,7 @@ export class AppComponent implements OnDestroy {
     { labelKey: 'menu.equipmentTypesSearch', route: '/equipment-types/search', moduleCode: 'EQUIPMENT_TYPE', iconSrc: 'assets/equipment-type-menu.svg' },
     { labelKey: 'menu.appointmentTypesSearch', route: '/appointment-types/search', moduleCode: 'APPOINTMENT_TYPE' },
     { labelKey: 'menu.therapeuticPlansSearch', route: '/therapeutic-plans/search', moduleCode: 'THERAPEUTIC_PLAN' },
+    { labelKey: 'ticket.menu.manage', route: '/tickets/search', moduleCode: 'QTM_TICKET' },
     { labelKey: 'menu.authorizations', route: '/authorizations' },
     { labelKey: 'menu.controllerFunctionMappings', route: '/controller-function-mappings' },
     { labelKey: 'menu.operationLogsSearch', route: '/operation-logs/search' },
@@ -137,8 +138,7 @@ export class AppComponent implements OnDestroy {
   structureMenuItems: MenuItem[] = [
     { labelKey: 'menu.structure.aslSearch', route: '/structures/asl', moduleCode: STRUCTURE_MODULE_CODES.ASL, iconSrc: 'assets/asl.png' },
     { labelKey: 'menu.structure.hospitalSearch', route: '/structures/hospitals', moduleCode: STRUCTURE_MODULE_CODES.HOSPITAL, iconSrc: 'assets/hospital.png' },
-    { labelKey: 'menu.structure.hospitalPharmacySearch', route: '/structures/hospital-pharmacies', moduleCode: STRUCTURE_MODULE_CODES.HOSPITAL_PHARMACY, iconSrc: 'assets/farmacy-O.png' },
-    { labelKey: 'menu.structure.retailPharmacySearch', route: '/structures/retail-pharmacies', moduleCode: STRUCTURE_MODULE_CODES.RETAIL_PHARMACY, iconSrc: 'assets/farmacy-R.png' },
+    { labelKey: 'menu.structure.pharmaciesSearch', route: '/structures/pharmacies', moduleCode: STRUCTURE_MODULE_CODES.PHARMACY, iconSrc: 'assets/farmacy-O.png' },
     { labelKey: 'menu.structure.logisticsWarehouseSearch', route: '/structures/logistics-warehouses', moduleCode: STRUCTURE_MODULE_CODES.LOGISTICS_WAREHOUSE, iconSrc: 'assets/logistic.png' },
     { labelKey: 'menu.structure.materialWarehouseSearch', route: '/structures/material-warehouses', moduleCode: STRUCTURE_MODULE_CODES.MATERIAL_WAREHOUSE, iconSrc: 'assets/dwh.png' },
     { labelKey: 'menu.structure.pharmaCompanySearch', route: '/structures/pharma-companies', moduleCode: STRUCTURE_MODULE_CODES.PHARMA_COMPANY, iconSrc: 'assets/farmaceutica.png' },

@@ -7,6 +7,15 @@ databaseChangeLog:
         - onError: HALT
         - tableExists:
             tableName: equipment_type
+        - columnExists:
+            tableName: equipment_type
+            columnName: principal_json_path
+        - columnExists:
+            tableName: equipment_type
+            columnName: secondary_json_path
+        - columnExists:
+            tableName: equipment_type
+            columnName: status
       changes:
         - sql:
             splitStatements: true
@@ -15,15 +24,39 @@ databaseChangeLog:
               UPDATE equipment_type
               SET status = 'attivo'
               WHERE status IS NULL OR TRIM(status) = '';
-
-              ALTER TABLE equipment_type
-                MODIFY COLUMN principal_json_path TEXT NULL,
-                MODIFY COLUMN secondary_json_path TEXT NULL,
-                MODIFY COLUMN status VARCHAR(32) NOT NULL DEFAULT 'attivo';
+        - modifyDataType:
+            tableName: equipment_type
+            columnName: principal_json_path
+            newDataType: TEXT
+        - dropNotNullConstraint:
+            tableName: equipment_type
+            columnName: principal_json_path
+            columnDataType: TEXT
+        - modifyDataType:
+            tableName: equipment_type
+            columnName: secondary_json_path
+            newDataType: TEXT
+        - dropNotNullConstraint:
+            tableName: equipment_type
+            columnName: secondary_json_path
+            columnDataType: TEXT
+        - modifyDataType:
+            tableName: equipment_type
+            columnName: status
+            newDataType: VARCHAR(32)
+        - addDefaultValue:
+            tableName: equipment_type
+            columnName: status
+            defaultValue: attivo
+        - addNotNullConstraint:
+            tableName: equipment_type
+            columnName: status
+            columnDataType: VARCHAR(32)
 
   - changeSet:
       id: 20260430-11-normalize-module-codes
       author: copilot
+      validCheckSum: '9:71e8b71f0a8a9d3a6b6291a4029aa6b5'
       preConditions:
         - onFail: MARK_RAN
         - onError: HALT
@@ -39,12 +72,8 @@ databaseChangeLog:
               WHERE module_code = 'ASL';
 
               UPDATE function_module_role_authorizations
-              SET module_code = 'STRUCTURE-FARMACY-O'
-              WHERE module_code = 'HOSPITAL_PHARMACY';
-
-              UPDATE function_module_role_authorizations
-              SET module_code = 'STRUCTURE-FARMACY-R'
-              WHERE module_code = 'RETAIL_PHARMACY';
+              SET module_code = 'STRUCTURE-FARMACY'
+              WHERE module_code IN ('HOSPITAL_PHARMACY','RETAIL_PHARMACY');
 
               UPDATE function_module_role_authorizations
               SET module_code = 'STRUCTURE_LOGISTICS_WAREHOUSE'
@@ -108,8 +137,9 @@ databaseChangeLog:
                 WHEN TRIM(COALESCE(equipment_record.assigned_to, '')) REGEXP '^[0-9]+$' THEN TRIM(equipment_record.assigned_to)
                 ELSE NULL
               END;
-
-              DROP TABLE IF EXISTS therapeutic_plan_equipment;
+        - dropTable:
+            tableName: therapeutic_plan_equipment
+            cascadeConstraints: true
 
   - changeSet:
       id: 20260430-11-align-equipment-assigned-to
@@ -132,9 +162,14 @@ databaseChangeLog:
               SET assigned_to = NULL
               WHERE TRIM(COALESCE(assigned_to, '')) = ''
                  OR TRIM(COALESCE(assigned_to, '')) NOT REGEXP '^[0-9]+$';
-
-              ALTER TABLE equipment
-                MODIFY COLUMN assigned_to BIGINT NULL;
+        - modifyDataType:
+            tableName: equipment
+            columnName: assigned_to
+            newDataType: BIGINT
+        - dropNotNullConstraint:
+            tableName: equipment
+            columnName: assigned_to
+            columnDataType: BIGINT
 
   - changeSet:
       id: 20260430-11-align-therapeutic-plan
@@ -148,11 +183,9 @@ databaseChangeLog:
             tableName: therapeutic_plan
             columnName: json_visit
       changes:
-        - sql:
-            splitStatements: true
-            stripComments: false
-            sql: |
-              ALTER TABLE therapeutic_plan DROP COLUMN json_visit;
+        - dropColumn:
+            tableName: therapeutic_plan
+            columnName: json_visit
 
   - changeSet:
       id: 20260430-11-add-therapeutic-plan-visit-json-visit
@@ -167,12 +200,14 @@ databaseChangeLog:
               tableName: therapeutic_plan_visit
               columnName: json_visit
       changes:
-        - sql:
-            splitStatements: true
-            stripComments: false
-            sql: |
-              ALTER TABLE therapeutic_plan_visit
-                ADD COLUMN json_visit TEXT NULL;
+        - addColumn:
+            tableName: therapeutic_plan_visit
+            columns:
+              - column:
+                  name: json_visit
+                  type: TEXT
+                  constraints:
+                    nullable: true
 
   - changeSet:
       id: 20260430-11-drop-therapeutic-plan-patient-fk
@@ -200,12 +235,14 @@ databaseChangeLog:
             tableName: therapeutic_plan_visit
             columnName: visit_date
       changes:
-        - sql:
-            splitStatements: true
-            stripComments: false
-            sql: |
-              ALTER TABLE therapeutic_plan_visit
-                MODIFY COLUMN visit_date DATETIME NOT NULL;
+        - modifyDataType:
+            tableName: therapeutic_plan_visit
+            columnName: visit_date
+            newDataType: DATETIME
+        - addNotNullConstraint:
+            tableName: therapeutic_plan_visit
+            columnName: visit_date
+            columnDataType: DATETIME
 
   - changeSet:
       id: 20260430-11-drop-therapeutic-plan-visit-start-therapy
@@ -226,5 +263,6 @@ databaseChangeLog:
 
               UPDATE therapeutic_plan_visit
               SET visit_date = COALESCE(start_therapy, visit_date);
-
-              ALTER TABLE therapeutic_plan_visit DROP COLUMN start_therapy;
+        - dropColumn:
+            tableName: therapeutic_plan_visit
+            columnName: start_therapy

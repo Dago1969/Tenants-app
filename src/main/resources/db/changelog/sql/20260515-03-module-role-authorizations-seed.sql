@@ -10,8 +10,7 @@ INSERT IGNORE INTO module_role_authorizations (module_code, role_id, authorizati
   ('FUNCTION', 'ADMIN', 'FULL_EDIT'),
   ('THERAPEUTIC_PLAN', 'ADMIN', 'FULL_EDIT'),
   ('STRUCTURE-ASL', 'ADMIN', 'FULL_EDIT'),
-  ('STRUCTURE-FARMACY-O', 'ADMIN', 'FULL_EDIT'),
-  ('STRUCTURE-FARMACY-R', 'ADMIN', 'FULL_EDIT'),
+  ('STRUCTURE-FARMACY', 'ADMIN', 'FULL_EDIT'),
   
   -- SUPER_ADMIN access (full permissions)
   ('USER', 'SUPER_ADMIN', 'FULL_EDIT'),
@@ -23,5 +22,4 @@ INSERT IGNORE INTO module_role_authorizations (module_code, role_id, authorizati
   ('FUNCTION', 'SUPER_ADMIN', 'FULL_EDIT'),
   ('THERAPEUTIC_PLAN', 'SUPER_ADMIN', 'FULL_EDIT'),
   ('STRUCTURE-ASL', 'SUPER_ADMIN', 'FULL_EDIT'),
-  ('STRUCTURE-FARMACY-O', 'SUPER_ADMIN', 'FULL_EDIT'),
-  ('STRUCTURE-FARMACY-R', 'SUPER_ADMIN', 'FULL_EDIT');
+  ('STRUCTURE-FARMACY', 'SUPER_ADMIN', 'FULL_EDIT');

@@ -1,6 +1,7 @@
 package com.qtm.tenants.authorization;
 
 import com.qtm.commonlib.dto.RoleDto;
+import com.qtm.tenants.authorization.dto.AuthorizationModuleDto;
 import com.qtm.tenants.authorization.dto.AuthorizationRoleMatrixDto;
 import com.qtm.tenants.authorization.dto.AuthorizationUpdateRequestDto;
 import lombok.RequiredArgsConstructor;
@@ -40,5 +41,24 @@ public class AuthorizationManagementController {
             @RequestBody AuthorizationUpdateRequestDto request
     ) {
         return ResponseEntity.ok(authorizationManagementService.updateRoleMatrix(roleId, request));
+    }
+
+    @GetMapping("/modules/{moduleCode}/roles/{roleId}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('SUPERADMIN')")
+    public ResponseEntity<AuthorizationModuleDto> getModuleForRole(
+            @PathVariable String moduleCode,
+            @PathVariable String roleId
+    ) {
+        return ResponseEntity.ok(authorizationManagementService.getModuleForRole(roleId, moduleCode));
+    }
+
+    @PutMapping("/modules/{moduleCode}/roles/{roleId}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('SUPERADMIN')")
+    public ResponseEntity<AuthorizationModuleDto> updateModuleForRole(
+            @PathVariable String moduleCode,
+            @PathVariable String roleId,
+            @RequestBody AuthorizationModuleDto request
+    ) {
+        return ResponseEntity.ok(authorizationManagementService.updateModuleForRole(roleId, request));
     }
 }

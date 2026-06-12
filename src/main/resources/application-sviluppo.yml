@@ -12,3 +12,9 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: http://localhost:8085/realms/QTM
+
+# Configurazione per connessione con QTMTicket
+qtm:
+  ticket:
+    base-url: ${QTM_TICKET_BASE_URL:http://localhost:8084/api/ticket}
+

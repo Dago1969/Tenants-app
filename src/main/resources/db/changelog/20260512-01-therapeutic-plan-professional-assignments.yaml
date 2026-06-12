@@ -72,11 +72,12 @@ databaseChangeLog:
               INSERT INTO therapeutic_plan_nurse (therapeutic_plan_id, nurse_id, priority_index)
               SELECT plan.id, plan.nurse_id, 0
               FROM therapeutic_plan plan
-              LEFT JOIN therapeutic_plan_nurse assignment
-                ON assignment.therapeutic_plan_id = plan.id
-               AND assignment.nurse_id = plan.nurse_id
               WHERE plan.nurse_id IS NOT NULL
-                AND assignment.id IS NULL;
+                AND NOT EXISTS (
+                  SELECT 1 FROM therapeutic_plan_nurse assignment
+                  WHERE assignment.therapeutic_plan_id = plan.id
+                    AND assignment.priority_index = 0
+                );
 
   - changeSet:
       id: 20260512-04-backfill-therapeutic-plan-doctor-assignment
@@ -99,11 +100,12 @@ databaseChangeLog:
               INSERT INTO therapeutic_plan_doctor (therapeutic_plan_id, doctor_id, priority_index)
               SELECT plan.id, plan.doctor_id, 0
               FROM therapeutic_plan plan
-              LEFT JOIN therapeutic_plan_doctor assignment
-                ON assignment.therapeutic_plan_id = plan.id
-               AND assignment.doctor_id = plan.doctor_id
               WHERE plan.doctor_id IS NOT NULL
-                AND assignment.id IS NULL;
+                AND NOT EXISTS (
+                  SELECT 1 FROM therapeutic_plan_doctor assignment
+                  WHERE assignment.therapeutic_plan_id = plan.id
+                    AND assignment.priority_index = 0
+                );
 
   # Elimina eventuali assegnazioni orfane prodotte da dati legacy senza record anagrafico corrispondente.
   - changeSet:

@@ -12,10 +12,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -46,19 +48,20 @@ public class StructureService {
 
     @Transactional(readOnly = true)
     public List<StructureDto> findAll(String structureTypeCode, Long parentStructureId) {
-        return findAll(structureTypeCode, parentStructureId, null, null, null, null);
+        return findAll(structureTypeCode, null, parentStructureId, null, null, null, null);
     }
 
     @Transactional(readOnly = true)
     public List<StructureDto> findAll(
             String structureTypeCode,
+            String structureTypes,
             Long parentStructureId,
             String code,
             String name,
             String city,
             Boolean active
     ) {
-        List<StructureEntity> entities = resolveEntities(structureTypeCode, parentStructureId).stream()
+        List<StructureEntity> entities = resolveEntities(structureTypeCode, structureTypes, parentStructureId).stream()
             .filter(entity -> matchesFilter(entity.getCode(), code))
             .filter(entity -> matchesFilter(entity.getName(), name))
             .filter(entity -> matchesFilter(entity.getCity(), city))
@@ -116,13 +119,21 @@ public class StructureService {
                 .toList();
     }
 
-    private List<StructureEntity> resolveEntities(String structureTypeCode, Long parentStructureId) {
+    private List<StructureEntity> resolveEntities(String structureTypeCode, String structureTypes, Long parentStructureId) {
         if (structureTypeCode != null && !structureTypeCode.isBlank()) {
             StructureType structureType = resolveStructureType(structureTypeCode);
             if (parentStructureId != null) {
                 return structureRepository.findAllByStructureTypeAndParentStructureIdOrderByNameAsc(structureType.getCode(), parentStructureId);
             }
             return structureRepository.findAllByStructureTypeOrderByNameAsc(structureType.getCode());
+        }
+
+        List<String> structureTypeCodes = resolveStructureTypeCodes(structureTypes);
+        if (!structureTypeCodes.isEmpty()) {
+            if (parentStructureId != null) {
+                return structureRepository.findAllByStructureTypeInAndParentStructureIdOrderByNameAsc(structureTypeCodes, parentStructureId);
+            }
+            return structureRepository.findAllByStructureTypeInOrderByNameAsc(structureTypeCodes);
         }
 
         if (parentStructureId != null) {
@@ -201,6 +212,20 @@ public class StructureService {
         } catch (IllegalArgumentException exception) {
             throw new ResponseStatusException(BAD_REQUEST, exception.getMessage());
         }
+    }
+
+    private List<String> resolveStructureTypeCodes(String structureTypes) {
+        if (structureTypes == null || structureTypes.isBlank()) {
+            return List.of();
+        }
+
+        return Arrays.stream(structureTypes.split(","))
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .map(value -> value.toUpperCase(Locale.ROOT))
+                .distinct()
+                .map(code -> resolveStructureType(code).getCode())
+                .toList();
     }
 
     private StructureEntity findEntityById(Long id) {

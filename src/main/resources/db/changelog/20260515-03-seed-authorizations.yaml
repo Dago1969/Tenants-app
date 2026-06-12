@@ -2,6 +2,7 @@ databaseChangeLog:
   - changeSet:
       id: 20260515-03-seed-module-role-authorizations
       author: copilot
+      validCheckSum: '9:57351cc503be2cb6264a60ece768cd90'
       preConditions:
         - onFail: MARK_RAN
         - onError: HALT

@@ -14,6 +14,7 @@ type PopupStructureType =
   | 'HOSPITAL'
   | 'HOSPITAL_PHARMACY'
   | 'RETAIL_PHARMACY'
+  | 'PHARMACY'
   | 'LOGISTICS_WAREHOUSE'
   | 'MATERIAL_WAREHOUSE'
   | 'PHARMA_COMPANY'
@@ -104,8 +105,28 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
     { key: 'name', labelKey: 'structures.field.name', type: 'text' },
     { key: 'city', labelKey: 'structures.field.city', type: 'text' },
     { key: 'region', labelKey: 'structures.field.region', type: 'text' },
+    { key: 'structureType', labelKey: 'structures.field.structureType', type: 'text' },
     { key: 'active', labelKey: 'search.column.status', type: 'text' },
     { key: 'parentStructureName', labelKey: 'structures.field.parentStructureId', type: 'text' }
+  ];
+
+  // Options used to render structure type selects and to build display maps
+  private readonly structureTypeOptions = [
+    { value: 'ASL', label: 'structures.type.asl.label' },
+    { value: 'HOSPITAL', label: 'structures.type.hospital.label' },
+    { value: 'HOSPITAL_PHARMACY', label: 'structures.type.hospitalPharmacy.label' },
+    { value: 'RETAIL_PHARMACY', label: 'structures.type.retailPharmacy.label' },
+    { value: 'TERRITORIAL_PHARMACY', label: 'structures.type.territorialPharmacy.label' },
+    { value: 'LOGISTICS_WAREHOUSE', label: 'structures.type.logisticsWarehouse.label' },
+    { value: 'MATERIAL_WAREHOUSE', label: 'structures.type.materialWarehouse.label' },
+    { value: 'PHARMA_COMPANY', label: 'structures.type.pharmaCompany.label' },
+    { value: 'SPECIALIST_CLINIC', label: 'structures.type.specialistClinic.label' }
+  ];
+
+  private readonly pharmacyStructureTypeOptions = [
+    { value: 'HOSPITAL_PHARMACY', label: 'structures.type.hospitalPharmacy.label' },
+    { value: 'RETAIL_PHARMACY', label: 'structures.type.retailPharmacy.label' },
+    { value: 'TERRITORIAL_PHARMACY', label: 'structures.type.territorialPharmacy.label' }
   ];
 
   constructor(
@@ -119,7 +140,12 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
     const structureType = String(this.route.snapshot.data['structureType'] ?? 'ASL');
     this.moduleCode = String(this.route.snapshot.data['moduleCode'] ?? STRUCTURE_MODULE_CODES.GENERIC);
     this.popupStructureType = this.normalizePopupStructureType(structureType);
-    this.fixedParams = { structureType };
+    if (structureType === 'PHARMACY') {
+      // search across all pharmacy-related types
+      this.fixedParams = { structureTypes: 'HOSPITAL_PHARMACY,RETAIL_PHARMACY,TERRITORIAL_PHARMACY' };
+    } else {
+      this.fixedParams = { structureType };
+    }
     if (this.isPopupWizardStructureType(this.popupStructureType)) {
       this.createRoute = '';
       this.detailRouteBase = this.resolveDetailRouteBase(this.popupStructureType);
@@ -131,6 +157,41 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
       this.interceptEditAction = false;
     }
     this.showStructureWizard = false;
+
+    const baseFilters: SearchField[] = [
+      { key: 'code', labelKey: 'structures.field.code', type: 'text' },
+      { key: 'name', labelKey: 'structures.field.name', type: 'text' },
+      { key: 'city', labelKey: 'structures.field.city', type: 'text' },
+      {
+        key: 'active',
+        labelKey: 'search.column.status',
+        type: 'select',
+        options: [
+          { value: 'true', label: 'status.attivo' },
+          { value: 'false', label: 'status.inattivo' }
+        ]
+      }
+    ];
+
+    this.filters = structureType === 'PHARMACY'
+      ? [
+          ...baseFilters.slice(0, 3),
+          {
+            key: 'structureType',
+            labelKey: 'structures.field.structureType',
+            type: 'select',
+            options: this.pharmacyStructureTypeOptions.map((option) => ({ value: option.value, label: option.label }))
+          },
+          baseFilters[3]
+        ]
+      : baseFilters;
+
+    // Populate result column display map for structureType so codes are shown as localized labels
+    const structureTypeMap: Record<string, string> = this.buildStructureTypeDisplayMap();
+    const typeColumn = this.resultColumns.find((c) => c.key === 'structureType');
+    if (typeColumn) {
+      typeColumn.displayValueMap = structureTypeMap;
+    }
 
     // Logica permessi creazione ASL
     this.loadActionPermissions();
@@ -177,10 +238,11 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
     return this.isPopupWizardStructureType(this.popupStructureType) && this.popupStructureType !== 'ASL' && this.popupStructureType !== 'HOSPITAL';
   }
 
-  getManagedPopupStructureType(): 'HOSPITAL_PHARMACY' | 'RETAIL_PHARMACY' | 'LOGISTICS_WAREHOUSE' | 'MATERIAL_WAREHOUSE' | 'PHARMA_COMPANY' | 'SPECIALIST_CLINIC' {
+  getManagedPopupStructureType(): 'HOSPITAL_PHARMACY' | 'RETAIL_PHARMACY' | 'PHARMACY' | 'LOGISTICS_WAREHOUSE' | 'MATERIAL_WAREHOUSE' | 'PHARMA_COMPANY' | 'SPECIALIST_CLINIC' {
     switch (this.popupStructureType) {
       case 'HOSPITAL_PHARMACY':
       case 'RETAIL_PHARMACY':
+      case 'PHARMACY':
       case 'LOGISTICS_WAREHOUSE':
       case 'MATERIAL_WAREHOUSE':
       case 'PHARMA_COMPANY':
@@ -196,9 +258,10 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
       case 'HOSPITAL':
         return 'structures.type.hospital.label';
       case 'HOSPITAL_PHARMACY':
-        return 'structures.type.hospitalPharmacy.label';
       case 'RETAIL_PHARMACY':
-        return 'structures.type.retailPharmacy.label';
+        return 'structures.type.pharmacies.label';
+      case 'PHARMACY':
+        return 'structures.type.pharmacies.label';
       case 'LOGISTICS_WAREHOUSE':
         return 'structures.type.logisticsWarehouse.label';
       case 'MATERIAL_WAREHOUSE':
@@ -223,9 +286,10 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
       case 'HOSPITAL':
         return '/structures/hospitals/manage';
       case 'HOSPITAL_PHARMACY':
-        return '/structures/hospital-pharmacies/manage';
       case 'RETAIL_PHARMACY':
-        return '/structures/retail-pharmacies/manage';
+        return '/structures/pharmacies/manage';
+      case 'PHARMACY':
+        return '/structures/pharmacies/manage';
       case 'LOGISTICS_WAREHOUSE':
         return '/structures/logistics-warehouses/manage';
       case 'MATERIAL_WAREHOUSE':
@@ -244,6 +308,7 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
       'ASL',
       'HOSPITAL',
       'HOSPITAL_PHARMACY',
+      'PHARMACY',
       'RETAIL_PHARMACY',
       'LOGISTICS_WAREHOUSE',
       'MATERIAL_WAREHOUSE',
@@ -263,6 +328,14 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
     }
 
     return null;
+  }
+
+  private buildStructureTypeDisplayMap(): Record<string, string> {
+    const map: Record<string, string> = {};
+    for (const opt of this.structureTypeOptions) {
+      map[opt.value] = this.translate(opt.label);
+    }
+    return map;
   }
 
   translate(key: MessageKey): string {

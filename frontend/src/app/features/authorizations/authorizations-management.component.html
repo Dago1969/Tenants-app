@@ -13,7 +13,7 @@
           </select>
         </label>
 
-        <button class="authz-btn" type="button" (click)="save()" [disabled]="!selectedRoleId || loading || saving">
+        <button *ngIf="canSave()" class="authz-btn" type="button" (click)="save()" [disabled]="!selectedRoleId || loading || saving">
           <span class="icon material-icons">save</span> {{ translate('authorizations.actions.save') }}
         </button>
       </div>
@@ -54,14 +54,14 @@
 
           <label class="authz-filter authz-scope-filter">
             <span>{{ translate('authorizations.module.scope') }}</span>
-            <div class="authz-scope-control">
+              <div class="authz-scope-control">
               <span
                 class="authz-state-icon"
                 [ngClass]="getScopeIconClass(module.moduleAuthorization)"
                 [title]="getScopeLabel(module.moduleAuthorization)"
                 [attr.aria-label]="getScopeLabel(module.moduleAuthorization)"
               >{{ getScopeIcon(module.moduleAuthorization) }}</span>
-              <select [(ngModel)]="module.moduleAuthorization" [disabled]="saving">
+              <select [(ngModel)]="module.moduleAuthorization" [disabled]="!canEditModule(module) || saving">
                 <option *ngFor="let option of moduleScopeOptions" [ngValue]="option.value">{{ translate(option.labelKey) }}</option>
               </select>
             </div>
@@ -72,11 +72,11 @@
         <div class="authz-section authz-section-fields" *ngIf="hasFieldRows(module)">
           <div class="authz-section-header" style="display: flex; align-items: center; gap: 16px;">
             <h4 style="margin-bottom: 0;">{{ translate('authorizations.fields.title') }}</h4>
-            <select [(ngModel)]="fieldBulkRule[module.moduleCode]" [disabled]="saving || module.moduleAuthorization === 'deny'">
+            <select [(ngModel)]="fieldBulkRule[module.moduleCode]" [disabled]="!canEditModule(module) || saving || module.moduleAuthorization === 'deny'">
               <option [ngValue]="undefined">{{ translate('authorizations.fields.bulkSelectPlaceholder') }}</option>
               <option *ngFor="let option of fieldScopeOptions" [ngValue]="option.value">{{ translate(option.labelKey) }}</option>
             </select>
-            <button class="authz-btn" type="button" (click)="applyRuleToAllFields(module)" [disabled]="!fieldBulkRule[module.moduleCode] || saving || module.moduleAuthorization === 'deny'">
+            <button class="authz-btn" type="button" (click)="applyRuleToAllFields(module)" [disabled]="!fieldBulkRule[module.moduleCode] || saving || module.moduleAuthorization === 'deny' || !canEditModule(module)">
               {{ translate('authorizations.fields.bulkApply') }}
             </button>
           </div>
@@ -95,7 +95,7 @@
               [title]="getScopeLabel(field.authorization)"
               [attr.aria-label]="getScopeLabel(field.authorization)"
             >{{ getScopeIcon(field.authorization) }}</span>
-            <select [(ngModel)]="field.authorization" [disabled]="saving || module.moduleAuthorization === 'deny'">
+            <select [(ngModel)]="field.authorization" [disabled]="!canEditModule(module) || saving || module.moduleAuthorization === 'deny'">
               <option *ngFor="let option of fieldScopeOptions" [ngValue]="option.value">{{ translate(option.labelKey) }}</option>
             </select>
           </div>
@@ -120,7 +120,7 @@
               [title]="getScopeLabel(functionItem.authorization)"
               [attr.aria-label]="getScopeLabel(functionItem.authorization)"
             >{{ getScopeIcon(functionItem.authorization) }}</span>
-            <select [(ngModel)]="functionItem.authorization" [disabled]="saving || module.moduleAuthorization === 'deny'">
+            <select [(ngModel)]="functionItem.authorization" [disabled]="!canEditModule(module) || saving || module.moduleAuthorization === 'deny'">
               <option *ngFor="let option of functionScopeOptions" [ngValue]="option.value">{{ translate(option.labelKey) }}</option>
             </select>
           </div>
@@ -145,7 +145,7 @@
               [title]="getScopeLabel(functionItem.authorization)"
               [attr.aria-label]="getScopeLabel(functionItem.authorization)"
             >{{ getScopeIcon(functionItem.authorization) }}</span>
-            <select [(ngModel)]="functionItem.authorization" [disabled]="saving || module.moduleAuthorization === 'deny'">
+            <select [(ngModel)]="functionItem.authorization" [disabled]="!canEditModule(module) || saving || module.moduleAuthorization === 'deny'">
               <option *ngFor="let option of functionScopeOptions" [ngValue]="option.value">{{ translate(option.labelKey) }}</option>
             </select>
           </div>

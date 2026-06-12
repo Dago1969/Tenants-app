@@ -87,15 +87,15 @@ public class UserOnboardingService {
             throw new ResponseStatusException(BAD_REQUEST, "Password temporanea non disponibile per l'invio della mail");
         }
 
-        String subject = "Accesso Tenants App";
-        String body = "Ciao,\n\n"
-                + "il tuo account e' stato creato con successo.\n"
-            + "URL di accesso: " + dashboardFrontendBaseUrl + "\n"
-                + "Username: " + createdUser.getUsername() + "\n"
-                + "Password temporanea: " + generatedPassword + "\n\n"
-            + "Ti consigliamo di cambiare la password dopo il primo accesso.\n";
-
-        mailService.sendSimpleMail(createdUser.getEmail(), subject, body);
+//        String subject = "Accesso Tenants App";
+//        String body = "Ciao,\n\n"
+//                + "il tuo account e' stato creato con successo.\n"
+//            + "URL di accesso: " + dashboardFrontendBaseUrl + "\n"
+//                + "Username: " + createdUser.getUsername() + "\n"
+//                + "Password temporanea: " + generatedPassword + "\n\n"
+//            + "Ti consigliamo di cambiare la password dopo il primo accesso.\n";
+//
+//        mailService.sendSimpleMail(createdUser.getEmail(), subject, body);
     }
 
     private boolean isBlank(String value) {

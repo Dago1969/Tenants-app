@@ -11,8 +11,10 @@ public final class StructureModuleCodes {
     public static final String GENERIC = "STRUCTURE";
     public static final String ASL = "STRUCTURE-ASL";
     public static final String HOSPITAL = "HOSPITAL";
-    public static final String HOSPITAL_PHARMACY = "STRUCTURE-FARMACY-O";
-    public static final String RETAIL_PHARMACY = "STRUCTURE-FARMACY-R";
+    public static final String HOSPITAL_PHARMACY = "STRUCTURE-FARMACY";
+    public static final String RETAIL_PHARMACY = "STRUCTURE-FARMACY";
+    public static final String TERRITORIAL_PHARMACY = "STRUCTURE-FARMACY";
+    public static final String PHARMACY = "STRUCTURE-FARMACY";
     public static final String LOGISTICS_WAREHOUSE = "STRUCTURE_LOGISTICS_WAREHOUSE";
     public static final String MATERIAL_WAREHOUSE = "STRUCTURE_MATERIAL_WAREHOUSE";
     public static final String PHARMA_COMPANY = "STRUCTURE_PHARMA_COMPANY";
@@ -24,6 +26,7 @@ public final class StructureModuleCodes {
             ASL,
             HOSPITAL,
             HOSPITAL_PHARMACY,
+            TERRITORIAL_PHARMACY,
             RETAIL_PHARMACY,
             LOGISTICS_WAREHOUSE,
             MATERIAL_WAREHOUSE,
@@ -36,8 +39,7 @@ public final class StructureModuleCodes {
             Map.entry(GENERIC, "Strutture"),
             Map.entry(ASL, "ASL"),
             Map.entry(HOSPITAL, "Ospedali"),
-            Map.entry(HOSPITAL_PHARMACY, "Farmacie Ospedaliere"),
-            Map.entry(RETAIL_PHARMACY, "Farmacie Retail"),
+            Map.entry(PHARMACY, "Farmacia"),
             Map.entry(LOGISTICS_WAREHOUSE, "Magazzini Logistica"),
             Map.entry(MATERIAL_WAREHOUSE, "Magazzini Materiale"),
             Map.entry(PHARMA_COMPANY, "Aziende Farmaceutiche"),
@@ -51,6 +53,7 @@ public final class StructureModuleCodes {
             Map.entry("STRUCTURE_HOSPITAL", HOSPITAL),
             Map.entry("HOSPITAL_PHARMACY", HOSPITAL_PHARMACY),
             Map.entry("RETAIL_PHARMACY", RETAIL_PHARMACY),
+            Map.entry("TERRITORIAL_PHARMACY", TERRITORIAL_PHARMACY),
             Map.entry("LOGISTICS_WAREHOUSE", LOGISTICS_WAREHOUSE),
             Map.entry("MATERIAL_WAREHOUSE", MATERIAL_WAREHOUSE),
             Map.entry("PHARMA_COMPANY", PHARMA_COMPANY),

@@ -656,8 +656,7 @@ databaseChangeLog:
               INSERT IGNORE INTO modules (code, name) VALUES
                 ('USER', 'USER'),               
                 ('STRUCTURE-ASL', 'ASL'),               
-                ('STRUCTURE-FARMACY-O', 'Farmacie Ospedaliere'),
-                ('STRUCTURE-FARMACY-R', 'Farmacie Retail'),
+                ('STRUCTURE-FARMACY', 'Farmacie'),
                 ('STRUCTURE_LOGISTICS_WAREHOUSE', 'Magazzini Logistica'),
                 ('STRUCTURE_MATERIAL_WAREHOUSE', 'Magazzini Materiale'),
                 ('STRUCTURE_PHARMA_COMPANY', 'Aziende Farmaceutiche'),
@@ -964,12 +963,8 @@ databaseChangeLog:
             stripComments: false
             sql: |
               UPDATE function_module_role_authorizations
-              SET module_code = 'STRUCTURE-FARMACY-O'
-              WHERE module_code = 'HOSPITAL_PHARMACY';
-
-              UPDATE function_module_role_authorizations
-              SET module_code = 'STRUCTURE-FARMACY-R'
-              WHERE module_code = 'RETAIL_PHARMACY';
+              SET module_code = 'STRUCTURE-FARMACY'
+              WHERE module_code IN ('HOSPITAL_PHARMACY','RETAIL_PHARMACY');
 
               UPDATE function_module_role_authorizations
               SET module_code = 'STRUCTURE_LOGISTICS_WAREHOUSE'

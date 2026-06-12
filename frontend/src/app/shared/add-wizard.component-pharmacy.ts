@@ -12,6 +12,8 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
 type ManagedStructureType =
   | 'HOSPITAL_PHARMACY'
   | 'RETAIL_PHARMACY'
+  | 'PHARMACY'
+  | 'TERRITORIAL_PHARMACY'
   | 'LOGISTICS_WAREHOUSE'
   | 'MATERIAL_WAREHOUSE'
   | 'PHARMA_COMPANY'
@@ -66,7 +68,15 @@ interface ParentStructureOption {
             <label>{{ translate('structures.field.denom') }}<span class="required-asterisk">*</span><input type="text" name="name" [(ngModel)]="model.name" required /></label>
             <label>{{ translate('structures.field.code') }}<span class="required-asterisk">*</span><input type="text" name="code" [(ngModel)]="model.code" required /></label>
             <label>{{ translate('structures.field.structureType') }}<span class="required-asterisk">*</span>
-              <div style="margin-top:8px;font-weight:600;color:#1890ff;">{{ translate(getStructureTypeLabelKey()) }}</div>
+              <ng-container *ngIf="isPharmacyCategory(); else staticType">
+                <select class="search-filter-select" name="structureType" [(ngModel)]="selectedStructureType" (ngModelChange)="loadParentStructures()" required>
+                  <option [ngValue]="null"></option>
+                  <option *ngFor="let code of pharmacyTypes" [ngValue]="code">{{ translate(typeLabelKeys[code]) }}</option>
+                </select>
+              </ng-container>
+              <ng-template #staticType>
+                <div style="margin-top:8px;font-weight:600;color:#1890ff;">{{ translate(getStructureTypeLabelKey()) }}</div>
+              </ng-template>
             </label>
           </div>
 
@@ -346,6 +356,10 @@ export class AddWizardComponentPharmacy implements OnInit, OnDestroy {
   @Input() structureType: ManagedStructureType = 'HOSPITAL_PHARMACY';
   @Output() close = new EventEmitter<void>();
 
+  selectedStructureType: ManagedStructureType | null = null;
+
+  readonly pharmacyTypes: ManagedStructureType[] = ['TERRITORIAL_PHARMACY', 'HOSPITAL_PHARMACY', 'RETAIL_PHARMACY'];
+
   showAddReferent = false;
   newReferent: Partial<ReferentDto> = { firstName: '', lastName: '', role: '', email: '', phone: '' };
   step = 1;
@@ -372,7 +386,7 @@ export class AddWizardComponentPharmacy implements OnInit, OnDestroy {
 
   readonly parentLabelKeys: Partial<Record<ManagedStructureType, string>> = {
     HOSPITAL_PHARMACY: 'structures.field.parentHospital',
-    RETAIL_PHARMACY: 'structures.field.parentAsl',
+    TERRITORIAL_PHARMACY: 'structures.field.parentAsl',
     LOGISTICS_WAREHOUSE: 'structures.field.parentAsl',
     MATERIAL_WAREHOUSE: 'structures.field.parentAsl',
     SPECIALIST_CLINIC: 'structures.field.parentAsl'
@@ -381,6 +395,8 @@ export class AddWizardComponentPharmacy implements OnInit, OnDestroy {
   readonly typeLabelKeys: Record<ManagedStructureType, string> = {
     HOSPITAL_PHARMACY: 'structures.type.hospitalPharmacy.label',
     RETAIL_PHARMACY: 'structures.type.retailPharmacy.label',
+    PHARMACY: 'structures.type.pharmacies.label',
+    TERRITORIAL_PHARMACY: 'structures.type.territorialPharmacy.label',
     LOGISTICS_WAREHOUSE: 'structures.type.logisticsWarehouse.label',
     MATERIAL_WAREHOUSE: 'structures.type.materialWarehouse.label',
     PHARMA_COMPANY: 'structures.type.pharmaCompany.label',
@@ -389,7 +405,9 @@ export class AddWizardComponentPharmacy implements OnInit, OnDestroy {
 
   readonly wizardTitleKeys: Record<ManagedStructureType, string> = {
     HOSPITAL_PHARMACY: 'structures.wizard.hospitalPharmacy.title',
-    RETAIL_PHARMACY: 'structures.wizard.retailPharmacy.title',
+    RETAIL_PHARMACY: 'structures.wizard.hospitalPharmacy.title',
+    PHARMACY: 'structures.wizard.hospitalPharmacy.title',
+    TERRITORIAL_PHARMACY: 'structures.wizard.territorialPharmacy.title',
     LOGISTICS_WAREHOUSE: 'structures.wizard.logisticsWarehouse.title',
     MATERIAL_WAREHOUSE: 'structures.wizard.materialWarehouse.title',
     PHARMA_COMPANY: 'structures.wizard.pharmaCompany.title',
@@ -444,6 +462,7 @@ export class AddWizardComponentPharmacy implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
+    this.selectedStructureType = this.normalizeSelectableStructureType(this.structureType);
     this.stepTitles = [
       'structures.step.generalData',
       'structures.step.contacts',
@@ -479,24 +498,34 @@ export class AddWizardComponentPharmacy implements OnInit, OnDestroy {
     return (left?.id ?? null) === (right?.id ?? null);
   };
 
+  getCurrentType(): ManagedStructureType {
+    return this.selectedStructureType ?? this.getContextStructureType();
+  }
+
+  isPharmacyCategory(): boolean {
+    const t = this.getCurrentType();
+    return t === 'PHARMACY' || t === 'HOSPITAL_PHARMACY' || t === 'RETAIL_PHARMACY' || t === 'TERRITORIAL_PHARMACY';
+  }
+
   getWizardTitleKey(): string {
-    return this.wizardTitleKeys[this.structureType];
+    return this.wizardTitleKeys[this.getCurrentType()];
   }
 
   getStructureTypeLabelKey(): string {
-    return this.typeLabelKeys[this.structureType];
+    return this.typeLabelKeys[this.getCurrentType()];
   }
 
   getParentLabelKey(): string {
-    return this.parentLabelKeys[this.structureType] ?? 'structures.field.parentStructureId';
+    return this.parentLabelKeys[this.getCurrentType()] ?? 'structures.field.parentStructureId';
   }
 
   hasParentStructure(): boolean {
-    return Boolean(this.parentLabelKeys[this.structureType]);
+    return this.selectedStructureType !== null && Boolean(this.parentLabelKeys[this.getCurrentType()]);
   }
 
   isScheduleManagedStructure(): boolean {
-    return this.structureType === 'HOSPITAL_PHARMACY' || this.structureType === 'RETAIL_PHARMACY';
+    const t = this.getCurrentType();
+    return t === 'HOSPITAL_PHARMACY' || t === 'TERRITORIAL_PHARMACY';
   }
 
   getActiveStatusLabelKey(): string {
@@ -610,7 +639,7 @@ export class AddWizardComponentPharmacy implements OnInit, OnDestroy {
       parentStructureId: this.hasParentStructure() ? (this.model.parentStructureId ?? undefined) : undefined,
       parentStructureName: this.hasParentStructure() ? this.model.parentStructureName : undefined,
       referents: this.model.referents,
-      structureType: this.structureType
+      structureType: this.selectedStructureType ?? undefined
     };
 
     const request = this.isEditMode() && this.structureId !== null
@@ -642,13 +671,13 @@ export class AddWizardComponentPharmacy implements OnInit, OnDestroy {
     });
   }
 
-  private loadParentStructures(): void {
+  loadParentStructures(): void {
     if (!this.hasParentStructure()) {
       this.parentStructures = [];
       return;
     }
 
-    this.structureApi.getParentOptions(this.structureType).subscribe({
+    this.structureApi.getParentOptions(this.getCurrentType()).subscribe({
       next: (data) => {
         this.parentStructures = data;
         this.onParentStructureChange();
@@ -713,6 +742,7 @@ export class AddWizardComponentPharmacy implements OnInit, OnDestroy {
           parentStructureName: this.hasParentStructure() ? (structure.parentStructureName ?? '') : '',
           referents: this.mapReferentsById(structure.referents ?? [])
         };
+        this.selectedStructureType = this.normalizeSelectableStructureType(structure.structureType);
         this.openingSchedule = this.isScheduleManagedStructure()
           ? this.parseSchedule(structure.serviceCalendarHours)
           : [this.createEmptyScheduleSlot()];
@@ -824,6 +854,41 @@ export class AddWizardComponentPharmacy implements OnInit, OnDestroy {
 
   private getWeekdayLabelKey(dayOfWeek: string): string {
     return this.weekdays.find((weekday) => weekday.code === dayOfWeek)?.labelKey ?? dayOfWeek;
+  }
+
+  private getContextStructureType(): ManagedStructureType {
+    return this.normalizeManagedStructureType(this.structureType);
+  }
+
+  private normalizeSelectableStructureType(structureType: string | null | undefined): ManagedStructureType | null {
+    switch (structureType) {
+      case 'HOSPITAL_PHARMACY':
+      case 'RETAIL_PHARMACY':
+      case 'TERRITORIAL_PHARMACY':
+      case 'LOGISTICS_WAREHOUSE':
+      case 'MATERIAL_WAREHOUSE':
+      case 'PHARMA_COMPANY':
+      case 'SPECIALIST_CLINIC':
+        return structureType;
+      default:
+        return null;
+    }
+  }
+
+  private normalizeManagedStructureType(structureType: string | null | undefined): ManagedStructureType {
+    switch (structureType) {
+      case 'PHARMACY':
+      case 'HOSPITAL_PHARMACY':
+      case 'RETAIL_PHARMACY':
+      case 'TERRITORIAL_PHARMACY':
+      case 'LOGISTICS_WAREHOUSE':
+      case 'MATERIAL_WAREHOUSE':
+      case 'PHARMA_COMPANY':
+      case 'SPECIALIST_CLINIC':
+        return structureType;
+      default:
+        return this.structureType === 'PHARMACY' ? 'PHARMACY' : 'HOSPITAL_PHARMACY';
+    }
   }
 
   private findOptionName(options: GeographicOptionDto[], optionId?: number | string | null): string {

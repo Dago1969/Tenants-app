@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Controller REST CRUD strutture.
@@ -59,6 +60,7 @@ public class StructureController {
     @GetMapping
         public ResponseEntity<List<StructureDto>> findAll(
             @RequestParam(required = false) String structureType,
+                        @RequestParam(required = false) String structureTypes,
             @RequestParam(required = false) Long parentStructureId,
             @RequestParam(required = false) String code,
             @RequestParam(required = false) String name,
@@ -66,14 +68,14 @@ public class StructureController {
             @RequestParam(required = false) Boolean active,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
-        String moduleCode = resolveModuleCode(structureType);
-        log.info("[StructureController] GET /structures params: structureType={}, parentStructureId={}, code={}, name={}, city={}, active={}, selectedRole={}",
-                structureType, parentStructureId, code, name, city, active, selectedRole);
+                String moduleCode = resolveSearchModuleCode(structureType, structureTypes);
+                log.info("[StructureController] GET /structures params: structureType={}, structureTypes={}, parentStructureId={}, code={}, name={}, city={}, active={}, selectedRole={}",
+                                structureType, structureTypes, parentStructureId, code, name, city, active, selectedRole);
         // Loggo i tipi struttura disponibili per debug e prevenzione errori code
         List<StructureTypeDto> types = structureService.findSupportedTypes();
         log.info("[StructureController] Tipi struttura disponibili: {}", types.stream().map(StructureTypeDto::getCode).toList());
         controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, moduleCode);
-        return ResponseEntity.ok(structureService.findAll(structureType, parentStructureId, code, name, city, active));
+                return ResponseEntity.ok(structureService.findAll(structureType, structureTypes, parentStructureId, code, name, city, active));
     }
 
     @GetMapping("/types")
@@ -137,5 +139,31 @@ public class StructureController {
 
         private String resolveModuleCode(String structureType) {
                 return StructureModuleCodes.resolveModuleCode(structureType);
+        }
+
+        private String resolveSearchModuleCode(String structureType, String structureTypes) {
+                if (structureType != null && !structureType.isBlank()) {
+                        return resolveModuleCode(structureType);
+                }
+
+                if (structureTypes == null || structureTypes.isBlank()) {
+                        return StructureModuleCodes.GENERIC;
+                }
+
+                List<String> moduleCodes = java.util.Arrays.stream(structureTypes.split(","))
+                        .map(String::trim)
+                        .filter(value -> !value.isBlank())
+                        .map(this::resolveModuleCode)
+                        .distinct()
+                        .toList();
+
+                if (moduleCodes.size() == 1) {
+                        return moduleCodes.get(0);
+                }
+
+                return moduleCodes.stream()
+                        .filter(moduleCode -> !Objects.equals(moduleCode, StructureModuleCodes.GENERIC))
+                        .findFirst()
+                        .orElse(StructureModuleCodes.GENERIC);
         }
 }

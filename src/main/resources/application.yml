@@ -47,6 +47,8 @@ qtm:
     frontend-base-url: http://localhost:4200
   frontend:
     base-url: http://localhost:4201
+  ticket:
+    base-url: ${QTM_TICKET_BASE_URL:http://localhost:8084/api/ticket}
   otp:
     twilio:
       enabled: ${QTM_OTP_TWILIO_ENABLED:true}

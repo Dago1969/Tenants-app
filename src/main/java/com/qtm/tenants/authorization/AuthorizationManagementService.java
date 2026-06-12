@@ -43,6 +43,7 @@ import com.qtm.tenants.role.service.DashboardRoleClient;
 import com.qtm.tenants.structure.StructureModuleCodes;
 import com.qtm.tenants.structure.entity.StructureEntity;
 import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanDto;
+import com.qtm.tenants.ticket.dto.TicketDto;
 
 import lombok.RequiredArgsConstructor;
 
@@ -53,11 +54,21 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuthorizationManagementService {
 
-        private static final String MODULE_APPOINTMENT = "APPOINTMENT";
-        private static final String MODULE_APPOINTMENT_TYPE = "APPOINTMENT_TYPE";
-        private static final String MODULE_THERAPEUTIC_PLAN = "THERAPEUTIC_PLAN";
-        private static final String MODULE_EQUIPMENT = "EQUIPMENT";
-        private static final String MODULE_EQUIPMENT_TYPE = "EQUIPMENT_TYPE";
+	private static final String MODULE_APPOINTMENT = "APPOINTMENT";
+    private static final String MODULE_APPOINTMENT_TYPE = "APPOINTMENT_TYPE";
+    private static final String MODULE_DOCTOR = "DOCTOR";
+    private static final String MODULE_EQUIPMENT = "EQUIPMENT";
+    private static final String MODULE_EQUIPMENT_TYPE = "EQUIPMENT_TYPE";
+    private static final String MODULE_FUNCTION = "FUNCTION";
+    private static final String MODULE_MODULE = "MODULE";
+    private static final String MODULE_NURSE = "NURSE";
+    private static final String MODULE_PATIENT = "PATIENT";
+    private static final String MODULE_PROJECT = "PROJECT";
+    private static final String MODULE_ROLE = "ROLE";
+    private static final String MODULE_TENANT = "TENANT";
+    private static final String MODULE_THERAPEUTIC_PLAN = "THERAPEUTIC_PLAN";
+    private static final String MODULE_TICKET = "TICKET";
+    private static final String MODULE_USER = "USER";
 
     private static final List<String> DEFAULT_COMMON_FUNCTION_CODES = List.of(
             ControllerFunctionAuthorizationService.CREATE_FUNCTION_CODE,
@@ -84,33 +95,61 @@ public class AuthorizationManagementService {
 
     private static final Map<String, ModuleDefinition> MODULE_DEFINITIONS = List.of(
             new ModuleDefinition(
-                    "USER",
-                    "Utenti",
-                    "user",
-                    resolveEntityFields(UserDto.class, Set.of("id", "password", "clientId"), Map.of()),
-                    List.of()
+                    MODULE_APPOINTMENT,
+                    "Appuntamenti",
+                    "appointment",
+                    resolveEntityFields(AppointmentDto.class, Set.of("id", "therapeuticPlanPatientDisplayName", "appointmentTypeName", "appointmentTypeDurationMinutes", "nurseName"), Map.of()),
+                    DEFAULT_COMMON_FUNCTION_CODES
+            ),
+            structureModuleDefinition(StructureModuleCodes.ASL),
+            new ModuleDefinition(
+                    MODULE_EQUIPMENT,
+                    "Attrezzature",
+                    "equipment",
+                    resolveEntityFields(EquipmentDTO.class, Set.of("id", "equipmentTypeCode", "equipmentTypeName"), Map.of()),
+                    DEFAULT_COMMON_FUNCTION_CODES
             ),
             new ModuleDefinition(
-                    "PATIENT",
-                    "Pazienti",
-                    "patient",
-                    resolveEntityFields(PatientEntity.class, Set.of("id"), Map.of()),
-                    List.of()
-            ),
-            new ModuleDefinition(
-                    "DOCTOR",
+                    MODULE_DOCTOR,
                     "Dottori",
                     "doctor",
                     resolveEntityFields(DoctorEntity.class, Set.of("id"), Map.of()),
                     List.of()
             ),
             new ModuleDefinition(
-                    "NURSE",
+                    MODULE_FUNCTION, 
+                    "Funzioni", 
+                    "function", 
+                    resolveEntityFields(FunctionEntity.class, Set.of(), Map.of()), 
+                    List.of()
+            ),
+            structureModuleDefinition(StructureModuleCodes.GENERIC),
+            structureModuleDefinition(StructureModuleCodes.HOSPITAL),
+            structureModuleDefinition(StructureModuleCodes.HOSPITAL_PHARMACY),
+            new ModuleDefinition(
+                    MODULE_NURSE,
                     "Infermieri",
                     "nurse",
                     resolveEntityFields(NurseEntity.class, Set.of("id"), Map.of()),
                     List.of()
             ),
+            structureModuleDefinition(StructureModuleCodes.LOGISTICS_WAREHOUSE),
+            structureModuleDefinition(StructureModuleCodes.MATERIAL_WAREHOUSE),
+            new ModuleDefinition(
+                    MODULE_MODULE, 
+                    "Moduli", 
+                    "module", 
+                    resolveEntityFields(ModuleEntity.class, Set.of(), Map.of()), 
+                    List.of()
+            ),
+            new ModuleDefinition(
+                    MODULE_PATIENT,
+                    "Pazienti",
+                    "patient",
+                    resolveEntityFields(PatientEntity.class, Set.of("id"), Map.of()),
+                    List.of()
+            ),
+            structureModuleDefinition(StructureModuleCodes.PHARMA_COMPANY),
             new ModuleDefinition(
                     MODULE_THERAPEUTIC_PLAN,
                     "Piani Terapeutici",
@@ -119,10 +158,33 @@ public class AuthorizationManagementService {
                     List.of()
             ),
             new ModuleDefinition(
-                    MODULE_APPOINTMENT,
-                    "Appuntamenti",
-                    "appointment",
-                    resolveEntityFields(AppointmentDto.class, Set.of("id", "therapeuticPlanPatientDisplayName", "appointmentTypeName", "appointmentTypeDurationMinutes", "nurseName"), Map.of()),
+                    MODULE_PROJECT, 
+                    "Progetti", 
+                    "project", 
+                    resolveEntityFields(ProjectDto.class, Set.of("id"), Map.of()), 
+                    DEFAULT_COMMON_FUNCTION_CODES
+            ),
+            structureModuleDefinition(StructureModuleCodes.RETAIL_PHARMACY),
+            new ModuleDefinition(
+                    MODULE_ROLE, 
+                    "Ruoli", 
+                    "role", 
+                    resolveEntityFields(RoleEntity.class, Set.of(), Map.of()), 
+                    List.of()
+            ),
+            structureModuleDefinition(StructureModuleCodes.SPECIALIST_CLINIC),
+            new ModuleDefinition(
+                    MODULE_TENANT, 
+                    "Tenants", 
+                    "tenant", 
+                    TENANT_FIELDS, 
+                    DEFAULT_COMMON_FUNCTION_CODES
+            ),
+            new ModuleDefinition(
+                    MODULE_TICKET,
+                    "Ticket",
+                    "ticket",
+                    resolveEntityFields(TicketDto.class, Set.of("id", "realm", "project", "patientId", "therapeuticPlanId", "ticketType"), Map.of()),
                     DEFAULT_COMMON_FUNCTION_CODES
             ),
             new ModuleDefinition(
@@ -133,35 +195,21 @@ public class AuthorizationManagementService {
                     DEFAULT_COMMON_FUNCTION_CODES
             ),
             new ModuleDefinition(
-                    MODULE_EQUIPMENT,
-                    "Attrezzature",
-                    "equipment",
-                    resolveEntityFields(EquipmentDTO.class, Set.of("id", "equipmentTypeCode", "equipmentTypeName"), Map.of()),
-                    DEFAULT_COMMON_FUNCTION_CODES
-            ),
-            new ModuleDefinition(
                     MODULE_EQUIPMENT_TYPE,
                     "Tipi Attrezzature",
                     "equipmentType",
                     resolveEntityFields(EquipmentTypeDTO.class, Set.of("id"), Map.of()),
                     DEFAULT_COMMON_FUNCTION_CODES
             ),
-            structureModuleDefinition(StructureModuleCodes.ASL),
-            structureModuleDefinition(StructureModuleCodes.HOSPITAL),
-            structureModuleDefinition(StructureModuleCodes.HOSPITAL_PHARMACY),
-            structureModuleDefinition(StructureModuleCodes.RETAIL_PHARMACY),
-            structureModuleDefinition(StructureModuleCodes.LOGISTICS_WAREHOUSE),
-            structureModuleDefinition(StructureModuleCodes.MATERIAL_WAREHOUSE),
-            structureModuleDefinition(StructureModuleCodes.PHARMA_COMPANY),
-            structureModuleDefinition(StructureModuleCodes.SPECIALIST_CLINIC),
-            new ModuleDefinition("ROLE", "Ruoli", "role", resolveEntityFields(RoleEntity.class, Set.of(), Map.of()), List.of()),
-            new ModuleDefinition("MODULE", "Moduli", "module", resolveEntityFields(ModuleEntity.class, Set.of(), Map.of()), List.of()),
-            new ModuleDefinition("FUNCTION", "Funzioni", "function", resolveEntityFields(FunctionEntity.class, Set.of(), Map.of()), List.of()),
-            structureModuleDefinition(StructureModuleCodes.GENERIC),
-            new ModuleDefinition("PROJECT", "Progetti", "project", resolveEntityFields(ProjectDto.class, Set.of("id"), Map.of()), DEFAULT_COMMON_FUNCTION_CODES),
-            new ModuleDefinition("TENANT", "Tenants", "tenant", TENANT_FIELDS, DEFAULT_COMMON_FUNCTION_CODES)
+            new ModuleDefinition(
+                    MODULE_USER,
+                    "Utenti",
+                    "user",
+                    resolveEntityFields(UserDto.class, Set.of("id", "password", "clientId"), Map.of()),
+                    List.of()
+            )
     ).stream().collect(Collectors.toMap(ModuleDefinition::code, definition -> definition, (left, right) -> right, LinkedHashMap::new));
-
+    
     private final RoleRepository roleRepository;
     private final FunctionRepository functionRepository;
     private final ModuleRepository moduleRepository;
@@ -261,6 +309,69 @@ public class AuthorizationManagementService {
 
         return getRoleMatrix(roleId);
     }
+
+        @Transactional(readOnly = true)
+        public AuthorizationModuleDto getModuleForRole(String roleId, String moduleCode) {
+                RoleEntity role = findRole(roleId);
+                Map<String, FunctionEntity> functionsByCode = functionRepository.findAll().stream()
+                                .collect(Collectors.toMap(FunctionEntity::getCode, function -> function, (left, right) -> left, LinkedHashMap::new));
+
+                ModuleDefinition definition = MODULE_DEFINITIONS.get(moduleCode);
+                if (definition != null) {
+                        return toModuleDto(role, definition, functionsByCode);
+                }
+
+                // Dynamic module: build minimal representation
+                ModuleEntity module = moduleRepository.findById(java.util.Objects.requireNonNull(moduleCode, "moduleCode"))
+                                .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Modulo non trovato: " + moduleCode));
+
+                // Default minimal module DTO
+                return new AuthorizationModuleDto(
+                                module.getCode(),
+                                module.getName(),
+                                "",
+                                "allow",
+                                List.of(),
+                                List.of()
+                );
+        }
+
+        @Transactional
+        public AuthorizationModuleDto updateModuleForRole(String roleId, AuthorizationModuleDto request) {
+                RoleEntity role = findRole(roleId);
+                Map<String, FunctionEntity> functionsByCode = functionRepository.findAll().stream()
+                                .collect(Collectors.toMap(FunctionEntity::getCode, function -> function, (left, right) -> left, LinkedHashMap::new));
+
+                String moduleCode = java.util.Objects.requireNonNull(request.getModuleCode(), "moduleCode");
+                ModuleDefinition definition = MODULE_DEFINITIONS.get(moduleCode);
+                ModuleEntity module;
+                ModuleRoleAuthorizationEntity moduleRoleAuthorization;
+
+                AuthorizationScope moduleScope = parseModuleScope(request.getModuleAuthorization());
+
+                if (definition != null) {
+                        module = ensureModule(definition);
+                        moduleRoleAuthorization = ensureModuleRoleAuthorization(module, role, moduleScope);
+                        if (moduleRoleAuthorization.getAuthorization() != moduleScope) {
+                                moduleRoleAuthorization.setAuthorization(moduleScope);
+                                moduleRoleAuthorization = moduleRoleAuthorizationRepository.save(moduleRoleAuthorization);
+                        }
+                        updateFieldAuthorizations(definition, moduleRoleAuthorization, request.getFields());
+                        updateFunctionAuthorizations(definition, role, module, functionsByCode, request.getFunctions());
+                } else {
+                        // Dynamic module: allow only module-level authorization
+                        module = moduleRepository.findById(moduleCode)
+                                        .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Modulo non trovato: " + moduleCode));
+                        moduleRoleAuthorization = ensureModuleRoleAuthorization(module, role, moduleScope);
+                        if (moduleRoleAuthorization.getAuthorization() != moduleScope) {
+                                moduleRoleAuthorization.setAuthorization(moduleScope);
+                                moduleRoleAuthorizationRepository.save(moduleRoleAuthorization);
+                        }
+                }
+
+                // Return updated module for role
+                return getModuleForRole(roleId, moduleCode);
+        }
 
         @Transactional
         public void initializeRoleAuthorizations(String targetRoleId, String sourceRoleId) {
