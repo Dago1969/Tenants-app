@@ -1483,23 +1483,20 @@
         <div *ngFor="let entry of currentVisitSummarySchemaPageFields" class="visit-manual-json-summary-item">
           <strong>{{ entry.key }}</strong>
           <ng-container *ngIf="getVisitSchemaSummaryMatrix(entry) as matrix; else rawSchemaEntry">
-            <div class="visit-schema-matrix-scroll">
-              <table class="visit-schema-summary-table">
-                <thead>
-                  <tr>
-                    <th></th>
-                    <th *ngFor="let hour of matrix.hours">{{ hour }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr *ngFor="let option of matrix.options">
-                    <th>{{ option.value }}</th>
-                    <td *ngFor="let hour of matrix.hours" class="visit-schema-summary-checkbox-cell">
+            <div class="visit-schema-matrix-field visit-schema-summary-matrix-field">
+              <div class="visit-schema-matrix-scroll">
+                <div class="visit-schema-matrix-grid visit-schema-summary-grid" [style.grid-template-columns]="getVisitSchemaMatrixGridTemplateByHours(matrix.hours)">
+                  <div class="visit-schema-matrix-header"></div>
+                  <div *ngFor="let hour of matrix.hours" class="visit-schema-matrix-header">{{ getVisitSchemaMatrixHourHeader(hour) }}</div>
+
+                  <ng-container *ngFor="let option of matrix.options">
+                    <div class="visit-schema-matrix-row-label">{{ option.value }}</div>
+                    <label *ngFor="let hour of matrix.hours" class="visit-schema-matrix-cell visit-schema-summary-checkbox-cell">
                       <input type="checkbox" [checked]="matrix.checkedMap[hour + '__' + option.value] === true" disabled />
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                    </label>
+                  </ng-container>
+                </div>
+              </div>
             </div>
           </ng-container>
           <ng-template #rawSchemaEntry>
@@ -2098,7 +2095,7 @@
   [stepDescription]="translate(visitModalStepDescriptionKey)"
   (close)="closeVisitModal()"
 >
-  <div class="alert-modal-shell">
+  <div class="alert-modal-shell" [ngClass]="{ 'visit-generated-json-shell': visitModalStep === 8 }">
     <div *ngIf="visitErrorMessage" class="therapeutic-plan-alert therapeutic-plan-alert-error">
       {{ visitErrorMessage }}
     </div>
@@ -2195,9 +2192,9 @@
                 </div>
               </div>
               <div class="visit-schema-matrix-scroll">
-                <div class="visit-schema-matrix-grid">
+                <div class="visit-schema-matrix-grid" [style.grid-template-columns]="getVisitSchemaMatrixGridTemplate(field.key)">
                   <div class="visit-schema-matrix-header"></div>
-                  <div *ngFor="let hour of visitSchemaArrayHoursByKey[field.key] ?? []" class="visit-schema-matrix-header">{{ hour }}</div>
+                  <div *ngFor="let hour of visitSchemaArrayHoursByKey[field.key] ?? []" class="visit-schema-matrix-header">{{ getVisitSchemaMatrixHourHeader(hour) }}</div>
 
                   <ng-container *ngFor="let option of visitSchemaArrayOptionsByKey[field.key] ?? []">
                     <div class="visit-schema-matrix-row-label">{{ option.value }}</div>

@@ -188,7 +188,11 @@ import { NotificationService } from './notification.service';
                 <div class="summary2-label">{{ translate('structures.field.referenceContacts') }}</div>
                 <div class="summary2-value">
                   <ng-container *ngFor="let ref of model.referents">
-                    <div>{{ ref.firstName }} {{ ref.lastName }}<span *ngIf="ref.role"> - {{ ref.role }}</span></div>
+                    <div class="summary-pharmacy-row">
+                      <div>{{ ref.firstName }} {{ ref.lastName }}<span *ngIf="ref.role"> - {{ ref.role }}</span></div>
+                      <div *ngIf="ref.email">{{ translate('referent.field.email') }}: {{ ref.email }}</div>
+                      <div *ngIf="ref.phone">{{ translate('referent.field.phone') }}: {{ ref.phone }}</div>
+                    </div>
                   </ng-container>
                 </div>
               </div>

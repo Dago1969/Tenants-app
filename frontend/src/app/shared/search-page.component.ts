@@ -26,7 +26,8 @@ export interface SearchPrintSection {
   fields: string[];
 }
 
-type SearchResult = Record<string, unknown> & { id?: string | number };
+export type SearchResult = Record<string, unknown> & { id?: string | number };
+export type SearchViewValueFormatter = (fieldKey: string, row: SearchResult) => string | null | undefined;
 
 interface SelectOption {
   value: string;
@@ -402,6 +403,8 @@ export class SearchPageComponent implements OnInit, OnChanges {
   @Input() deleteCheckEndpoint = '';
   @Input() interceptEditAction = false;
   @Input() printSections: SearchPrintSection[] = [];
+  @Input() viewLabelKeys: Record<string, MessageKey | string> = {};
+  @Input() viewValueFormatter?: SearchViewValueFormatter;
   @Output() editAction = new EventEmitter<string>();
   @Output() closeAction = new EventEmitter<string>();
 
@@ -918,17 +921,30 @@ export class SearchPageComponent implements OnInit, OnChanges {
       return null;
     }
 
+    const row = this.selectedViewRow;
+    const customValue = row ? this.viewValueFormatter?.(trimmedKey, row) : undefined;
+    if (customValue === null || customValue === undefined) {
+      if (row && value === undefined && !(trimmedKey in row)) {
+        return null;
+      }
+    }
+
     const isStatus = this.isStatusLikeColumn(trimmedKey);
     return {
       key: trimmedKey,
       label: this.resolveFieldLabel(trimmedKey),
-      value: this.formatViewValue(trimmedKey, value),
+      value: customValue ?? this.formatViewValue(trimmedKey, value),
       isStatus,
       statusClass: isStatus ? this.getStatusBadgeClass(trimmedKey, value) : undefined
     };
   }
 
   private resolveFieldLabel(key: string): string {
+    const customLabel = this.viewLabelKeys[key];
+    if (customLabel) {
+      return hasMessageKey(customLabel) ? this.translate(customLabel) : String(customLabel);
+    }
+
     if (key === this.resultIdKey) {
       return this.translate(this.resultIdLabelKey);
     }

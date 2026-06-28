@@ -17,6 +17,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
 import java.util.Optional;
+import java.util.List;
+import com.qtm.commonlib.dto.DepartmentDto;
 
 /**
  * Client per comunicare con QTMTicket.
@@ -124,6 +126,24 @@ public class TicketClient {
                 .retrieve()
                 .body(TicketDto.class);
     }
+
+        /**
+         * Recupera la lista di dipartimenti da QTMTicket.
+         * Se `area` e' valorizzata, filtra per areaFunzionale.
+         */
+        public DepartmentDto[] listDepartments(String area) {
+        URI uri = UriComponentsBuilder.fromHttpUrl(ticketBaseUrl + "/departments")
+            .queryParamIfPresent("area", Optional.ofNullable(area))
+            .build(true)
+            .toUri();
+
+        log.info("Recupero dipartimenti da QTMTicket con URI: {}", uri);
+        return restClient.get()
+            .uri(uri)
+            .header(HttpHeaders.AUTHORIZATION, resolveAuthorizationHeader())
+            .retrieve()
+            .body(DepartmentDto[].class);
+        }
 
     /**
      * Recupera il token JWT dal contesto di sicurezza corrente.

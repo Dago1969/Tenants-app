@@ -5,6 +5,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import com.qtm.tenants.referent.dto.ReferentDto;
 
+import java.util.List;
+
 /**
  * DTO struttura tenant con parametri decodificati per tipo e parent.
  */
@@ -43,7 +45,7 @@ public class StructureDto {
     private java.util.List<ReferentDto> referents;
 
     /**
-     * Lista di farmacie collegate (altre strutture di tipo farmacia)
+     * Dipartimenti Ticket associati alla struttura ospedaliera con referente locale opzionale.
      */
-    private java.util.List<StructureDto> pharmacies;
+    private List<HospitalDepartmentDto> departmentsSelected;
 }

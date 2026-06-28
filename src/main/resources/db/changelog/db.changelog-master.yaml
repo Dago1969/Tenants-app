@@ -46,3 +46,11 @@ databaseChangeLog:
   - include:
       file: 20260517-01-create-therapeutic-plan-visit-image-table.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: 20260614-01-add-hospital-departments.yaml
+      relativeToChangelogFile: true
+
+  - include:
+      file: 20260615-01-remove-retail-parent-requirement.yaml
+      relativeToChangelogFile: true

@@ -1,11 +1,16 @@
 package com.qtm.tenants.structure.service;
 
+import com.qtm.tenants.referent.entity.ReferentEntity;
+import com.qtm.tenants.referent.repository.ReferentRepository;
+import com.qtm.tenants.structure.dto.HospitalDepartmentDto;
 import com.qtm.tenants.structure.StructureType;
 import com.qtm.tenants.structure.dto.StructureDto;
 import com.qtm.tenants.structure.dto.StructureParentOptionDto;
 import com.qtm.tenants.structure.dto.StructureTypeDto;
+import com.qtm.tenants.structure.entity.HospitalDepartmentEntity;
 import com.qtm.tenants.structure.entity.StructureEntity;
 import com.qtm.tenants.structure.mapper.StructureMapper;
+import com.qtm.tenants.structure.repository.HospitalDepartmentRepository;
 import com.qtm.tenants.structure.repository.StructureRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,6 +20,8 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Comparator;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Locale;
@@ -35,6 +42,8 @@ public class StructureService {
     private final StructureRepository structureRepository;
     private final StructureMapper structureMapper;
     private final StructureTypeRegistry structureTypeRegistry;
+    private final HospitalDepartmentRepository hospitalDepartmentRepository;
+    private final ReferentRepository referentRepository;
 
     @Transactional
     public StructureDto create(StructureDto structureDto) {
@@ -43,6 +52,7 @@ public class StructureService {
         StructureEntity entity = structureMapper.toEntity(structureDto);
         applyParentValidation(entity, structureType);
         StructureEntity saved = structureRepository.save(entity);
+        syncHospitalDepartments(saved, structureDto.getDepartmentsSelected());
         return toDto(saved);
     }
 
@@ -87,7 +97,9 @@ public class StructureService {
         validateCodeUniqueness(structureDto.getCode(), id);
         structureMapper.updateEntity(current, structureDto);
         applyParentValidation(current, structureType);
-        return toDto(structureRepository.save(current));
+        StructureEntity saved = structureRepository.save(current);
+        syncHospitalDepartments(saved, structureDto.getDepartmentsSelected());
+        return toDto(saved);
     }
 
     @Transactional
@@ -97,6 +109,7 @@ public class StructureService {
         if (hasChildren) {
             throw new ResponseStatusException(BAD_REQUEST, "Impossibile eliminare una struttura che ha strutture figlie collegate");
         }
+        hospitalDepartmentRepository.deleteAllByStructureId(id);
         structureRepository.delete(entity);
     }
 
@@ -155,7 +168,7 @@ public class StructureService {
                 .collect(Collectors.toMap(StructureEntity::getId, StructureEntity::getName, (left, right) -> left, LinkedHashMap::new));
 
         return entities.stream()
-                .map(entity -> structureMapper.toDto(entity, parentNamesById.get(entity.getParentStructureId())))
+                .map(entity -> enrichWithHospitalDepartments(structureMapper.toDto(entity, parentNamesById.get(entity.getParentStructureId())), entity.getId()))
                 .toList();
     }
 
@@ -163,7 +176,101 @@ public class StructureService {
         String parentName = entity.getParentStructureId() == null
                 ? null
                 : structureRepository.findById(entity.getParentStructureId()).map(StructureEntity::getName).orElse(null);
-        return structureMapper.toDto(entity, parentName);
+        return enrichWithHospitalDepartments(structureMapper.toDto(entity, parentName), entity.getId());
+    }
+
+    private StructureDto enrichWithHospitalDepartments(StructureDto dto, Long structureId) {
+        dto.setDepartmentsSelected(loadHospitalDepartments(structureId));
+        return dto;
+    }
+
+    private List<HospitalDepartmentDto> loadHospitalDepartments(Long structureId) {
+        if (structureId == null) {
+            return List.of();
+        }
+
+        return hospitalDepartmentRepository.findAllByStructureIdOrderByDepartmentIdAsc(structureId).stream()
+                .map(this::toHospitalDepartmentDto)
+                .toList();
+    }
+
+    private HospitalDepartmentDto toHospitalDepartmentDto(HospitalDepartmentEntity entity) {
+        HospitalDepartmentDto dto = new HospitalDepartmentDto();
+        dto.setDepartmentId(entity.getDepartmentId());
+        dto.setReferentId(entity.getReferent() == null ? null : entity.getReferent().getId());
+        return dto;
+    }
+
+    private void syncHospitalDepartments(StructureEntity structure, List<HospitalDepartmentDto> departmentsSelected) {
+        if (structure.getId() == null) {
+            return;
+        }
+
+        List<HospitalDepartmentEntity> existingDepartments = hospitalDepartmentRepository
+                .findAllByStructureIdOrderByDepartmentIdAsc(structure.getId());
+
+        if (!"HOSPITAL".equalsIgnoreCase(structure.getStructureType()) || departmentsSelected == null || departmentsSelected.isEmpty()) {
+            if (!existingDepartments.isEmpty()) {
+                hospitalDepartmentRepository.deleteAll(existingDepartments);
+            }
+            return;
+        }
+
+        Map<Long, HospitalDepartmentDto> uniqueByDepartmentId = departmentsSelected.stream()
+                .filter(item -> item.getDepartmentId() != null)
+                .collect(Collectors.toMap(HospitalDepartmentDto::getDepartmentId, item -> item, (left, right) -> right, LinkedHashMap::new));
+
+        if (uniqueByDepartmentId.isEmpty()) {
+            if (!existingDepartments.isEmpty()) {
+                hospitalDepartmentRepository.deleteAll(existingDepartments);
+            }
+            return;
+        }
+
+        Map<Long, HospitalDepartmentEntity> existingByDepartmentId = existingDepartments.stream()
+                .filter(item -> item.getDepartmentId() != null)
+                .collect(Collectors.toMap(HospitalDepartmentEntity::getDepartmentId, item -> item, (left, right) -> right, LinkedHashMap::new));
+
+        Set<Long> requestedDepartmentIds = new HashSet<>(uniqueByDepartmentId.keySet());
+        List<HospitalDepartmentEntity> departmentsToDelete = existingDepartments.stream()
+                .filter(item -> item.getDepartmentId() != null)
+                .filter(item -> !requestedDepartmentIds.contains(item.getDepartmentId()))
+                .toList();
+
+        if (!departmentsToDelete.isEmpty()) {
+            hospitalDepartmentRepository.deleteAll(departmentsToDelete);
+        }
+
+        List<HospitalDepartmentEntity> departmentsToCreate = new ArrayList<>();
+
+        for (HospitalDepartmentDto departmentDto : uniqueByDepartmentId.values()) {
+            HospitalDepartmentEntity existingEntity = existingByDepartmentId.get(departmentDto.getDepartmentId());
+            ReferentEntity referent = resolveReferent(departmentDto.getReferentId());
+
+            if (existingEntity != null) {
+                existingEntity.setReferent(referent);
+                continue;
+            }
+
+            HospitalDepartmentEntity entity = new HospitalDepartmentEntity();
+            entity.setStructure(structure);
+            entity.setDepartmentId(departmentDto.getDepartmentId());
+            entity.setReferent(referent);
+            departmentsToCreate.add(entity);
+        }
+
+        if (!departmentsToCreate.isEmpty()) {
+            hospitalDepartmentRepository.saveAll(departmentsToCreate);
+        }
+    }
+
+    private ReferentEntity resolveReferent(Long referentId) {
+        if (referentId == null) {
+            return null;
+        }
+
+        return referentRepository.findById(referentId)
+                .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Referente non trovato: " + referentId));
     }
 
     private void applyParentValidation(StructureEntity entity, StructureType structureType) {

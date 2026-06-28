@@ -481,6 +481,8 @@ th {
 }
 
 .search-view-summary-row {
+  display: flex;
+  flex-wrap: wrap;
   gap: 32px;
   margin-bottom: 8px;
 }
@@ -492,6 +494,11 @@ th {
 
 .search-view-value-block {
   margin-bottom: 8px;
+}
+
+.search-view-value-block .detail-field-value {
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .search-view-section {

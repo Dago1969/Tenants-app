@@ -1,24 +1,27 @@
 package com.qtm.tenants.structure.service;
 
-import com.qtm.tenants.structure.StructureType;
-import com.qtm.tenants.structure.dto.StructureDto;
-import com.qtm.tenants.structure.entity.StructureEntity;
-import com.qtm.tenants.structure.mapper.StructureMapper;
-import com.qtm.tenants.structure.repository.StructureRepository;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.when;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.qtm.tenants.referent.repository.ReferentRepository;
+import com.qtm.tenants.structure.StructureType;
+import com.qtm.tenants.structure.dto.StructureDto;
+import com.qtm.tenants.structure.entity.StructureEntity;
+import com.qtm.tenants.structure.mapper.StructureMapper;
+import com.qtm.tenants.structure.repository.HospitalDepartmentRepository;
+import com.qtm.tenants.structure.repository.StructureRepository;
 
 /**
  * Test del service strutture: verifica gestione CRUD di base.
@@ -33,11 +36,23 @@ class StructureServiceTest {
     @Mock
     private StructureTypeRegistry structureTypeRegistry;
 
+    @Mock
+    private HospitalDepartmentRepository hospitalDepartmentRepository;
+
+    @Mock
+    private ReferentRepository referentRepository;
+
     private StructureService structureService;
 
     @BeforeEach
     void setUp() {
-        structureService = new StructureService(structureRepository, new StructureMapper(structureTypeRegistry), structureTypeRegistry);
+        structureService = new StructureService(
+                structureRepository,
+                new StructureMapper(structureTypeRegistry),
+                structureTypeRegistry,
+                hospitalDepartmentRepository,
+                referentRepository
+        );
     }
 
     @Test

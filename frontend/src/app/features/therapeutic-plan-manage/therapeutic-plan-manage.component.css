@@ -701,6 +701,83 @@
   accent-color: #2368cc;
 }
 
+/* Specific styling for the generated-JSON visit step (wide time-matrix layout) */
+.visit-generated-json-shell {
+  background: #e8f7f5;
+  padding: 18px;
+  border-radius: 12px;
+}
+
+.visit-generated-json-shell .visit-schema-block {
+  background: transparent;
+  border: none;
+  padding: 8px;
+  box-shadow: none;
+}
+
+.visit-generated-json-shell .visit-schema-matrix-scroll {
+  overflow-x: auto;
+  padding: 8px 4px 12px;
+}
+
+.visit-generated-json-shell .visit-schema-matrix-grid {
+  display: grid;
+  align-items: center;
+  gap: 1px 1px;
+  min-width: max-content;
+}
+
+.visit-generated-json-shell .visit-schema-matrix-header {
+  font-size: 0.78rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.visit-generated-json-shell .visit-schema-matrix-cell input {
+  width: 14px;
+  height: 14px;
+}
+
+.visit-generated-json-shell .visit-schema-matrix-row-label {
+  font-size: 0.92rem;
+  padding-right: 0;
+}
+
+.visit-generated-json-shell .visit-schema-matrix-cell {
+  min-width: 0;
+}
+
+.visit-schema-summary-matrix-field .visit-schema-matrix-grid {
+  gap: 1px 1px;
+  min-width: max-content;
+}
+
+.visit-schema-summary-matrix-field .visit-schema-matrix-header {
+  font-size: 0.78rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.visit-schema-summary-matrix-field .visit-schema-matrix-row-label {
+  font-size: 0.92rem;
+  padding-right: 0;
+}
+
+.visit-schema-summary-matrix-field .visit-schema-matrix-cell,
+.visit-schema-summary-matrix-field .visit-schema-summary-checkbox-cell {
+  min-width: 0;
+}
+
+.visit-schema-summary-matrix-field .visit-schema-matrix-cell input,
+.visit-schema-summary-matrix-field .visit-schema-summary-checkbox-cell input {
+  width: 14px;
+  height: 14px;
+}
+
+.visit-generated-json-shell .visit-schema-matrix-legend {
+  margin-right: 12px;
+}
+
 .resource-list-item strong,
 .resource-list-item span {
   display: block;

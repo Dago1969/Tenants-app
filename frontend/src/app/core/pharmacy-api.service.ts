@@ -3,6 +3,12 @@ import { HttpClient } from '@angular/common/http';
 import { forkJoin, map, Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
+export interface DepartmentDto {
+  id: number;
+  areaFunzionale?: string;
+  reparto?: string;
+}
+
 export interface PharmacyDto {
   id: number;
   code: string;
@@ -50,5 +56,13 @@ export class PharmacyApiService {
           });
       })
     );
+  }
+
+  /**
+   * Restituisce i dipartimenti disponibili dal backend Tenants.
+   */
+  getDepartments(area?: string): Observable<DepartmentDto[]> {
+    const params = area ? `?area=${encodeURIComponent(area)}` : '';
+    return this.http.get<DepartmentDto[]>(`${environment.apiBaseUrl}/departments${params}`);
   }
 }

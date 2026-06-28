@@ -30,6 +30,7 @@ export interface StructureDto {
   referents: any[];
   hospitalPharmacyIds?: (number | string)[];
   pharmacies?: Array<{ id?: number }>;
+  departmentsSelected?: Array<{ departmentId: number; referentId?: number }>;
 }
 
 @Injectable({ providedIn: 'root' })

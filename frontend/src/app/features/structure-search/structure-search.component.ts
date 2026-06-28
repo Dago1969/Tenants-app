@@ -2,12 +2,13 @@ import { Component, OnInit, OnDestroy, ChangeDetectorRef, ViewChild } from '@ang
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { t, MessageKey } from '../../i18n/messages';
-import { SearchField, SearchPageComponent } from '../../shared/search-page.component';
+import { SearchField, SearchPageComponent, SearchPrintSection, SearchResult, SearchViewValueFormatter } from '../../shared/search-page.component';
 import { AddWizardComponentAsl } from '../../shared/add-wizard.component-asl';
 import { AddWizardComponentHospital } from '../../shared/add-wizard.component-hospital';
 import { AddWizardComponentPharmacy } from '../../shared/add-wizard.component-pharmacy';
 import { STRUCTURE_MODULE_CODES } from '../../core/structure-module-codes';
 import { FunctionAuthorizationService } from '../../core/function-authorization.service';
+import { DepartmentDto, PharmacyApiService, PharmacyDto } from '../../core/pharmacy-api.service';
 
 type PopupStructureType =
   | 'ASL'
@@ -39,6 +40,9 @@ type PopupStructureType =
       [createFunctionCode]="createFunctionCode"
       [autoSearch]="true"
       [showCreateAction]="false"
+      [printSections]="printSections"
+      [viewLabelKeys]="viewLabelKeys"
+      [viewValueFormatter]="formatDetailValue"
       [interceptEditAction]="interceptEditAction"
       (editAction)="openStructureWizard($event)"
     >
@@ -84,6 +88,10 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
   detailRouteBase = '';
   moduleCode: string = STRUCTURE_MODULE_CODES.GENERIC;
   createFunctionCode = 'CREATE';
+  printSections: SearchPrintSection[] = [];
+  viewLabelKeys: Record<string, MessageKey> = {};
+  private departmentsList: DepartmentDto[] = [];
+  private selectablePharmacies: PharmacyDto[] = [];
 
   filters: SearchField[] = [
     { key: 'code', labelKey: 'structures.field.code', type: 'text' },
@@ -132,7 +140,8 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
   constructor(
     private readonly route: ActivatedRoute,
     private readonly cdr: ChangeDetectorRef,
-    private readonly functionAuthorizationService: FunctionAuthorizationService
+    private readonly functionAuthorizationService: FunctionAuthorizationService,
+    private readonly pharmacyApi: PharmacyApiService
   ) {}
 
   ngOnInit(): void {
@@ -157,6 +166,8 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
       this.interceptEditAction = false;
     }
     this.showStructureWizard = false;
+    this.configureDetailView();
+    this.loadDetailLookups();
 
     const baseFilters: SearchField[] = [
       { key: 'code', labelKey: 'structures.field.code', type: 'text' },
@@ -340,5 +351,239 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
 
   translate(key: MessageKey): string {
     return t(key);
+  }
+
+  readonly formatDetailValue: SearchViewValueFormatter = (fieldKey, row) => {
+    switch (fieldKey) {
+      case 'referents':
+        return this.formatReferents(row['referents']);
+      case 'departmentsSelected':
+        return this.formatDepartmentSelections(row['departmentsSelected'], row['referents']);
+      case 'pharmacies':
+        return this.formatPharmacies(row['pharmacies'] ?? row['hospitalPharmacyIds']);
+      case 'serviceCalendarHours':
+        return this.formatServiceCalendarHours(row['serviceCalendarHours']);
+      default:
+        return undefined;
+    }
+  };
+
+  private configureDetailView(): void {
+    this.viewLabelKeys = {
+      parentStructureName: this.getParentStructureLabelKey(),
+      referents: 'structures.field.referenceContacts',
+      departmentsSelected: 'structures.field.departments',
+      pharmacies: 'structures.field.referencePharmacies'
+    };
+
+    this.printSections = this.buildDetailSections();
+  }
+
+  private buildDetailSections(): SearchPrintSection[] {
+    const commonFields = this.popupStructureType === 'HOSPITAL'
+      ? ['name', 'code', 'parentStructureName', 'phone', 'region', 'province', 'city', 'address']
+      : ['name', 'code', 'phone', 'region', 'province', 'city', 'address'];
+
+    switch (this.popupStructureType) {
+      case 'ASL':
+        return [
+          { titleKey: 'structures.step.generalData', descriptionKey: 'structures.step.generalData.desc', fields: commonFields },
+          { titleKey: 'structures.step.specificData', descriptionKey: 'structures.step.specificData.desc', fields: ['pharmacies'] },
+          { titleKey: 'structures.step.contacts', descriptionKey: 'structures.step.contacts.desc', fields: ['referents'] }
+        ];
+      case 'HOSPITAL':
+        return [
+          { titleKey: 'structures.step.generalData', descriptionKey: 'structures.step.generalData.desc', fields: commonFields },
+          { titleKey: 'structures.step.specificData', descriptionKey: 'structures.step.specificData.hospital.desc', fields: ['departmentsSelected'] },
+          { titleKey: 'structures.step.contacts', descriptionKey: 'structures.step.contacts.desc', fields: ['referents'] }
+        ];
+      default:
+        return [
+          { titleKey: 'structures.step.generalData', descriptionKey: 'structures.step.generalData.desc', fields: commonFields },
+          { titleKey: 'structures.step.specificData', descriptionKey: this.getSpecificSectionDescriptionKey(), fields: ['description', 'serviceCalendarHours', 'active'] },
+          { titleKey: 'structures.step.contacts', descriptionKey: 'structures.step.contacts.desc', fields: ['referents'] }
+        ];
+    }
+  }
+
+  private getSpecificSectionDescriptionKey(): MessageKey {
+    return this.isManagedStructurePopup()
+      ? 'structures.step.specificData.pharmacy.desc'
+      : 'structures.step.specificData.structure.desc';
+  }
+
+  private getParentStructureLabelKey(): MessageKey {
+    return this.popupStructureType === 'HOSPITAL'
+      ? 'structures.field.parentAsl'
+      : 'structures.field.parentStructureId';
+  }
+
+  private loadDetailLookups(): void {
+    if (this.popupStructureType === 'HOSPITAL') {
+      this.pharmacyApi.getDepartments().subscribe({
+        next: (data) => {
+          this.departmentsList = data ?? [];
+        },
+        error: () => {
+          this.departmentsList = [];
+        }
+      });
+    }
+
+    if (this.popupStructureType === 'ASL') {
+      this.pharmacyApi.getSelectablePharmacies().subscribe({
+        next: (data) => {
+          this.selectablePharmacies = data ?? [];
+        },
+        error: () => {
+          this.selectablePharmacies = [];
+        }
+      });
+    }
+  }
+
+  private formatReferents(rawReferents: unknown): string | undefined {
+    if (!Array.isArray(rawReferents) || rawReferents.length === 0) {
+      return undefined;
+    }
+
+    return rawReferents
+      .map((referent) => this.formatSingleReferent(referent))
+      .filter((value): value is string => Boolean(value))
+      .join('\n\n');
+  }
+
+  private formatDepartmentSelections(rawSelections: unknown, rawReferents: unknown): string | undefined {
+    if (!Array.isArray(rawSelections) || rawSelections.length === 0) {
+      return undefined;
+    }
+
+    const referents = Array.isArray(rawReferents) ? rawReferents : [];
+
+    return rawSelections
+      .map((selection) => {
+        const departmentId = typeof selection === 'object' && selection && 'departmentId' in selection
+          ? Number((selection as { departmentId?: unknown }).departmentId)
+          : NaN;
+        if (Number.isNaN(departmentId)) {
+          return '';
+        }
+
+        const referentId = typeof selection === 'object' && selection && 'referentId' in selection
+          ? Number((selection as { referentId?: unknown }).referentId)
+          : NaN;
+        const referent = Number.isNaN(referentId)
+          ? undefined
+          : referents.find((candidate) => Number((candidate as { id?: unknown }).id) === referentId);
+
+        const department = this.departmentsList.find((candidate) => candidate.id === departmentId);
+        const lines = [
+          `${department?.reparto ?? departmentId}${department?.areaFunzionale ? ` - ${department.areaFunzionale}` : ''}`
+        ];
+        const referentSummary = this.formatSingleReferent(referent);
+        if (referentSummary) {
+          lines.push(referentSummary);
+        }
+
+        return lines.join('\n');
+      })
+      .filter((value) => value.trim().length > 0)
+      .join('\n\n');
+  }
+
+  private formatPharmacies(rawPharmacies: unknown): string | undefined {
+    if (!Array.isArray(rawPharmacies) || rawPharmacies.length === 0) {
+      return undefined;
+    }
+
+    return rawPharmacies
+      .map((entry) => {
+        const entryId = typeof entry === 'number'
+          ? entry
+          : typeof entry === 'object' && entry && 'id' in entry
+            ? Number((entry as { id?: unknown }).id)
+            : NaN;
+
+        const mapped = this.selectablePharmacies.find((candidate) => candidate.id === entryId);
+        if (mapped) {
+          return `${mapped.name} - ${mapped.city}`;
+        }
+
+        if (typeof entry === 'object' && entry && 'name' in entry) {
+          const name = String((entry as { name?: unknown }).name ?? '').trim();
+          const city = String((entry as { city?: unknown }).city ?? '').trim();
+          return city ? `${name} - ${city}` : name;
+        }
+
+        return Number.isNaN(entryId) ? '' : String(entryId);
+      })
+      .filter((value) => value.trim().length > 0)
+      .join('\n');
+  }
+
+  private formatServiceCalendarHours(rawValue: unknown): string | undefined {
+    if (typeof rawValue !== 'string' || rawValue.trim().length === 0) {
+      return undefined;
+    }
+
+    try {
+      const parsed = JSON.parse(rawValue);
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        return rawValue;
+      }
+
+      return parsed
+        .map((slot) => {
+          const dayOfWeek = typeof slot?.dayOfWeek === 'string' ? slot.dayOfWeek : '';
+          const openingTime = typeof slot?.openingTime === 'string' ? slot.openingTime : '';
+          const closingTime = typeof slot?.closingTime === 'string' ? slot.closingTime : '';
+          const dayLabel = this.humanizeDayOfWeek(dayOfWeek);
+          return dayLabel && openingTime && closingTime ? `${dayLabel}: ${openingTime} - ${closingTime}` : '';
+        })
+        .filter((value) => value.trim().length > 0)
+        .join('\n');
+    } catch {
+      return rawValue;
+    }
+  }
+
+  private formatSingleReferent(rawReferent: unknown): string {
+    if (!rawReferent || typeof rawReferent !== 'object') {
+      return '';
+    }
+
+    const referent = rawReferent as { firstName?: unknown; lastName?: unknown; role?: unknown; email?: unknown; phone?: unknown };
+    const fullName = `${String(referent.firstName ?? '').trim()} ${String(referent.lastName ?? '').trim()}`.trim();
+    const role = String(referent.role ?? '').trim();
+    const email = String(referent.email ?? '').trim();
+    const phone = String(referent.phone ?? '').trim();
+    const lines = [fullName || '-'];
+
+    if (role) {
+      lines[0] = `${lines[0]} - ${role}`;
+    }
+    if (email) {
+      lines.push(`${this.translate('referent.field.email')}: ${email}`);
+    }
+    if (phone) {
+      lines.push(`${this.translate('referent.field.phone')}: ${phone}`);
+    }
+
+    return lines.join('\n');
+  }
+
+  private humanizeDayOfWeek(dayOfWeek: string): string {
+    const normalized = dayOfWeek.trim().toUpperCase();
+    const labels: Record<string, string> = {
+      MONDAY: 'Lunedi',
+      TUESDAY: 'Martedi',
+      WEDNESDAY: 'Mercoledi',
+      THURSDAY: 'Giovedi',
+      FRIDAY: 'Venerdi',
+      SATURDAY: 'Sabato',
+      SUNDAY: 'Domenica'
+    };
+
+    return labels[normalized] ?? dayOfWeek;
   }
 }

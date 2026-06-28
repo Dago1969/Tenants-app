@@ -1,10 +1,14 @@
 package com.qtm.tenants.ticket.service;
 
+import com.qtm.commonlib.dto.DepartmentDto;
 import com.qtm.tenants.ticket.client.TicketClient;
 import com.qtm.tenants.ticket.dto.TicketDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Service per la gestione dei ticket tramite QTMTicket.
@@ -71,5 +75,14 @@ public class TicketService {
     public TicketDto changeStatus(Long id, String newStatus) {
         log.info("Service: cambio status ticket ID: {} -> {}", id, newStatus);
         return ticketClient.changeStatus(id, newStatus);
+    }
+
+    /**
+     * Recupera i dipartimenti da QTMTicket, opzionalmente filtrati per area funzionale.
+     */
+    public List<DepartmentDto> listDepartments(String area) {
+        log.info("Service: recupero dipartimenti area={}", area);
+        DepartmentDto[] departments = ticketClient.listDepartments(area);
+        return Arrays.asList(departments == null ? new DepartmentDto[0] : departments);
     }
 }

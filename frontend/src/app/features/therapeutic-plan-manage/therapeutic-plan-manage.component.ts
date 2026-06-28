@@ -3720,7 +3720,10 @@ export class TherapeuticPlanManageComponent implements OnInit {
   }
 
   getVisitSchemaSummaryValue(visit: TherapeuticPlanVisitRecord, key: string): string {
-    const visitData = visit.manualJsonData;
+    // Prefer persisted visit manual JSON, but if not available (e.g. during insertion wizard)
+    // fall back to the currently edited dynamic form values so that printing
+    // reflects the penultimate step state entered by the user.
+    const visitData = visit.manualJsonData ?? this.visitFormDynamic;
     const rawValue = visitData ? this.getVisitValueByPath(visitData, key) : undefined;
 
     return this.formatVisitSchemaDisplayValue(key, rawValue);
@@ -3735,7 +3738,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
     return this.visitSchemaGeneratedFields.map((field) => ({
       key: this.getVisitSchemaFieldLabel(field.key),
       value: this.getVisitSchemaSummaryValue(selectedVisit, field.key),
-      rawValue: selectedVisit.manualJsonData ? this.getVisitValueByPath(selectedVisit.manualJsonData, field.key) : undefined,
+      rawValue: selectedVisit.manualJsonData ? this.getVisitValueByPath(selectedVisit.manualJsonData, field.key) : this.getVisitValueByPath(this.visitFormDynamic, field.key),
       schemaKey: field.key
     }));
   }
@@ -3883,7 +3886,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
       label: this.getVisitSchemaArrayStatusLabel(statusProperty, value)
     }));
 
-    const defaultHours = ['05:00', '06:00', '07:00', '08:00', '09:00', '10:00', '11:00'];
+    const defaultHours = this.generateHalfHourSlots(5, 23, 30);
     const existingHours = this.getNormalizedVisitSchemaArrayEntries(value)
       .map((entry) => entry.hour)
       .filter((hour, index, valuesList) => hour.trim().length > 0 && valuesList.indexOf(hour) === index && !defaultHours.includes(hour));
@@ -3910,8 +3913,40 @@ export class TherapeuticPlanManageComponent implements OnInit {
     return value;
   }
 
+  private generateHalfHourSlots(startHour: number, endHour: number, endMinute: number): string[] {
+    const slots: string[] = [];
+    let hour = startHour;
+    let minute = 0;
+    const pad = (n: number) => n.toString().padStart(2, '0');
+
+    while (hour < endHour || (hour === endHour && minute <= endMinute)) {
+      slots.push(`${pad(hour)}:${pad(minute)}`);
+      minute += 30;
+      if (minute >= 60) {
+        minute = 0;
+        hour += 1;
+      }
+    }
+
+    return slots;
+  }
+
   private getVisitSchemaArrayEntries(key: string): Array<{ hour: string; status: string }> {
     return this.getNormalizedVisitSchemaArrayEntries(this.visitFormDynamic[key]);
+  }
+
+  getVisitSchemaMatrixGridTemplate(key: string): string {
+    return this.getVisitSchemaMatrixGridTemplateByHours(this.visitSchemaArrayHoursByKey[key] ?? []);
+  }
+
+  getVisitSchemaMatrixGridTemplateByHours(hours: string[]): string {
+    const hoursCount = Math.max(hours.length, 1);
+    return `48px repeat(${hoursCount}, 16px)`;
+  }
+
+  getVisitSchemaMatrixHourHeader(hour: string): string {
+    const [hours, minutes] = hour.split(':');
+    return minutes === '00' ? hours : '';
   }
 
   private refreshVisitSchemaArrayViews(): void {
@@ -4247,7 +4282,26 @@ export class TherapeuticPlanManageComponent implements OnInit {
     const imagesMarkup = detailVisit && visitImages.length > 0
       ? this.buildVisitImagesPrintPage(detailVisit, visitImages)
       : '';
-    const printMarkup = `${coverMarkup}${statusMarkup}${imagesMarkup}`;
+    let printMarkup = `${coverMarkup}${statusMarkup}${imagesMarkup}`;
+
+    // Remove trailing empty pages or an effectively empty last page to avoid
+    // an extra blank page at the end of the printed document.
+    const sectionRegex = /<section[^>]*class="page"[^>]*>[\s\S]*?<\/section>/g;
+    const sections = printMarkup.match(sectionRegex) ?? [];
+    if (sections.length > 0) {
+      const last = sections[sections.length - 1];
+      // Consider as meaningful if the page contains one of these blocks
+      const meaningfulPattern = /(visit-json-print-sections|legacy-columns-grid|visit-images-print-grid|status-panel|visit-list-table)/;
+      if (!meaningfulPattern.test(last)) {
+        const idx = printMarkup.lastIndexOf(last);
+        if (idx >= 0) {
+          printMarkup = printMarkup.slice(0, idx) + printMarkup.slice(idx + last.length);
+        }
+      } else {
+        // Fallback: remove purely empty sections (no content)
+        printMarkup = printMarkup.replace(/(?:<section[^>]*class="page"[^>]*>\s*<\/section>\s*)+$/g, '');
+      }
+    }
 
     // Compose filename for suggestion in title
     let fileName = 'visit';
@@ -4263,6 +4317,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
     <title>${fileName}</title>
     <style>
       @page { size: A4; margin: 12mm; }
+      @page matrix-landscape { size: A4 landscape; margin: 12mm; }
       * { box-sizing: border-box; }
       body { font-family: Arial, sans-serif; color: #111; margin: 0; }
       .page { min-height: 272mm; page-break-after: always; padding: 7mm; border: 1px solid #d7d7d7; }
@@ -4336,11 +4391,12 @@ export class TherapeuticPlanManageComponent implements OnInit {
       .visit-json-print-legend-row { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 8px; align-items: start; color: #203c66; font-size: 12px; }
       .visit-json-print-legend-row strong { color: #264d7e; }
       .visit-json-print-value { padding: 10px 12px; border: 1px solid #dbe6f4; border-radius: 12px; background: #f8fbff; color: #203c66; font-size: 14px; white-space: pre-wrap; word-break: break-word; }
-      .visit-json-matrix-print-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-      .visit-json-matrix-print-table th, .visit-json-matrix-print-table td { border: 1px solid #cfcfcf; padding: 6px 4px; text-align: center; vertical-align: middle; font-size: 12px; }
-      .visit-json-matrix-print-table thead th { background: #f3f3f3; font-weight: 700; }
-      .visit-json-matrix-print-table tbody th { background: #fafafa; font-weight: 700; text-align: left; }
-      .visit-json-matrix-checkbox-cell { font-size: 16px; line-height: 1; }
+      .visit-json-print-matrix-scroll { overflow: hidden; }
+      .visit-json-print-matrix-grid { display: grid; gap: 1px 1px; align-items: center; min-width: max-content; }
+      .visit-json-print-matrix-header { color: #17365f; font-weight: 700; text-align: center; font-size: 11px; line-height: 1; white-space: nowrap; }
+      .visit-json-print-matrix-row-label { color: #17365f; font-weight: 700; text-align: left; font-size: 12px; padding-right: 0; }
+      .visit-json-print-matrix-cell { display: flex; justify-content: center; align-items: center; min-width: 0; min-height: 14px; font-size: 11px; line-height: 1; }
+      .visit-json-matrix-checkbox-cell { font-size: 11px; line-height: 1; }
       .visit-images-print-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 12px; }
       .visit-images-print-card { border: 1px solid #dbe6f4; border-radius: 14px; padding: 12px; background: #f8fbff; }
       .visit-images-print-card img { display: block; width: 100%; max-height: 240px; object-fit: contain; background: #fff; border-radius: 10px; border: 1px solid #dbe6f4; }
@@ -4631,7 +4687,10 @@ export class TherapeuticPlanManageComponent implements OnInit {
     const entries = this.visitSchemaGeneratedFields.map((field) => ({
       key: this.getVisitSchemaFieldLabel(field.key),
       value: this.getVisitSchemaSummaryValue(visit, field.key),
-      rawValue: visit.manualJsonData ? this.getVisitValueByPath(visit.manualJsonData, field.key) : undefined,
+      // If the visit does not have persisted manualJsonData (e.g. unsaved visit from wizard),
+      // read the value from the dynamic form so the printed document contains the
+      // matrix entered in the penultimate step.
+      rawValue: visit.manualJsonData ? this.getVisitValueByPath(visit.manualJsonData, field.key) : this.getVisitValueByPath(this.visitFormDynamic, field.key),
       schemaKey: field.key,
       sectionTitle: field.sectionTitle
     })).filter((entry) => this.hasMeaningfulVisitPrintValue(entry.rawValue ?? entry.value));
@@ -4682,7 +4741,12 @@ export class TherapeuticPlanManageComponent implements OnInit {
       ? entries.map((entry, index) => this.renderVisitJsonPrintEntry(entry, index > 0 ? entries[index - 1] : undefined)).join('')
       : `<div class="visit-json-print-value">${this.escapeHtml(this.translate('therapeuticPlan.visits.manualJson.empty'))}</div>`;
 
-    return `<section class="page">
+    // If this page contains at least one matrix view, request a landscape page
+    // so the matrix fits horizontally when printed.
+    const hasMatrix = entries.some((entry) => this.getVisitSchemaMatrixView(entry.schemaKey, entry.rawValue ?? entry.value) !== null);
+    const pageAttr = hasMatrix ? ' style="page: matrix-landscape;"' : '';
+
+    return `<section class="page"${pageAttr}>
       <p class="status-page-subtitle">${this.escapeHtml(this.getVisitPatientFullName(visit))} - ${this.escapeHtml(this.formatDate(visit.date))} - ${this.escapeHtml(this.getVisitTypeLabel(visit.type))}</p>
       <div class="visit-json-print-sections">
         ${sectionsMarkup}
@@ -4734,18 +4798,17 @@ export class TherapeuticPlanManageComponent implements OnInit {
 
   private renderVisitJsonPrintMatrix(entry: TherapeuticPlanVisitJsonEntry, matrixView: TherapeuticPlanVisitSchemaMatrixView): string {
     const headerMarkup = matrixView.hours
-      .map((hour) => `<th>${this.escapeHtml(hour)}</th>`)
+      .map((hour) => `<div class="visit-json-print-matrix-header">${this.escapeHtml(this.getVisitSchemaMatrixHourHeader(hour))}</div>`)
       .join('');
     const legendMarkup = matrixView.options
       .map((option) => `<div class="visit-json-print-legend-row"><strong>${this.escapeHtml(option.value)}</strong><span>${this.escapeHtml(option.label)}</span></div>`)
       .join('');
     const rowsMarkup = matrixView.options
-      .map((option) => `<tr>
-          <th>${this.escapeHtml(option.value)}</th>
+      .map((option) => `<div class="visit-json-print-matrix-row-label">${this.escapeHtml(option.value)}</div>
           ${matrixView.hours
-            .map((hour) => `<td class="visit-json-matrix-checkbox-cell">${matrixView.checkedMap[`${hour}__${option.value}`] === true ? '&#9745;' : '&#9744;'}</td>`)
+            .map((hour) => `<div class="visit-json-print-matrix-cell visit-json-matrix-checkbox-cell">${matrixView.checkedMap[`${hour}__${option.value}`] === true ? '&#9745;' : '&#9744;'}</div>`)
             .join('')}
-        </tr>`)
+        `)
       .join('');
 
     return `<div class="visit-json-print-section-body">
@@ -4754,17 +4817,13 @@ export class TherapeuticPlanManageComponent implements OnInit {
         <div class="visit-json-print-legend">
           ${legendMarkup}
         </div>
-        <table class="visit-json-matrix-print-table">
-          <thead>
-            <tr>
-              <th></th>
-              ${headerMarkup}
-            </tr>
-          </thead>
-          <tbody>
+        <div class="visit-json-print-matrix-scroll">
+          <div class="visit-json-print-matrix-grid" style="grid-template-columns: ${this.escapeHtml(this.getVisitSchemaMatrixGridTemplateByHours(matrixView.hours))};">
+            <div class="visit-json-print-matrix-header"></div>
+            ${headerMarkup}
             ${rowsMarkup}
-          </tbody>
-        </table>
+          </div>
+        </div>
       </div>
     </div>`;
   }

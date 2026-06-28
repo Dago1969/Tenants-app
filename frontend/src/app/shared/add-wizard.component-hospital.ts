@@ -3,7 +3,7 @@ import { Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, EventEmitter, Input, OnD
 import { FormsModule } from '@angular/forms';
 import intlTelInput, { type AllOptions, type Iti } from 'intl-tel-input';
 import { GeographyApiService, GeographicOptionDto } from '../core/geography-api.service';
-import { PharmacyApiService, PharmacyDto } from '../core/pharmacy-api.service';
+import { PharmacyApiService, DepartmentDto } from '../core/pharmacy-api.service';
 import { ReferentApiService, ReferentDto } from '../core/referent-api.service';
 import { StructureApiService, StructureDto } from '../core/structure-api.service';
 import { t } from '../i18n/messages';
@@ -112,48 +112,63 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
 
         <form *ngSwitchCase="2" (ngSubmit)="nextStep()" #form2="ngForm">
           <h4>{{ translate('structures.step.contacts') }}</h4>
-          <div class="form-row" style="align-items: flex-end; gap: 1rem;">
-            <label style="flex:1;">{{ translate('structures.field.referents') }}
-              <select name="referents" [(ngModel)]="model.referents" [compareWith]="compareReferentsById" multiple required style="min-width:300px; min-height: 80px;">
+          <div class="form-row referent-toolbar-row">
+            <label class="referent-picker-field">{{ translate('structures.field.referents') }}
+              <select class="crud-input referent-picker-select" name="referents" [(ngModel)]="model.referents" [compareWith]="compareReferentsById" multiple required>
                 <option *ngFor="let ref of referentsList" [ngValue]="ref">{{ ref.firstName }} {{ ref.lastName }} ({{ ref.role }})</option>
               </select>
             </label>
-            <button type="button" class="btn btn-secondary" (click)="showAddReferent = !showAddReferent">{{ translate('referent.actions.add') }}</button>
+            <button type="button" class="btn btn-secondary referent-toggle-button" (click)="showAddReferent = !showAddReferent">{{ translate('referent.actions.add') }}</button>
           </div>
-          <div class="form-row" *ngIf="showAddReferent" style="margin-top: 1rem; border: 1px solid #eee; padding: 1rem; border-radius: 6px; background: #fafbfc;">
-            <form (ngSubmit)="addReferent()" #addReferentForm="ngForm" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
-              <input name="firstName" [(ngModel)]="newReferent.firstName" required placeholder="{{ translate('referent.field.firstName') }}" class="form-control" style="width: 120px;" />
-              <input name="lastName" [(ngModel)]="newReferent.lastName" required placeholder="{{ translate('referent.field.lastName') }}" class="form-control" style="width: 120px;" />
-              <input name="role" [(ngModel)]="newReferent.role" placeholder="{{ translate('referent.field.role') }}" class="form-control" style="width: 120px;" />
-              <input name="email" [(ngModel)]="newReferent.email" required placeholder="{{ translate('referent.field.email') }}" class="form-control" style="width: 180px;" type="email" />
-              <input name="phone" [(ngModel)]="newReferent.phone" required placeholder="{{ translate('referent.field.phone') }}" class="form-control" style="width: 140px;" type="tel" />
-              <button type="submit" class="btn btn-primary" [disabled]="!addReferentForm.valid">{{ translate('referent.actions.save') }}</button>
-              <button type="button" class="btn btn-outline" (click)="showAddReferent = false">{{ translate('crud.actions.cancel') }}</button>
-            </form>
+          <div class="referent-editor-shell" *ngIf="showAddReferent">
+            <div class="referent-editor-form">
+              <input name="firstName" [(ngModel)]="newReferent.firstName" required placeholder="{{ translate('referent.field.firstName') }}" class="crud-input referent-editor-input" />
+              <input name="lastName" [(ngModel)]="newReferent.lastName" required placeholder="{{ translate('referent.field.lastName') }}" class="crud-input referent-editor-input" />
+              <input name="role" [(ngModel)]="newReferent.role" placeholder="{{ translate('referent.field.role') }}" class="crud-input referent-editor-input" />
+              <input name="email" [(ngModel)]="newReferent.email" required placeholder="{{ translate('referent.field.email') }}" class="crud-input referent-editor-input referent-editor-input-email" type="email" />
+              <div class="phone-input-group phone-input-group-intl referent-editor-phone-wrap">
+                <input #referentPhoneInputElement name="phone" [ngModel]="newReferent.phone" (ngModelChange)="onReferentPhoneModelChange($event)" required placeholder="{{ translate('referent.field.phone') }}" class="crud-input referent-editor-input referent-editor-input-phone phone-number-input" type="tel" inputmode="tel" />
+              </div>
+              <div class="referent-editor-actions">
+                <button type="button" class="btn btn-primary" (click)="addReferent()" [disabled]="!newReferent.firstName || !newReferent.lastName || !newReferent.email || !newReferent.phone">{{ translate('referent.actions.save') }}</button>
+                <button type="button" class="btn btn-outline" (click)="showAddReferent = false">{{ translate('crud.actions.cancel') }}</button>
+              </div>
+            </div>
           </div>
         </form>
 
         <div *ngSwitchCase="3">
           <h4>{{ translate('structures.step.specificData') }}</h4>
           <div class="pharmacy-selection-list">
-            <label class="pharmacy-card" *ngFor="let pharmacy of pharmaciesList">
-              <div class="pharmacy-card-header">
+            <div class="pharmacy-card" *ngFor="let group of groupedDepartmentsList; trackBy: trackByArea">
+              <div class="pharmacy-card-title" style="margin-bottom: 12px;">{{ group.area }}</div>
+              <label class="pharmacy-card" *ngFor="let department of group.departments; trackBy: trackByDepartmentId" style="margin-bottom: 12px;">
+                <div class="pharmacy-card-header">
                 <input
                   type="checkbox"
-                  [checked]="isPharmacySelected(pharmacy.id)"
-                  (change)="togglePharmacySelection(pharmacy.id, $any($event.target).checked)"
+                  [checked]="isDepartmentSelected(department.id)"
+                  (change)="toggleDepartmentSelection(department.id, $any($event.target).checked)"
                 />
                 <div class="pharmacy-card-main">
-                  <div class="pharmacy-card-title">{{ pharmacy.name }}</div>
+                  <div class="pharmacy-card-title">{{ department.reparto }}</div>
                   <div class="pharmacy-card-meta">
-                    {{ pharmacy.city || '-' }}
-                    <span class="pharmacy-card-badge">{{ translatePharmacyType(pharmacy.structureType) }}</span>
+                    {{ group.area || '-' }}
                   </div>
                 </div>
               </div>
-              <div class="pharmacy-card-detail-label">{{ translate('structures.field.serviceCalendarHours') }}</div>
-              <div class="pharmacy-card-detail">{{ pharmacy.serviceCalendarHours || pharmacy.description || '-' }}</div>
-            </label>
+                <div class="pharmacy-card-detail-label">{{ translate('structures.field.referents') }}</div>
+                <div class="pharmacy-card-detail">
+                  <select
+                    *ngIf="isDepartmentSelected(department.id)"
+                    [ngModel]="getDepartmentReferentId(department.id)"
+                    (ngModelChange)="setDepartmentReferent(department.id, $event)"
+                  >
+                    <option [ngValue]="undefined">-</option>
+                    <option *ngFor="let ref of referentsList" [ngValue]="ref.id">{{ ref.firstName }} {{ ref.lastName }}<span *ngIf="ref.role"> ({{ ref.role }})</span></option>
+                  </select>
+                </div>
+              </label>
+            </div>
           </div>
         </div>
 
@@ -200,13 +215,16 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
 
             <div class="summary4-row">
               <div class="summary4-col" style="grid-column: span 2;">
-                <div class="summary2-label">{{ translate('structures.field.referencePharmacies') }}</div>
+                <div class="summary2-label">{{ translate('structures.field.departments') }}</div>
                 <div class="summary2-value">
-                  <div *ngFor="let pharmacy of selectedPharmacies()" class="summary-pharmacy-row">
-                    <strong>{{ pharmacy.name }}</strong>
-                    <span> - {{ translatePharmacyType(pharmacy.structureType) }}</span>
-                    <span *ngIf="pharmacy.city"> - {{ pharmacy.city }}</span>
-                    <div>{{ pharmacy.serviceCalendarHours || pharmacy.description || '-' }}</div>
+                  <div *ngFor="let selection of model.departmentsSelected" class="summary-pharmacy-row">
+                    <strong>{{ findDepartmentName(selection.departmentId) }}</strong>
+                    <span> - {{ findDepartmentArea(selection.departmentId) }}</span>
+                    <ng-container *ngIf="selection.referentId as referentId">
+                      <div>{{ findReferentName(referentId) }}</div>
+                      <div *ngIf="findReferentEmail(referentId)">{{ translate('referent.field.email') }}: {{ findReferentEmail(referentId) }}</div>
+                      <div *ngIf="findReferentPhone(referentId)">{{ translate('referent.field.phone') }}: {{ findReferentPhone(referentId) }}</div>
+                    </ng-container>
                   </div>
                 </div>
               </div>
@@ -214,7 +232,11 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
                 <div class="summary2-label">{{ translate('structures.field.referenceContacts') }}</div>
                 <div class="summary2-value">
                   <ng-container *ngFor="let ref of model.referents">
-                    <div>{{ ref.firstName }} {{ ref.lastName }}<span *ngIf="ref.role"> - {{ ref.role }}</span></div>
+                    <div class="summary-pharmacy-row">
+                      <div>{{ ref.firstName }} {{ ref.lastName }}<span *ngIf="ref.role"> - {{ ref.role }}</span></div>
+                      <div *ngIf="ref.email">{{ translate('referent.field.email') }}: {{ ref.email }}</div>
+                      <div *ngIf="ref.phone">{{ translate('referent.field.phone') }}: {{ ref.phone }}</div>
+                    </div>
                   </ng-container>
                 </div>
               </div>
@@ -261,7 +283,34 @@ export class AddWizardComponentHospital implements OnInit, OnDestroy {
     });
   }
 
+  @ViewChild('referentPhoneInputElement')
+  set referentPhoneInputElement(ref: ElementRef<HTMLInputElement> | undefined) {
+    const nextInput = ref?.nativeElement;
+    if (this.referentPhoneInputBinding?.input === nextInput) {
+      return;
+    }
+
+    this.destroyReferentPhoneInput();
+    if (!nextInput) {
+      return;
+    }
+
+    queueMicrotask(() => {
+      if (this.referentPhoneInputBinding?.input === nextInput) {
+        return;
+      }
+
+      this.initializeReferentPhoneInput(nextInput);
+    });
+  }
+
   private phoneInputBinding?: {
+    input: HTMLInputElement;
+    iti: Iti;
+    syncValue: () => void;
+  };
+
+  private referentPhoneInputBinding?: {
     input: HTMLInputElement;
     iti: Iti;
     syncValue: () => void;
@@ -281,7 +330,8 @@ export class AddWizardComponentHospital implements OnInit, OnDestroy {
   stepDescriptions: string[] = [];
   referentsList: ReferentDto[] = [];
   aslStructures: StructureDto[] = [];
-  pharmaciesList: PharmacyDto[] = [];
+  departmentsList: DepartmentDto[] = [];
+  groupedDepartmentsList: Array<{ area: string; departments: DepartmentDto[] }> = [];
 
   model: {
     id: number | null;
@@ -302,7 +352,7 @@ export class AddWizardComponentHospital implements OnInit, OnDestroy {
     parentStructureId: number | null;
     parentStructureName: string;
     referents: ReferentDto[];
-    pharmacyIds: number[];
+    departmentsSelected: Array<{ departmentId: number; referentId?: number }>;
     structureType: string;
     googleAddress: string;
   } = {
@@ -324,7 +374,7 @@ export class AddWizardComponentHospital implements OnInit, OnDestroy {
     parentStructureId: null,
     parentStructureName: '',
     referents: [],
-    pharmacyIds: [],
+    departmentsSelected: [],
     structureType: 'HOSPITAL',
     googleAddress: ''
   };
@@ -354,12 +404,13 @@ export class AddWizardComponentHospital implements OnInit, OnDestroy {
     this.loadRegioni();
     this.loadReferents();
     this.loadAslStructures();
-    this.loadSelectablePharmacies();
+    this.loadDepartments();
     this.loadStructureForEdit();
   }
 
   ngOnDestroy(): void {
     this.destroyPhoneInput();
+    this.destroyReferentPhoneInput();
   }
 
   translate(key: string): string {
@@ -387,7 +438,7 @@ export class AddWizardComponentHospital implements OnInit, OnDestroy {
       next: (created) => {
         this.referentsList = [...this.referentsList, created];
         this.model.referents = [...(this.model.referents || []), created];
-        this.newReferent = { firstName: '', lastName: '', role: '', email: '', phone: '' };
+        this.resetNewReferent();
         this.showAddReferent = false;
       },
       error: () => {
@@ -399,6 +450,14 @@ export class AddWizardComponentHospital implements OnInit, OnDestroy {
   onPhoneModelChange(value: string): void {
     this.model.phone = value;
     this.syncPhoneInputFromModel();
+  }
+
+  onReferentPhoneModelChange(value: string): void {
+    this.newReferent = {
+      ...this.newReferent,
+      phone: value
+    };
+    this.syncReferentPhoneInputFromModel();
   }
 
   onPlaceSelected(event: Event): void {
@@ -437,6 +496,43 @@ export class AddWizardComponentHospital implements OnInit, OnDestroy {
 
   onParentAslChange(): void {
     this.model.parentStructureName = this.findStructureName(this.aslStructures, this.model.parentStructureId);
+
+    const selectedAsl = this.aslStructures.find((s) => s.id === this.model.parentStructureId) ?? null;
+
+    if (selectedAsl) {
+      // Prefill geographic fields from selected ASL (editable by user)
+      this.model.regionId = this.toSelectValue(selectedAsl.regionId);
+      this.model.region = selectedAsl.region ?? '';
+
+      this.model.provinceId = this.toSelectValue(selectedAsl.provinceId);
+      this.model.province = selectedAsl.province ?? '';
+
+      this.model.cityId = this.toSelectValue(selectedAsl.cityId);
+      this.model.city = selectedAsl.city ?? '';
+
+      // Load dependent lists (provinces/comuni) so selects show the correct options
+      if (this.model.regionId) {
+        this.loadProvinceOptions(this.model.regionId, this.model.provinceId, this.model.cityId);
+      } else {
+        this.province = [];
+        this.comuni = [];
+      }
+
+      // Prefill address/zip/phone if available
+      this.model.address = selectedAsl.address ?? this.model.address;
+      this.model.cap = selectedAsl.cap ?? this.model.cap;
+      this.model.phone = selectedAsl.phone ?? this.model.phone;
+    } else {
+      // If no ASL selected, clear prefilled geographic fields but keep user-entered values empty
+      this.model.regionId = '';
+      this.model.region = '';
+      this.model.provinceId = '';
+      this.model.province = '';
+      this.model.cityId = '';
+      this.model.city = '';
+      this.province = [];
+      this.comuni = [];
+    }
   }
 
   nextStep(): void {
@@ -471,7 +567,7 @@ export class AddWizardComponentHospital implements OnInit, OnDestroy {
       parentStructureId: this.model.parentStructureId ?? undefined,
       parentStructureName: this.model.parentStructureName,
       referents: this.model.referents,
-      pharmacies: this.toSelectedPharmacies(),
+      departmentsSelected: this.model.departmentsSelected,
       structureType: 'HOSPITAL'
     };
 
@@ -498,43 +594,89 @@ export class AddWizardComponentHospital implements OnInit, OnDestroy {
     this.close.emit();
   }
 
-  translatePharmacyType(structureType?: string): string {
-    switch (structureType) {
-      case 'HOSPITAL_PHARMACY':
-        return this.translate('structures.type.hospitalPharmacy.label');
-      case 'RETAIL_PHARMACY':
-        return this.translate('structures.type.retailPharmacy.label');
-      default:
-        return structureType || '-';
-    }
+  isDepartmentSelected(departmentId: number): boolean {
+    return this.model.departmentsSelected.some((item) => item.departmentId === departmentId);
   }
 
-  isPharmacySelected(pharmacyId: number): boolean {
-    return this.model.pharmacyIds.includes(pharmacyId);
-  }
-
-  togglePharmacySelection(pharmacyId: number, checked: boolean): void {
+  toggleDepartmentSelection(departmentId: number, checked: boolean): void {
     if (checked) {
-      this.model.pharmacyIds = [...new Set([...this.model.pharmacyIds, pharmacyId])];
+      if (!this.isDepartmentSelected(departmentId)) {
+        this.model.departmentsSelected = [...this.model.departmentsSelected, { departmentId }];
+      }
       return;
     }
 
-    this.model.pharmacyIds = this.model.pharmacyIds.filter((selectedId) => selectedId !== pharmacyId);
+    this.model.departmentsSelected = this.model.departmentsSelected.filter((item) => item.departmentId !== departmentId);
   }
 
-  selectedPharmacies(): PharmacyDto[] {
-    return this.pharmaciesList.filter((pharmacy) => this.model.pharmacyIds.includes(pharmacy.id));
+  getDepartmentReferentId(departmentId: number): number | undefined {
+    return this.model.departmentsSelected.find((item) => item.departmentId === departmentId)?.referentId;
   }
 
-  private loadSelectablePharmacies(): void {
-    this.pharmacyApi.getSelectablePharmacies().subscribe({
+  setDepartmentReferent(departmentId: number, referentId?: number): void {
+    this.model.departmentsSelected = this.model.departmentsSelected.map((item) =>
+      item.departmentId === departmentId ? { ...item, referentId: referentId ?? undefined } : item
+    );
+  }
+
+  trackByArea(_index: number, group: { area: string }): string {
+    return group.area;
+  }
+
+  trackByDepartmentId(_index: number, department: DepartmentDto): number {
+    return department.id;
+  }
+
+  private buildGroupedDepartments(departments: DepartmentDto[]): Array<{ area: string; departments: DepartmentDto[] }> {
+    const groups = new Map<string, DepartmentDto[]>();
+    for (const department of departments) {
+      const key = department.areaFunzionale?.trim() || 'Altri';
+      const current = groups.get(key) ?? [];
+      current.push(department);
+      groups.set(key, current);
+    }
+
+    return Array.from(groups.entries())
+      .map(([area, departments]) => ({ area, departments }))
+      .sort((left, right) => left.area.localeCompare(right.area));
+  }
+
+  findDepartmentName(departmentId: number): string {
+    return this.departmentsList.find((item) => item.id === departmentId)?.reparto ?? String(departmentId);
+  }
+
+  findDepartmentArea(departmentId: number): string {
+    return this.departmentsList.find((item) => item.id === departmentId)?.areaFunzionale ?? '-';
+  }
+
+  findReferentName(referentId: number): string {
+    const referent = this.findReferent(referentId);
+    return referent ? `${referent.firstName} ${referent.lastName}` : String(referentId);
+  }
+
+  findReferentEmail(referentId: number): string {
+    return this.findReferent(referentId)?.email ?? '';
+  }
+
+  findReferentPhone(referentId: number): string {
+    return this.findReferent(referentId)?.phone ?? '';
+  }
+
+  private loadDepartments(): void {
+    this.pharmacyApi.getDepartments().subscribe({
       next: (data) => {
-        this.pharmaciesList = data;
+        this.departmentsList = data;
+        this.groupedDepartmentsList = this.buildGroupedDepartments(data);
       },
       error: () => {
-        this.pharmaciesList = [];
+        this.departmentsList = [];
+        this.groupedDepartmentsList = [];
       }
     });
+  }
+
+  private findReferent(referentId: number): ReferentDto | undefined {
+    return this.referentsList.find((item) => item.id === referentId);
   }
 
   private loadAslStructures(): void {
@@ -602,9 +744,7 @@ export class AddWizardComponentHospital implements OnInit, OnDestroy {
           parentStructureId: structure.parentStructureId ?? null,
           parentStructureName: structure.parentStructureName ?? '',
           referents: this.mapReferentsById(structure.referents ?? []),
-          pharmacyIds: (structure.pharmacies ?? [])
-            .map((pharmacy) => pharmacy.id)
-            .filter((pharmacyId): pharmacyId is number => typeof pharmacyId === 'number'),
+          departmentsSelected: structure.departmentsSelected ?? [],
           structureType: structure.structureType ?? 'HOSPITAL'
         };
 
@@ -688,10 +828,6 @@ export class AddWizardComponentHospital implements OnInit, OnDestroy {
     });
   }
 
-  private toSelectedPharmacies(): Array<{ id?: number }> {
-    return this.model.pharmacyIds.map((pharmacyId) => ({ id: pharmacyId }));
-  }
-
   private toSelectValue(optionId?: number | string | null): string {
     if (optionId === null || optionId === undefined || optionId === '') {
       return '';
@@ -766,5 +902,79 @@ export class AddWizardComponentHospital implements OnInit, OnDestroy {
 
   private asPhoneString(value: unknown): string {
     return typeof value === 'string' ? value.trim() : '';
+  }
+
+  private initializeReferentPhoneInput(input: HTMLInputElement): void {
+    const iti = intlTelInput(input, {
+      containerClass: 'phone-intl-input',
+      countryOrder: this.phoneCountryOrder,
+      initialCountry: this.defaultPhoneCountryIsoCode,
+      loadUtils: this.loadPhoneInputUtils,
+      nationalMode: true,
+      separateDialCode: true
+    });
+
+    const syncValue = () => this.updateReferentPhoneFromInput(input, iti);
+    input.addEventListener('input', syncValue);
+    input.addEventListener('countrychange', syncValue);
+    input.addEventListener('blur', syncValue);
+
+    this.referentPhoneInputBinding = {
+      input,
+      iti,
+      syncValue
+    };
+
+    iti.promise.then(() => {
+      if (!iti.isActive() || this.referentPhoneInputBinding?.input !== input) {
+        return;
+      }
+
+      this.syncReferentPhoneInputFromModel();
+      this.updateReferentPhoneFromInput(input, iti);
+    });
+  }
+
+  private destroyReferentPhoneInput(): void {
+    if (!this.referentPhoneInputBinding) {
+      return;
+    }
+
+    const { input, iti, syncValue } = this.referentPhoneInputBinding;
+    input.removeEventListener('input', syncValue);
+    input.removeEventListener('countrychange', syncValue);
+    input.removeEventListener('blur', syncValue);
+    iti.destroy();
+    this.referentPhoneInputBinding = undefined;
+  }
+
+  private syncReferentPhoneInputFromModel(): void {
+    const binding = this.referentPhoneInputBinding;
+    if (!binding || document.activeElement === binding.input) {
+      return;
+    }
+
+    const modelValue = this.asPhoneString(this.newReferent.phone);
+    const currentValue = binding.iti.getNumber() || binding.input.value;
+    if (modelValue !== currentValue) {
+      binding.iti.setNumber(modelValue);
+    }
+  }
+
+  private updateReferentPhoneFromInput(input: HTMLInputElement, iti: Iti): void {
+    const nextValue = iti.getNumber() || this.asPhoneString(input.value);
+    if (this.newReferent.phone === nextValue) {
+      return;
+    }
+
+    this.newReferent = {
+      ...this.newReferent,
+      phone: nextValue
+    };
+  }
+
+  private resetNewReferent(): void {
+    this.newReferent = { firstName: '', lastName: '', role: '', email: '', phone: '' };
+    this.syncReferentPhoneInputFromModel();
   }
 }

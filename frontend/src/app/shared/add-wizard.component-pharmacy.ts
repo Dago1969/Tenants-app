@@ -131,24 +131,28 @@ interface ParentStructureOption {
 
         <form *ngSwitchCase="2" (ngSubmit)="nextStep()" #form2="ngForm">
           <h4>{{ translate('structures.step.contacts') }}</h4>
-          <div class="form-row" style="align-items: flex-end; gap: 1rem;">
-            <label style="flex:1;">{{ translate('structures.field.referents') }}
-              <select name="referents" [(ngModel)]="model.referents" [compareWith]="compareReferentsById" multiple required style="min-width:300px; min-height: 80px;">
+          <div class="form-row referent-toolbar-row">
+            <label class="referent-picker-field">{{ translate('structures.field.referents') }}
+              <select class="crud-input referent-picker-select" name="referents" [(ngModel)]="model.referents" [compareWith]="compareReferentsById" multiple required>
                 <option *ngFor="let ref of referentsList" [ngValue]="ref">{{ ref.firstName }} {{ ref.lastName }} ({{ ref.role }})</option>
               </select>
             </label>
-            <button type="button" class="btn btn-secondary" (click)="showAddReferent = !showAddReferent">{{ translate('referent.actions.add') }}</button>
+            <button type="button" class="btn btn-secondary referent-toggle-button" (click)="showAddReferent = !showAddReferent">{{ translate('referent.actions.add') }}</button>
           </div>
-          <div class="form-row" *ngIf="showAddReferent" style="margin-top: 1rem; border: 1px solid #eee; padding: 1rem; border-radius: 6px; background: #fafbfc;">
-            <form (ngSubmit)="addReferent()" #addReferentForm="ngForm" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
-              <input name="firstName" [(ngModel)]="newReferent.firstName" required placeholder="{{ translate('referent.field.firstName') }}" class="form-control" style="width: 120px;" />
-              <input name="lastName" [(ngModel)]="newReferent.lastName" required placeholder="{{ translate('referent.field.lastName') }}" class="form-control" style="width: 120px;" />
-              <input name="role" [(ngModel)]="newReferent.role" placeholder="{{ translate('referent.field.role') }}" class="form-control" style="width: 120px;" />
-              <input name="email" [(ngModel)]="newReferent.email" required placeholder="{{ translate('referent.field.email') }}" class="form-control" style="width: 180px;" type="email" />
-              <input name="phone" [(ngModel)]="newReferent.phone" required placeholder="{{ translate('referent.field.phone') }}" class="form-control" style="width: 140px;" type="tel" />
-              <button type="submit" class="btn btn-primary" [disabled]="!addReferentForm.valid">{{ translate('referent.actions.save') }}</button>
-              <button type="button" class="btn btn-outline" (click)="showAddReferent = false">{{ translate('crud.actions.cancel') }}</button>
-            </form>
+          <div class="referent-editor-shell" *ngIf="showAddReferent">
+            <div class="referent-editor-form">
+              <input name="firstName" [(ngModel)]="newReferent.firstName" required placeholder="{{ translate('referent.field.firstName') }}" class="crud-input referent-editor-input" />
+              <input name="lastName" [(ngModel)]="newReferent.lastName" required placeholder="{{ translate('referent.field.lastName') }}" class="crud-input referent-editor-input" />
+              <input name="role" [(ngModel)]="newReferent.role" placeholder="{{ translate('referent.field.role') }}" class="crud-input referent-editor-input" />
+              <input name="email" [(ngModel)]="newReferent.email" required placeholder="{{ translate('referent.field.email') }}" class="crud-input referent-editor-input referent-editor-input-email" type="email" />
+              <div class="phone-input-group phone-input-group-intl referent-editor-phone-wrap">
+                <input #referentPhoneInputElement name="phone" [ngModel]="newReferent.phone" (ngModelChange)="onReferentPhoneModelChange($event)" required placeholder="{{ translate('referent.field.phone') }}" class="crud-input referent-editor-input referent-editor-input-phone phone-number-input" type="tel" inputmode="tel" />
+              </div>
+              <div class="referent-editor-actions">
+                <button type="button" class="btn btn-primary" (click)="addReferent()" [disabled]="!newReferent.firstName || !newReferent.lastName || !newReferent.email || !newReferent.phone">{{ translate('referent.actions.save') }}</button>
+                <button type="button" class="btn btn-outline" (click)="showAddReferent = false">{{ translate('crud.actions.cancel') }}</button>
+              </div>
+            </div>
           </div>
         </form>
 
@@ -242,7 +246,11 @@ interface ParentStructureOption {
                 <div class="summary2-label">{{ translate('structures.field.referenceContacts') }}</div>
                 <div class="summary2-value">
                   <ng-container *ngFor="let ref of model.referents">
-                    <div>{{ ref.firstName }} {{ ref.lastName }}<span *ngIf="ref.role"> - {{ ref.role }}</span></div>
+                    <div class="summary-pharmacy-row">
+                      <div>{{ ref.firstName }} {{ ref.lastName }}<span *ngIf="ref.role"> - {{ ref.role }}</span></div>
+                      <div *ngIf="ref.email">{{ translate('referent.field.email') }}: {{ ref.email }}</div>
+                      <div *ngIf="ref.phone">{{ translate('referent.field.phone') }}: {{ ref.phone }}</div>
+                    </div>
                   </ng-container>
                 </div>
               </div>
@@ -291,7 +299,31 @@ export class AddWizardComponentPharmacy implements OnInit, OnDestroy {
     });
   }
 
+  @ViewChild('referentPhoneInputElement')
+  set referentPhoneInputElement(ref: ElementRef<HTMLInputElement> | undefined) {
+    const nextInput = ref?.nativeElement;
+    if (this.referentPhoneInputBinding?.input === nextInput) {
+      return;
+    }
+    this.destroyReferentPhoneInput();
+    if (!nextInput) {
+      return;
+    }
+    queueMicrotask(() => {
+      if (this.referentPhoneInputBinding?.input === nextInput) {
+        return;
+      }
+      this.initializeReferentPhoneInput(nextInput);
+    });
+  }
+
   private phoneInputBinding?: {
+    input: HTMLInputElement;
+    iti: Iti;
+    syncValue: () => void;
+  };
+
+  private referentPhoneInputBinding?: {
     input: HTMLInputElement;
     iti: Iti;
     syncValue: () => void;
@@ -299,11 +331,20 @@ export class AddWizardComponentPharmacy implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.destroyPhoneInput();
+    this.destroyReferentPhoneInput();
   }
 
   onPhoneModelChange(value: string): void {
     this.model.phone = value;
     this.syncPhoneInputFromModel();
+  }
+
+  onReferentPhoneModelChange(value: string): void {
+    this.newReferent = {
+      ...this.newReferent,
+      phone: value
+    };
+    this.syncReferentPhoneInputFromModel();
   }
 
   private initializePhoneInput(input: HTMLInputElement): void {
@@ -351,6 +392,67 @@ export class AddWizardComponentPharmacy implements OnInit, OnDestroy {
     const nextValue = iti.getNumber() || (typeof input.value === 'string' ? input.value.trim() : '');
     if (this.model.phone === nextValue) return;
     this.model.phone = nextValue;
+  }
+
+  private initializeReferentPhoneInput(input: HTMLInputElement): void {
+    const iti = intlTelInput(input, {
+      containerClass: 'phone-intl-input',
+      countryOrder: ['it', 'us', 'gb', 'fr', 'de', 'es'],
+      initialCountry: 'it',
+      loadUtils: () => import('intl-tel-input/utils'),
+      nationalMode: true,
+      separateDialCode: true
+    });
+    const syncValue = () => this.updateReferentPhoneFromInput(input, iti);
+    input.addEventListener('input', syncValue);
+    input.addEventListener('countrychange', syncValue);
+    input.addEventListener('blur', syncValue);
+    this.referentPhoneInputBinding = { input, iti, syncValue };
+    iti.promise.then(() => {
+      if (!iti.isActive() || this.referentPhoneInputBinding?.input !== input) {
+        return;
+      }
+      this.syncReferentPhoneInputFromModel();
+      this.updateReferentPhoneFromInput(input, iti);
+    });
+  }
+
+  private destroyReferentPhoneInput(): void {
+    if (!this.referentPhoneInputBinding) return;
+    const { input, iti, syncValue } = this.referentPhoneInputBinding;
+    input.removeEventListener('input', syncValue);
+    input.removeEventListener('countrychange', syncValue);
+    input.removeEventListener('blur', syncValue);
+    iti.destroy();
+    this.referentPhoneInputBinding = undefined;
+  }
+
+  private syncReferentPhoneInputFromModel(): void {
+    const binding = this.referentPhoneInputBinding;
+    if (!binding || document.activeElement === binding.input) return;
+    const modelValue = this.asPhoneString(this.newReferent.phone);
+    const currentValue = binding.iti.getNumber() || binding.input.value;
+    if (modelValue !== currentValue) {
+      binding.iti.setNumber(modelValue);
+    }
+  }
+
+  private updateReferentPhoneFromInput(input: HTMLInputElement, iti: Iti): void {
+    const nextValue = iti.getNumber() || this.asPhoneString(input.value);
+    if (this.newReferent.phone === nextValue) return;
+    this.newReferent = {
+      ...this.newReferent,
+      phone: nextValue
+    };
+  }
+
+  private asPhoneString(value: unknown): string {
+    return typeof value === 'string' ? value.trim() : '';
+  }
+
+  private resetNewReferent(): void {
+    this.newReferent = { firstName: '', lastName: '', role: '', email: '', phone: '' };
+    this.syncReferentPhoneInputFromModel();
   }
   @Input() structureId: number | null = null;
   @Input() structureType: ManagedStructureType = 'HOSPITAL_PHARMACY';
@@ -541,7 +643,7 @@ export class AddWizardComponentPharmacy implements OnInit, OnDestroy {
       next: (created) => {
         this.referentsList = [...this.referentsList, created];
         this.model.referents = [...this.model.referents, created];
-        this.newReferent = { firstName: '', lastName: '', role: '', email: '', phone: '' };
+        this.resetNewReferent();
         this.showAddReferent = false;
       },
       error: () => {
@@ -581,6 +683,65 @@ export class AddWizardComponentPharmacy implements OnInit, OnDestroy {
 
   onParentStructureChange(): void {
     this.model.parentStructureName = this.findStructureName(this.parentStructures, this.model.parentStructureId);
+
+    const parentId = this.model.parentStructureId;
+    const currentType = this.getCurrentType();
+
+    if (!parentId) {
+      // clear any prefilled geographic fields when no parent selected
+      this.model.regionId = '';
+      this.model.region = '';
+      this.model.provinceId = '';
+      this.model.province = '';
+      this.model.cityId = '';
+      this.model.city = '';
+      this.province = [];
+      this.comuni = [];
+      return;
+    }
+
+    // For territorial pharmacies and ASL-parented warehouses prefill from parent; for hospital pharmacies prefill from hospital
+    if (
+      currentType === 'TERRITORIAL_PHARMACY' ||
+      currentType === 'HOSPITAL_PHARMACY' ||
+      currentType === 'LOGISTICS_WAREHOUSE' ||
+      currentType === 'MATERIAL_WAREHOUSE' ||
+      currentType === 'SPECIALIST_CLINIC'
+    ) {
+      this.structureApi.getStructure(parentId).subscribe({
+        next: (structure) => {
+          this.model.regionId = this.toSelectValue(structure.regionId);
+          this.model.region = structure.region ?? '';
+
+          this.model.provinceId = this.toSelectValue(structure.provinceId);
+          this.model.province = structure.province ?? '';
+
+          this.model.cityId = this.toSelectValue(structure.cityId);
+          this.model.city = structure.city ?? '';
+
+          // Load dependent lists so selects display correct options
+          if (this.model.regionId) {
+            this.loadProvinceOptions(this.model.regionId, this.model.provinceId, this.model.cityId);
+          } else {
+            this.province = [];
+            this.comuni = [];
+          }
+
+          // Prefill address/cap/phone if available
+          this.model.address = structure.address ?? this.model.address;
+          this.model.cap = structure.cap ?? this.model.cap;
+          this.model.phone = structure.phone ?? this.model.phone;
+        },
+        error: () => {
+          // on error, clear dependent lists but keep user values untouched
+          this.province = [];
+          this.comuni = [];
+        }
+      });
+      return;
+    }
+
+    // For retail (and other types) do not prefill geographic fields
   }
 
   addScheduleSlot(): void {
@@ -618,6 +779,12 @@ export class AddWizardComponentPharmacy implements OnInit, OnDestroy {
       this.notificationService.showError(this.translate('structures.message.scheduleRequired'));
       return;
     }
+    // Defensive: if current type is RETAIL_PHARMACY ensure parent fields are cleared
+    const currentType = this.getCurrentType();
+    if (currentType === 'RETAIL_PHARMACY') {
+      this.model.parentStructureId = null;
+      this.model.parentStructureName = '';
+    }
 
     const payload: StructureDto = {
       id: this.model.id ?? undefined,
@@ -642,18 +809,53 @@ export class AddWizardComponentPharmacy implements OnInit, OnDestroy {
       structureType: this.selectedStructureType ?? undefined
     };
 
-    const request = this.isEditMode() && this.structureId !== null
-      ? this.structureApi.updateStructure(this.structureId, payload)
-      : this.structureApi.createStructure(payload);
+    const performRequest = (payloadToSend: StructureDto) => {
+      const req = this.isEditMode() && this.structureId !== null
+        ? this.structureApi.updateStructure(this.structureId, payloadToSend)
+        : this.structureApi.createStructure(payloadToSend);
 
-    request.subscribe({
+      return req;
+    };
+
+    // Ensure parent fields are removed from payload for retail
+    if (currentType === 'RETAIL_PHARMACY') {
+      delete (payload as any).parentStructureId;
+      delete (payload as any).parentStructureName;
+    }
+
+    // First attempt
+    // Debug: log payload being sent
+    try { console.debug('Structure save payload (first attempt):', payload); } catch {}
+    performRequest(payload).subscribe({
       next: () => {
         this.notificationService.showSuccess(
           this.translate(this.isEditMode() ? 'crud.success.update' : 'crud.success.create')
         );
         this.close.emit();
       },
-      error: () => {
+      error: (err: any) => {
+        // If backend still rejects retail for missing parent, retry forcing removal of parent fields
+        const detail = err?.error?.detail || err?.detail || '';
+        if (currentType === 'RETAIL_PHARMACY' && typeof detail === 'string' && detail.toLowerCase().includes('richiede una struttura parent')) {
+          const retryPayload = { ...payload };
+          // ensure parent fields absent
+          delete (retryPayload as any).parentStructureId;
+          delete (retryPayload as any).parentStructureName;
+
+          try { console.debug('Attempting retry #1 for retail (removed parent fields):', retryPayload); } catch {}
+
+          performRequest(retryPayload).subscribe({
+            next: () => {
+              this.notificationService.showSuccess(this.translate(this.isEditMode() ? 'crud.success.update' : 'crud.success.create'));
+              this.close.emit();
+            },
+            error: () => {
+              this.notificationService.showError(this.translate(this.isEditMode() ? 'crud.error.update' : 'crud.error.create'));
+            }
+          });
+          return;
+        }
+
         this.notificationService.showError(
           this.translate(this.isEditMode() ? 'crud.error.update' : 'crud.error.create')
         );

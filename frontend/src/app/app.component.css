@@ -64,14 +64,24 @@
 }
 
 .sidebar nav a.active,
-.sidebar nav a:hover {
+.sidebar nav a:hover,
+.sidebar nav a:focus,
+.sidebar nav a:focus-visible,
+.sidebar nav a:active,
+.sidebar nav a.router-link-active {
   background: #22304a;
   color: #e0e8f8;
 }
 
+/* Garantisce che lo span (etichetta testo) erediti il colore preferito
+   anche quando altre regole di livello inferiore cercano di forzare il bianco */
 .sidebar nav a.active span,
-.sidebar nav a:hover span {
-  color: #e0e8f8;
+.sidebar nav a:hover span,
+.sidebar nav a:focus span,
+.sidebar nav a:focus-visible span,
+.sidebar nav a:active span,
+.sidebar nav a.router-link-active span {
+  color: var(--TXT, #454F78);
 }
 
 .nav-group {
@@ -104,6 +114,16 @@
   height: 20px;
   object-fit: contain;
   flex: 0 0 auto;
+}
+
+.nav-group-icon-label {
+  display: inline-block;
+  margin-left: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  color: var(--label-color);
+  opacity: 1;
+  max-width: 320px;
 }
 
 .nav-group-chevron {

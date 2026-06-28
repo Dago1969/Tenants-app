@@ -30,28 +30,9 @@ services:
         condition: service_healthy
     ports:
       - "8087:8080"
-<<<<<<< HEAD
     env_file:
       - ../Tenants-app/.env
-=======
->>>>>>> cd15be65a1631429e5575cecaf38a999323c7107
-    environment:
-      - SPRING_PROFILES_ACTIVE=collaudo
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/QTMTenant_${APP_KEYCLOAK_REALM_CODE}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=dago
-      - QTM_DASHBOARD_API_BASE_URL=http://qtmdashboard-backend:8086/api
-      # Keycloak config allineata a QTMDB
-      - KEYCLOAK_HOST=keycloak
-      - KEYCLOAK_PORT=8080
-      - KEYCLOAK_REALM=QTM
-      - APP_KEYCLOAK_SERVER_URL=http://keycloak:8080
-      - APP_KEYCLOAK_TOKEN_URL=http://keycloak:8080/realms/QTM/protocol/openid-connect/token
-<<<<<<< HEAD
-=======
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI=http://localhost:8085/realms/${APP_KEYCLOAK_REALM_CODE}
->>>>>>> cd15be65a1631429e5575cecaf38a999323c7107
-      - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/realms/QTM/protocol/openid-connect/certs
     extra_hosts:
       - "host.docker.internal:host-gateway"
     # volumes:

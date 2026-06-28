@@ -35,6 +35,7 @@
             [attr.aria-label]="item.iconSrc ? translate(item.labelKey) : null"
           >
             <img *ngIf="item.iconSrc" class="nav-group-icon" [src]="item.iconSrc" [attr.alt]="translate(item.labelKey)" />
+            <span class="nav-group-icon-label" *ngIf="item.iconSrc">{{ translate(item.labelKey) }}</span>
             <span *ngIf="!item.iconSrc">{{ translate(item.labelKey) }}</span>
           </a>
         </div>
@@ -73,6 +74,7 @@
             [attr.aria-label]="item.iconSrc ? translate(item.labelKey) : null"
           >
             <img *ngIf="item.iconSrc" class="nav-group-icon" [src]="item.iconSrc" [attr.alt]="translate(item.labelKey)" />
+            <span class="nav-group-icon-label" *ngIf="item.iconSrc">{{ translate(item.labelKey) }}</span>
             <span *ngIf="!item.iconSrc">{{ translate(item.labelKey) }}</span>
           </a>
         </div>
