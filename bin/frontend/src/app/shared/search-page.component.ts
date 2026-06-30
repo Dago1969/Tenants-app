@@ -143,7 +143,7 @@ type DeleteDialogMode = 'confirm' | 'reassign';
                 <button *ngIf="showViewAction" class="icon-btn" type="button" (click)="openView(getRowIdentifier(row))" [title]="translate('search.action.view')">
                   <span style="font-size:1.2rem;">👁️</span>
                 </button>
-                <button *ngIf="showDeleteAction && canDelete" class="icon-btn" type="button" (click)="deleteRecord(row)" [title]="translate('search.action.delete')">
+                <button *ngIf="showDeleteAction && canDelete" class="icon-btn" type="button" (click)="deleteRecord(getRowIdentifier(row))" [title]="translate('search.action.delete')">
                   <span style="font-size:1.2rem;">🗑️</span>
                 </button>
                 <button *ngIf="showManageAction" class="icon-btn" type="button" (click)="openManage(getRowIdentifier(row))" [title]="translate('search.action.configure')">
@@ -161,9 +161,6 @@ type DeleteDialogMode = 'confirm' | 'reassign';
           <h3 id="search-delete-dialog-title" class="search-dialog-title">{{ dialogTitle }}</h3>
           <p class="search-dialog-message">
             {{ translate(deleteDialogMode === 'reassign' ? 'search.confirm.reassignRequired' : 'search.confirm.delete') }}
-          </p>
-          <p *ngIf="deleteDialogRecordData && deleteDialogMode === 'confirm'" class="search-dialog-highlight">
-            {{ deleteDialogRecordData['username'] ?? deleteDialogRecordData[resultIdKey] ?? deleteDialogRecordId }}
           </p>
 
           <div *ngIf="deleteDialogMode === 'reassign'" class="search-dialog-section">
@@ -238,7 +235,6 @@ export class SearchPageComponent implements OnInit {
   deleteDialogOpen = false;
   deleteDialogMode: DeleteDialogMode = 'confirm';
   deleteDialogRecordId = '';
-  deleteDialogRecordData: SearchResult | null = null;
   deleteDialogLinkedUsers: DeleteCheckLinkedUser[] = [];
   deleteDialogReplacementRoles: SelectOption[] = [];
   deleteDialogReplacementRoleId = '';
@@ -389,18 +385,9 @@ export class SearchPageComponent implements OnInit {
     void this.router.navigate([`/users/configure/${normalizedId}`]);
   }
 
-  deleteRecord(recordOrId: unknown): void {
+  deleteRecord(id: unknown): void {
     if (!this.canDelete) {
       return;
-    }
-
-    // Estrai l'ID dal record o se è una stringa/numero, usalo direttamente
-    let recordData: SearchResult | null = null;
-    let id: unknown = recordOrId;
-
-    if (typeof recordOrId === 'object' && recordOrId !== null) {
-      recordData = recordOrId as SearchResult;
-      id = recordData[this.resultIdKey];
     }
 
     const normalizedId = this.normalizeId(id);
@@ -409,11 +396,11 @@ export class SearchPageComponent implements OnInit {
     }
 
     if (this.deleteCheckEndpoint) {
-      this.handleDeleteWithPrecheck(normalizedId, recordData);
+      this.handleDeleteWithPrecheck(normalizedId);
       return;
     }
 
-    this.openDeleteConfirmationDialog(normalizedId, recordData);
+    this.openDeleteConfirmationDialog(normalizedId);
   }
 
   private openCrudPage(id: unknown, mode: 'view' | 'edit'): void {
@@ -463,17 +450,17 @@ export class SearchPageComponent implements OnInit {
     return `${window.location.origin}/${routeBase}/${normalizedId}`;
   }
 
-  private handleDeleteWithPrecheck(normalizedId: string, recordData: SearchResult | null = null): void {
+  private handleDeleteWithPrecheck(normalizedId: string): void {
     this.http.get<DeleteCheckResponse>(`${environment.apiBaseUrl}/${this.deleteCheckEndpoint}/${normalizedId}`).subscribe({
       next: (deleteCheck) => {
         const linkedUsers = deleteCheck.linkedUsers ?? [];
         if (linkedUsers.length === 0) {
-          this.openDeleteConfirmationDialog(normalizedId, recordData);
+          this.openDeleteConfirmationDialog(normalizedId);
           return;
         }
 
         const replacementRoles = deleteCheck.replacementRoles ?? [];
-        this.openDeleteReassignmentDialog(normalizedId, linkedUsers, replacementRoles, recordData);
+        this.openDeleteReassignmentDialog(normalizedId, linkedUsers, replacementRoles);
       },
       error: (error) => {
         this.pushOperationLog('error', this.buildErrorMessage('search.error.deleteCheck', error));
@@ -481,10 +468,9 @@ export class SearchPageComponent implements OnInit {
     });
   }
 
-  private openDeleteConfirmationDialog(normalizedId: string, recordData: SearchResult | null = null): void {
+  private openDeleteConfirmationDialog(normalizedId: string): void {
     this.deleteDialogMode = 'confirm';
     this.deleteDialogRecordId = normalizedId;
-    this.deleteDialogRecordData = recordData;
     this.deleteDialogLinkedUsers = [];
     this.deleteDialogReplacementRoles = [];
     this.deleteDialogReplacementRoleId = '';
@@ -494,8 +480,7 @@ export class SearchPageComponent implements OnInit {
   private openDeleteReassignmentDialog(
     normalizedId: string,
     linkedUsers: DeleteCheckLinkedUser[],
-    replacementRoles: DeleteCheckReplacementRole[],
-    recordData: SearchResult | null = null
+    replacementRoles: DeleteCheckReplacementRole[]
   ): void {
     const replacementOptions = replacementRoles.map((role) => ({
       value: role.id,
@@ -504,7 +489,6 @@ export class SearchPageComponent implements OnInit {
 
     this.deleteDialogMode = 'reassign';
     this.deleteDialogRecordId = normalizedId;
-    this.deleteDialogRecordData = recordData;
     this.deleteDialogLinkedUsers = linkedUsers;
     this.deleteDialogReplacementRoles = replacementOptions;
     this.deleteDialogReplacementRoleId = replacementOptions[0]?.value ?? '';
@@ -515,7 +499,6 @@ export class SearchPageComponent implements OnInit {
     this.deleteDialogOpen = false;
     this.deleteDialogMode = 'confirm';
     this.deleteDialogRecordId = '';
-    this.deleteDialogRecordData = null;
     this.deleteDialogLinkedUsers = [];
     this.deleteDialogReplacementRoles = [];
     this.deleteDialogReplacementRoleId = '';
