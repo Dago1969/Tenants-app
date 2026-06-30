@@ -149,19 +149,24 @@ export class AuthService {
     const token = localStorage.getItem(this.tokenStorageKey);
 
     if (!token) {
+      console.warn('[AuthService] getToken() -> token assente in localStorage');
       return null;
     }
 
     if (this.isTokenExpired(token)) {
+      console.warn('[AuthService] getToken() -> token scaduto o non valido, rimosso da localStorage');
       localStorage.removeItem(this.tokenStorageKey);
       return null;
     }
 
+    console.log('[AuthService] getToken() -> token valido trovato', this.describeToken(token));
     return token;
   }
 
   isAuthenticated(): boolean {
-    return this.getToken() !== null;
+    const authenticated = this.getToken() !== null;
+    console.log('[AuthService] isAuthenticated() ->', authenticated);
+    return authenticated;
   }
 
   logout(): void {
@@ -178,6 +183,7 @@ export class AuthService {
 
   setToken(token: string): void {
     localStorage.setItem(this.tokenStorageKey, token);
+    console.log('[AuthService] setToken() -> token salvato', this.describeToken(token));
   }
 
   setSelectedRole(role: string): void {
@@ -243,6 +249,7 @@ export class AuthService {
     const parts = token.split('.');
 
     if (parts.length < 2) {
+      console.warn('[AuthService] isTokenExpired() -> token malformato');
       return true;
     }
 
@@ -251,14 +258,31 @@ export class AuthService {
       const claims = JSON.parse(payload) as { exp?: number };
 
       if (typeof claims.exp !== 'number') {
+        console.warn('[AuthService] isTokenExpired() -> claim exp mancante', claims);
         return true;
       }
 
       const nowInSeconds = Math.floor(Date.now() / 1000);
-      return claims.exp <= nowInSeconds;
-    } catch {
+      const expired = claims.exp <= nowInSeconds;
+      console.log('[AuthService] isTokenExpired() ->', {
+        expired,
+        exp: claims.exp,
+        nowInSeconds,
+        preferred_username: (claims as { preferred_username?: string }).preferred_username,
+        sub: (claims as { sub?: string }).sub
+      });
+      return expired;
+    } catch (error) {
+      console.warn('[AuthService] isTokenExpired() -> errore parsing token', error);
       return true;
     }
+  }
+
+  private describeToken(token: string): { prefix: string; length: number } {
+    return {
+      prefix: token.slice(0, 12),
+      length: token.length
+    };
   }
 
   private decodeBase64Url(value: string): string {
