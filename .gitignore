@@ -8,6 +8,10 @@
 /frontend/dist/
 /frontend/.angular/
 
+# Esclude il file .env specifico nella cartella resources
+src/main/resources/.env
+/src/main/resources/.env
+
 *.log
 # Compiled class file
 *.class
