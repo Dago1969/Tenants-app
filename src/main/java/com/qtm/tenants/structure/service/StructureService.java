@@ -9,6 +9,10 @@ import com.qtm.tenants.structure.dto.StructureTypeDto;
 import com.qtm.tenants.structure.entity.StructureEntity;
 import com.qtm.tenants.structure.mapper.StructureMapper;
 import com.qtm.tenants.structure.repository.StructureRepository;
+import com.qtm.tenants.geography.service.DashboardGeographyService;
+import com.qtm.tenants.geography.dto.DashboardCityDto;
+import com.qtm.tenants.geography.dto.DashboardProvinceDto;
+import com.qtm.tenants.geography.dto.DashboardRegionDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +47,8 @@ public class StructureService {
     private final StructureTypeRegistry structureTypeRegistry;
     private final DashboardAslClient dashboardAslClient;
     private final TicketAslClient ticketAslClient;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private DashboardGeographyService dashboardGeographyService;
 
     @Transactional
     public StructureDto create(StructureDto structureDto) {
@@ -215,6 +221,36 @@ public class StructureService {
         dto.setAddress(remoteDetail.getIndirizzo());
         dto.setCap(remoteDetail.getCap());
         dto.setCityId(remoteDetail.getCityId());
+        // Se abbiamo una cityId, cerchiamo di risolvere provincia e regione per pre-popolare i campi nel wizard
+        try {
+            Long cityId = remoteDetail.getCityId();
+            if (cityId != null) {
+                DashboardCityDto city = dashboardGeographyService.findCityById(cityId);
+                if (city != null) {
+                    dto.setCity(city.getName());
+                    Long provinceId = city.getProvinceId();
+                    dto.setProvinceId(provinceId);
+                    if (provinceId != null) {
+                        DashboardProvinceDto province = dashboardGeographyService.findProvinceById(provinceId);
+                        if (province != null) {
+                            dto.setProvince(province.getName());
+                            Long regionId = province.getRegionId();
+                            dto.setRegionId(regionId);
+                            if (regionId != null) {
+                                DashboardRegionDto region = dashboardGeographyService.findRegionById(regionId);
+                                if (region != null) {
+                                    dto.setRegion(region.getName());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            // Non blocchiamo l'operazione se il servizio di geografia non è disponibile; logghiamo per debugging
+            // il flusso prosegue con cityId eventualmente valorizzato ma senza parent geografici
+            org.slf4j.LoggerFactory.getLogger(StructureService.class).warn("Impossibile recuperare dati geografici per ASL id={}", remoteAslId, ex);
+        }
         dto.setPhone(remoteDetail.getTelefono());
         dto.setEmail(remoteDetail.getEmail());
         dto.setActive(localShadow == null || Boolean.TRUE.equals(localShadow.getActive()));

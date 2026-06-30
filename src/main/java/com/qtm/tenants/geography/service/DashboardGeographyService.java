@@ -66,6 +66,60 @@ public class DashboardGeographyService {
                 .toList();
     }
 
+    public DashboardCityDto findCityById(Long cityId) {
+        try {
+            String authorizationHeader = resolveAuthorizationHeader();
+            if (authorizationHeader == null || authorizationHeader.isBlank()) {
+                throw new ResponseStatusException(UNAUTHORIZED, MISSING_AUTHORIZATION_MESSAGE);
+            }
+            return restClient.get()
+                    .uri("/cities/{id}", cityId)
+                    .header(HttpHeaders.AUTHORIZATION, authorizationHeader)
+                    .retrieve()
+                    .body(DashboardCityDto.class);
+        } catch (RestClientResponseException exception) {
+            throw new ResponseStatusException(exception.getStatusCode(), buildDownstreamMessage(exception), exception);
+        } catch (RestClientException exception) {
+            throw new ResponseStatusException(BAD_GATEWAY, SERVICE_UNAVAILABLE_MESSAGE, exception);
+        }
+    }
+
+    public DashboardProvinceDto findProvinceById(Long provinceId) {
+        try {
+            String authorizationHeader = resolveAuthorizationHeader();
+            if (authorizationHeader == null || authorizationHeader.isBlank()) {
+                throw new ResponseStatusException(UNAUTHORIZED, MISSING_AUTHORIZATION_MESSAGE);
+            }
+            return restClient.get()
+                    .uri("/provinces/{id}", provinceId)
+                    .header(HttpHeaders.AUTHORIZATION, authorizationHeader)
+                    .retrieve()
+                    .body(DashboardProvinceDto.class);
+        } catch (RestClientResponseException exception) {
+            throw new ResponseStatusException(exception.getStatusCode(), buildDownstreamMessage(exception), exception);
+        } catch (RestClientException exception) {
+            throw new ResponseStatusException(BAD_GATEWAY, SERVICE_UNAVAILABLE_MESSAGE, exception);
+        }
+    }
+
+    public DashboardRegionDto findRegionById(Long regionId) {
+        try {
+            String authorizationHeader = resolveAuthorizationHeader();
+            if (authorizationHeader == null || authorizationHeader.isBlank()) {
+                throw new ResponseStatusException(UNAUTHORIZED, MISSING_AUTHORIZATION_MESSAGE);
+            }
+            return restClient.get()
+                    .uri("/regions/{id}", regionId)
+                    .header(HttpHeaders.AUTHORIZATION, authorizationHeader)
+                    .retrieve()
+                    .body(DashboardRegionDto.class);
+        } catch (RestClientResponseException exception) {
+            throw new ResponseStatusException(exception.getStatusCode(), buildDownstreamMessage(exception), exception);
+        } catch (RestClientException exception) {
+            throw new ResponseStatusException(BAD_GATEWAY, SERVICE_UNAVAILABLE_MESSAGE, exception);
+        }
+    }
+
     private <T> List<T> executeListRequest(String uri, ParameterizedTypeReference<List<T>> bodyType) {
         try {
             RestClient.RequestHeadersSpec<?> request = restClient.get().uri(uri);
