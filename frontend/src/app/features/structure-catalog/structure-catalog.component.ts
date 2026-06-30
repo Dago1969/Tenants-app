@@ -82,6 +82,12 @@ export class StructureCatalogComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    const routeStructureType = String(this.route.snapshot.data['structureType'] ?? '');
+    if (routeStructureType === 'ASL') {
+      void this.router.navigateByUrl('/structures/asl');
+      return;
+    }
+
     const routeTitleKey = this.route.snapshot.data['titleKey'];
     if (routeTitleKey) {
       this.titleKey = routeTitleKey as MessageKey;
@@ -96,6 +102,10 @@ export class StructureCatalogComponent implements OnInit {
     return t(key);
   }
 
+  isAslType(): boolean {
+    return this.currentType?.code === 'ASL';
+  }
+
   isEditMode(): boolean {
     return typeof this.formModel.id === 'number';
   }
@@ -105,6 +115,10 @@ export class StructureCatalogComponent implements OnInit {
   }
 
   startCreate(): void {
+    if (this.isAslType()) {
+      return;
+    }
+
     const manageRouteBase = this.getManageRouteBase();
     if (this.selectedStructureId !== null && manageRouteBase) {
       void this.router.navigateByUrl(manageRouteBase);
@@ -150,6 +164,10 @@ export class StructureCatalogComponent implements OnInit {
   }
 
   delete(structure: StructureDto): void {
+    if (this.isAslType()) {
+      return;
+    }
+
     if (typeof structure.id !== 'number') {
       return;
     }
@@ -170,6 +188,10 @@ export class StructureCatalogComponent implements OnInit {
 
   save(): void {
     if (!this.currentType || this.saving) {
+      return;
+    }
+
+    if (this.isAslType() && !this.isEditMode()) {
       return;
     }
 

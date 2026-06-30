@@ -42,6 +42,8 @@ qtm:
   dashboard:
     api-base-url: http://localhost:8086/api
     frontend-base-url: http://localhost:4200
+  ticket:
+    api-base-url: http://localhost:8084/api/ticket
   frontend:
     base-url: http://localhost:4201
   otp:

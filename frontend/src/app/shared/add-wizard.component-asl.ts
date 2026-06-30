@@ -42,8 +42,8 @@ import { NotificationService } from './notification.service';
       <ng-container [ngSwitch]="step">
         <form *ngSwitchCase="1" (ngSubmit)="nextStep()" #form1="ngForm">
           <div class="form-row">
-            <label>{{ translate('structures.field.denom') }}<span class="required-asterisk">*</span><input type="text" name="name" [(ngModel)]="model.name" required /></label>
-            <label>{{ translate('structures.field.codice') }}<span class="required-asterisk">*</span><input type="text" name="code" [(ngModel)]="model.code" required /></label>
+            <label>{{ translate('structures.field.denom') }}<span class="required-asterisk">*</span><input type="text" name="name" [(ngModel)]="model.name" required [disabled]="true" /></label>
+            <label>{{ translate('structures.field.codice') }}<span class="required-asterisk">*</span><input type="text" name="code" [(ngModel)]="model.code" required [disabled]="true" /></label>
             <label>{{ translate('structures.field.structureType') }}<span class="required-asterisk">*</span>
               <div style="margin-top:8px;font-weight:600;color:#1890ff;">ASL</div>
             </label>
@@ -51,19 +51,19 @@ import { NotificationService } from './notification.service';
 
           <div class="form-row">
             <label>{{ translate('structures.field.regione') }}<span class="required-asterisk">*</span>
-              <select class="search-filter-select" name="regionId" [(ngModel)]="model.regionId" (change)="onRegioneChange()" required>
+              <select class="search-filter-select" name="regionId" [(ngModel)]="model.regionId" (change)="onRegioneChange()" required [disabled]="true">
                 <option value="">{{ translate('structures.select') }}</option>
                 <option *ngFor="let regione of regioni" [value]="regione.id">{{ regione.name }}</option>
               </select>
             </label>
             <label>{{ translate('structures.field.provincia') }}<span class="required-asterisk">*</span>
-              <select class="search-filter-select" name="provinceId" [(ngModel)]="model.provinceId" (change)="onProvinciaChange()" [disabled]="!province.length" required>
+              <select class="search-filter-select" name="provinceId" [(ngModel)]="model.provinceId" (change)="onProvinciaChange()" [disabled]="true" required>
                 <option value="">{{ translate('structures.select') }}</option>
                 <option *ngFor="let provincia of province" [value]="provincia.id">{{ provincia.name }}</option>
               </select>
             </label>
             <label>{{ translate('structures.field.comune') }}<span class="required-asterisk">*</span>
-              <select class="search-filter-select" name="cityId" [(ngModel)]="model.cityId" (change)="onComuneChange()" [disabled]="!comuni.length" required>
+              <select class="search-filter-select" name="cityId" [(ngModel)]="model.cityId" (change)="onComuneChange()" [disabled]="true" required>
                 <option value="">{{ translate('structures.select') }}</option>
                 <option *ngFor="let comune of comuni" [value]="comune.id">{{ comune.name }}</option>
               </select>
@@ -72,30 +72,20 @@ import { NotificationService } from './notification.service';
 
           <div class="form-row">
             <label>{{ translate('structures.field.address') }}<span class="required-asterisk">*</span>
-              <input type="text" name="address" [(ngModel)]="model.address" required autocomplete="off" />
+              <input type="text" name="address" [(ngModel)]="model.address" required autocomplete="off" [disabled]="true" />
             </label>
             <label>{{ translate('structures.field.cap') }}<span class="required-asterisk">*</span>
-              <input type="text" name="cap" [(ngModel)]="model.cap" maxlength="10" required autocomplete="off" />
+              <input type="text" name="cap" [(ngModel)]="model.cap" maxlength="10" required autocomplete="off" [disabled]="true" />
             </label>
             <label>{{ translate('structures.field.phone') }}<span class="required-asterisk">*</span>
               <div class="phone-input-group phone-input-group-intl">
-                <input #phoneInputElement type="tel" inputmode="tel" name="phone" [ngModel]="model.phone" (ngModelChange)="onPhoneModelChange($event)" required autocomplete="off" class="phone-number-input" />
+                <input #phoneInputElement type="tel" inputmode="tel" name="phone" [ngModel]="model.phone" (ngModelChange)="onPhoneModelChange($event)" required autocomplete="off" class="phone-number-input" [disabled]="true" />
               </div>
             </label>
           </div>
 
-          <div class="form-row">
-            <label>{{ translate('structures.field.googleAddress') }}
-              <gmpx-place-autocomplete
-                style="width:100%"
-                input-attr="{name: 'googleAddress', required: true, autocomplete: 'off'}"
-                (gmpxPlaceSelect)="onPlaceSelected($event)"
-              ></gmpx-place-autocomplete>
-            </label>
-          </div>
-
           <div class="form-row" style="justify-content: flex-end;">
-            <button class="btn btn-primary" type="submit" [disabled]="!form1.valid">{{ translate('crud.actions.next') }}</button>
+            <button class="btn btn-primary" type="submit">{{ translate('crud.actions.next') }}</button>
           </div>
         </form>
 
@@ -128,7 +118,7 @@ import { NotificationService } from './notification.service';
           <h4>{{ translate('structures.step.specificData') }}</h4>
           <div class="form-row">
             <label>{{ translate('structures.field.hospitalPharmacy') }}
-              <select name="hospitalPharmacy" [(ngModel)]="model.hospitalPharmacyIds" multiple required style="min-width:300px; min-height: 80px;">
+              <select name="hospitalPharmacy" [(ngModel)]="model.hospitalPharmacyIds" multiple required style="min-width:300px; min-height: 80px;" [disabled]="true">
                 <option *ngFor="let pharmacy of hospitalPharmaciesList" [ngValue]="pharmacy.id">{{ pharmacy.name }} ({{ pharmacy.city }})</option>
               </select>
             </label>
@@ -364,6 +354,10 @@ export class AddWizardComponentAsl implements OnInit, OnDestroy {
     this.loadRegioni();
     this.loadReferents();
     this.loadHospitalPharmacies();
+    if (!this.isEditMode()) {
+      this.close.emit();
+      return;
+    }
     this.loadStructureForEdit();
   }
 
@@ -488,8 +482,13 @@ export class AddWizardComponentAsl implements OnInit, OnDestroy {
   }
 
   save(): void {
+    if (!this.isEditMode() || this.structureId === null) {
+      this.close.emit();
+      return;
+    }
+
     const payload: StructureDto = {
-      id: this.model.id ?? undefined,
+      id: this.structureId,
       name: this.model.name,
       code: this.model.code,
       regionId: this.model.regionId,
@@ -511,21 +510,15 @@ export class AddWizardComponentAsl implements OnInit, OnDestroy {
       structureType: 'ASL'
     };
 
-    const request = this.isEditMode() && this.structureId !== null
-      ? this.structureApi.updateStructure(this.structureId, payload)
-      : this.structureApi.createStructure(payload);
+    const request = this.structureApi.updateStructure(this.structureId, payload);
 
     request.subscribe({
       next: () => {
-        this.notificationService.showSuccess(
-          this.translate(this.isEditMode() ? 'crud.success.update' : 'crud.success.create')
-        );
+        this.notificationService.showSuccess(this.translate('crud.success.update'));
         this.close.emit();
       },
       error: () => {
-        this.notificationService.showError(
-          this.translate(this.isEditMode() ? 'crud.error.update' : 'crud.error.create')
-        );
+        this.notificationService.showError(this.translate('crud.error.update'));
       }
     });
   }

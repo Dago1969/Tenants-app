@@ -1,5 +1,7 @@
 package com.qtm.tenants.structure.service;
 
+import com.qtm.commonlib.dto.ASLDto;
+import com.qtm.tenants.referent.dto.ReferentDto;
 import com.qtm.tenants.structure.StructureType;
 import com.qtm.tenants.structure.dto.StructureDto;
 import com.qtm.tenants.structure.dto.StructureParentOptionDto;
@@ -12,15 +14,18 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.CONFLICT;
+import static org.springframework.http.HttpStatus.METHOD_NOT_ALLOWED;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 /**
@@ -30,12 +35,20 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 @RequiredArgsConstructor
 public class StructureService {
 
+    private static final String ASL_TYPE_CODE = "ASL";
+    private static final String HOSPITAL_TYPE_CODE = "HOSPITAL";
+
     private final StructureRepository structureRepository;
     private final StructureMapper structureMapper;
     private final StructureTypeRegistry structureTypeRegistry;
+    private final DashboardAslClient dashboardAslClient;
+    private final TicketAslClient ticketAslClient;
 
     @Transactional
     public StructureDto create(StructureDto structureDto) {
+        if (isAslType(structureDto.getStructureType())) {
+            throw new ResponseStatusException(METHOD_NOT_ALLOWED, "L'inserimento manuale delle ASL non è consentito");
+        }
         StructureType structureType = resolveStructureType(structureDto.getStructureType());
         validateCodeUniqueness(structureDto.getCode(), null);
         StructureEntity entity = structureMapper.toEntity(structureDto);
@@ -58,6 +71,9 @@ public class StructureService {
             String city,
             Boolean active
     ) {
+        if (isAslType(structureTypeCode)) {
+            return findAllRemoteAsls(code, name, city, active);
+        }
         List<StructureEntity> entities = resolveEntities(structureTypeCode, parentStructureId).stream()
             .filter(entity -> matchesFilter(entity.getCode(), code))
             .filter(entity -> matchesFilter(entity.getName(), name))
@@ -69,16 +85,25 @@ public class StructureService {
 
     @Transactional(readOnly = true)
     public StructureDto findById(Long id) {
+        if (belongsToRemoteAsl(id)) {
+            return findRemoteAslById(id);
+        }
         return toDto(findEntityById(id));
     }
 
     @Transactional(readOnly = true)
     public String findStructureTypeCode(Long id) {
+        if (belongsToRemoteAsl(id)) {
+            return ASL_TYPE_CODE;
+        }
         return findEntityById(id).getStructureType();
     }
 
     @Transactional
     public StructureDto update(Long id, StructureDto structureDto) {
+        if (isAslType(structureDto.getStructureType())) {
+            return updateRemoteAslReferentsOnly(id, structureDto);
+        }
         StructureEntity current = findEntityById(id);
         StructureType structureType = resolveStructureType(structureDto.getStructureType());
         validateCodeUniqueness(structureDto.getCode(), id);
@@ -89,6 +114,9 @@ public class StructureService {
 
     @Transactional
     public void delete(Long id) {
+        if (belongsToRemoteAsl(id)) {
+            throw new ResponseStatusException(METHOD_NOT_ALLOWED, "L'eliminazione delle ASL da TENAPP non è consentita");
+        }
         StructureEntity entity = findEntityById(id);
         boolean hasChildren = !structureRepository.findAllByParentStructureIdOrderByNameAsc(id).isEmpty();
         if (hasChildren) {
@@ -102,6 +130,12 @@ public class StructureService {
         StructureType structureType = resolveStructureType(structureTypeCode);
         if (structureType.getParentTypeCode() == null) {
             return List.of();
+        }
+
+        if (HOSPITAL_TYPE_CODE.equalsIgnoreCase(structureType.getCode())) {
+            return findAllRemoteAsls(null, null, null, Boolean.TRUE).stream()
+                    .map(this::toParentOptionDto)
+                    .toList();
         }
 
         return structureRepository.findAllByStructureTypeOrderByNameAsc(structureType.getParentTypeCode()).stream()
@@ -132,6 +166,122 @@ public class StructureService {
         return structureRepository.findAll().stream()
                 .sorted(structureImportanceComparator())
                 .toList();
+    }
+
+    private List<StructureDto> findAllRemoteAsls(String code, String name, String city, Boolean active) {
+        return dashboardAslClient.findAllAssociated().stream()
+                .map(asl -> buildRemoteAslDto(asl.getId()))
+                .filter(dto -> matchesFilter(dto.getCode(), code))
+                .filter(dto -> matchesFilter(dto.getName(), name))
+                .filter(dto -> matchesFilter(dto.getCity(), city))
+                .filter(dto -> active == null || dto.isActive() == active)
+                .sorted(Comparator.comparing(StructureDto::getName, String.CASE_INSENSITIVE_ORDER))
+                .toList();
+    }
+
+    private StructureDto findRemoteAslById(Long id) {
+        if (id == null) {
+            throw new ResponseStatusException(NOT_FOUND, "Struttura non trovata");
+        }
+        return buildRemoteAslDto(id);
+    }
+
+    private StructureDto updateRemoteAslReferentsOnly(Long id, StructureDto structureDto) {
+        StructureDto remoteAsl = findRemoteAslById(id);
+        StructureEntity localShadow = structureRepository.findByCode(remoteAsl.getCode())
+                .orElseGet(() -> createAslShadowEntity(remoteAsl));
+
+        localShadow.setReferents(mapReferentDtos(structureDto.getReferents()));
+        StructureEntity saved = structureRepository.save(localShadow);
+
+        StructureDto refreshed = buildRemoteAslDto(id);
+        refreshed.setReferents(structureMapper.toDto(saved, null).getReferents());
+        return refreshed;
+    }
+
+    private StructureDto buildRemoteAslDto(Long remoteAslId) {
+        ASLDto remoteDetail = Objects.requireNonNull(ticketAslClient.findById(remoteAslId), "ASL remota non trovata");
+        StructureType structureType = structureTypeRegistry.getRequiredByCode(ASL_TYPE_CODE);
+        StructureEntity localShadow = remoteDetail.getCodiceAzienda() == null
+                ? null
+                : structureRepository.findByCode(remoteDetail.getCodiceAzienda()).orElse(null);
+
+        StructureDto dto = new StructureDto();
+        dto.setId(remoteDetail.getId());
+        dto.setCode(remoteDetail.getCodiceAzienda());
+        dto.setName(remoteDetail.getDenominazioneAzienda());
+        dto.setSelectionLabel(remoteDetail.getDenominazioneAzienda() + " - " + structureType.getDescription());
+        dto.setDescription(localShadow != null ? localShadow.getDescription() : null);
+        dto.setAddress(remoteDetail.getIndirizzo());
+        dto.setCap(remoteDetail.getCap());
+        dto.setCityId(remoteDetail.getCityId());
+        dto.setPhone(remoteDetail.getTelefono());
+        dto.setEmail(remoteDetail.getEmail());
+        dto.setActive(localShadow == null || Boolean.TRUE.equals(localShadow.getActive()));
+        dto.setStructureType(structureType.getCode());
+        dto.setStructureTypeDescription(structureType.getDescription());
+        dto.setFunctionDescription(structureType.getFunctionDescription());
+        dto.setStructureTypeDisplayOrder(structureType.getDisplayOrder());
+        dto.setParentStructureId(null);
+        dto.setParentStructureName(null);
+        dto.setReferents(localShadow == null ? new ArrayList<>() : structureMapper.toDto(localShadow, null).getReferents());
+        dto.setPharmacies(new ArrayList<>());
+        return dto;
+    }
+
+    private StructureEntity createAslShadowEntity(StructureDto remoteAsl) {
+        StructureEntity entity = new StructureEntity();
+        entity.setCode(remoteAsl.getCode());
+        entity.setName(remoteAsl.getName());
+        entity.setDescription(remoteAsl.getDescription());
+        entity.setAddress(remoteAsl.getAddress());
+        entity.setCap(remoteAsl.getCap());
+        entity.setCityId(remoteAsl.getCityId());
+        entity.setCity(remoteAsl.getCity());
+        entity.setProvinceId(remoteAsl.getProvinceId());
+        entity.setProvince(remoteAsl.getProvince());
+        entity.setRegionId(remoteAsl.getRegionId());
+        entity.setRegion(remoteAsl.getRegion());
+        entity.setPhone(remoteAsl.getPhone());
+        entity.setEmail(remoteAsl.getEmail());
+        entity.setActive(true);
+        entity.setStructureType(ASL_TYPE_CODE);
+        entity.setReferents(new ArrayList<>());
+        entity.setPharmacies(new ArrayList<>());
+        return entity;
+    }
+
+    private List<com.qtm.tenants.referent.entity.ReferentEntity> mapReferentDtos(List<ReferentDto> referents) {
+        StructureDto referentCarrier = new StructureDto();
+        referentCarrier.setCode("TEMP");
+        referentCarrier.setName("TEMP");
+        referentCarrier.setAddress("TEMP");
+        referentCarrier.setStructureType(ASL_TYPE_CODE);
+        referentCarrier.setReferents(referents == null ? List.of() : referents);
+        return structureMapper.toEntity(referentCarrier).getReferents();
+    }
+
+    private StructureParentOptionDto toParentOptionDto(StructureDto dto) {
+        return new StructureParentOptionDto(
+                Objects.requireNonNull(dto.getId(), "ASL remota senza id"),
+                dto.getCode(),
+                dto.getName(),
+                dto.getStructureType(),
+                dto.getStructureTypeDescription()
+        );
+    }
+
+    private boolean isAslType(String structureTypeCode) {
+        return ASL_TYPE_CODE.equalsIgnoreCase(structureTypeCode == null ? "" : structureTypeCode.trim());
+    }
+
+    private boolean belongsToRemoteAsl(Long id) {
+        if (id == null) {
+            return false;
+        }
+        return dashboardAslClient.findAllAssociated().stream()
+                .map(ASLDto::getId)
+                .anyMatch(id::equals);
     }
 
     private List<StructureDto> toDtos(List<StructureEntity> entities) {

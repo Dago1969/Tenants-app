@@ -6,7 +6,7 @@
         <h2>{{ translate(titleKey) }}</h2>
         <p class="structure-type-description" *ngIf="currentType">{{ currentType.description }}</p>
       </div>
-      <button class="btn btn-primary" type="button" (click)="startCreate()">
+      <button class="btn btn-primary" type="button" (click)="startCreate()" *ngIf="!isAslType()">
         <span class="icon material-icons">add</span> {{ translate('crud.actions.new') }}
       </button>
     </header>
@@ -93,10 +93,10 @@
           </label>
 
           <div class="structure-actions">
-            <button class="structure-secondary-btn" type="button" (click)="startCreate()">
+            <button class="structure-secondary-btn" type="button" (click)="startCreate()" *ngIf="!isAslType()">
               {{ translate('crud.actions.reset') }}
             </button>
-            <button class="structure-primary-btn" type="submit" [disabled]="saving">
+            <button class="structure-primary-btn" type="submit" [disabled]="saving || (isAslType() && !isEditMode())">
               {{ translate(isEditMode() ? 'crud.actions.update' : 'crud.actions.create') }}
             </button>
           </div>
@@ -120,7 +120,7 @@
             </div>
             <div class="structure-list-actions">
               <button class="structure-icon-btn" type="button" (click)="edit(structure)">✎</button>
-              <button class="structure-icon-btn structure-icon-btn-danger" type="button" (click)="delete(structure)">⌫</button>
+              <button class="structure-icon-btn structure-icon-btn-danger" type="button" (click)="delete(structure)" *ngIf="!isAslType()">⌫</button>
             </div>
           </article>
         </div>

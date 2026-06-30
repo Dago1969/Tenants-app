@@ -120,6 +120,30 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
     this.moduleCode = String(this.route.snapshot.data['moduleCode'] ?? STRUCTURE_MODULE_CODES.GENERIC);
     this.popupStructureType = this.normalizePopupStructureType(structureType);
     this.fixedParams = { structureType };
+    if (this.popupStructureType === 'ASL') {
+      this.showCreateAction = false;
+      this.filters = [
+        { key: 'code', labelKey: 'structures.field.code', type: 'text' },
+        { key: 'name', labelKey: 'structures.field.name', type: 'text' },
+        {
+          key: 'active',
+          labelKey: 'search.column.status',
+          type: 'select',
+          options: [
+            { value: 'true', label: 'status.attivo' },
+            { value: 'false', label: 'status.inattivo' }
+          ]
+        }
+      ];
+      this.resultColumns = [
+        { key: 'code', labelKey: 'structures.field.code', type: 'text' },
+        { key: 'name', labelKey: 'structures.field.name', type: 'text' },
+        { key: 'address', labelKey: 'structures.field.address', type: 'text' },
+        { key: 'email', labelKey: 'structures.field.email', type: 'text' },
+        { key: 'phone', labelKey: 'structures.field.phone', type: 'text' },
+        { key: 'active', labelKey: 'search.column.status', type: 'text' }
+      ];
+    }
     if (this.isPopupWizardStructureType(this.popupStructureType)) {
       this.createRoute = '';
       this.detailRouteBase = this.resolveDetailRouteBase(this.popupStructureType);
@@ -163,6 +187,9 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
 
   openStructureWizard(structureId?: string | number) {
     this.selectedStructureId = this.normalizeStructureId(structureId);
+    if (this.popupStructureType === 'ASL' && this.selectedStructureId === null) {
+      return;
+    }
     this.showStructureWizard = true;
     this.cdr.detectChanges();
   }
