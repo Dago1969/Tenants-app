@@ -7,6 +7,7 @@ import { StructureApiService, StructureDto } from '../core/structure-api.service
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import intlTelInput, { type AllOptions, type Iti } from 'intl-tel-input';
+import { Select2, type Select2Data, type Select2Option } from 'ng-select2-component';
 import { QtmStepModalComponent } from './qtm-step-modal.component';
 import { NotificationService } from './notification.service';
 
@@ -16,7 +17,7 @@ import { NotificationService } from './notification.service';
 @Component({
   selector: 'add-wizard-component-asl',
   standalone: true,
-  imports: [CommonModule, FormsModule, QtmStepModalComponent],
+  imports: [CommonModule, FormsModule, Select2, QtmStepModalComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <qtm-step-modal
@@ -93,24 +94,41 @@ import { NotificationService } from './notification.service';
           <h4>{{ translate('structures.step.contacts') }}</h4>
           <div class="form-row" style="align-items: flex-end; gap: 1rem;">
             <label style="flex:1;">{{ translate('structures.field.referents') }}
-              <select name="referents" [(ngModel)]="model.referents" [compareWith]="compareReferentsById" multiple required style="min-width:300px; min-height: 80px;">
-                <option *ngFor="let ref of referentsList" [ngValue]="ref">{{ ref.firstName }} {{ ref.lastName }} ({{ ref.role }})</option>
-              </select>
+              <select2 [data]="referentsSelect2Data" [(ngModel)]="selectedReferentIds" (ngModelChange)="onSelectedReferentsChange($event)" [multiple]="true" placeholder="{{ translate('structures.select') }}" style="min-width:300px; min-height: 80px;"></select2>
             </label>
             <button type="button" class="btn btn-secondary" (click)="showAddReferent = !showAddReferent">{{ translate('referent.actions.add') }}</button>
           </div>
-          <div class="form-row" *ngIf="showAddReferent" style="margin-top: 1rem; border: 1px solid #eee; padding: 1rem; border-radius: 6px; background: #fafbfc;">
-            <form (ngSubmit)="addReferent()" #addReferentForm="ngForm" style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end; width: 100%;">
-              <input name="firstName" [(ngModel)]="newReferent.firstName" required placeholder="{{ translate('referent.field.firstName') }}" class="form-control" style="width: 120px;" />
-              <input name="lastName" [(ngModel)]="newReferent.lastName" required placeholder="{{ translate('referent.field.lastName') }}" class="form-control" style="width: 120px;" />
-              <input name="role" [(ngModel)]="newReferent.role" placeholder="{{ translate('referent.field.role') }}" class="form-control" style="width: 120px;" />
-              <input name="email" [(ngModel)]="newReferent.email" required placeholder="{{ translate('referent.field.email') }}" class="form-control" style="width: 180px;" type="email" />
-              <div class="phone-input-group phone-input-group-intl" style="width: 140px;">
-                <input #referentPhoneInputElement name="phone" [ngModel]="newReferent.phone" (ngModelChange)="onReferentPhoneModelChange($event)" required placeholder="{{ translate('referent.field.phone') }}" class="form-control phone-number-input" type="tel" inputmode="tel" autocomplete="off" />
-              </div>
-              <button type="submit" class="btn btn-primary" [disabled]="!addReferentForm.valid">{{ translate('referent.actions.save') }}</button>
-              <button type="button" class="btn btn-outline" (click)="showAddReferent = false">{{ translate('crud.actions.cancel') }}</button>
-            </form>
+          <div class="form-row" *ngIf="showAddReferent" style="margin-top: 1rem;">
+            <div class="referent-editor-shell">
+              <form (ngSubmit)="addReferent()" #addReferentForm="ngForm" class="referent-editor-form">
+                <div class="referent-editor-field">
+                  <label for="referentFirstName">{{ translate('referent.field.firstName') }}</label>
+                  <input id="referentFirstName" name="firstName" [(ngModel)]="newReferent.firstName" required class="crud-input referent-editor-input" />
+                </div>
+                <div class="referent-editor-field">
+                  <label for="referentLastName">{{ translate('referent.field.lastName') }}</label>
+                  <input id="referentLastName" name="lastName" [(ngModel)]="newReferent.lastName" required class="crud-input referent-editor-input" />
+                </div>
+                <div class="referent-editor-field">
+                  <label for="referentRole">{{ translate('referent.field.role') }}</label>
+                  <input id="referentRole" name="role" [(ngModel)]="newReferent.role" class="crud-input referent-editor-input" />
+                </div>
+                <div class="referent-editor-field">
+                  <label for="referentEmail">{{ translate('referent.field.email') }}</label>
+                  <input id="referentEmail" name="email" [(ngModel)]="newReferent.email" required class="crud-input referent-editor-input referent-editor-input-email" type="email" />
+                </div>
+                <div class="referent-editor-field">
+                  <label for="referentPhone">{{ translate('referent.field.phone') }}</label>
+                  <div class="phone-input-group phone-input-group-intl referent-editor-input-phone">
+                    <input id="referentPhone" #referentPhoneInputElement name="phone" [ngModel]="newReferent.phone" (ngModelChange)="onReferentPhoneModelChange($event)" required class="crud-input referent-editor-input phone-number-input" type="tel" inputmode="tel" autocomplete="off" />
+                  </div>
+                </div>
+                <div class="referent-editor-actions">
+                  <button type="submit" class="crud-btn crud-btn-primary" [disabled]="!addReferentForm.valid">{{ translate('referent.actions.save') }}</button>
+                  <button type="button" class="crud-btn crud-btn-secondary" (click)="showAddReferent = false">{{ translate('crud.actions.cancel') }}</button>
+                </div>
+              </form>
+            </div>
           </div>
         </form>
 
@@ -259,6 +277,7 @@ export class AddWizardComponentAsl implements OnInit, OnDestroy {
         next: (created) => {
           this.referentsList = [...this.referentsList, created];
           this.model.referents = [...(this.model.referents || []), created];
+          this.updateReferentsSelect2Data();
           this.resetNewReferent();
           this.showAddReferent = false;
         },
@@ -284,6 +303,8 @@ export class AddWizardComponentAsl implements OnInit, OnDestroy {
   stepDescriptions: string[] = [];
   hospitalPharmaciesList: PharmacyDto[] = [];
   referentsList: ReferentDto[] = [];
+  referentsSelect2Data: Select2Data = [];
+  selectedReferentIds: Array<number | string> = [];
 
   model: {
     id: number | null;
@@ -419,6 +440,7 @@ export class AddWizardComponentAsl implements OnInit, OnDestroy {
       next: (data) => {
         this.referentsList = data;
         this.model.referents = this.mapReferentsById(this.model.referents);
+        this.updateReferentsSelect2Data();
       },
       error: () => {
         this.referentsList = [];
@@ -559,6 +581,9 @@ export class AddWizardComponentAsl implements OnInit, OnDestroy {
           structureType: structure.structureType ?? 'ASL'
         };
 
+        // sync select2 selection with loaded referents
+        this.updateReferentsSelect2Data();
+
         if (this.model.regionId) {
           this.loadProvinceOptions(this.model.regionId, this.model.provinceId, this.model.cityId);
         }
@@ -626,6 +651,18 @@ export class AddWizardComponentAsl implements OnInit, OnDestroy {
     return referents.map((referent) => {
       return this.referentsList.find((candidate) => candidate.id === referent.id) ?? referent;
     });
+  }
+
+  private updateReferentsSelect2Data(): void {
+    this.referentsSelect2Data = this.referentsList.map((r) => ({ value: r.id, label: `${r.firstName || ''} ${r.lastName || ''} (${r.role || ''})` } as Select2Option));
+    const ids = (this.model.referents ?? []).map((r) => r.id).filter((id) => id !== undefined && id !== null) as Array<number | string>;
+    this.selectedReferentIds = ids;
+  }
+
+  onSelectedReferentsChange(next: Array<number | string> | null | undefined): void {
+    const ids = Array.isArray(next) ? next : [];
+    this.selectedReferentIds = ids;
+    this.model.referents = this.referentsList.filter((r) => ids.includes(r.id as any));
   }
 
   private toSelectedPharmacies(): Array<{ id?: number }> {
