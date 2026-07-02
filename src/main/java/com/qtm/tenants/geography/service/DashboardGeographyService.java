@@ -18,6 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.springframework.http.HttpStatus.BAD_GATEWAY;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
@@ -119,6 +120,26 @@ public class DashboardGeographyService {
             throw new ResponseStatusException(BAD_GATEWAY, SERVICE_UNAVAILABLE_MESSAGE, exception);
         }
     }
+
+    public DashboardCityDto createCity(Map<String, Object> payload) {
+        try {
+            String authorizationHeader = resolveAuthorizationHeader();
+            if (authorizationHeader == null || authorizationHeader.isBlank()) {
+                throw new ResponseStatusException(UNAUTHORIZED, MISSING_AUTHORIZATION_MESSAGE);
+            }
+            return restClient.post()
+                    .uri("/cities")
+                    .header(HttpHeaders.AUTHORIZATION, authorizationHeader)
+                    .body(payload)
+                    .retrieve()
+                    .body(DashboardCityDto.class);
+        } catch (RestClientResponseException exception) {
+            throw new ResponseStatusException(exception.getStatusCode(), buildDownstreamMessage(exception), exception);
+        } catch (RestClientException exception) {
+            throw new ResponseStatusException(BAD_GATEWAY, SERVICE_UNAVAILABLE_MESSAGE, exception);
+        }
+    }
+    
 
     private <T> List<T> executeListRequest(String uri, ParameterizedTypeReference<List<T>> bodyType) {
         try {

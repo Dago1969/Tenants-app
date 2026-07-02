@@ -106,6 +106,10 @@ export class StructureCatalogComponent implements OnInit {
     return this.currentType?.code === 'ASL';
   }
 
+  isRemoteType(): boolean {
+    return this.currentType?.code === 'ASL' || this.currentType?.code === 'HOSPITAL';
+  }
+
   isEditMode(): boolean {
     return typeof this.formModel.id === 'number';
   }
@@ -115,7 +119,7 @@ export class StructureCatalogComponent implements OnInit {
   }
 
   startCreate(): void {
-    if (this.isAslType()) {
+    if (this.isRemoteType()) {
       return;
     }
 
@@ -164,7 +168,7 @@ export class StructureCatalogComponent implements OnInit {
   }
 
   delete(structure: StructureDto): void {
-    if (this.isAslType()) {
+    if (this.isRemoteType()) {
       return;
     }
 
@@ -191,7 +195,7 @@ export class StructureCatalogComponent implements OnInit {
       return;
     }
 
-    if (this.isAslType() && !this.isEditMode()) {
+    if (this.isRemoteType() && !this.isEditMode()) {
       return;
     }
 

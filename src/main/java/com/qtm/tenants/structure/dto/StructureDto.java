@@ -20,6 +20,9 @@ public class StructureDto {
     private String description;
     private String address;
     private String cap;
+    // Campi ausiliari per popolamento da sorgenti remote (es. QTMTicket)
+    private String comune;
+    private String siglaProvincia;
     private Long cityId;
     private String city;
     private Long provinceId;
@@ -36,6 +39,11 @@ public class StructureDto {
     private Integer structureTypeDisplayOrder;
     private Long parentStructureId;
     private String parentStructureName;
+    /**
+     * Indica che i dati della struttura provengono da QTMTicket (importati) e quindi
+     * dovrebbero essere trattati come non modificabili, eccetto i referenti.
+     */
+    private Boolean imported;
 
     /**
      * Lista di referenti associati alla struttura.

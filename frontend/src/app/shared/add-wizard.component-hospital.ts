@@ -42,8 +42,8 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
       <ng-container [ngSwitch]="step">
         <form *ngSwitchCase="1" (ngSubmit)="nextStep()" #form1="ngForm">
           <div class="form-row">
-            <label>{{ translate('structures.field.denom') }}<span class="required-asterisk">*</span><input type="text" name="name" [(ngModel)]="model.name" required /></label>
-            <label>{{ translate('structures.field.code') }}<span class="required-asterisk">*</span><input type="text" name="code" [(ngModel)]="model.code" required /></label>
+            <label>{{ translate('structures.field.denom') }}<span class="required-asterisk">*</span><input type="text" name="name" [(ngModel)]="model.name" required [disabled]="model.imported" /></label>
+            <label>{{ translate('structures.field.code') }}<span class="required-asterisk">*</span><input type="text" name="code" [(ngModel)]="model.code" required [disabled]="model.imported" /></label>
             <label>{{ translate('structures.field.structureType') }}<span class="required-asterisk">*</span>
               <div style="margin-top:8px;font-weight:600;color:#1890ff;">{{ translate('structures.type.hospital.label') }}</div>
             </label>
@@ -51,29 +51,29 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
 
           <div class="form-row">
             <label>{{ translate('structures.field.parentAsl') }}<span class="required-asterisk">*</span>
-              <select class="search-filter-select" name="parentStructureId" [(ngModel)]="model.parentStructureId" (ngModelChange)="onParentAslChange()" required>
+              <select class="search-filter-select" name="parentStructureId" [(ngModel)]="model.parentStructureId" (ngModelChange)="onParentAslChange()" required [disabled]="model.imported">
                 <option [ngValue]="null">{{ translate('structures.select') }}</option>
                 <option *ngFor="let asl of aslStructures" [ngValue]="asl.id">{{ asl.selectionLabel || asl.name }}</option>
               </select>
             </label>
-            </div>
+          </div>
 
           <div class="form-row">
             <label>{{ translate('structures.field.regione') }}<span class="required-asterisk">*</span>
-              <select class="search-filter-select" name="regionId" [(ngModel)]="model.regionId" (change)="onRegioneChange()" required>
+              <select class="search-filter-select" name="regionId" [(ngModel)]="model.regionId" (change)="onRegioneChange()" required [disabled]="model.imported">
                 <option value="">{{ translate('structures.select') }}</option>
                 <option *ngFor="let regione of regioni" [value]="regione.id">{{ regione.name }}</option>
               </select>
             </label>
             <label>{{ translate('structures.field.provincia') }}<span class="required-asterisk">*</span>
-              <select class="search-filter-select" name="provinceId" [(ngModel)]="model.provinceId" (change)="onProvinciaChange()" [disabled]="!province.length" required>
+              <select class="search-filter-select" name="provinceId" [(ngModel)]="model.provinceId" (change)="onProvinciaChange()" [disabled]="model.imported || !province.length" required>
                 <option value="">{{ translate('structures.select') }}</option>
                 <option *ngFor="let provincia of province" [value]="provincia.id">{{ provincia.name }}</option>
               </select>
             </label>
          
             <label>{{ translate('structures.field.comune') }}<span class="required-asterisk">*</span>
-              <select class="search-filter-select" name="cityId" [(ngModel)]="model.cityId" (change)="onComuneChange()" [disabled]="!comuni.length" required>
+              <select class="search-filter-select" name="cityId" [(ngModel)]="model.cityId" (change)="onComuneChange()" [disabled]="model.imported || !comuni.length" required>
                 <option value="">{{ translate('structures.select') }}</option>
                 <option *ngFor="let comune of comuni" [value]="comune.id">{{ comune.name }}</option>
               </select>
@@ -82,23 +82,23 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
 
           <div class="form-row">
             <label>{{ translate('structures.field.address') }}<span class="required-asterisk">*</span>
-              <input type="text" name="address" [(ngModel)]="model.address" required autocomplete="off" />
+              <input type="text" name="address" [(ngModel)]="model.address" required autocomplete="off" [disabled]="model.imported" />
             </label>
             <label>{{ translate('structures.field.cap') }}<span class="required-asterisk">*</span>
-              <input type="text" name="cap" [(ngModel)]="model.cap" maxlength="10" required autocomplete="off" />
+              <input type="text" name="cap" [(ngModel)]="model.cap" maxlength="10" required autocomplete="off" [disabled]="model.imported" />
             </label>
             <label>{{ translate('structures.field.phone') }}<span class="required-asterisk">*</span>
               <div class="phone-input-group phone-input-group-intl">
-                <input #phoneInputElement type="tel" inputmode="tel" name="phone" [ngModel]="model.phone" (ngModelChange)="onPhoneModelChange($event)" required autocomplete="off" class="phone-number-input" />
+                <input #phoneInputElement type="tel" inputmode="tel" name="phone" [ngModel]="model.phone" (ngModelChange)="onPhoneModelChange($event)" required autocomplete="off" class="phone-number-input" [disabled]="model.imported" />
               </div>
             </label>
-            </div>
+          </div>
 
           <div class="form-row">
             <label>{{ translate('structures.field.googleAddress') }}
               <gmpx-place-autocomplete
                 style="width:100%"
-                input-attr="{name: 'googleAddress', required: true, autocomplete: 'off'}"
+                input-attr="{name: 'googleAddress', required: true, autocomplete: 'off', disabled: model.imported}"
                 (gmpxPlaceSelect)="onPlaceSelected($event)"
               ></gmpx-place-autocomplete>
             </label>
@@ -323,6 +323,7 @@ export class AddWizardComponentHospital implements OnInit, OnDestroy {
     pharmacyIds: number[];
     structureType: string;
     googleAddress: string;
+    imported: boolean;
   } = {
     id: null,
     name: '',
@@ -345,6 +346,7 @@ export class AddWizardComponentHospital implements OnInit, OnDestroy {
     pharmacyIds: [],
     structureType: 'HOSPITAL',
     googleAddress: ''
+    , imported: false
   };
 
   constructor(
@@ -715,6 +717,7 @@ export class AddWizardComponentHospital implements OnInit, OnDestroy {
             .map((pharmacy) => pharmacy.id)
             .filter((pharmacyId): pharmacyId is number => typeof pharmacyId === 'number'),
           structureType: structure.structureType ?? 'HOSPITAL'
+          , imported: structure.imported ?? false
         };
 
         if (this.model.regionId) {

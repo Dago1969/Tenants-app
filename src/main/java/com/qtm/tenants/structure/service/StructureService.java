@@ -1,6 +1,7 @@
 package com.qtm.tenants.structure.service;
 
 import com.qtm.commonlib.dto.ASLDto;
+import com.qtm.commonlib.dto.HospitalDto;
 import com.qtm.tenants.referent.dto.ReferentDto;
 import com.qtm.tenants.structure.StructureType;
 import com.qtm.tenants.structure.dto.StructureDto;
@@ -13,6 +14,7 @@ import com.qtm.tenants.geography.service.DashboardGeographyService;
 import com.qtm.tenants.geography.dto.DashboardCityDto;
 import com.qtm.tenants.geography.dto.DashboardProvinceDto;
 import com.qtm.tenants.geography.dto.DashboardRegionDto;
+import com.qtm.tenants.geography.dto.GeographicOptionDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,13 +49,15 @@ public class StructureService {
     private final StructureTypeRegistry structureTypeRegistry;
     private final DashboardAslClient dashboardAslClient;
     private final TicketAslClient ticketAslClient;
+    private final DashboardHospitalClient dashboardHospitalClient;
+    private final TicketHospitalClient ticketHospitalClient;
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private DashboardGeographyService dashboardGeographyService;
 
     @Transactional
     public StructureDto create(StructureDto structureDto) {
-        if (isAslType(structureDto.getStructureType())) {
-            throw new ResponseStatusException(METHOD_NOT_ALLOWED, "L'inserimento manuale delle ASL non è consentito");
+        if (isAslType(structureDto.getStructureType()) || isHospitalType(structureDto.getStructureType())) {
+            throw new ResponseStatusException(METHOD_NOT_ALLOWED, "L'inserimento manuale delle ASL o degli Ospedali non è consentito");
         }
         StructureType structureType = resolveStructureType(structureDto.getStructureType());
         validateCodeUniqueness(structureDto.getCode(), null);
@@ -80,6 +84,10 @@ public class StructureService {
         if (isAslType(structureTypeCode)) {
             return findAllRemoteAsls(code, name, city, active);
         }
+
+        if (isHospitalType(structureTypeCode)) {
+            return findAllRemoteHospitals(code, name, city, active);
+        }
         List<StructureEntity> entities = resolveEntities(structureTypeCode, parentStructureId).stream()
             .filter(entity -> matchesFilter(entity.getCode(), code))
             .filter(entity -> matchesFilter(entity.getName(), name))
@@ -94,6 +102,11 @@ public class StructureService {
         if (belongsToRemoteAsl(id)) {
             return findRemoteAslById(id);
         }
+
+        if (belongsToRemoteHospital(id)) {
+            return findRemoteHospitalById(id);
+        }
+
         return toDto(findEntityById(id));
     }
 
@@ -102,6 +115,11 @@ public class StructureService {
         if (belongsToRemoteAsl(id)) {
             return ASL_TYPE_CODE;
         }
+
+        if (belongsToRemoteHospital(id)) {
+            return HOSPITAL_TYPE_CODE;
+        }
+
         return findEntityById(id).getStructureType();
     }
 
@@ -109,6 +127,10 @@ public class StructureService {
     public StructureDto update(Long id, StructureDto structureDto) {
         if (isAslType(structureDto.getStructureType())) {
             return updateRemoteAslReferentsOnly(id, structureDto);
+        }
+
+        if (isHospitalType(structureDto.getStructureType())) {
+            return updateRemoteHospitalReferentsOnly(id, structureDto);
         }
         StructureEntity current = findEntityById(id);
         StructureType structureType = resolveStructureType(structureDto.getStructureType());
@@ -120,8 +142,8 @@ public class StructureService {
 
     @Transactional
     public void delete(Long id) {
-        if (belongsToRemoteAsl(id)) {
-            throw new ResponseStatusException(METHOD_NOT_ALLOWED, "L'eliminazione delle ASL da TENAPP non è consentita");
+        if (belongsToRemoteAsl(id) || belongsToRemoteHospital(id)) {
+            throw new ResponseStatusException(METHOD_NOT_ALLOWED, "L'eliminazione delle strutture remote da TENAPP non è consentita");
         }
         StructureEntity entity = findEntityById(id);
         boolean hasChildren = !structureRepository.findAllByParentStructureIdOrderByNameAsc(id).isEmpty();
@@ -139,9 +161,9 @@ public class StructureService {
         }
 
         if (HOSPITAL_TYPE_CODE.equalsIgnoreCase(structureType.getCode())) {
-            return findAllRemoteAsls(null, null, null, Boolean.TRUE).stream()
-                    .map(this::toParentOptionDto)
-                    .toList();
+            return findAllRemoteHospitals(null, null, null, Boolean.TRUE).stream()
+                .map(this::toParentOptionDto)
+                .toList();
         }
 
         return structureRepository.findAllByStructureTypeOrderByNameAsc(structureType.getParentTypeCode()).stream()
@@ -185,11 +207,29 @@ public class StructureService {
                 .toList();
     }
 
+    private List<StructureDto> findAllRemoteHospitals(String code, String name, String city, Boolean active) {
+        return dashboardHospitalClient.findAllAssociated().stream()
+                .map(overview -> buildRemoteHospitalDto(overview.getId()))
+                .filter(dto -> matchesFilter(dto.getCode(), code))
+                .filter(dto -> matchesFilter(dto.getName(), name))
+                .filter(dto -> matchesFilter(dto.getCity(), city))
+                .filter(dto -> active == null || dto.isActive() == active)
+                .sorted(Comparator.comparing(StructureDto::getName, String.CASE_INSENSITIVE_ORDER))
+                .toList();
+    }
+
     private StructureDto findRemoteAslById(Long id) {
         if (id == null) {
             throw new ResponseStatusException(NOT_FOUND, "Struttura non trovata");
         }
         return buildRemoteAslDto(id);
+    }
+
+    private StructureDto findRemoteHospitalById(Long id) {
+        if (id == null) {
+            throw new ResponseStatusException(NOT_FOUND, "Struttura non trovata");
+        }
+        return buildRemoteHospitalDto(id);
     }
 
     private StructureDto updateRemoteAslReferentsOnly(Long id, StructureDto structureDto) {
@@ -201,6 +241,19 @@ public class StructureService {
         StructureEntity saved = structureRepository.save(localShadow);
 
         StructureDto refreshed = buildRemoteAslDto(id);
+        refreshed.setReferents(structureMapper.toDto(saved, null).getReferents());
+        return refreshed;
+    }
+
+    private StructureDto updateRemoteHospitalReferentsOnly(Long id, StructureDto structureDto) {
+        StructureDto remote = findRemoteHospitalById(id);
+        StructureEntity localShadow = structureRepository.findByCode(remote.getCode())
+                .orElseGet(() -> createHospitalShadowEntity(remote));
+
+        localShadow.setReferents(mapReferentDtosForHospital(structureDto.getReferents()));
+        StructureEntity saved = structureRepository.save(localShadow);
+
+        StructureDto refreshed = buildRemoteHospitalDto(id);
         refreshed.setReferents(structureMapper.toDto(saved, null).getReferents());
         return refreshed;
     }
@@ -262,6 +315,129 @@ public class StructureService {
         dto.setParentStructureName(null);
         dto.setReferents(localShadow == null ? new ArrayList<>() : structureMapper.toDto(localShadow, null).getReferents());
         dto.setPharmacies(new ArrayList<>());
+        dto.setImported(true);
+        return dto;
+    }
+
+    private StructureDto buildRemoteHospitalDto(Long remoteHospitalId) {
+        HospitalDto remoteDetail = Objects.requireNonNull(ticketHospitalClient.findById(remoteHospitalId), "Ospedale remoto non trovato");
+        StructureType structureType = structureTypeRegistry.getRequiredByCode(HOSPITAL_TYPE_CODE);
+        StructureEntity localShadow = remoteDetail.getCodiceStruttura() == null
+                ? null
+                : structureRepository.findByCode(remoteDetail.getCodiceStruttura()).orElse(null);
+
+        StructureDto dto = new StructureDto();
+        dto.setId(remoteDetail.getId());
+        dto.setCode(remoteDetail.getCodiceStruttura());
+        dto.setName(remoteDetail.getStruttura());
+        dto.setSelectionLabel(remoteDetail.getStruttura() + " - " + structureType.getDescription());
+        dto.setDescription(localShadow != null ? localShadow.getDescription() : null);
+        dto.setAddress(remoteDetail.getIndirizzo());
+        dto.setCap(null);
+        dto.setCityId(null);
+        dto.setCity(null);
+        dto.setProvinceId(null);
+        dto.setProvince(null);
+        dto.setRegionId(null);
+        dto.setRegion(null);
+        dto.setPhone(null);
+        dto.setEmail(null);
+        dto.setActive(localShadow == null || Boolean.TRUE.equals(localShadow.getActive()));
+        dto.setStructureType(structureType.getCode());
+        dto.setStructureTypeDescription(structureType.getDescription());
+        dto.setFunctionDescription(structureType.getFunctionDescription());
+        dto.setStructureTypeDisplayOrder(structureType.getDisplayOrder());
+        dto.setParentStructureId(null);
+        dto.setParentStructureName(null);
+        dto.setReferents(localShadow == null ? new ArrayList<>() : structureMapper.toDto(localShadow, null).getReferents());
+        dto.setPharmacies(new ArrayList<>());
+        // Se il record remoto fornisce direttamente comune + sigla_provincia, proviamo
+        // a risolvere province/city/region e valorizzare i campi nel dto.
+        dto.setImported(true);
+        dto.setParentStructureId(remoteDetail.getAslId());
+        try {
+            String comune = remoteDetail.getComune();
+            String siglaProv = remoteDetail.getSiglaProvincia();
+            if (comune != null && !comune.isBlank() && siglaProv != null && !siglaProv.isBlank() && dashboardGeographyService != null) {
+                // cerchiamo la provincia iterando le regioni e le loro province fino a trovare una corrispondenza
+                Long matchedProvinceId = null;
+                Long matchedRegionId = null;
+                for (GeographicOptionDto regionOpt : dashboardGeographyService.findRegions()) {
+                    for (GeographicOptionDto provOpt : dashboardGeographyService.findProvincesByRegionId(regionOpt.getId())) {
+                        if (provOpt.getName() != null && provOpt.getName().toLowerCase().contains(siglaProv.toLowerCase())) {
+                            matchedProvinceId = provOpt.getId();
+                            matchedRegionId = regionOpt.getId();
+                            break;
+                        }
+                    }
+                    if (matchedProvinceId != null) break;
+                }
+
+                if (matchedProvinceId != null) {
+                    // cerchiamo la città corrispondente nella provincia
+                    boolean foundCity = false;
+                    for (GeographicOptionDto cityOpt : dashboardGeographyService.findCitiesByProvinceId(matchedProvinceId)) {
+                        if (cityOpt.getName() != null && cityOpt.getName().equalsIgnoreCase(comune)) {
+                            dto.setCity(cityOpt.getName());
+                            dto.setCityId(cityOpt.getId());
+                            dto.setProvinceId(matchedProvinceId);
+                            DashboardProvinceDto province = dashboardGeographyService.findProvinceById(matchedProvinceId);
+                            if (province != null) {
+                                dto.setProvince(province.getName());
+                                Long regionId = province.getRegionId();
+                                dto.setRegionId(regionId);
+                                if (regionId != null) {
+                                    DashboardRegionDto region = dashboardGeographyService.findRegionById(regionId);
+                                    if (region != null) {
+                                        dto.setRegion(region.getName());
+                                    }
+                                }
+                            }
+                            foundCity = true;
+                            break;
+                        }
+                    }
+
+                    // se non troviamo la città non la creiamo; lasciamo cityId nullo e proseguiamo
+                }
+            }
+        } catch (Exception ex) {
+            org.slf4j.LoggerFactory.getLogger(StructureService.class).warn("Impossibile risolvere comune/sigla_provincia per Ospedale id={}", remoteHospitalId, ex);
+        }
+        if (remoteDetail.getAslId() != null) {
+            try {
+                com.qtm.commonlib.dto.ASLDto remoteAsl = ticketAslClient.findById(remoteDetail.getAslId());
+                if (remoteAsl != null) {
+                    dto.setParentStructureName(remoteAsl.getDenominazioneAzienda());
+                    Long cityId = remoteAsl.getCityId();
+                    if (cityId != null && dashboardGeographyService != null) {
+                        DashboardCityDto city = dashboardGeographyService.findCityById(cityId);
+                        if (city != null) {
+                            dto.setCity(city.getName());
+                            dto.setCityId(cityId);
+                            Long provinceId = city.getProvinceId();
+                            dto.setProvinceId(provinceId);
+                            if (provinceId != null) {
+                                DashboardProvinceDto province = dashboardGeographyService.findProvinceById(provinceId);
+                                if (province != null) {
+                                    dto.setProvince(province.getName());
+                                    Long regionId = province.getRegionId();
+                                    dto.setRegionId(regionId);
+                                    if (regionId != null) {
+                                        DashboardRegionDto region = dashboardGeographyService.findRegionById(regionId);
+                                        if (region != null) {
+                                            dto.setRegion(region.getName());
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (Exception ex) {
+                org.slf4j.LoggerFactory.getLogger(StructureService.class).warn("Impossibile recuperare dati geografici per ASL id={}", remoteDetail.getAslId(), ex);
+            }
+        }
         return dto;
     }
 
@@ -287,12 +463,44 @@ public class StructureService {
         return entity;
     }
 
+    private StructureEntity createHospitalShadowEntity(StructureDto remote) {
+        StructureEntity entity = new StructureEntity();
+        entity.setCode(remote.getCode());
+        entity.setName(remote.getName());
+        entity.setDescription(remote.getDescription());
+        entity.setAddress(remote.getAddress());
+        entity.setCap(remote.getCap());
+        entity.setCityId(remote.getCityId());
+        entity.setCity(remote.getCity());
+        entity.setProvinceId(remote.getProvinceId());
+        entity.setProvince(remote.getProvince());
+        entity.setRegionId(remote.getRegionId());
+        entity.setRegion(remote.getRegion());
+        entity.setPhone(remote.getPhone());
+        entity.setEmail(remote.getEmail());
+        entity.setActive(true);
+        entity.setStructureType(HOSPITAL_TYPE_CODE);
+        entity.setReferents(new ArrayList<>());
+        entity.setPharmacies(new ArrayList<>());
+        return entity;
+    }
+
     private List<com.qtm.tenants.referent.entity.ReferentEntity> mapReferentDtos(List<ReferentDto> referents) {
         StructureDto referentCarrier = new StructureDto();
         referentCarrier.setCode("TEMP");
         referentCarrier.setName("TEMP");
         referentCarrier.setAddress("TEMP");
         referentCarrier.setStructureType(ASL_TYPE_CODE);
+        referentCarrier.setReferents(referents == null ? List.of() : referents);
+        return structureMapper.toEntity(referentCarrier).getReferents();
+    }
+
+    private List<com.qtm.tenants.referent.entity.ReferentEntity> mapReferentDtosForHospital(List<ReferentDto> referents) {
+        StructureDto referentCarrier = new StructureDto();
+        referentCarrier.setCode("TEMP");
+        referentCarrier.setName("TEMP");
+        referentCarrier.setAddress("TEMP");
+        referentCarrier.setStructureType(HOSPITAL_TYPE_CODE);
         referentCarrier.setReferents(referents == null ? List.of() : referents);
         return structureMapper.toEntity(referentCarrier).getReferents();
     }
@@ -307,8 +515,21 @@ public class StructureService {
         );
     }
 
+    private boolean belongsToRemoteHospital(Long id) {
+        if (id == null) {
+            return false;
+        }
+        return dashboardHospitalClient.findAllAssociated().stream()
+                .map(h -> h.getId())
+                .anyMatch(id::equals);
+    }
+
     private boolean isAslType(String structureTypeCode) {
         return ASL_TYPE_CODE.equalsIgnoreCase(structureTypeCode == null ? "" : structureTypeCode.trim());
+    }
+
+    private boolean isHospitalType(String structureTypeCode) {
+        return HOSPITAL_TYPE_CODE.equalsIgnoreCase(structureTypeCode == null ? "" : structureTypeCode.trim());
     }
 
     private boolean belongsToRemoteAsl(Long id) {

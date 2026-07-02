@@ -19,6 +19,7 @@ export interface StructureDto {
   region?: string;
   phone: string;
   email?: string;
+  imported?: boolean;
   serviceCalendarHours?: string;
   active?: boolean;
   structureType?: string;
