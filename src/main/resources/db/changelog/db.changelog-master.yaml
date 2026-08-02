@@ -11,46 +11,57 @@ databaseChangeLog:
       file: 20260430-12-seed-reference-data.yaml
       relativeToChangelogFile: true
 
-  - include:
-      file: 20260511-01-add-nurse-consent-fields.yaml
-      relativeToChangelogFile: true
+# FIXME Francesco: migration referenziata ma assente dal repository; riabilitare l'include quando il file verra ripristinato.
+  # - include:
+  #     file: 20260511-01-add-nurse-consent-fields.yaml
+  #     relativeToChangelogFile: true
 
-  - include:
-      file: 20260512-01-therapeutic-plan-professional-assignments.yaml
-      relativeToChangelogFile: true
+# FIXME Francesco: migration referenziata ma assente dal repository; riabilitare l'include quando il file verra ripristinato.
+  # - include:
+  #     file: 20260512-01-therapeutic-plan-professional-assignments.yaml
+  #     relativeToChangelogFile: true
 
-  - include:
-      file: 20260515-03-seed-authorizations.yaml
-      relativeToChangelogFile: true
+# FIXME Francesco: migration referenziata ma assente dal repository; riabilitare l'include quando il file verra ripristinato.
+  # - include:
+  #     file: 20260515-03-seed-authorizations.yaml
+  #     relativeToChangelogFile: true
 
-  - include:
-      file: 20260515-04-add-nurse-userid.yaml
-      relativeToChangelogFile: true
+# FIXME Francesco: migration referenziata ma assente dal repository; riabilitare l'include quando il file verra ripristinato.
+  # - include:
+  #     file: 20260515-04-add-nurse-userid.yaml
+  #     relativeToChangelogFile: true
 
-  - include:
-      file: 20260516-01-create-appointment-tables.yaml
-      relativeToChangelogFile: true
+# FIXME Francesco: migration referenziata ma assente dal repository; riabilitare l'include quando il file verra ripristinato.
+  # - include:
+  #     file: 20260516-01-create-appointment-tables.yaml
+  #     relativeToChangelogFile: true
 
-  - include:
-      file: 20260516-02-seed-appointment-types.yaml
-      relativeToChangelogFile: true
+# FIXME Francesco: migration referenziata ma assente dal repository; riabilitare l'include quando il file verra ripristinato.
+  # - include:
+  #     file: 20260516-02-seed-appointment-types.yaml
+  #     relativeToChangelogFile: true
 
-  - include:
-      file: 20260516-03-add-appointment-modules.yaml
-      relativeToChangelogFile: true
+# FIXME Francesco: migration referenziata ma assente dal repository; riabilitare l'include quando il file verra ripristinato.
+  # - include:
+  #     file: 20260516-03-add-appointment-modules.yaml
+  #     relativeToChangelogFile: true
 
-  - include:
-      file: 20260516-04-fix-appointment-table-creation.yaml
-      relativeToChangelogFile: true
+# FIXME Francesco: migration referenziata ma assente dal repository; riabilitare l'include quando il file verra ripristinato.
+  # - include:
+  #     file: 20260516-04-fix-appointment-table-creation.yaml
+  #     relativeToChangelogFile: true
 
-  - include:
-      file: 20260517-01-create-therapeutic-plan-visit-image-table.yaml
-      relativeToChangelogFile: true
+# FIXME Francesco: migration referenziata ma assente dal repository; riabilitare l'include quando il file verra ripristinato.
+  # - include:
+  #     file: 20260517-01-create-therapeutic-plan-visit-image-table.yaml
+  #     relativeToChangelogFile: true
 
-  - include:
-      file: 20260614-01-add-hospital-departments.yaml
-      relativeToChangelogFile: true
+# FIXME Francesco: migration referenziata ma assente dal repository; riabilitare l'include quando il file verra ripristinato.
+  # - include:
+  #     file: 20260614-01-add-hospital-departments.yaml
+  #     relativeToChangelogFile: true
 
-  - include:
-      file: 20260615-01-remove-retail-parent-requirement.yaml
-      relativeToChangelogFile: true
+# FIXME Francesco: migration referenziata ma assente dal repository; riabilitare l'include quando il file verra ripristinato.
+  # - include:
+  #     file: 20260615-01-remove-retail-parent-requirement.yaml
+  #     relativeToChangelogFile: true

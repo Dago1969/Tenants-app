@@ -19,6 +19,9 @@ import com.qtm.tenants.doctor.entity.DoctorEntity;
 public class TherapeuticPlanDoctorAssignmentEntity {
     @Id
     private Long id;
+
+    // FIXME Francesco: aggiungere la migration Liquibase delle assegnazioni dei medici ai piani terapeutici.
+    @ManyToOne
     private DoctorEntity doctor;
     private Integer priorityIndex;
 

@@ -1,6 +1,7 @@
 spring:
   profiles:
-    active: sviluppo
+    # FIXME Francesco: profilo selezionabile dall'ENV Docker mantenendo sviluppo come default locale.
+    active: ${SPRING_PROFILES_ACTIVE:sviluppo}
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
   jackson:
@@ -17,7 +18,9 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI:http://localhost:8085/realms/${APP_KEYCLOAK_REALM_CODE:QTM}}
+          # FIXME Francesco: issuer e JWK derivano dalla configurazione Keycloak comune.
+          issuer-uri: ${app.keycloak.realm-url}
+          jwk-set-uri: ${APP_KEYCLOAK_JWK_SET_URI:${app.keycloak.realm-url}/protocol/openid-connect/certs}
   mail:
     host: smtp.gmail.com
     port: 587
@@ -40,13 +43,24 @@ logging:
   level:
     root: INFO
 
+app:
+  cors:
+    # FIXME Francesco: origini esternalizzate per mantenere gli stessi binari tra locale e DEV.
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:4207,http://localhost:4200,http://localhost:4201}
+  keycloak:
+    # FIXME Francesco: server, realm, issuer e JWK devono derivare dalla stessa configurazione Keycloak.
+    server-url: ${APP_KEYCLOAK_SERVER_URL:http://localhost:8085}
+    realm-code: ${APP_KEYCLOAK_REALM_CODE:QTM}
+    realm-url: ${app.keycloak.server-url}/realms/${app.keycloak.realm-code}
+
 # Proprietà custom per configurazione interna QTM (non standard Spring)
 qtm:
+  # FIXME Francesco: URL pubbliche e interne esternalizzate per il deploy sui domini dedicati.
   dashboard:
-    api-base-url: http://localhost:8086/api
-    frontend-base-url: http://localhost:4200
+    api-base-url: ${QTM_DASHBOARD_API_BASE_URL:http://localhost:8086/api}
+    frontend-base-url: ${QTM_DASHBOARD_FRONTEND_BASE_URL:http://localhost:4200}
   frontend:
-    base-url: http://localhost:4201
+    base-url: ${QTM_FRONTEND_BASE_URL:http://localhost:4201}
   ticket:
     base-url: ${QTM_TICKET_BASE_URL:http://localhost:8084/api/ticket}
   otp:

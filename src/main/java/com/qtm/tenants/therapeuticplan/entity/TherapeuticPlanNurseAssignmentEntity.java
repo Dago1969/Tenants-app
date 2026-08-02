@@ -19,6 +19,9 @@ import com.qtm.tenants.nurse.entity.NurseEntity;
 public class TherapeuticPlanNurseAssignmentEntity {
     @Id
     private Long id;
+
+    // FIXME Francesco: aggiungere la migration Liquibase delle assegnazioni degli infermieri ai piani terapeutici.
+    @ManyToOne
     private NurseEntity nurse;
     private Integer priorityIndex;
 

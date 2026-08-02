@@ -2,6 +2,8 @@ package com.qtm.tenants.config;
 
 import lombok.extern.slf4j.Slf4j;
 import jakarta.servlet.http.HttpServletResponse;
+// FIXME Francesco: supporto necessario alla configurazione CORS esterna.
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -14,6 +16,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -23,6 +26,16 @@ import java.util.List;
 @EnableMethodSecurity
 @Slf4j
 public class SecurityConfig {
+
+    private final List<String> allowedOriginPatterns;
+
+    // FIXME Francesco: le origini CORS devono arrivare dalla configurazione dell'ambiente.
+    public SecurityConfig(@Value("${app.cors.allowed-origins:http://localhost:4207,http://localhost:4200,http://localhost:4201}") String allowedOrigins) {
+        this.allowedOriginPatterns = Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .toList();
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -65,7 +78,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:4207", "http://localhost:4200", "http://localhost:4201"));
+        // FIXME Francesco: usare le origini caricate dall'ENV invece della lista localhost cablata.
+        configuration.setAllowedOriginPatterns(allowedOriginPatterns);
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Selected-Role", "X-Selected-Client", "X-Selected-Project"));
         configuration.setExposedHeaders(List.of("Authorization"));

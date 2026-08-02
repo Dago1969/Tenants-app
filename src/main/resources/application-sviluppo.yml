@@ -1,20 +1,15 @@
 server:
-  port: 8087
+  # FIXME Francesco: Docker forza la porta interna 8080; il default locale resta 8087.
+  port: ${SERVER_PORT:8087}
 
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:QTMTenant_${APP_KEYCLOAK_REALM_CODE}}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true}
+    # FIXME Francesco: nome DB componibile; in DEV DB_NAME usa lo stesso codice canonico del realm.
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME_PREFIX:QTMTenant_}${DB_NAME:${APP_KEYCLOAK_REALM_CODE:QTM}}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true}
     username: ${SPRING_DATASOURCE_USERNAME:${DB_USERNAME:root}}
     password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:dago}}
     driver-class-name: com.mysql.cj.jdbc.Driver
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          issuer-uri: http://localhost:8085/realms/QTM
 
-# Configurazione per connessione con QTMTicket
-qtm:
-  ticket:
-    base-url: ${QTM_TICKET_BASE_URL:http://localhost:8084/api/ticket}
-
+DB_HOST: qtmdev.quicare.com
+SPRING_DATASOURCE_USERNAME: root
+SPRING_DATASOURCE_PASSWORD: qtm@dev#pwd33
