@@ -1,0 +1,173 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260614-01-placeholder
+      author: copilot
+      comment: Placeholder changelog to restore local startup; replace with real migration if needed.
+      changes:
+        - sql:
+            sql: SELECT 1;
+
+  - changeSet:
+      id: 20260809-01-create-hospital-department-entity-table
+      author: copilot
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        not:
+          tableExists:
+            tableName: hospital_department_entity
+      changes:
+        - createTable:
+            tableName: hospital_department_entity
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT UNSIGNED
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: department_id
+                  type: BIGINT UNSIGNED
+                  constraints:
+                    nullable: false
+              - column:
+                  name: referent_id
+                  type: BIGINT UNSIGNED
+              - column:
+                  name: structure_id
+                  type: BIGINT UNSIGNED
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: 20260809-02-align-hospital-department-column-types
+      author: copilot
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        tableExists:
+          tableName: hospital_department_entity
+      changes:
+        - modifyDataType:
+            tableName: hospital_department_entity
+            columnName: id
+            newDataType: BIGINT UNSIGNED
+        - modifyDataType:
+            tableName: hospital_department_entity
+            columnName: department_id
+            newDataType: BIGINT UNSIGNED
+        - modifyDataType:
+            tableName: hospital_department_entity
+            columnName: referent_id
+            newDataType: BIGINT UNSIGNED
+        - modifyDataType:
+            tableName: hospital_department_entity
+            columnName: structure_id
+            newDataType: BIGINT UNSIGNED
+
+  - changeSet:
+      id: 20260809-03-add-fk-hospital-dept-referent
+      author: copilot
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        and:
+          - tableExists:
+              tableName: hospital_department_entity
+          - tableExists:
+              tableName: referents
+          - not:
+              foreignKeyConstraintExists:
+                foreignKeyName: fk_hospital_dept_referent
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: hospital_department_entity
+            baseColumnNames: referent_id
+            referencedTableName: referents
+            referencedColumnNames: id
+            constraintName: fk_hospital_dept_referent
+
+  - changeSet:
+      id: 20260809-04-add-fk-hospital-dept-structure
+      author: copilot
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        and:
+          - tableExists:
+              tableName: hospital_department_entity
+          - tableExists:
+              tableName: structures
+          - not:
+              foreignKeyConstraintExists:
+                foreignKeyName: fk_hospital_dept_structure
+      changes:
+        - addForeignKeyConstraint:
+            baseTableName: hospital_department_entity
+            baseColumnNames: structure_id
+            referencedTableName: structures
+            referencedColumnNames: id
+            constraintName: fk_hospital_dept_structure
+
+  - changeSet:
+      id: 20260809-05-add-uk-hospital-dept-structure-department
+      author: copilot
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        and:
+          - tableExists:
+              tableName: hospital_department_entity
+          - not:
+              uniqueConstraintExists:
+                tableName: hospital_department_entity
+                constraintName: uk_hospital_dept_structure_department
+      changes:
+        - addUniqueConstraint:
+            tableName: hospital_department_entity
+            columnNames: structure_id,department_id
+            constraintName: uk_hospital_dept_structure_department
+
+  - changeSet:
+      id: 20260809-06-add-index-hospital-dept-structure
+      author: copilot
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        and:
+          - tableExists:
+              tableName: hospital_department_entity
+          - not:
+              indexExists:
+                tableName: hospital_department_entity
+                indexName: idx_hospital_dept_structure
+      changes:
+        - createIndex:
+            tableName: hospital_department_entity
+            indexName: idx_hospital_dept_structure
+            columns:
+              - column:
+                  name: structure_id
+
+  - changeSet:
+      id: 20260809-07-add-index-hospital-dept-department
+      author: copilot
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        and:
+          - tableExists:
+              tableName: hospital_department_entity
+          - not:
+              indexExists:
+                tableName: hospital_department_entity
+                indexName: idx_hospital_dept_department
+      changes:
+        - createIndex:
+            tableName: hospital_department_entity
+            indexName: idx_hospital_dept_department
+            columns:
+              - column:
+                  name: department_id

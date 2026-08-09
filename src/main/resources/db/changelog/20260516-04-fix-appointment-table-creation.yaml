@@ -1,0 +1,8 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260516-04-placeholder
+      author: copilot
+      comment: Placeholder changelog to restore local startup; replace with real migration if needed.
+      changes:
+        - sql:
+            sql: SELECT 1;

@@ -19,7 +19,10 @@ import com.qtm.tenants.doctor.entity.DoctorEntity;
 public class TherapeuticPlanDoctorAssignmentEntity {
     @Id
     private Long id;
+
+    @ManyToOne
     private DoctorEntity doctor;
+
     private Integer priorityIndex;
 
     @ManyToOne
