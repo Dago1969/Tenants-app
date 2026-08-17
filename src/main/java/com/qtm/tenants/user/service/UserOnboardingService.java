@@ -35,6 +35,10 @@ public class UserOnboardingService {
     public UserDto onboard(UserOnboardingRequest request) {
         validateRequest(request);
 
+        log.info("[UserOnboardingService] Avvio onboarding username={}, email={}, clientId={}, roleId={}, tenantId={}, projectId={}",
+            request.getUsername(), request.getEmail(), request.getClientId(), request.getRoleId(),
+            request.getTenantId(), request.getProjectId());
+
         request.setTemporaryPassword(false);
         request.setSkipOnboardingMail(true); // Disabilita mail automatica da QTMDB: TENAPP gestisce l'invio personalizzato
         UserDto createdUser = userRemoteService.create(request);
@@ -48,6 +52,9 @@ public class UserOnboardingService {
         relation.setRoleId(request.getRoleId());
         relation.setProjectId(request.getProjectId());
         dashboardUserRoleProjectClient.create(relation);
+
+        log.info("[UserOnboardingService] Utente creato e associato username={}, userId={}, tenantId={}, roleId={}, projectId={}",
+            createdUser.getUsername(), createdUser.getId(), relation.getTenantId(), relation.getRoleId(), relation.getProjectId());
 
         sendOnboardingMail(createdUser);
         userOtpService.sendOtpWhenConfigured(createdUser);

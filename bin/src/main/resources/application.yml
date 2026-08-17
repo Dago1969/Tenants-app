@@ -18,7 +18,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: http://localhost:8085/realms/QTM
+          issuer-uri: //${APP_KEYCLOAK_SERVER_URL:http:localhost:8085}/realms/${APP_KEYCLOAK_REALM_CODE:QTM}
 
 logging:
   level:

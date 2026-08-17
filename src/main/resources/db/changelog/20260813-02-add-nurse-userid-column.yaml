@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260813-02-add-nurses-userid
+      author: copilot
+      comment: Adds the user identifier required by NurseEntity.
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        and:
+          - tableExists:
+              tableName: nurses
+          - not:
+              columnExists:
+                tableName: nurses
+                columnName: userid
+      changes:
+        - addColumn:
+            tableName: nurses
+            columns:
+              - column:
+                  name: userid
+                  type: VARCHAR(255)

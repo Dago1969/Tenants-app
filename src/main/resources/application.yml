@@ -1,6 +1,6 @@
 spring:
   profiles:
-    active: sviluppo
+    active: collaudo
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
   jackson:
@@ -39,6 +39,10 @@ spring:
 logging:
   level:
     root: INFO
+
+app:
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:4207,http://localhost:4200,http://localhost:4201,https://tenants.qtmdev.quicare.com}
 
 # Proprietà custom per configurazione interna QTM (non standard Spring)
 qtm:

@@ -1,0 +1,158 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260813-03-create-therapeutic-plan-nurse-assignment
+      author: copilot
+      comment: Stores the ordered nurse assignments for a therapeutic plan.
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        and:
+          - tableExists:
+              tableName: therapeutic_plan
+          - tableExists:
+              tableName: nurses
+          - not:
+              tableExists:
+                tableName: therapeutic_plan_nurse_assignment
+      changes:
+        - createTable:
+            tableName: therapeutic_plan_nurse_assignment
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: therapeutic_plan_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: nurse_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: priority_index
+                  type: INT
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: therapeutic_plan_nurse_assignment
+            baseColumnNames: therapeutic_plan_id
+            constraintName: fk_therapeutic_plan_nurse_assignment_plan
+            referencedTableName: therapeutic_plan
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            baseTableName: therapeutic_plan_nurse_assignment
+            baseColumnNames: nurse_id
+            constraintName: fk_therapeutic_plan_nurse_assignment_nurse
+            referencedTableName: nurses
+            referencedColumnNames: id
+        - addUniqueConstraint:
+            tableName: therapeutic_plan_nurse_assignment
+            columnNames: therapeutic_plan_id, nurse_id
+            constraintName: uq_therapeutic_plan_nurse_assignment
+        - createIndex:
+            tableName: therapeutic_plan_nurse_assignment
+            indexName: idx_therapeutic_plan_nurse_assignment_plan_priority
+            columns:
+              - column:
+                  name: therapeutic_plan_id
+              - column:
+                  name: priority_index
+
+  - changeSet:
+      id: 20260813-03-create-therapeutic-plan-doctor-assignment
+      author: copilot
+      comment: Stores the ordered doctor assignments for a therapeutic plan.
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        and:
+          - tableExists:
+              tableName: therapeutic_plan
+          - tableExists:
+              tableName: doctors
+          - not:
+              tableExists:
+                tableName: therapeutic_plan_doctor_assignment
+      changes:
+        - createTable:
+            tableName: therapeutic_plan_doctor_assignment
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: therapeutic_plan_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: doctor_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: priority_index
+                  type: INT
+                  constraints:
+                    nullable: false
+        - addForeignKeyConstraint:
+            baseTableName: therapeutic_plan_doctor_assignment
+            baseColumnNames: therapeutic_plan_id
+            constraintName: fk_therapeutic_plan_doctor_assignment_plan
+            referencedTableName: therapeutic_plan
+            referencedColumnNames: id
+        - addForeignKeyConstraint:
+            baseTableName: therapeutic_plan_doctor_assignment
+            baseColumnNames: doctor_id
+            constraintName: fk_therapeutic_plan_doctor_assignment_doctor
+            referencedTableName: doctors
+            referencedColumnNames: id
+        - addUniqueConstraint:
+            tableName: therapeutic_plan_doctor_assignment
+            columnNames: therapeutic_plan_id, doctor_id
+            constraintName: uq_therapeutic_plan_doctor_assignment
+        - createIndex:
+            tableName: therapeutic_plan_doctor_assignment
+            indexName: idx_therapeutic_plan_doctor_assignment_plan_priority
+            columns:
+              - column:
+                  name: therapeutic_plan_id
+              - column:
+                  name: priority_index
+
+  - changeSet:
+      id: 20260813-03-make-legacy-therapeutic-plan-professionals-optional
+      author: copilot
+      comment: Replaces legacy single professional columns with ordered professional assignments.
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        and:
+          - tableExists:
+              tableName: therapeutic_plan
+          - columnExists:
+              tableName: therapeutic_plan
+              columnName: nurse_id
+          - columnExists:
+              tableName: therapeutic_plan
+              columnName: doctor_id
+      changes:
+        - dropNotNullConstraint:
+            tableName: therapeutic_plan
+            columnName: nurse_id
+            columnDataType: BIGINT
+        - dropNotNullConstraint:
+            tableName: therapeutic_plan
+            columnName: doctor_id
+            columnDataType: BIGINT

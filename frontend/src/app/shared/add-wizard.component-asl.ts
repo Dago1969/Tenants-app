@@ -10,6 +10,8 @@ import { FormsModule } from '@angular/forms';
 import intlTelInput, { type AllOptions, type Iti } from 'intl-tel-input';
 import { QtmStepModalComponent } from './qtm-step-modal.component';
 import { NotificationService } from './notification.service';
+import { FunctionAuthorizationService } from '../core/function-authorization.service';
+import { STRUCTURE_MODULE_CODES } from '../core/structure-module-codes';
 
 /**
  * Wizard ASL riutilizzato sia per l'inserimento sia per la modifica di una struttura esistente.
@@ -52,21 +54,21 @@ import { NotificationService } from './notification.service';
 
           <div class="form-row">
             <label>{{ translate('structures.field.regione') }}<span class="required-asterisk">*</span>
-              <select class="search-filter-select" name="regionId" [(ngModel)]="model.regionId" (change)="onRegioneChange()" required>
+              <select class="search-filter-select" name="regionId" [(ngModel)]="model.regionId" (ngModelChange)="onRegioneChange()" required>
                 <option value="">{{ translate('structures.select') }}</option>
-                <option *ngFor="let regione of regioni" [value]="regione.id">{{ regione.name }}</option>
+                <option *ngFor="let regione of regioni" [ngValue]="toSelectValue(regione.id)">{{ regione.name }}</option>
               </select>
             </label>
             <label>{{ translate('structures.field.provincia') }}<span class="required-asterisk">*</span>
-              <select class="search-filter-select" name="provinceId" [(ngModel)]="model.provinceId" (change)="onProvinciaChange()" [disabled]="!province.length" required>
+              <select class="search-filter-select" name="provinceId" [(ngModel)]="model.provinceId" (ngModelChange)="onProvinciaChange()" [disabled]="!province.length" required>
                 <option value="">{{ translate('structures.select') }}</option>
-                <option *ngFor="let provincia of province" [value]="provincia.id">{{ provincia.name }}</option>
+                <option *ngFor="let provincia of province" [ngValue]="toSelectValue(provincia.id)">{{ provincia.name }}</option>
               </select>
             </label>
             <label>{{ translate('structures.field.comune') }}<span class="required-asterisk">*</span>
-              <select class="search-filter-select" name="cityId" [(ngModel)]="model.cityId" (change)="onComuneChange()" [disabled]="!comuni.length" required>
+              <select class="search-filter-select" name="cityId" [(ngModel)]="model.cityId" (ngModelChange)="onComuneChange()" [disabled]="!comuni.length" required>
                 <option value="">{{ translate('structures.select') }}</option>
-                <option *ngFor="let comune of comuni" [value]="comune.id">{{ comune.name }}</option>
+                <option *ngFor="let comune of comuni" [ngValue]="toSelectValue(comune.id)">{{ comune.name }}</option>
               </select>
             </label>
           </div>
@@ -202,7 +204,7 @@ import { NotificationService } from './notification.service';
       <div modal-actions *ngIf="!showSuccessPopup">
         <button *ngIf="step > 1" class="btn btn-outline" (click)="prevStep()" type="button">{{ translate('crud.actions.back') }}</button>
         <button *ngIf="step > 1 && step < 4" class="btn btn-primary" (click)="nextStep()" type="button">{{ translate('crud.actions.next') }}</button>
-        <button *ngIf="step === 4" class="btn btn-primary" (click)="save()" type="button">{{ translate(isEditMode() ? 'crud.actions.update' : 'structures.step.confirm') }}</button>
+        <button *ngIf="step === 4 && canSubmit" class="btn btn-primary" (click)="save()" type="button">{{ translate(isEditMode() ? 'crud.actions.update' : 'structures.step.confirm') }}</button>
       </div>
     </qtm-step-modal>
   `,
@@ -299,6 +301,7 @@ export class AddWizardComponentAsl implements OnInit, OnDestroy {
   stepDescriptions: string[] = [];
   hospitalPharmaciesList: PharmacyDto[] = [];
   referentsList: ReferentDto[] = [];
+  canSubmit = false;
 
   model: {
     id: number | null;
@@ -349,7 +352,8 @@ export class AddWizardComponentAsl implements OnInit, OnDestroy {
     private readonly referentApi: ReferentApiService,
     private readonly pharmacyApi: PharmacyApiService,
     private readonly structureApi: StructureApiService,
-    public readonly notificationService: NotificationService
+    public readonly notificationService: NotificationService,
+    private readonly functionAuthorizationService: FunctionAuthorizationService
   ) {}
 
   ngOnInit(): void {
@@ -370,6 +374,7 @@ export class AddWizardComponentAsl implements OnInit, OnDestroy {
     this.loadReferents();
     this.loadHospitalPharmacies();
     this.loadStructureForEdit();
+    void this.loadSubmitPermission();
   }
 
   ngOnDestroy(): void {
@@ -493,6 +498,11 @@ export class AddWizardComponentAsl implements OnInit, OnDestroy {
   }
 
   save(): void {
+    if (!this.canSubmit) {
+      this.notificationService.showError(this.translate('forbidden.message'));
+      return;
+    }
+
     const payload: StructureDto = {
       id: this.model.id ?? undefined,
       name: this.model.name,
@@ -533,6 +543,32 @@ export class AddWizardComponentAsl implements OnInit, OnDestroy {
         );
       }
     });
+  }
+
+  private async loadSubmitPermission(): Promise<void> {
+    const functionCode = this.isEditMode() ? 'UPDATE' : 'CREATE';
+
+    try {
+      this.canSubmit = await this.functionAuthorizationService.canUseFunction(
+        STRUCTURE_MODULE_CODES.ASL,
+        functionCode
+      );
+      console.info('[AddWizardComponentAsl] loadSubmitPermission()', {
+        selectedRole: localStorage.getItem('qtm_selected_role') ?? '',
+        structureId: this.structureId,
+        moduleCode: STRUCTURE_MODULE_CODES.ASL,
+        functionCode,
+        canSubmit: this.canSubmit
+      });
+    } catch {
+      this.canSubmit = false;
+      console.error('[AddWizardComponentAsl] loadSubmitPermission() -> errore risoluzione permessi', {
+        selectedRole: localStorage.getItem('qtm_selected_role') ?? '',
+        structureId: this.structureId,
+        moduleCode: STRUCTURE_MODULE_CODES.ASL,
+        functionCode
+      });
+    }
   }
 
   onClose(): void {
@@ -647,7 +683,7 @@ export class AddWizardComponentAsl implements OnInit, OnDestroy {
       .map((pharmacyId) => ({ id: pharmacyId }));
   }
 
-  private toSelectValue(optionId?: number | string | null): string {
+  toSelectValue(optionId?: number | string | null): string {
     if (optionId === null || optionId === undefined || optionId === '') {
       return '';
     }

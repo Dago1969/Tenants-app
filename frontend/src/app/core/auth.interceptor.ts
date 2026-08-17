@@ -4,8 +4,6 @@ import { throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 import { environment } from '../../environments/environment';
 
-const QTMDASHBOARD_LOGIN_URL = 'http://localhost:4200/login';
-
 /**
  * Interceptor che propaga Authorization Bearer con token condiviso.
  */
@@ -17,7 +15,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const selectedProject = authService.getSelectedProject();
 
   if (!token && req.url.startsWith(environment.apiBaseUrl)) {
-    window.location.href = QTMDASHBOARD_LOGIN_URL;
+    console.warn('[authInterceptor] Token assente. Redirect a login QTMDashboard:', environment.dashboardLoginUrl, 'requestUrl:', req.url);
+    window.location.href = environment.dashboardLoginUrl;
     return throwError(() => new HttpErrorResponse({
       status: 401,
       statusText: 'Missing authentication token',

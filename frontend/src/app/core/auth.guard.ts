@@ -1,9 +1,8 @@
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from './auth.service';
+import { environment } from '../../environments/environment';
 
-// URL della pagina di login di QTMDashboard
-const QTMDASHBOARD_LOGIN_URL = 'http://localhost:4200/login';
 /**
  * Guard minimale: consente accesso CRUD solo se token presente.
  */
@@ -31,7 +30,7 @@ export const authGuard: CanActivateFn = () => {
   }
 
   // Redirect diretto alla login di QTMDashboard se token assente/scaduto
-  console.warn('[authGuard] Accesso NEGATO. Redirect a login QTMDashboard:', QTMDASHBOARD_LOGIN_URL);
-  window.location.href = QTMDASHBOARD_LOGIN_URL;
+  console.warn('[authGuard] Accesso NEGATO. Redirect a login QTMDashboard:', environment.dashboardLoginUrl);
+  window.location.href = environment.dashboardLoginUrl;
   return false;
 };

@@ -45,6 +45,12 @@ public class StructureController {
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
         String moduleCode = resolveModuleCode(structureDto.getStructureType());
+        log.info("[StructureController] POST /structures incoming selectedRole={} structureType={} moduleCode={} code={} name={}",
+                selectedRole,
+                structureDto.getStructureType(),
+                moduleCode,
+                structureDto.getCode(),
+                structureDto.getName());
         controllerFunctionAuthorizationService.requireFullEditPermission(
                 selectedRole,
                 moduleCode,

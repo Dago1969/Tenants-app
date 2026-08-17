@@ -1,0 +1,44 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260813-01-add-nurses-data-processing-consent
+      author: copilot
+      comment: Adds the data processing consent flag required by NurseEntity.
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        and:
+          - tableExists:
+              tableName: nurses
+          - not:
+              columnExists:
+                tableName: nurses
+                columnName: data_processing_consent
+      changes:
+        - addColumn:
+            tableName: nurses
+            columns:
+              - column:
+                  name: data_processing_consent
+                  type: BIT
+
+  - changeSet:
+      id: 20260813-01-add-nurses-data-processing-consent-datetime
+      author: copilot
+      comment: Adds the data processing consent timestamp required by NurseEntity.
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        and:
+          - tableExists:
+              tableName: nurses
+          - not:
+              columnExists:
+                tableName: nurses
+                columnName: data_processing_consent_datetime
+      changes:
+        - addColumn:
+            tableName: nurses
+            columns:
+              - column:
+                  name: data_processing_consent_datetime
+                  type: DATETIME

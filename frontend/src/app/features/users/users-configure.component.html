@@ -19,14 +19,14 @@
       </div>
       <div class="role-profile-field">
         <label>{{ translate('common.role') }}</label>
-        <select [(ngModel)]="selectedRoleId">
+        <select [(ngModel)]="selectedRoleId" name="selectedRoleId">
           <option value="">{{ translate('users.configure.roleProfiles.selectRole') }}</option>
           <option *ngFor="let role of roles" [value]="role.id">{{ role.id }} - {{ role.description || role.name }}</option>
         </select>
       </div>
       <div class="role-profile-field">
         <label>{{ translate('users.field.projectId') }}</label>
-        <select [(ngModel)]="selectedProject" [disabled]="loadingProjects || projects.length === 0">
+        <select [(ngModel)]="selectedProject" name="selectedProject" [disabled]="loadingProjects || projects.length === 0">
           <option value="">{{ labelSelectPlaceholder }}</option>
           <option *ngFor="let project of projects" [value]="project.id != null ? project.id.toString() : project.code">
             {{ project.code }}

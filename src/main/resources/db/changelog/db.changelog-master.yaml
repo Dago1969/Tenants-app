@@ -54,3 +54,15 @@ databaseChangeLog:
   - include:
       file: 20260615-01-remove-retail-parent-requirement.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: 20260813-01-add-nurse-consent-columns.yaml
+      relativeToChangelogFile: true
+
+  - include:
+      file: 20260813-02-add-nurse-userid-column.yaml
+      relativeToChangelogFile: true
+
+  - include:
+      file: 20260813-03-align-therapeutic-plan-professional-assignments.yaml
+      relativeToChangelogFile: true

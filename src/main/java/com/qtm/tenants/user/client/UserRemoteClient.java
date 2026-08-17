@@ -41,7 +41,8 @@ public class UserRemoteClient {
     }
 
     public UserDto create(UserDto userDto) {
-        log.debug("[UserRemoteClient] create user username={}", userDto.getUsername());
+        log.info("[UserRemoteClient] create user request username={}, email={}, roleId={}, clientId={}",
+            userDto.getUsername(), userDto.getEmail(), userDto.getRoleId(), userDto.getClientId());
         return execute(() -> restClient.post().uri("/users")
                 .headers(this::applyForwardedHeaders)
                 .body(userDto)
@@ -130,7 +131,8 @@ public class UserRemoteClient {
         try {
             return call.execute();
         } catch (RestClientResponseException exception) {
-            log.error("[UserRemoteClient] downstream error status={}, body={}", exception.getStatusCode(), exception.getResponseBodyAsString());
+            log.error("[UserRemoteClient] downstream error status={}, body={}",
+                    exception.getStatusCode(), exception.getResponseBodyAsString(), exception);
             throw new ResponseStatusException(exception.getStatusCode(), buildDownstreamMessage(exception), exception);
         } catch (RestClientException exception) {
             log.error("[UserRemoteClient] downstream unavailable", exception);
@@ -142,7 +144,8 @@ public class UserRemoteClient {
         try {
             call.execute();
         } catch (RestClientResponseException exception) {
-            log.error("[UserRemoteClient] downstream void error status={}, body={}", exception.getStatusCode(), exception.getResponseBodyAsString());
+            log.error("[UserRemoteClient] downstream void error status={}, body={}",
+                    exception.getStatusCode(), exception.getResponseBodyAsString(), exception);
             throw new ResponseStatusException(exception.getStatusCode(), buildDownstreamMessage(exception), exception);
         } catch (RestClientException exception) {
             log.error("[UserRemoteClient] downstream unavailable on void call", exception);
