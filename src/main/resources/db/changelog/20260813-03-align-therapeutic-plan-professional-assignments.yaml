@@ -1,4 +1,4 @@
-databaseChangeLog:
+﻿databaseChangeLog:
   - changeSet:
       id: 20260813-03-create-therapeutic-plan-nurse-assignment
       author: copilot
@@ -32,7 +32,7 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: nurse_id
-                  type: BIGINT
+                  type: "BIGINT UNSIGNED"
                   constraints:
                     nullable: false
               - column:
@@ -98,7 +98,7 @@ databaseChangeLog:
                     nullable: false
               - column:
                   name: doctor_id
-                  type: BIGINT
+                  type: "BIGINT UNSIGNED"
                   constraints:
                     nullable: false
               - column:
@@ -156,3 +156,4 @@ databaseChangeLog:
             tableName: therapeutic_plan
             columnName: doctor_id
             columnDataType: BIGINT
+
