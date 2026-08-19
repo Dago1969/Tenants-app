@@ -1,0 +1,148 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260516-10-fix-create-appointment-table
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: appointment_type
+        - tableExists:
+            tableName: therapeutic_plan
+        - tableExists:
+            tableName: nurses
+        - not:
+            tableExists:
+              tableName: appointment
+      changes:
+        - createTable:
+            tableName: appointment
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: therapeutic_plan_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: appointment_type_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: nurse_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: start_datetime
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: end_datetime
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: recurrence_type
+                  type: VARCHAR(32)
+                  defaultValue: SINGLE
+                  constraints:
+                    nullable: false
+              - column:
+                  name: recurrence_end_date
+                  type: DATE
+              - column:
+                  name: reminder_enabled
+                  type: BIT
+                  defaultValueBoolean: false
+              - column:
+                  name: reminder_minutes_before
+                  type: INT
+                  defaultValueNumeric: 15
+              - column:
+                  name: status
+                  type: VARCHAR(32)
+                  defaultValue: SCHEDULED
+                  constraints:
+                    nullable: false
+              - column:
+                  name: notes
+                  type: VARCHAR(1000)
+              - column:
+                  name: created_at
+                  type: DATETIME
+                  defaultValueComputed: CURRENT_TIMESTAMP
+              - column:
+                  name: updated_at
+                  type: DATETIME
+                  defaultValueComputed: CURRENT_TIMESTAMP
+
+  - changeSet:
+      id: 20260516-11-fix-appointment-therapeutic-plan-index
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: appointment
+        - not:
+            indexExists:
+              tableName: appointment
+              indexName: idx_appointment_therapeutic_plan
+      changes:
+        - createIndex:
+            tableName: appointment
+            indexName: idx_appointment_therapeutic_plan
+            columns:
+              - column:
+                  name: therapeutic_plan_id
+
+  - changeSet:
+      id: 20260516-12-fix-appointment-nurse-date-index
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: appointment
+        - not:
+            indexExists:
+              tableName: appointment
+              indexName: idx_appointment_nurse_date
+      changes:
+        - createIndex:
+            tableName: appointment
+            indexName: idx_appointment_nurse_date
+            columns:
+              - column:
+                  name: nurse_id
+              - column:
+                  name: start_datetime
+
+  - changeSet:
+      id: 20260516-13-fix-appointment-status-index
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: appointment
+        - not:
+            indexExists:
+              tableName: appointment
+              indexName: idx_appointment_status
+      changes:
+        - createIndex:
+            tableName: appointment
+            indexName: idx_appointment_status
+            columns:
+              - column:
+                  name: status
