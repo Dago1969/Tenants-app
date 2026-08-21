@@ -43,6 +43,11 @@ logging:
 app:
   cors:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:4207,http://localhost:4200,http://localhost:4201,https://tenants.qtmdev.quicare.com}
+  keycloak:
+    base-url: ${APP_KEYCLOAK_SERVER_URL:https://auth.qtmdev.quicare.com}
+    realm: ${APP_KEYCLOAK_REALM_CODE:Lecigimon}
+    admin-client-id: ${APP_KEYCLOAK_ADMIN_CLIENT_ID:tenants-app-admin}
+    admin-client-secret: ${APP_KEYCLOAK_ADMIN_CLIENT_SECRET:}
 
 # Proprietà custom per configurazione interna QTM (non standard Spring)
 qtm:
@@ -64,3 +69,5 @@ qtm:
       api-key: ${QTM_OTP_TWILIO_API_KEY:}
       api-secret: ${QTM_OTP_TWILIO_API_SECRET:}
       default-channel: ${QTM_OTP_TWILIO_DEFAULT_CHANNEL:sms}
+
+# Keycloak admin client for TENANTS-APP to assign roles automatically

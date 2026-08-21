@@ -1,8 +1,61 @@
 databaseChangeLog:
   - changeSet:
-      id: 20260516-02-placeholder
+      id: 20260516-02-seed-appointment-types
       author: copilot
-      comment: Placeholder changelog to restore local startup; replace with real migration if needed.
+      comment: Insert default appointment types
+      preConditions:
+        - tableExists:
+            tableName: appointment_type
       changes:
-        - sql:
-            sql: SELECT 1;
+        - insert:
+            tableName: appointment_type
+            columns:
+              - column:
+                  name: name
+                  value: "Verifica Impianto"
+              - column:
+                  name: description
+                  value: "Controllo e verifica del corretto funzionamento dell'impianto"
+              - column:
+                  name: duration_minutes
+                  valueNumeric: 30
+        - insert:
+            tableName: appointment_type
+            columns:
+              - column:
+                  name: name
+                  value: "Consegna Medicine"
+              - column:
+                  name: description
+                  value: "Consegna dei farmaci prescritti al paziente"
+              - column:
+                  name: duration_minutes
+                  valueNumeric: 15
+        - insert:
+            tableName: appointment_type
+            columns:
+              - column:
+                  name: name
+                  value: "Prelievo"
+              - column:
+                  name: description
+                  value: "Prelievo di campioni di laboratorio"
+              - column:
+                  name: duration_minutes
+                  valueNumeric: 20
+        - insert:
+            tableName: appointment_type
+            columns:
+              - column:
+                  name: name
+                  value: "Visita"
+              - column:
+                  name: description
+                  value: "Visita medica di controllo"
+              - column:
+                  name: duration_minutes
+                  valueNumeric: 45
+      rollback:
+        - delete:
+            tableName: appointment_type
+            where: "name in ('Verifica Impianto','Consegna Medicine','Prelievo','Visita')"

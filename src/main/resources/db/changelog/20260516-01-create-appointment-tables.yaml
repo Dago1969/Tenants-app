@@ -1,8 +1,113 @@
 databaseChangeLog:
   - changeSet:
-      id: 20260516-01-placeholder
+      id: 20260516-01-create-appointment-type
       author: copilot
-      comment: Placeholder changelog to restore local startup; replace with real migration if needed.
+      comment: Create appointment_type table
+      preConditions:
+        - not:
+            - tableExists:
+                tableName: appointment_type
       changes:
-        - sql:
-            sql: SELECT 1;
+        - createTable:
+            tableName: appointment_type
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: description
+                  type: VARCHAR(1000)
+              - column:
+                  name: duration_minutes
+                  type: INT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: DATETIME
+              - column:
+                  name: updated_at
+                  type: DATETIME
+
+  - changeSet:
+      id: 20260516-01-create-appointment
+      author: copilot
+      comment: Create appointment table (no foreign key constraints as JPA uses NO_CONSTRAINT)
+      preConditions:
+        - not:
+            - tableExists:
+                tableName: appointment
+      changes:
+        - createTable:
+            tableName: appointment
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: therapeutic_plan_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: appointment_type_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: nurse_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: start_datetime
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: end_datetime
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+              - column:
+                  name: recurrence_type
+                  type: VARCHAR(255)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: recurrence_end_date
+                  type: DATE
+              - column:
+                  name: reminder_enabled
+                  type: BOOLEAN
+                  defaultValueBoolean: false
+              - column:
+                  name: reminder_minutes_before
+                  type: INT
+                  defaultValueNumeric: 15
+              - column:
+                  name: status
+                  type: VARCHAR(32)
+                  defaultValue: "SCHEDULED"
+              - column:
+                  name: notes
+                  type: VARCHAR(1000)
+              - column:
+                  name: created_at
+                  type: DATETIME
+              - column:
+                  name: updated_at
+                  type: DATETIME

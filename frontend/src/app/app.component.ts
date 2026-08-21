@@ -39,6 +39,7 @@ interface MenuItem {
   styleUrl: './app.component.css'
 })
 export class AppComponent implements OnDestroy {
+  readonly dashboardBaseUrl = environment.dashboardBaseUrl;
       // --- Helper functions (solo una versione, in fondo alla classe) ---
       // (Le versioni duplicate verranno rimosse in fondo al file)
     username: string | null = null;
