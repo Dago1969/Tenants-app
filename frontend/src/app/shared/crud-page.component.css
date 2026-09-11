@@ -302,6 +302,10 @@
   margin-top: 32px;
 }
 
+.location-row { display: flex; gap: 12px; align-items: center; }
+.location-item { flex: 1; }
+.location-item select, .location-item input { width: 100%; }
+
 @media (max-width: 768px) {
   .crud-shell {
     padding: 18px 12px 28px;

@@ -4,12 +4,12 @@ services:
     container_name: tenants-mysql
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: dago
-      MYSQL_DATABASE: QTMTenant
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:dago}
+      MYSQL_DATABASE: ${DB_NAME:QTMTenant}
     volumes:
       - tenants-mysql-data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -pdago --silent"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p${DB_ROOT_PASSWORD:dago} --silent"]
       interval: 10s
       timeout: 5s
       retries: 12
@@ -34,9 +34,9 @@ services:
       - ../Tenants-app/.env
     environment:
       - SPRING_PROFILES_ACTIVE=collaudo
-      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/QTMTenant?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-      - SPRING_DATASOURCE_USERNAME=root
-      - SPRING_DATASOURCE_PASSWORD=dago
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/${DB_NAME:QTMTenant}?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME:root}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
       - QTM_DASHBOARD_API_BASE_URL=http://qtmdashboard-backend:8086/api
       # Keycloak config allineata a QTMDB
       - KEYCLOAK_HOST=keycloak

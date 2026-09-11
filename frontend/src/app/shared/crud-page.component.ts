@@ -139,135 +139,164 @@ interface ConsentOtpConfig {
 
         <form class="crud-form" #crudForm="ngForm" (ngSubmit)="save(crudForm)" novalidate>
           <div class="crud-fields crud-fields-multicol">
-            <div class="crud-field-col" *ngFor="let field of currentFields" [style.grid-column]="resolveGridColumn(field)">
-              <label class="crud-label" [for]="field.key">
-                {{ translate(field.labelKey) }}
-                <span *ngIf="field.required === true" class="crud-required-marker">*</span>
-              </label>
-              <div *ngIf="field.type === 'action'" class="crud-field-control crud-field-control-action">
-                <button
-                  type="button"
-                  class="crud-btn"
-                  [class.crud-btn-primary]="field.actionButtonStyle !== 'secondary'"
-                  [class.crud-btn-secondary]="field.actionButtonStyle === 'secondary'"
-                  [disabled]="isActionFieldDisabled(field)"
-                  (click)="runFieldAction(field)"
-                >
+            <div class="crud-field-col" *ngFor="let field of currentFields; let i = index" [style.display]="shouldSkipInlineLocationField(i) ? 'none' : null" [style.grid-column]="field.key === 'regionId' && currentFields.length > i+2 && currentFields[i+1].key === 'provinceId' && currentFields[i+2].key === 'cityId' ? 'span 3' : resolveGridColumn(field)">
+              <ng-container *ngIf="field.key === 'regionId' && currentFields.length > i+2 && currentFields[i+1].key === 'provinceId' && currentFields[i+2].key === 'cityId'; else normalFieldBlock">
+                <label class="crud-label" [for]="field.key">
                   {{ translate(field.labelKey) }}
-                </button>
-              </div>
-              <div *ngIf="field.type !== 'checkbox' && field.type !== 'select' && field.type !== 'action'" class="crud-field-control">
-                <ng-container *ngIf="field.key === 'username'; else genericInput">
-                  <input
-                    class="crud-input"
-                    [class.crud-input-invalid]="shouldShowRequiredError(field, usernameInput) || usernameTaken"
-                    [id]="field.key"
-                    [type]="field.type"
-                    [(ngModel)]="formModel[field.key]"
-                    [name]="field.key"
-                    [disabled]="isFieldDisabled(field)"
-                    (blur)="onFieldBlur(field)"
-                    [required]="field.required === true"
-                    #usernameInput="ngModel"
-                  />
-                  <div *ngIf="usernameTaken" class="crud-field-error">
-                    {{ translate(usernameTakenMessageKey) }}
+                </label>
+                <div class="crud-field-control">
+                  <div class="location-row">
+                    <div class="location-item">
+                      <select class="crud-input" [ngModel]="formModel['regionId']" (ngModelChange)="onSelectChange(currentFields[i], $event)" [disabled]="isFieldDisabled(currentFields[i])">
+                        <option value=""></option>
+                        <option *ngFor="let option of getFieldOptions(currentFields[i])" [ngValue]="option.value">{{ resolveOptionLabel(option.label) }}</option>
+                      </select>
+                    </div>
+                    <div class="location-item">
+                      <select class="crud-input" [ngModel]="formModel['provinceId']" (ngModelChange)="onSelectChange(currentFields[i+1], $event)" [disabled]="isFieldDisabled(currentFields[i+1])">
+                        <option value=""></option>
+                        <option *ngFor="let option of getFieldOptions(currentFields[i+1])" [ngValue]="option.value">{{ resolveOptionLabel(option.label) }}</option>
+                      </select>
+                    </div>
+                    <div class="location-item">
+                      <select class="crud-input" [ngModel]="formModel['cityId']" (ngModelChange)="onSelectChange(currentFields[i+2], $event)" [disabled]="isFieldDisabled(currentFields[i+2])">
+                        <option value=""></option>
+                        <option *ngFor="let option of getFieldOptions(currentFields[i+2])" [ngValue]="option.value">{{ resolveOptionLabel(option.label) }}</option>
+                      </select>
+                    </div>
                   </div>
-                  <div *ngIf="shouldShowRequiredError(field, usernameInput) && !usernameTaken" class="crud-field-error">
-                    {{ translate(requiredFieldMessageKey) }}
-                  </div>
-                </ng-container>
-                <ng-template #genericInput>
-                  <ng-container *ngIf="field.type === 'textarea'; else genericTextInput">
-                    <textarea
-                      class="crud-input crud-textarea"
-                      [class.crud-input-invalid]="shouldShowRequiredError(field, genericField)"
+                </div>
+              </ng-container>
+              <ng-template #normalFieldBlock>
+                <label class="crud-label" [for]="field.key">
+                  {{ translate(field.labelKey) }}
+                  <span *ngIf="field.required === true" class="crud-required-marker">*</span>
+                </label>
+                <div *ngIf="field.type === 'action'" class="crud-field-control crud-field-control-action">
+                  <button
+                    type="button"
+                    class="crud-btn"
+                    [class.crud-btn-primary]="field.actionButtonStyle !== 'secondary'"
+                    [class.crud-btn-secondary]="field.actionButtonStyle === 'secondary'"
+                    [disabled]="isActionFieldDisabled(field)"
+                    (click)="runFieldAction(field)"
+                  >
+                    {{ translate(field.labelKey) }}
+                  </button>
+                </div>
+                <div *ngIf="field.type !== 'checkbox' && field.type !== 'select' && field.type !== 'action'" class="crud-field-control">
+                  <ng-container *ngIf="field.key === 'username'; else genericInput">
+                    <input
+                      class="crud-input"
+                      [class.crud-input-invalid]="shouldShowRequiredError(field, usernameInput) || usernameTaken"
                       [id]="field.key"
+                      [type]="field.type"
                       [(ngModel)]="formModel[field.key]"
                       [name]="field.key"
                       [disabled]="isFieldDisabled(field)"
                       (blur)="onFieldBlur(field)"
                       [required]="field.required === true"
-                      [rows]="field.rows ?? 6"
-                      #genericField="ngModel"
-                    ></textarea>
-                    <div *ngIf="shouldShowRequiredError(field, genericField)" class="crud-field-error">
+                      #usernameInput="ngModel"
+                    />
+                    <div *ngIf="usernameTaken" class="crud-field-error">
+                      {{ translate(usernameTakenMessageKey) }}
+                    </div>
+                    <div *ngIf="shouldShowRequiredError(field, usernameInput) && !usernameTaken" class="crud-field-error">
                       {{ translate(requiredFieldMessageKey) }}
                     </div>
                   </ng-container>
-                  <ng-template #genericTextInput>
-                    <ng-container *ngIf="isPhoneField(field); else defaultTextInput">
-                      <div class="phone-input-group phone-input-group-intl" [class.phone-field-invalid]="shouldShowPhoneRequiredError(field)">
-                        <input
-                          #phoneInputElement
-                          class="crud-input phone-number-input"
-                          [class.crud-input-invalid]="shouldShowPhoneRequiredError(field)"
-                          [id]="field.key"
-                          type="tel"
-                          [attr.data-phone-field-key]="field.key"
-                          [name]="field.key"
-                          [disabled]="isFieldDisabled(field)"
-                          [required]="field.required === true"
-                          (blur)="onPhoneFieldBlur(field)"
-                        />
-                      </div>
-                      <div *ngIf="shouldShowPhoneRequiredError(field)" class="crud-field-error">
-                        {{ translate(requiredFieldMessageKey) }}
-                      </div>
-                    </ng-container>
-                    <ng-template #defaultTextInput>
-                      <input
-                        class="crud-input"
+                  <ng-template #genericInput>
+                    <ng-container *ngIf="field.type === 'textarea'; else genericTextInput">
+                      <textarea
+                        class="crud-input crud-textarea"
                         [class.crud-input-invalid]="shouldShowRequiredError(field, genericField)"
                         [id]="field.key"
-                        [type]="field.type"
                         [(ngModel)]="formModel[field.key]"
                         [name]="field.key"
                         [disabled]="isFieldDisabled(field)"
-                        [readOnly]="isFieldReadonly(field)"
                         (blur)="onFieldBlur(field)"
                         [required]="field.required === true"
+                        [rows]="field.rows ?? 6"
                         #genericField="ngModel"
-                      />
+                      ></textarea>
                       <div *ngIf="shouldShowRequiredError(field, genericField)" class="crud-field-error">
                         {{ translate(requiredFieldMessageKey) }}
                       </div>
+                    </ng-container>
+                    <ng-template #genericTextInput>
+                      <ng-container *ngIf="isPhoneField(field); else defaultTextInput">
+                        <div class="phone-input-group phone-input-group-intl" [class.phone-field-invalid]="shouldShowPhoneRequiredError(field)">
+                          <input
+                            #phoneInputElement
+                            class="crud-input phone-number-input"
+                            [class.crud-input-invalid]="shouldShowPhoneRequiredError(field)"
+                            [id]="field.key"
+                            type="tel"
+                            [attr.data-phone-field-key]="field.key"
+                            [name]="field.key"
+                            [disabled]="isFieldDisabled(field)"
+                            [required]="field.required === true"
+                            (blur)="onPhoneFieldBlur(field)"
+                          />
+                        </div>
+                        <div *ngIf="shouldShowPhoneRequiredError(field)" class="crud-field-error">
+                          {{ translate(requiredFieldMessageKey) }}
+                        </div>
+                      </ng-container>
+                      <ng-template #defaultTextInput>
+                        <input
+                          class="crud-input"
+                          [class.crud-input-invalid]="shouldShowRequiredError(field, genericField)"
+                          [id]="field.key"
+                          [type]="field.type"
+                          [(ngModel)]="formModel[field.key]"
+                          [name]="field.key"
+                          [disabled]="isFieldDisabled(field)"
+                          [readOnly]="isFieldReadonly(field)"
+                          (blur)="onFieldBlur(field)"
+                          [required]="field.required === true"
+                          #genericField="ngModel"
+                        />
+                        <div *ngIf="shouldShowRequiredError(field, genericField)" class="crud-field-error">
+                          {{ translate(requiredFieldMessageKey) }}
+                        </div>
+                      </ng-template>
                     </ng-template>
                   </ng-template>
-                </ng-template>
-              </div>
-              <div *ngIf="field.type === 'select'" class="crud-field-control">
-                <select
-                  class="crud-input"
-                  [class.crud-input-invalid]="shouldShowRequiredError(field, selectField)"
-                  [id]="field.key"
-                  [ngModel]="formModel[field.key]"
-                  (ngModelChange)="onSelectChange(field, $event)"
-                  [name]="field.key"
-                  [disabled]="isFieldDisabled(field)"
-                  [required]="field.required === true"
-                  #selectField="ngModel"
-                >
-                  <option value=""></option>
-                  <option *ngFor="let option of getFieldOptions(field)" [ngValue]="option.value">
-                    {{ resolveOptionLabel(option.label) }}
-                  </option>
-                </select>
-                <div *ngIf="shouldShowRequiredError(field, selectField)" class="crud-field-error">
-                  {{ translate(requiredFieldMessageKey) }}
                 </div>
-              </div>
-              <label *ngIf="field.type === 'checkbox'" class="crud-checkbox-wrap" [for]="field.key">
-                <input
-                  class="crud-checkbox"
-                  [id]="field.key"
-                  type="checkbox"
-                  [(ngModel)]="formModel[field.key]"
-                  [name]="field.key"
-                  [disabled]="isFieldDisabled(field)"
-                  [required]="field.required === true"
-                />
-              </label>
+                <div *ngIf="field.type === 'select'" class="crud-field-control">
+                  <select
+                    class="crud-input"
+                    [class.crud-input-invalid]="shouldShowRequiredError(field, selectField)"
+                    [id]="field.key"
+                    [ngModel]="formModel[field.key]"
+                    (ngModelChange)="onSelectChange(field, $event)"
+                    [name]="field.key"
+                    [disabled]="isFieldDisabled(field)"
+                    [required]="field.required === true"
+                    #selectField="ngModel"
+                  >
+                    <option value=""></option>
+                    <option *ngFor="let option of getFieldOptions(field)" [ngValue]="option.value">
+                      {{ resolveOptionLabel(option.label) }}
+                    </option>
+                  </select>
+                  <div *ngIf="shouldShowRequiredError(field, selectField)" class="crud-field-error">
+                    {{ translate(requiredFieldMessageKey) }}
+                  </div>
+                </div>
+                <label *ngIf="field.type === 'checkbox'" class="crud-checkbox-wrap" [for]="field.key">
+                  <input
+                    class="crud-checkbox"
+                    [id]="field.key"
+                    type="checkbox"
+                    [(ngModel)]="formModel[field.key]"
+                    [name]="field.key"
+                    [disabled]="isFieldDisabled(field)"
+                    [required]="field.required === true"
+                  />
+                </label>
+              </ng-template>
             </div>
           </div>
 
@@ -422,6 +451,19 @@ export class CrudPageComponent implements OnInit, OnChanges {
 
   get currentFolderIndex(): number {
     return Math.max(this.folders.findIndex((folder) => folder.key === this.activeFolder), 0);
+  }
+
+  shouldSkipInlineLocationField(index: number): boolean {
+    if (index < 1) {
+      return false;
+    }
+
+    const previousField = this.currentFields[index - 1];
+    const twoFieldsBack = index > 1 ? this.currentFields[index - 2] : undefined;
+    const currentField = this.currentFields[index];
+
+    return (currentField?.key === 'provinceId' && previousField?.key === 'regionId')
+      || (currentField?.key === 'cityId' && previousField?.key === 'provinceId' && twoFieldsBack?.key === 'regionId');
   }
 
   get isFirstFolder(): boolean {
@@ -1132,6 +1174,11 @@ export class CrudPageComponent implements OnInit, OnChanges {
   }
 
   private getConsentPrimaryPhone(): string {
+    // If an OTP recipient selection is present, use it (e.g. caregiverPhone), otherwise fallback to primaryPhone
+    const recipient = this.asString(this.formModel['otpRecipient']);
+    if (recipient === 'caregiverPhone') {
+      return this.asString(this.formModel['caregiverPhone']);
+    }
     return this.asString(this.formModel['primaryPhone']);
   }
 

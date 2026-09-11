@@ -4,9 +4,11 @@ databaseChangeLog:
       author: copilot
       comment: Create appointment_type table
       preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
         - not:
-            - tableExists:
-                tableName: appointment_type
+            tableExists:
+              tableName: appointment_type
       changes:
         - createTable:
             tableName: appointment_type
@@ -43,9 +45,11 @@ databaseChangeLog:
       author: copilot
       comment: Create appointment table (no foreign key constraints as JPA uses NO_CONSTRAINT)
       preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
         - not:
-            - tableExists:
-                tableName: appointment
+            tableExists:
+              tableName: appointment
       changes:
         - createTable:
             tableName: appointment

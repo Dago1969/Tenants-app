@@ -42,7 +42,8 @@ export class PatientsCrudComponent implements OnInit {
   initialFormModel = {
     dataProcessingConsent: true,
     dataProcessingConsentDateTime: '',
-    patientConsentOtpCode: ''
+    patientConsentOtpCode: '',
+    otpRecipient: 'primaryPhone'
   };
 
   fields: CrudField[] = [
@@ -66,12 +67,7 @@ export class PatientsCrudComponent implements OnInit {
     { key: 'primaryPhone', labelKey: 'patients.field.primaryPhone', type: 'text', columnSpan: 2 },
     { key: 'secondaryPhone', labelKey: 'patients.field.secondaryPhone', type: 'text', columnSpan: 2 },
 
-    { key: 'regionId', labelKey: 'patients.field.region', type: 'select', optionsEndpoint: 'geography/regions', optionValueKey: 'id', optionLabelKey: 'name', relatedFields: { region: 'name' }, resetFieldsOnChange: ['provinceId', 'province', 'cityId', 'city'] },
-    { key: 'provinceId', labelKey: 'patients.field.province', type: 'select', optionsEndpoint: 'geography/provinces/by-region/{regionId}', optionValueKey: 'id', optionLabelKey: 'name', relatedFields: { province: 'name' }, resetFieldsOnChange: ['cityId', 'city'] },
-    { key: 'cityId', labelKey: 'patients.field.city', type: 'select', optionsEndpoint: 'geography/cities/by-province/{provinceId}', optionValueKey: 'id', optionLabelKey: 'name', relatedFields: { city: 'name' } },
-    { key: 'region', labelKey: 'patients.field.region', type: 'text', hidden: true },
-    { key: 'province', labelKey: 'patients.field.province', type: 'text', hidden: true },
-    { key: 'city', labelKey: 'patients.field.city', type: 'text', hidden: true },
+    
 
     { key: 'deliveryAddress', labelKey: 'patients.field.deliveryAddress', type: 'text', columnSpan: 2 },
     { key: 'secondaryAddresses', labelKey: 'patients.field.secondaryAddresses', type: 'text', columnSpan: 2 },
@@ -114,8 +110,6 @@ export class PatientsCrudComponent implements OnInit {
     { key: 'preferredPickupPharmacy', labelKey: 'patients.field.preferredPickupPharmacy', type: 'select' },
     { key: 'deliveryMode', labelKey: 'patients.field.deliveryMode', type: 'text' },
     { key: 'reminderEnabled', labelKey: 'patients.field.reminderEnabled', type: 'checkbox' },
-    { key: 'caregiverFullName', labelKey: 'patients.field.caregiverFullName', type: 'text' },
-    { key: 'caregiverPhone', labelKey: 'patients.field.caregiverPhone', type: 'text' },
     { key: 'preferredContact', labelKey: 'patients.field.preferredContact', type: 'text' },
     { key: 'structureId', labelKey: 'patients.field.structureId', type: 'number' }
   ];
@@ -143,6 +137,8 @@ export class PatientsCrudComponent implements OnInit {
         { key: 'email', labelKey: 'patients.field.email', type: 'text', columnSpan: 2 },
         { key: 'primaryPhone', labelKey: 'patients.field.primaryPhone', type: 'text', columnSpan: 2 },
         { key: 'secondaryPhone', labelKey: 'patients.field.secondaryPhone', type: 'text', columnSpan: 2 },
+        { key: 'caregiverFullName', labelKey: 'patients.field.caregiverFullName', type: 'text' },
+        { key: 'caregiverPhone', labelKey: 'patients.field.caregiverPhone', type: 'text' },
         {
           key: 'regionId',
           labelKey: 'patients.field.region',
@@ -193,6 +189,10 @@ export class PatientsCrudComponent implements OnInit {
       titleKey: 'patients.folder.privacy',
       fields: [
         { key: 'dataProcessingConsent', labelKey: 'patients.field.dataProcessingConsent', type: 'checkbox', readonly: true, required: true },
+        { key: 'otpRecipient', labelKey: 'patients.field.otpRecipient', type: 'select', transient: true, options: [
+          { value: 'primaryPhone', label: 'patients.otp.recipient.primary' },
+          { value: 'caregiverPhone', label: 'patients.otp.recipient.caregiver' }
+        ] },
         {
           key: 'patientConsentOtpSendAction',
           labelKey: 'patients.privacy.otp.sendAction',
@@ -225,8 +225,6 @@ export class PatientsCrudComponent implements OnInit {
         { key: 'preferredPickupPharmacy', labelKey: 'patients.field.preferredPickupPharmacy', type: 'select' },
         { key: 'deliveryMode', labelKey: 'patients.field.deliveryMode', type: 'text' },
         { key: 'reminderEnabled', labelKey: 'patients.field.reminderEnabled', type: 'checkbox' },
-        { key: 'caregiverFullName', labelKey: 'patients.field.caregiverFullName', type: 'text' },
-        { key: 'caregiverPhone', labelKey: 'patients.field.caregiverPhone', type: 'text' },
         { key: 'preferredContact', labelKey: 'patients.field.preferredContact', type: 'text' },
         { key: 'structureId', labelKey: 'patients.field.structureId', type: 'number' }
       ]

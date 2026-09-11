@@ -22,38 +22,7 @@ export class PatientsCrudComponent {
     { key: 'email', labelKey: 'patients.field.email', type: 'text' },
     { key: 'primaryPhone', labelKey: 'patients.field.primaryPhone', type: 'text' },
     { key: 'secondaryPhone', labelKey: 'patients.field.secondaryPhone', type: 'text' },
-    {
-      key: 'regionId',
-      labelKey: 'patients.field.region',
-      type: 'select',
-      optionsEndpoint: 'geography/regions',
-      optionValueKey: 'id',
-      optionLabelKey: 'name',
-      relatedFields: { region: 'name' },
-      resetFieldsOnChange: ['provinceId', 'province', 'cityId', 'city']
-    },
-    { key: 'region', labelKey: 'patients.field.region', type: 'text', hidden: true },
-    {
-      key: 'provinceId',
-      labelKey: 'patients.field.province',
-      type: 'select',
-      optionsEndpoint: 'geography/provinces/by-region/{regionId}',
-      optionValueKey: 'id',
-      optionLabelKey: 'name',
-      relatedFields: { province: 'name' },
-      resetFieldsOnChange: ['cityId', 'city']
-    },
-    { key: 'province', labelKey: 'patients.field.province', type: 'text', hidden: true },
-    {
-      key: 'cityId',
-      labelKey: 'patients.field.city',
-      type: 'select',
-      optionsEndpoint: 'geography/cities/by-province/{provinceId}',
-      optionValueKey: 'id',
-      optionLabelKey: 'name',
-      relatedFields: { city: 'name' }
-    },
-    { key: 'city', labelKey: 'patients.field.city', type: 'text', hidden: true },
+    
     { key: 'deliveryAddress', labelKey: 'patients.field.deliveryAddress', type: 'text' },
     { key: 'secondaryAddresses', labelKey: 'patients.field.secondaryAddresses', type: 'text' },
     { key: 'communicationChannels', labelKey: 'patients.field.communicationChannels', type: 'text' },
@@ -70,8 +39,7 @@ export class PatientsCrudComponent {
     { key: 'preferredPickupPharmacy', labelKey: 'patients.field.preferredPickupPharmacy', type: 'text' },
     { key: 'deliveryMode', labelKey: 'patients.field.deliveryMode', type: 'text' },
     { key: 'reminderEnabled', labelKey: 'patients.field.reminderEnabled', type: 'checkbox' },
-    { key: 'caregiverFullName', labelKey: 'patients.field.caregiverFullName', type: 'text' },
-    { key: 'caregiverPhone', labelKey: 'patients.field.caregiverPhone', type: 'text' },
+    
     { key: 'preferredContact', labelKey: 'patients.field.preferredContact', type: 'text' },
     { key: 'structureId', labelKey: 'patients.field.structureId', type: 'number' }
   ];
