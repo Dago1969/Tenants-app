@@ -28,6 +28,7 @@ public class StructureDto {
     private String province;
     private Long regionId;
     private String region;
+    private Integer year;
     private String phone;
     private String email;
     private String serviceCalendarHours;
@@ -43,6 +44,15 @@ public class StructureDto {
      * Lista di referenti associati alla struttura.
      */
     private java.util.List<ReferentDto> referents;
+
+    /** External source identification (e.g. 'QTMTicket') */
+    private String externalSource;
+
+    /** External id in the external source (e.g. ASL/Hospital id from QTMTicket) */
+    private Long externalId;
+
+    /** Optional JSON snapshot of referents stored for quick lookup */
+    private String referentsJson;
 
     /**
      * Dipartimenti Ticket associati alla struttura ospedaliera con referente locale opzionale.

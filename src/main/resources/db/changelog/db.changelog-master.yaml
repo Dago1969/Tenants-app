@@ -66,3 +66,7 @@ databaseChangeLog:
   - include:
       file: 20260813-03-align-therapeutic-plan-professional-assignments.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: 20260911-01-add-structure-external-columns.yaml
+      relativeToChangelogFile: true

@@ -70,18 +70,20 @@ public class StructureController {
             @RequestParam(required = false) Long parentStructureId,
             @RequestParam(required = false) String code,
             @RequestParam(required = false) String name,
+                    @RequestParam(required = false) String region,
+                    @RequestParam(required = false) String parentStructureName,
             @RequestParam(required = false) String city,
             @RequestParam(required = false) Boolean active,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
                 String moduleCode = resolveSearchModuleCode(structureType, structureTypes);
-                log.info("[StructureController] GET /structures params: structureType={}, structureTypes={}, parentStructureId={}, code={}, name={}, city={}, active={}, selectedRole={}",
-                                structureType, structureTypes, parentStructureId, code, name, city, active, selectedRole);
+                        log.info("[StructureController] GET /structures params: structureType={}, structureTypes={}, parentStructureId={}, code={}, name={}, region={}, parentStructureName={}, city={}, active={}, selectedRole={}",
+                                        structureType, structureTypes, parentStructureId, code, name, region, parentStructureName, city, active, selectedRole);
         // Loggo i tipi struttura disponibili per debug e prevenzione errori code
         List<StructureTypeDto> types = structureService.findSupportedTypes();
         log.info("[StructureController] Tipi struttura disponibili: {}", types.stream().map(StructureTypeDto::getCode).toList());
         controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, moduleCode);
-                return ResponseEntity.ok(structureService.findAll(structureType, structureTypes, parentStructureId, code, name, city, active));
+                return ResponseEntity.ok(structureService.findAll(structureType, structureTypes, parentStructureId, code, name, region, parentStructureName, city, active));
     }
 
     @GetMapping("/types")
@@ -140,6 +142,47 @@ public class StructureController {
                 ControllerFunctionAuthorizationService.DELETE_FUNCTION_CODE
         );
         structureService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/associate")
+    public ResponseEntity<StructureDto> associate(
+            @RequestBody java.util.Map<String, Object> body,
+            @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
+    ) {
+        String externalSource = (String) body.getOrDefault("externalSource", "QTMTicket");
+        Number externalIdNum = (Number) body.get("externalId");
+        Long externalId = externalIdNum == null ? null : externalIdNum.longValue();
+        String structureType = (String) body.get("structureType");
+        String name = (String) body.get("name");
+        Number parentExternalIdNum = (Number) body.get("parentExternalId");
+        Long parentExternalId = parentExternalIdNum == null ? null : parentExternalIdNum.longValue();
+        String referentsJson = (String) body.get("referentsJson");
+
+        if (externalId == null || structureType == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        controllerFunctionAuthorizationService.requireFullEditPermission(
+                selectedRole,
+                resolveModuleCode(structureType),
+                ControllerFunctionAuthorizationService.CREATE_FUNCTION_CODE
+        );
+
+        return ResponseEntity.ok(structureService.associateExternal(externalSource, externalId, structureType, name, parentExternalId, referentsJson));
+    }
+
+    @PostMapping("/{id}/deactivate")
+    public ResponseEntity<Void> deactivate(
+            @PathVariable Long id,
+            @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
+    ) {
+        controllerFunctionAuthorizationService.requireFullEditPermission(
+                selectedRole,
+                resolveModuleCode(structureService.findStructureTypeCode(id)),
+                ControllerFunctionAuthorizationService.UPDATE_FUNCTION_CODE
+        );
+        structureService.deactivate(id);
         return ResponseEntity.noContent().build();
     }
 

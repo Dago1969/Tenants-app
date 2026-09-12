@@ -34,6 +34,7 @@ type PopupStructureType =
       [endpoint]="endpoint"
       [filters]="filters"
       [resultColumns]="resultColumns"
+      [resultIdLabelKey]="resultIdLabelKey"
       [fixedParams]="fixedParams"
       [detailRouteBase]="detailRouteBase"
       [moduleCode]="moduleCode"
@@ -88,6 +89,7 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
   detailRouteBase = '';
   moduleCode: string = STRUCTURE_MODULE_CODES.GENERIC;
   createFunctionCode = 'CREATE';
+  resultIdLabelKey = 'common.id' as MessageKey;
   printSections: SearchPrintSection[] = [];
   viewLabelKeys: Record<string, MessageKey> = {};
   private departmentsList: DepartmentDto[] = [];
@@ -196,6 +198,57 @@ export class StructureSearchComponent implements OnInit, OnDestroy {
           baseFilters[3]
         ]
       : baseFilters;
+
+    if (structureType === 'ASL') {
+      this.filters = [
+        { key: 'code', labelKey: 'structures.field.code', type: 'text' },
+        {
+          key: 'region',
+          labelKey: 'structures.field.regione',
+          type: 'select',
+          optionsEndpoint: 'geography/regions',
+          optionValueKey: 'name',
+          optionLabelKey: 'name'
+        },
+        { key: 'name', labelKey: 'structures.field.denom', type: 'text' }
+      ];
+
+      this.resultColumns = [
+        { key: 'code', labelKey: 'structures.field.code', type: 'text' },
+        { key: 'name', labelKey: 'structures.field.denom', type: 'text' },
+        { key: 'region', labelKey: 'structures.field.regione', type: 'text' },
+        { key: 'province', labelKey: 'structures.field.province', type: 'text' },
+        { key: 'address', labelKey: 'structures.field.address', type: 'text' },
+        { key: 'email', labelKey: 'structures.field.email', type: 'text' },
+        { key: 'phone', labelKey: 'structures.field.phone', type: 'text' }
+      ];
+    }
+
+    if (structureType === 'HOSPITAL') {
+      this.filters = [
+        { key: 'code', labelKey: 'structures.field.code', type: 'text' },
+        {
+          key: 'region',
+          labelKey: 'structures.field.regione',
+          type: 'select',
+          optionsEndpoint: 'geography/regions',
+          optionValueKey: 'name',
+          optionLabelKey: 'name'
+        },
+        { key: 'parentStructureName', labelKey: 'structures.field.parentAsl', type: 'text' },
+        { key: 'name', labelKey: 'structures.field.denom', type: 'text' }
+      ];
+
+      this.resultColumns = [
+        { key: 'year', labelKey: 'therapeuticPlan.medicalRecord.field.diagnosisYear', type: 'text' },
+        { key: 'region', labelKey: 'structures.field.regione', type: 'text' },
+        { key: 'parentStructureName', labelKey: 'structures.field.parentAsl', type: 'text' },
+        { key: 'code', labelKey: 'structures.field.code', type: 'text' },
+        { key: 'name', labelKey: 'structures.field.denom', type: 'text' },
+        { key: 'city', labelKey: 'structures.field.city', type: 'text' },
+        { key: 'structureTypeDescription', labelKey: 'structures.field.structureType', type: 'text' }
+      ];
+    }
 
     // Populate result column display map for structureType so codes are shown as localized labels
     const structureTypeMap: Record<string, string> = this.buildStructureTypeDisplayMap();

@@ -42,6 +42,9 @@ class StructureServiceTest {
     @Mock
     private ReferentRepository referentRepository;
 
+    @Mock
+    private com.qtm.tenants.structure.client.StructureRemoteClient structureRemoteClient;
+
     private StructureService structureService;
 
     @BeforeEach
@@ -51,7 +54,8 @@ class StructureServiceTest {
                 new StructureMapper(structureTypeRegistry),
                 structureTypeRegistry,
                 hospitalDepartmentRepository,
-                referentRepository
+            referentRepository,
+            structureRemoteClient
         );
     }
 

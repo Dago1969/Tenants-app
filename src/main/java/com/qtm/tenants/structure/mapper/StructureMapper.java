@@ -66,6 +66,9 @@ public class StructureMapper {
         dto.setStructureTypeDisplayOrder(structureType == null ? null : structureType.getDisplayOrder());
         dto.setParentStructureId(entity.getParentStructureId());
         dto.setParentStructureName(parentStructureName);
+        dto.setExternalSource(entity.getExternalSource());
+        dto.setExternalId(entity.getExternalId());
+        dto.setReferentsJson(entity.getReferentsJson());
         // Pharmacy associations removed: hospital departments are stored in
         // the `hospital_departments` table and exposed via dedicated API.
         return dto;
@@ -119,6 +122,10 @@ public class StructureMapper {
         entity.setActive(dto.isActive());
         entity.setParentStructureId(dto.getParentStructureId());
         entity.setStructureType(structureTypeRegistry.getRequiredByCode(dto.getStructureType()).getCode());
+        // External association metadata
+        entity.setExternalSource(dto.getExternalSource());
+        entity.setExternalId(dto.getExternalId());
+        entity.setReferentsJson(dto.getReferentsJson());
         // Pharmacy associations removed from entity mapping.
     }
 

@@ -31,5 +31,9 @@ public interface StructureRepository extends JpaRepository<StructureEntity, Long
 
     Optional<StructureEntity> findByCode(String code);
 
+        Optional<StructureEntity> findByExternalSourceAndExternalId(String externalSource, Long externalId);
+
+        List<StructureEntity> findAllByExternalSourceAndStructureTypeAndActive(String externalSource, String structureType, Boolean active);
+
         boolean existsByStructureType(String structureType);
 }

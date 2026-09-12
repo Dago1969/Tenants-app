@@ -28,6 +28,8 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.qtm.tenants.structure.client.StructureRemoteClient;
+
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.CONFLICT;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
@@ -44,6 +46,7 @@ public class StructureService {
     private final StructureTypeRegistry structureTypeRegistry;
     private final HospitalDepartmentRepository hospitalDepartmentRepository;
     private final ReferentRepository referentRepository;
+    private final StructureRemoteClient structureRemoteClient;
 
     @Transactional
     public StructureDto create(StructureDto structureDto) {
@@ -58,7 +61,7 @@ public class StructureService {
 
     @Transactional(readOnly = true)
     public List<StructureDto> findAll(String structureTypeCode, Long parentStructureId) {
-        return findAll(structureTypeCode, null, parentStructureId, null, null, null, null);
+        return findAll(structureTypeCode, null, parentStructureId, null, null, null, null, null, null);
     }
 
     @Transactional(readOnly = true)
@@ -68,12 +71,36 @@ public class StructureService {
             Long parentStructureId,
             String code,
             String name,
+            String region,
+                String parentStructureName,
             String city,
             Boolean active
     ) {
+        // If requesting ASL, fetch from remote QTMDB and filter by local associations
+        if (structureTypeCode != null && "ASL".equalsIgnoreCase(structureTypeCode)) {
+            // Fetch ASLs from remote QTMDB and do local filtering (do not read local associations)
+            List<com.qtm.tenants.structure.dto.StructureDto> remoteAsls = structureRemoteClient.fetchAsl();
+            return remoteAsls.stream()
+                .filter(dto -> matchesFilter(dto.getCode(), code))
+                .filter(dto -> matchesFilter(dto.getName(), name))
+                .filter(dto -> matchesFilter(dto.getRegion(), region))
+                .filter(dto -> matchesFilter(dto.getCity(), city))
+                .toList();
+        }
+            if (structureTypeCode != null && "HOSPITAL".equalsIgnoreCase(structureTypeCode)) {
+                List<com.qtm.tenants.structure.dto.StructureDto> remoteHospitals = structureRemoteClient.fetchHospitals();
+                return remoteHospitals.stream()
+                .filter(dto -> matchesFilter(dto.getCode(), code))
+                .filter(dto -> matchesFilter(dto.getName(), name))
+                .filter(dto -> matchesFilter(dto.getRegion(), region))
+                .filter(dto -> matchesFilter(dto.getParentStructureName(), parentStructureName))
+                .filter(dto -> matchesFilter(dto.getCity(), city))
+                .toList();
+            }
         List<StructureEntity> entities = resolveEntities(structureTypeCode, structureTypes, parentStructureId).stream()
             .filter(entity -> matchesFilter(entity.getCode(), code))
             .filter(entity -> matchesFilter(entity.getName(), name))
+            .filter(entity -> matchesFilter(entity.getRegion(), region))
             .filter(entity -> matchesFilter(entity.getCity(), city))
             .filter(entity -> active == null || Boolean.TRUE.equals(entity.getActive()) == active)
             .toList();
@@ -100,6 +127,50 @@ public class StructureService {
         StructureEntity saved = structureRepository.save(current);
         syncHospitalDepartments(saved, structureDto.getDepartmentsSelected());
         return toDto(saved);
+    }
+
+    @Transactional
+    public StructureDto associateExternal(String externalSource, Long externalId, String structureTypeCode, String name, Long parentExternalId, String referentsJson) {
+        // try to find existing
+        java.util.Optional<StructureEntity> existing = structureRepository.findByExternalSourceAndExternalId(externalSource, externalId);
+
+        if (existing.isPresent()) {
+            StructureEntity entity = existing.get();
+            entity.setActive(Boolean.TRUE);
+            if (name != null && !name.isBlank()) {
+                entity.setName(name);
+            }
+            if (referentsJson != null) {
+                entity.setReferentsJson(referentsJson);
+            }
+            StructureEntity saved = structureRepository.save(entity);
+            return toDto(saved);
+        }
+
+        // create new StructureDto with auto-generated code if missing
+        StructureDto dto = new StructureDto();
+        dto.setStructureType(structureTypeCode);
+        dto.setName(name == null ? externalSource + "-" + externalId : name);
+        dto.setCode(externalSource + "-" + externalId);
+        dto.setActive(true);
+        dto.setAddress("");
+        dto.setExternalSource(externalSource);
+        dto.setExternalId(externalId);
+        dto.setReferentsJson(referentsJson);
+
+        // resolve parent if provided: parentExternalId must belong to same externalSource
+        if (parentExternalId != null) {
+            structureRepository.findByExternalSourceAndExternalId(externalSource, parentExternalId).ifPresent(parent -> dto.setParentStructureId(parent.getId()));
+        }
+
+        return create(dto);
+    }
+
+    @Transactional
+    public void deactivate(Long id) {
+        StructureEntity entity = findEntityById(id);
+        entity.setActive(false);
+        structureRepository.save(entity);
     }
 
     @Transactional

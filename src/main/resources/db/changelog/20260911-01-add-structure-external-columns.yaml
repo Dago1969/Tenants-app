@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260911-01
+      author: copilot
+      changes:
+        - addColumn:
+            tableName: structures
+            columns:
+              - column:
+                  name: external_source
+                  type: varchar(100)
+              - column:
+                  name: external_id
+                  type: bigint
+              - column:
+                  name: referents_json
+                  type: varchar(8000)
+      preConditions:
+        - not:
+            columnExists:
+              tableName: structures
+              columnName: external_source
+      rollback:
+        - dropColumn:
+            columnName: external_source
+            tableName: structures
+        - dropColumn:
+            columnName: external_id
+            tableName: structures
+        - dropColumn:
+            columnName: referents_json
+            tableName: structures

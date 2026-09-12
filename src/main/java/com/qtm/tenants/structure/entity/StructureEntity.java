@@ -84,6 +84,15 @@ public class StructureEntity {
     @Column(name = "parent_structure_id")
     private Long parentStructureId;
 
+    @Column(name = "external_source")
+    private String externalSource;
+
+    @Column(name = "external_id")
+    private Long externalId;
+
+    @Column(name = "referents_json", length = 8000)
+    private String referentsJson;
+
     // NOTE: association with pharmacies removed — hospital pharmacy associations are now
     // represented in the dedicated `hospital_departments` table (Liquibase changelog added).
 }
