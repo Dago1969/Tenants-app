@@ -80,6 +80,7 @@ public class StructureRemoteClient {
     private StructureDto toStructureDto(AslOverviewRemoteDto asl) {
         StructureDto dto = new StructureDto();
         dto.setExternalSource("QTMDB");
+        dto.setId(asl.getId());
         dto.setExternalId(asl.getId());
         dto.setCode(asl.getCodiceAzienda());
         dto.setName(asl.getDenominazioneAzienda());
@@ -97,6 +98,7 @@ public class StructureRemoteClient {
     private StructureDto toHospitalStructureDto(HospitalOverviewRemoteDto hospital) {
         StructureDto dto = new StructureDto();
         dto.setExternalSource("QTMDB");
+        dto.setId(hospital.getId());
         dto.setExternalId(hospital.getId());
         dto.setCode(hospital.getCodiceStruttura());
         dto.setName(hospital.getStruttura());

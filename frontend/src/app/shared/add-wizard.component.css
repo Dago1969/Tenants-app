@@ -92,6 +92,22 @@
   margin-bottom: 18px;
 }
 
+/* Ensure labels inside form rows expand and fields don't overflow */
+.form-row > label {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.search-filter-select,
+.form-row select,
+.form-row input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
 .referent-toolbar-row {
   align-items: flex-end;
   gap: 16px;

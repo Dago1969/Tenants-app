@@ -1,0 +1,47 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260912-01-add-doctor-type-and-department-columns
+      author: copilot
+      comment: Adds doctor type and department association fields used by the doctors wizard.
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        and:
+          - tableExists:
+              tableName: doctors
+          - not:
+              columnExists:
+                tableName: doctors
+                columnName: doctor_type_code
+      changes:
+        - addColumn:
+            tableName: doctors
+            columns:
+              - column:
+                  name: doctor_type_code
+                  type: VARCHAR(32)
+              - column:
+                  name: department_id
+                  type: BIGINT
+
+  - changeSet:
+      id: 20260912-02-backfill-doctor-type-code
+      author: copilot
+      comment: Aligns existing doctor records to the MED type code default.
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        and:
+          - tableExists:
+              tableName: doctors
+          - columnExists:
+              tableName: doctors
+              columnName: doctor_type_code
+      changes:
+        - update:
+            tableName: doctors
+            columns:
+              - column:
+                  name: doctor_type_code
+                  value: MED
+            where: doctor_type_code IS NULL OR doctor_type_code = ''

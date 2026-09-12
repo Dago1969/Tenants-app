@@ -2,6 +2,7 @@ package com.qtm.tenants.structure.controller;
 
 import com.qtm.tenants.authorization.service.ControllerFunctionAuthorizationService;
 import com.qtm.tenants.structure.StructureModuleCodes;
+import com.qtm.tenants.structure.dto.StructureDepartmentOptionDto;
 import com.qtm.tenants.structure.dto.StructureDto;
 import com.qtm.tenants.structure.dto.StructureParentOptionDto;
 import com.qtm.tenants.structure.dto.StructureTypeDto;
@@ -114,6 +115,18 @@ public class StructureController {
         );
         return ResponseEntity.ok(structureService.findById(id));
     }
+
+        @GetMapping("/{id}/departments")
+        public ResponseEntity<List<StructureDepartmentOptionDto>> findDepartmentsByStructureId(
+                        @PathVariable Long id,
+                        @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
+        ) {
+                controllerFunctionAuthorizationService.requireModuleAccess(
+                                selectedRole,
+                                resolveModuleCode(structureService.findStructureTypeCode(id))
+                );
+                return ResponseEntity.ok(structureService.findDepartmentOptions(id));
+        }
 
     @PutMapping("/{id}")
     public ResponseEntity<StructureDto> update(

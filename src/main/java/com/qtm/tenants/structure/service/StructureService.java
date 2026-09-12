@@ -1,9 +1,12 @@
 package com.qtm.tenants.structure.service;
 
+import com.qtm.commonlib.dto.DepartmentDto;
 import com.qtm.tenants.referent.entity.ReferentEntity;
 import com.qtm.tenants.referent.repository.ReferentRepository;
+import com.qtm.tenants.ticket.service.TicketService;
 import com.qtm.tenants.structure.dto.HospitalDepartmentDto;
 import com.qtm.tenants.structure.StructureType;
+import com.qtm.tenants.structure.dto.StructureDepartmentOptionDto;
 import com.qtm.tenants.structure.dto.StructureDto;
 import com.qtm.tenants.structure.dto.StructureParentOptionDto;
 import com.qtm.tenants.structure.dto.StructureTypeDto;
@@ -47,6 +50,7 @@ public class StructureService {
     private final HospitalDepartmentRepository hospitalDepartmentRepository;
     private final ReferentRepository referentRepository;
     private final StructureRemoteClient structureRemoteClient;
+    private final TicketService ticketService;
 
     @Transactional
     public StructureDto create(StructureDto structureDto) {
@@ -76,9 +80,7 @@ public class StructureService {
             String city,
             Boolean active
     ) {
-        // If requesting ASL, fetch from remote QTMDB and filter by local associations
         if (structureTypeCode != null && "ASL".equalsIgnoreCase(structureTypeCode)) {
-            // Fetch ASLs from remote QTMDB and do local filtering (do not read local associations)
             List<com.qtm.tenants.structure.dto.StructureDto> remoteAsls = structureRemoteClient.fetchAsl();
             return remoteAsls.stream()
                 .filter(dto -> matchesFilter(dto.getCode(), code))
@@ -87,24 +89,27 @@ public class StructureService {
                 .filter(dto -> matchesFilter(dto.getCity(), city))
                 .toList();
         }
-            if (structureTypeCode != null && "HOSPITAL".equalsIgnoreCase(structureTypeCode)) {
-                List<com.qtm.tenants.structure.dto.StructureDto> remoteHospitals = structureRemoteClient.fetchHospitals();
-                return remoteHospitals.stream()
+        if (structureTypeCode != null && "HOSPITAL".equalsIgnoreCase(structureTypeCode)) {
+            List<com.qtm.tenants.structure.dto.StructureDto> remoteHospitals = structureRemoteClient.fetchHospitals();
+            return remoteHospitals.stream()
                 .filter(dto -> matchesFilter(dto.getCode(), code))
                 .filter(dto -> matchesFilter(dto.getName(), name))
                 .filter(dto -> matchesFilter(dto.getRegion(), region))
+                .filter(dto -> parentStructureId == null || java.util.Objects.equals(dto.getParentStructureId(), parentStructureId))
                 .filter(dto -> matchesFilter(dto.getParentStructureName(), parentStructureName))
                 .filter(dto -> matchesFilter(dto.getCity(), city))
+                .filter(dto -> active == null || Boolean.TRUE.equals(dto.isActive()) == active)
                 .toList();
-            }
-        List<StructureEntity> entities = resolveEntities(structureTypeCode, structureTypes, parentStructureId).stream()
-            .filter(entity -> matchesFilter(entity.getCode(), code))
-            .filter(entity -> matchesFilter(entity.getName(), name))
-            .filter(entity -> matchesFilter(entity.getRegion(), region))
-            .filter(entity -> matchesFilter(entity.getCity(), city))
-            .filter(entity -> active == null || Boolean.TRUE.equals(entity.getActive()) == active)
+        }
+        List<StructureDto> localDtos = toDtos(resolveEntities(structureTypeCode, structureTypes, parentStructureId));
+        return localDtos.stream()
+            .filter(dto -> matchesFilter(dto.getCode(), code))
+            .filter(dto -> matchesFilter(dto.getName(), name))
+            .filter(dto -> matchesFilter(dto.getRegion(), region))
+            .filter(dto -> matchesFilter(dto.getParentStructureName(), parentStructureName))
+            .filter(dto -> matchesFilter(dto.getCity(), city))
+            .filter(dto -> active == null || Boolean.TRUE.equals(dto.isActive()) == active)
             .toList();
-        return toDtos(entities);
         }
 
     @Transactional(readOnly = true)
@@ -115,6 +120,29 @@ public class StructureService {
     @Transactional(readOnly = true)
     public String findStructureTypeCode(Long id) {
         return findEntityById(id).getStructureType();
+    }
+
+    @Transactional(readOnly = true)
+    public List<StructureDepartmentOptionDto> findDepartmentOptions(Long structureId) {
+        findEntityById(structureId);
+
+        List<Long> departmentIds = loadHospitalDepartments(structureId).stream()
+                .map(HospitalDepartmentDto::getDepartmentId)
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .toList();
+
+        if (departmentIds.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, DepartmentDto> departmentsById = ticketService.listDepartments(null).stream()
+                .filter(item -> item.getId() != null)
+                .collect(Collectors.toMap(DepartmentDto::getId, item -> item, (left, right) -> left, LinkedHashMap::new));
+
+        return departmentIds.stream()
+                .map(departmentId -> toStructureDepartmentOption(departmentId, departmentsById.get(departmentId)))
+                .toList();
     }
 
     @Transactional
@@ -270,6 +298,19 @@ public class StructureService {
         dto.setDepartmentId(entity.getDepartmentId());
         dto.setReferentId(entity.getReferent() == null ? null : entity.getReferent().getId());
         return dto;
+    }
+
+    private StructureDepartmentOptionDto toStructureDepartmentOption(Long departmentId, DepartmentDto department) {
+        if (department == null) {
+            return new StructureDepartmentOptionDto(departmentId, String.valueOf(departmentId));
+        }
+
+        String departmentName = department.getReparto() == null || department.getReparto().isBlank()
+                ? String.valueOf(departmentId)
+                : department.getReparto().trim();
+        String area = department.getAreaFunzionale() == null ? "" : department.getAreaFunzionale().trim();
+        String label = area.isBlank() ? departmentName : departmentName + " - " + area;
+        return new StructureDepartmentOptionDto(departmentId, label);
     }
 
     private void syncHospitalDepartments(StructureEntity structure, List<HospitalDepartmentDto> departmentsSelected) {

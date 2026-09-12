@@ -34,8 +34,8 @@
 }
 
 .crud-card-popup {
-  width: min(900px, 96vw);
-  max-width: min(900px, 96vw);
+  width: min(1100px, 96vw);
+  max-width: min(1100px, 96vw);
   max-height: 90vh;
   margin: 0;
   overflow-y: auto;
@@ -251,6 +251,17 @@
   flex-direction: column;
   align-items: stretch;
   gap: 6px;
+  min-width: 0;
+}
+
+.crud-field-control,
+.crud-input,
+.crud-field-control select,
+.crud-field-control input,
+.crud-field-control textarea {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .crud-field-control-action {

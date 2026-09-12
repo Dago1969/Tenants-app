@@ -14,6 +14,7 @@ public class DoctorMapper {
         DoctorDto dto = new DoctorDto();
         dto.setId(entity.getId());
         dto.setDoctorFlyerId(entity.getDoctorFlyerId());
+        dto.setDoctorTypeCode(entity.getDoctorTypeCode());
         dto.setFullName(entity.getFullName());
         dto.setEmail(entity.getEmail());
         dto.setPrimaryPhone(entity.getPrimaryPhone());
@@ -27,6 +28,7 @@ public class DoctorMapper {
         dto.setDeliveryAddress(entity.getDeliveryAddress());
         dto.setSecondaryAddresses(entity.getSecondaryAddresses());
         dto.setStructureId(entity.getStructureId());
+        dto.setDepartmentId(entity.getDepartmentId());
         dto.setSpecialization(entity.getSpecialization());
         dto.setDataProcessingConsent(entity.getDataProcessingConsent());
         dto.setDataProcessingConsentDateTime(entity.getDataProcessingConsentDateTime());
@@ -39,6 +41,7 @@ public class DoctorMapper {
         DoctorEntity entity = new DoctorEntity();
         entity.setId(dto.getId());
         entity.setDoctorFlyerId(dto.getDoctorFlyerId());
+        entity.setDoctorTypeCode(dto.getDoctorTypeCode());
         entity.setFullName(dto.getFullName());
         entity.setEmail(dto.getEmail());
         entity.setPrimaryPhone(dto.getPrimaryPhone());
@@ -52,6 +55,7 @@ public class DoctorMapper {
         entity.setDeliveryAddress(dto.getDeliveryAddress());
         entity.setSecondaryAddresses(dto.getSecondaryAddresses());
         entity.setStructureId(dto.getStructureId());
+        entity.setDepartmentId(dto.getDepartmentId());
         entity.setSpecialization(dto.getSpecialization());
         entity.setDataProcessingConsent(dto.getDataProcessingConsent());
         entity.setDataProcessingConsentDateTime(dto.getDataProcessingConsentDateTime());

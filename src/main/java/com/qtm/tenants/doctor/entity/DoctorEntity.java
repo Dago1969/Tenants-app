@@ -29,6 +29,9 @@ public class DoctorEntity {
     @Column(name = "doctor_flyer_id", unique = true)
     private String doctorFlyerId;
 
+    @Column(name = "doctor_type_code")
+    private String doctorTypeCode;
+
     @Column(name = "full_name", nullable = false)
     private String fullName;
 
@@ -67,6 +70,9 @@ public class DoctorEntity {
 
     @Column(name = "structure_id")
     private Long structureId;
+
+    @Column(name = "department_id")
+    private Long departmentId;
 
     @Column(name = "specialization")
     private String specialization;

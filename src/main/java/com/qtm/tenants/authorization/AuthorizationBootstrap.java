@@ -85,8 +85,8 @@ public class AuthorizationBootstrap implements CommandLineRunner {
     );
 
             private static final List<String> DOCTOR_FIELDS = List.of(
-                "doctorFlyerId", "fullName", "email", "primaryPhone", "secondaryPhone",
-                "region", "province", "deliveryAddress", "secondaryAddresses", "structureId",
+                "doctorFlyerId", "doctorTypeCode", "fullName", "email", "primaryPhone", "secondaryPhone",
+                "region", "province", "deliveryAddress", "secondaryAddresses", "structureId", "departmentId",
                 "specialization", "dataProcessingConsent", "dataProcessingConsentDateTime",
                 "dataProcessingConsentRevocationLog", "additionalConsents"
             );

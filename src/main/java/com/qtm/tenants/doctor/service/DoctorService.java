@@ -31,9 +31,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.FORBIDDEN;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
@@ -45,13 +48,15 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 @Slf4j
 public class DoctorService {
 
-    private static final String DOCTOR_ID_PREFIX = "DOC-";
+        private static final String DEFAULT_DOCTOR_TYPE_CODE = "MED";
     private static final String MODULE_CODE = "DOCTOR";
     private static final String ENTITY_NAME = "doctor";
+        private static final Pattern TRAILING_DIGITS_PATTERN = Pattern.compile("(\\d+)$");
+        private static final Set<String> SUPPORTED_DOCTOR_TYPE_CODES = Set.of("MED", "INFOSP", "STAFF");
 
     private static final Set<String> PROTECTED_FIELDS = Set.of(
-            "doctorFlyerId", "fullName", "email", "primaryPhone", "secondaryPhone",
-            "regionId", "region", "provinceId", "province", "cityId", "city", "deliveryAddress", "secondaryAddresses", "structureId",
+            "doctorFlyerId", "doctorTypeCode", "fullName", "email", "primaryPhone", "secondaryPhone",
+            "regionId", "region", "provinceId", "province", "cityId", "city", "deliveryAddress", "secondaryAddresses", "structureId", "departmentId",
             "specialization", "dataProcessingConsent", "dataProcessingConsentDateTime",
             "dataProcessingConsentRevocationLog", "additionalConsents"
     );
@@ -67,12 +72,12 @@ public class DoctorService {
         enforceModuleWriteAllowed(policy);
         enforceFieldWriteAllowed(doctorDto, null, policy.fieldScopes());
 
-        DoctorEntity saved = doctorRepository.save(doctorMapper.toEntity(doctorDto));
+        DoctorEntity entity = doctorMapper.toEntity(doctorDto);
+        entity.setDoctorTypeCode(normalizeDoctorTypeCode(doctorDto.getDoctorTypeCode()));
 
-        if (saved.getDoctorFlyerId() == null || saved.getDoctorFlyerId().isBlank()) {
-            saved.setDoctorFlyerId(buildDoctorFlyerId(saved.getId()));
-            saved = doctorRepository.save(saved);
-        }
+        DoctorEntity saved = doctorRepository.save(entity);
+        synchronizeDoctorFlyerId(saved);
+        saved = doctorRepository.save(saved);
 
         return applyReadAuthorization(doctorMapper.toDto(saved), policy);
     }
@@ -124,6 +129,7 @@ public class DoctorService {
         enforceFieldWriteAllowed(doctorDto, currentDto, policy.fieldScopes());
 
         current.setDoctorFlyerId(doctorDto.getDoctorFlyerId());
+        current.setDoctorTypeCode(normalizeDoctorTypeCode(doctorDto.getDoctorTypeCode()));
         current.setFullName(doctorDto.getFullName());
         current.setEmail(doctorDto.getEmail());
         current.setPrimaryPhone(doctorDto.getPrimaryPhone());
@@ -137,11 +143,14 @@ public class DoctorService {
         current.setDeliveryAddress(doctorDto.getDeliveryAddress());
         current.setSecondaryAddresses(doctorDto.getSecondaryAddresses());
         current.setStructureId(doctorDto.getStructureId());
+        current.setDepartmentId(doctorDto.getDepartmentId());
         current.setSpecialization(doctorDto.getSpecialization());
         current.setDataProcessingConsent(doctorDto.getDataProcessingConsent());
         current.setDataProcessingConsentDateTime(doctorDto.getDataProcessingConsentDateTime());
         current.setDataProcessingConsentRevocationLog(doctorDto.getDataProcessingConsentRevocationLog());
         current.setAdditionalConsents(doctorDto.getAdditionalConsents());
+
+        synchronizeDoctorFlyerId(current);
 
         return applyReadAuthorization(doctorMapper.toDto(doctorRepository.save(current)), policy);
     }
@@ -153,8 +162,39 @@ public class DoctorService {
         doctorRepository.delete(findEntityById(id));
     }
 
-    private String buildDoctorFlyerId(Long id) {
-        return DOCTOR_ID_PREFIX + String.format("%06d", id);
+    private String buildDoctorFlyerId(String doctorTypeCode, Long id) {
+        return doctorTypeCode + "-" + String.format("%06d", id);
+    }
+
+    private void synchronizeDoctorFlyerId(DoctorEntity doctor) {
+        String doctorTypeCode = normalizeDoctorTypeCode(doctor.getDoctorTypeCode());
+        doctor.setDoctorTypeCode(doctorTypeCode);
+
+        if (doctor.getId() == null) {
+            return;
+        }
+
+        String currentDoctorFlyerId = doctor.getDoctorFlyerId();
+        if (currentDoctorFlyerId == null || currentDoctorFlyerId.isBlank()) {
+            doctor.setDoctorFlyerId(buildDoctorFlyerId(doctorTypeCode, doctor.getId()));
+            return;
+        }
+
+        Matcher matcher = TRAILING_DIGITS_PATTERN.matcher(currentDoctorFlyerId);
+        String numericSuffix = matcher.find() ? matcher.group(1) : String.format("%06d", doctor.getId());
+        doctor.setDoctorFlyerId(doctorTypeCode + "-" + numericSuffix);
+    }
+
+    private String normalizeDoctorTypeCode(String doctorTypeCode) {
+        String normalizedCode = doctorTypeCode == null || doctorTypeCode.isBlank()
+                ? DEFAULT_DOCTOR_TYPE_CODE
+                : doctorTypeCode.trim().toUpperCase(Locale.ROOT);
+
+        if (!SUPPORTED_DOCTOR_TYPE_CODES.contains(normalizedCode)) {
+            throw new ResponseStatusException(BAD_REQUEST, "Tipo dottore non supportato");
+        }
+
+        return normalizedCode;
     }
 
     private DoctorEntity findEntityById(Long id) {

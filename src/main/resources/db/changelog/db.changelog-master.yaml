@@ -70,3 +70,7 @@ databaseChangeLog:
   - include:
       file: 20260911-01-add-structure-external-columns.yaml
       relativeToChangelogFile: true
+
+  - include:
+      file: 20260912-01-add-doctor-type-and-department.yaml
+      relativeToChangelogFile: true

@@ -147,19 +147,19 @@ interface ConsentOtpConfig {
                 <div class="crud-field-control">
                   <div class="location-row">
                     <div class="location-item">
-                      <select class="crud-input" [ngModel]="formModel['regionId']" (ngModelChange)="onSelectChange(currentFields[i], $event)" [disabled]="isFieldDisabled(currentFields[i])">
+                      <select class="crud-input" [ngModel]="formModel['regionId']" (ngModelChange)="onSelectChange(currentFields[i], $event)" [name]="currentFields[i].key" [disabled]="isFieldDisabled(currentFields[i])">
                         <option value=""></option>
                         <option *ngFor="let option of getFieldOptions(currentFields[i])" [ngValue]="option.value">{{ resolveOptionLabel(option.label) }}</option>
                       </select>
                     </div>
                     <div class="location-item">
-                      <select class="crud-input" [ngModel]="formModel['provinceId']" (ngModelChange)="onSelectChange(currentFields[i+1], $event)" [disabled]="isFieldDisabled(currentFields[i+1])">
+                      <select class="crud-input" [ngModel]="formModel['provinceId']" (ngModelChange)="onSelectChange(currentFields[i+1], $event)" [name]="currentFields[i + 1].key" [disabled]="isFieldDisabled(currentFields[i+1])">
                         <option value=""></option>
                         <option *ngFor="let option of getFieldOptions(currentFields[i+1])" [ngValue]="option.value">{{ resolveOptionLabel(option.label) }}</option>
                       </select>
                     </div>
                     <div class="location-item">
-                      <select class="crud-input" [ngModel]="formModel['cityId']" (ngModelChange)="onSelectChange(currentFields[i+2], $event)" [disabled]="isFieldDisabled(currentFields[i+2])">
+                      <select class="crud-input" [ngModel]="formModel['cityId']" (ngModelChange)="onSelectChange(currentFields[i+2], $event)" [name]="currentFields[i + 2].key" [disabled]="isFieldDisabled(currentFields[i+2])">
                         <option value=""></option>
                         <option *ngFor="let option of getFieldOptions(currentFields[i+2])" [ngValue]="option.value">{{ resolveOptionLabel(option.label) }}</option>
                       </select>
@@ -255,6 +255,7 @@ interface ConsentOtpConfig {
                           [readOnly]="isFieldReadonly(field)"
                           (blur)="onFieldBlur(field)"
                           [required]="field.required === true"
+                          [attr.title]="asString(formModel[field.key])"
                           #genericField="ngModel"
                         />
                         <div *ngIf="shouldShowRequiredError(field, genericField)" class="crud-field-error">
@@ -269,6 +270,7 @@ interface ConsentOtpConfig {
                     class="crud-input"
                     [class.crud-input-invalid]="shouldShowRequiredError(field, selectField)"
                     [id]="field.key"
+                    [attr.title]="getSelectedOptionLabel(field)"
                     [ngModel]="formModel[field.key]"
                     (ngModelChange)="onSelectChange(field, $event)"
                     [name]="field.key"
@@ -501,6 +503,12 @@ export class CrudPageComponent implements OnInit, OnChanges {
 
   resolveOptionLabel(label: string): string {
     return hasMessageKey(label) ? t(label) : label;
+  }
+  getSelectedOptionLabel(field: CrudField): string {
+    const options = this.getFieldOptions(field);
+    const val = this.formModel[field.key];
+    const found = options.find((o) => o.value === val);
+    return found ? this.resolveOptionLabel(found.label) : '';
   }
 
   getFieldOptions(field: CrudField): SelectOption[] {
@@ -818,7 +826,6 @@ export class CrudPageComponent implements OnInit, OnChanges {
         this.fieldOptions[field.key] = [];
         continue;
       }
-
       this.http.get<Record<string, unknown>[]>(`${environment.apiBaseUrl}/${resolvedEndpoint}`).subscribe({
         next: (items) => {
           this.fieldOptions[field.key] = (items ?? [])
@@ -1222,7 +1229,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
     return this.asString(value).length > 0;
   }
 
-  private asString(value: unknown): string {
+  asString(value: unknown): string {
     return typeof value === 'string' ? value.trim() : '';
   }
 

@@ -16,6 +16,7 @@ public class DoctorDto {
 
     private Long id;
     private String doctorFlyerId;
+    private String doctorTypeCode;
     private String fullName;
     private String email;
     private String primaryPhone;
@@ -29,6 +30,7 @@ public class DoctorDto {
     private String deliveryAddress;
     private String secondaryAddresses;
     private Long structureId;
+    private Long departmentId;
     private String specialization;
     private Boolean dataProcessingConsent;
     private LocalDateTime dataProcessingConsentDateTime;
