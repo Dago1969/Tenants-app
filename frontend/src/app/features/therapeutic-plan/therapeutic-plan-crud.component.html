@@ -49,12 +49,42 @@
     </section>
 
     <section *ngIf="currentStep.key === 'clinical'" class="therapeutic-plan-grid">
+      <label class="therapeutic-plan-field">
+        <span>{{ translate('doctors.field.region') }}</span>
+        <select [(ngModel)]="clinicalFilters.regionId" (ngModelChange)="onClinicalRegionChange()">
+          <option [ngValue]="null"></option>
+          <option *ngFor="let region of regions" [ngValue]="region.id">
+            {{ region.name }}
+          </option>
+        </select>
+      </label>
+
+      <label class="therapeutic-plan-field">
+        <span>{{ translate('doctors.field.asl') }}</span>
+        <select [(ngModel)]="clinicalFilters.aslId" (ngModelChange)="onClinicalAslChange()">
+          <option [ngValue]="null"></option>
+          <option *ngFor="let asl of aslStructures" [ngValue]="asl.id">
+            {{ getStructureLabel(asl) }}
+          </option>
+        </select>
+      </label>
+
       <label class="therapeutic-plan-field therapeutic-plan-field-full">
         <span>{{ translate('therapeuticPlan.field.structure') }}</span>
-        <select [(ngModel)]="formModel.structureId">
+        <select [(ngModel)]="formModel.structureId" (ngModelChange)="onStructureSelectionChange()">
           <option [ngValue]="null"></option>
-          <option *ngFor="let structure of structures" [ngValue]="structure.id">
+          <option *ngFor="let structure of availableStructures" [ngValue]="structure.id">
             {{ getStructureLabel(structure) }}
+          </option>
+        </select>
+      </label>
+
+      <label class="therapeutic-plan-field therapeutic-plan-field-full">
+        <span>{{ translate('doctors.field.departmentId') }}</span>
+        <select [(ngModel)]="clinicalFilters.departmentId" (ngModelChange)="onDepartmentFilterChange()" [disabled]="formModel.structureId === null || departmentOptions.length === 0">
+          <option [ngValue]="null"></option>
+          <option *ngFor="let department of departmentOptions" [ngValue]="department.id">
+            {{ department.label }}
           </option>
         </select>
       </label>
@@ -72,7 +102,7 @@
           multiple
           class="therapeutic-plan-select"
         >
-          <option *ngFor="let nurse of nurses" [ngValue]="nurse.id">
+          <option *ngFor="let nurse of availableNurses" [ngValue]="nurse.id">
             {{ nurse.fullName }}
           </option>
         </select>
@@ -120,7 +150,7 @@
           multiple
           class="therapeutic-plan-select"
         >
-          <option *ngFor="let doctor of doctors" [ngValue]="doctor.id">
+          <option *ngFor="let doctor of availableDoctors" [ngValue]="doctor.id">
             {{ doctor.fullName }}
           </option>
         </select>

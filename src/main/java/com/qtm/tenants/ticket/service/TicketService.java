@@ -85,4 +85,13 @@ public class TicketService {
         DepartmentDto[] departments = ticketClient.listDepartments(area);
         return Arrays.asList(departments == null ? new DepartmentDto[0] : departments);
     }
+
+    /**
+     * Recupera i reparti (structure_departments) da QTMTicket per codice struttura.
+     */
+    public java.util.List<com.qtm.tenants.ticket.dto.StructureDepartmentSourceDto> listStructureDepartments(String codiceStruttura) {
+        log.info("Service: recupero structure_departments per struttura={}", codiceStruttura);
+        com.qtm.tenants.ticket.dto.StructureDepartmentSourceDto[] rows = ticketClient.listStructureDepartmentsByStructureCode(codiceStruttura);
+        return Arrays.asList(rows == null ? new com.qtm.tenants.ticket.dto.StructureDepartmentSourceDto[0] : rows);
+    }
 }

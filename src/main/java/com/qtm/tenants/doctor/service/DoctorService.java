@@ -84,9 +84,17 @@ public class DoctorService {
 
     @Transactional(readOnly = true)
     public List<DoctorDto> findAll() {
+        return findAll(null, null, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<DoctorDto> findAll(Long regionId, Long structureId, Long departmentId) {
         AuthorizationPolicy policy = resolveAuthorizationPolicy();
         enforceModuleReadAllowed(policy);
         return doctorRepository.findAll().stream()
+                .filter(doctor -> regionId == null || java.util.Objects.equals(doctor.getRegionId(), regionId))
+                .filter(doctor -> structureId == null || java.util.Objects.equals(doctor.getStructureId(), structureId))
+                .filter(doctor -> departmentId == null || java.util.Objects.equals(doctor.getDepartmentId(), departmentId))
                 .map(doctorMapper::toDto)
                 .map(dto -> applyReadAuthorization(dto, policy))
                 .toList();

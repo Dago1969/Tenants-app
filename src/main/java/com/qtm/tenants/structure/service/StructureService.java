@@ -16,6 +16,7 @@ import com.qtm.tenants.structure.mapper.StructureMapper;
 import com.qtm.tenants.structure.repository.HospitalDepartmentRepository;
 import com.qtm.tenants.structure.repository.StructureRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -42,6 +43,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class StructureService {
 
     private final StructureRepository structureRepository;
@@ -124,25 +126,85 @@ public class StructureService {
 
     @Transactional(readOnly = true)
     public List<StructureDepartmentOptionDto> findDepartmentOptions(Long structureId) {
-        findEntityById(structureId);
+        StructureEntity localStructure = structureRepository.findById(structureId).orElse(null);
+        String structureCode;
 
-        List<Long> departmentIds = loadHospitalDepartments(structureId).stream()
-                .map(HospitalDepartmentDto::getDepartmentId)
+        if (localStructure != null) {
+            structureCode = localStructure.getCode();
+            log.info("[StructureService] resolving departments using local structure id={} code={}", structureId, structureCode);
+        } else {
+            StructureDto hospital = structureRemoteClient.fetchHospitals().stream()
+                .filter(item -> item.getId() != null)
+                .filter(item -> java.util.Objects.equals(item.getId(), structureId))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Ospedale non trovato: " + structureId));
+            structureCode = hospital.getCode();
+            log.info("[StructureService] resolving departments using remote hospital id={} code={}", structureId, structureCode);
+        }
+
+        // First attempt: fetch departments from QTMDB (which proxies QTMTicket) structure_departments for this structure
+        log.info("[StructureService] fetching structure_departments from QTMDB for structureCode={}", structureCode);
+        java.util.List<com.qtm.tenants.ticket.dto.StructureDepartmentSourceDto> sourceDepartments = structureRemoteClient.fetchStructureDepartmentsByStructureCode(structureCode);
+
+        if (sourceDepartments != null && !sourceDepartments.isEmpty()) {
+            log.info("[StructureService] received {} rows from QTMDB for structureCode={}", sourceDepartments.size(), structureCode);
+            // load all departments to map names -> ids
+            Map<String, DepartmentDto> departmentsByName = ticketService.listDepartments(null).stream()
+                .filter(item -> item.getReparto() != null && !item.getReparto().isBlank())
+                .collect(Collectors.toMap(item -> item.getReparto().trim().toLowerCase(), item -> item, (left, right) -> left, LinkedHashMap::new));
+
+            List<Long> departmentIds = sourceDepartments.stream()
+                .map(sd -> {
+                if (sd.getDisciplina() == null) return null;
+                String key = sd.getDisciplina().trim().toLowerCase();
+                DepartmentDto match = departmentsByName.get(key);
+                if (match == null) {
+                    log.warn("[StructureService] no DepartmentDto match for disciplina='{}' from QTMDB for structureCode={}", sd.getDisciplina(), structureCode);
+                }
+                return match == null ? null : match.getId();
+                })
                 .filter(java.util.Objects::nonNull)
                 .distinct()
                 .toList();
 
-        if (departmentIds.isEmpty()) {
+            log.info("[StructureService] mapped {} disciplina values to {} departmentIds for structureCode={}", sourceDepartments.size(), departmentIds.size(), structureCode);
+
+            if (!departmentIds.isEmpty()) {
+            Map<Long, DepartmentDto> departmentsById = ticketService.listDepartments(null).stream()
+                .filter(item -> item.getId() != null)
+                .collect(Collectors.toMap(DepartmentDto::getId, item -> item, (left, right) -> left, LinkedHashMap::new));
+
+            return departmentIds.stream()
+                .map(departmentId -> toStructureDepartmentOption(departmentId, departmentsById.get(departmentId)))
+                .toList();
+            }
+        } else {
+            log.info("[StructureService] QTMDB returned no structure_departments for structureCode={}; falling back to local hospital departments", structureCode);
+        }
+
+        if (localStructure == null) {
+            log.info("[StructureService] no local structure found for id={}; skipping local hospital_departments fallback", structureId);
+            return List.of();
+        }
+
+        // Fallback: existing local hospital departments (unchanged behavior)
+        List<Long> localDepartmentIds = loadHospitalDepartments(localStructure.getId()).stream()
+            .map(HospitalDepartmentDto::getDepartmentId)
+            .filter(java.util.Objects::nonNull)
+            .distinct()
+            .toList();
+
+        if (localDepartmentIds.isEmpty()) {
             return List.of();
         }
 
         Map<Long, DepartmentDto> departmentsById = ticketService.listDepartments(null).stream()
-                .filter(item -> item.getId() != null)
-                .collect(Collectors.toMap(DepartmentDto::getId, item -> item, (left, right) -> left, LinkedHashMap::new));
+            .filter(item -> item.getId() != null)
+            .collect(Collectors.toMap(DepartmentDto::getId, item -> item, (left, right) -> left, LinkedHashMap::new));
 
-        return departmentIds.stream()
-                .map(departmentId -> toStructureDepartmentOption(departmentId, departmentsById.get(departmentId)))
-                .toList();
+        return localDepartmentIds.stream()
+            .map(departmentId -> toStructureDepartmentOption(departmentId, departmentsById.get(departmentId)))
+            .toList();
     }
 
     @Transactional

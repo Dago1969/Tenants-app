@@ -29,6 +29,8 @@ public class StructureRemoteClient {
     };
     private static final ParameterizedTypeReference<List<HospitalOverviewRemoteDto>> HOSPITAL_LIST_TYPE = new ParameterizedTypeReference<>() {
     };
+    private static final ParameterizedTypeReference<List<com.qtm.tenants.ticket.dto.StructureDepartmentSourceDto>> STRUCTURE_DEPARTMENTS_LIST_TYPE = new ParameterizedTypeReference<>() {
+    };
     private static final String SERVICE_UNAVAILABLE_MESSAGE = "Servizio ASL QTMDB non disponibile";
 
     private final RestClient restClient;
@@ -75,6 +77,26 @@ public class StructureRemoteClient {
                 .filter(item -> Boolean.TRUE.equals(item.getImported()))
                 .map(this::toHospitalStructureDto)
                 .toList();
+    }
+
+    public List<com.qtm.tenants.ticket.dto.StructureDepartmentSourceDto> fetchStructureDepartmentsByStructureCode(String codiceStruttura) {
+        log.info("[StructureRemoteClient] calling QTMDB /structure-departments/by-structure for codiceStruttura={}", codiceStruttura);
+        List<com.qtm.tenants.ticket.dto.StructureDepartmentSourceDto> rows = execute(() -> restClient.get()
+                .uri("/structure-departments/by-structure?codiceStruttura={codiceStruttura}", codiceStruttura)
+                .headers(this::applyForwardedHeaders)
+                .retrieve()
+                .body(STRUCTURE_DEPARTMENTS_LIST_TYPE));
+
+        if (rows == null || rows.isEmpty()) {
+            log.info("[StructureRemoteClient] QTMDB returned no structure_departments for codiceStruttura={}", codiceStruttura);
+            return List.of();
+        }
+
+        log.info("[StructureRemoteClient] QTMDB returned {} structure_departments rows for codiceStruttura={}", rows.size(), codiceStruttura);
+        // log up to first 10 codes for traceability
+        String keys = rows.stream().map(r -> r.getCodiceDisciplina() + "@" + r.getId()).limit(10).collect(java.util.stream.Collectors.joining(","));
+        log.debug("[StructureRemoteClient] sample rows for {}: {}", codiceStruttura, keys);
+        return rows;
     }
 
     private StructureDto toStructureDto(AslOverviewRemoteDto asl) {

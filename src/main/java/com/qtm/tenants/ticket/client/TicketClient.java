@@ -146,6 +146,23 @@ public class TicketClient {
         }
 
     /**
+     * Recupera i reparti (structure_departments) da QTMTicket filtrati per codice struttura.
+     */
+    public com.qtm.tenants.ticket.dto.StructureDepartmentSourceDto[] listStructureDepartmentsByStructureCode(String codiceStruttura) {
+        URI uri = UriComponentsBuilder.fromHttpUrl(ticketBaseUrl + "/structure-departments")
+            .queryParamIfPresent("codiceStruttura", Optional.ofNullable(codiceStruttura))
+            .build(true)
+            .toUri();
+
+        log.info("Recupero structure_departments da QTMTicket con URI: {}", uri);
+        return restClient.get()
+            .uri(uri)
+            .header(HttpHeaders.AUTHORIZATION, resolveAuthorizationHeader())
+            .retrieve()
+            .body(com.qtm.tenants.ticket.dto.StructureDepartmentSourceDto[].class);
+    }
+
+    /**
      * Recupera il token JWT dal contesto di sicurezza corrente.
      * Se non disponibile, lancia un'eccezione.
      */

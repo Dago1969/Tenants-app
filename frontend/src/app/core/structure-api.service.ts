@@ -3,6 +3,23 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
+export interface StructureDepartmentOptionDto {
+  id: number;
+  label: string;
+}
+
+export interface StructureSearchParams {
+  structureType?: string;
+  structureTypes?: string;
+  parentStructureId?: number | string;
+  parentStructureName?: string;
+  code?: string;
+  name?: string;
+  region?: string;
+  city?: string;
+  active?: boolean;
+}
+
 export interface StructureDto {
   id?: number;
   code: string;
@@ -49,6 +66,18 @@ export class StructureApiService {
     return this.http.get<StructureDto[]>(this.baseUrl, { params });
   }
 
+  searchStructures(searchParams: StructureSearchParams): Observable<StructureDto[]> {
+    let params = new HttpParams();
+
+    for (const [key, value] of Object.entries(searchParams)) {
+      if (value !== null && value !== undefined && String(value).trim().length > 0) {
+        params = params.set(key, String(value));
+      }
+    }
+
+    return this.http.get<StructureDto[]>(this.baseUrl, { params });
+  }
+
   getParentOptions(structureType: string): Observable<Array<{ id: number; code: string; name: string; structureType: string; structureTypeDescription?: string }>> {
     const params = new HttpParams().set('structureType', structureType);
     return this.http.get<Array<{ id: number; code: string; name: string; structureType: string; structureTypeDescription?: string }>>(
@@ -63,6 +92,10 @@ export class StructureApiService {
 
   getStructure(id: number | string): Observable<StructureDto> {
     return this.http.get<StructureDto>(`${this.baseUrl}/${id}`);
+  }
+
+  getDepartmentsByStructure(id: number | string): Observable<StructureDepartmentOptionDto[]> {
+    return this.http.get<StructureDepartmentOptionDto[]>(`${this.baseUrl}/${id}/departments`);
   }
 
   updateStructure(id: number | string, structure: StructureDto): Observable<StructureDto> {

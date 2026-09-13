@@ -13,6 +13,10 @@
 .therapeutic-plan-field {
 }
 
+.therapeutic-plan-field select[disabled] {
+  opacity: 0.7;
+}
+
 .therapeutic-plan-field-full {
   grid-column: 1 / -1;
 }

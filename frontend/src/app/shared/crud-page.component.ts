@@ -826,14 +826,37 @@ export class CrudPageComponent implements OnInit, OnChanges {
         this.fieldOptions[field.key] = [];
         continue;
       }
-      this.http.get<Record<string, unknown>[]>(`${environment.apiBaseUrl}/${resolvedEndpoint}`).subscribe({
+
+      const requestUrl = `${environment.apiBaseUrl}/${resolvedEndpoint}`;
+      // eslint-disable-next-line no-console
+      console.log('[CrudPageComponent] Loading select options', {
+        fieldKey: field.key,
+        optionsEndpoint: field.optionsEndpoint,
+        resolvedEndpoint,
+        requestUrl
+      });
+      this.http.get<Record<string, unknown>[]>(requestUrl).subscribe({
         next: (items) => {
+          // eslint-disable-next-line no-console
+          console.log('[CrudPageComponent] Loaded select options', {
+            fieldKey: field.key,
+            requestUrl,
+            itemCount: items?.length ?? 0
+          });
           this.fieldOptions[field.key] = (items ?? [])
             .map((item) => this.mapToSelectOption(field, item))
             .filter((option): option is SelectOption => option !== null);
           this.applyRelatedFields(field, this.formModel[field.key]);
         },
-        error: () => {
+        error: (error: HttpErrorResponse) => {
+          // eslint-disable-next-line no-console
+          console.error('[CrudPageComponent] Failed loading select options', {
+            fieldKey: field.key,
+            requestUrl,
+            status: error.status,
+            message: error.message,
+            error: error.error
+          });
           this.fieldOptions[field.key] = [];
         }
       });

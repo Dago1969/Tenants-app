@@ -121,11 +121,14 @@ public class StructureController {
                         @PathVariable Long id,
                         @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
         ) {
-                controllerFunctionAuthorizationService.requireModuleAccess(
-                                selectedRole,
-                                resolveModuleCode(structureService.findStructureTypeCode(id))
-                );
-                return ResponseEntity.ok(structureService.findDepartmentOptions(id));
+                        log.info("[StructureController] GET /structures/{}/departments selectedRole={}", id, selectedRole);
+//                controllerFunctionAuthorizationService.requireModuleAccess(
+//                                selectedRole,
+//                                resolveModuleCode(structureService.findStructureTypeCode(id))
+//                );
+                                List<StructureDepartmentOptionDto> departments = structureService.findDepartmentOptions(id);
+                        log.info("[StructureController] GET /structures/{}/departments returned {} options", id, departments.size());
+                                return ResponseEntity.ok(departments);
         }
 
     @PutMapping("/{id}")

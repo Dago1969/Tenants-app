@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -91,10 +92,13 @@ public class DoctorController {
 
     @GetMapping
     public ResponseEntity<List<DoctorDto>> findAll(
+            @RequestParam(required = false) Long regionId,
+            @RequestParam(required = false) Long structureId,
+            @RequestParam(required = false) Long departmentId,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
         controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
-        return ResponseEntity.ok(doctorService.findAll());
+        return ResponseEntity.ok(doctorService.findAll(regionId, structureId, departmentId));
     }
 
     @GetMapping("/{id}")
