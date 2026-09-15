@@ -22,6 +22,7 @@ import com.qtm.tenants.structure.entity.StructureEntity;
 import com.qtm.tenants.structure.mapper.StructureMapper;
 import com.qtm.tenants.structure.repository.HospitalDepartmentRepository;
 import com.qtm.tenants.structure.repository.StructureRepository;
+import com.qtm.tenants.ticket.service.TicketService;
 
 /**
  * Test del service strutture: verifica gestione CRUD di base.
@@ -45,6 +46,9 @@ class StructureServiceTest {
     @Mock
     private com.qtm.tenants.structure.client.StructureRemoteClient structureRemoteClient;
 
+    @Mock
+    private TicketService ticketService;
+
     private StructureService structureService;
 
     @BeforeEach
@@ -55,7 +59,8 @@ class StructureServiceTest {
                 structureTypeRegistry,
                 hospitalDepartmentRepository,
             referentRepository,
-            structureRemoteClient
+            structureRemoteClient,
+            ticketService
         );
     }
 

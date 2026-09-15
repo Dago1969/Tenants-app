@@ -3,7 +3,7 @@ import { CanActivateFn, Router } from '@angular/router';
 import { AuthService } from './auth.service';
 
 // URL della pagina di login di QTMDashboard
-const QTMDASHBOARD_LOGIN_URL = 'http://localhost:4200/login';
+const QTMDASHBOARD_LOGIN_URL = 'https://dashboard.qtmdev.quicare.com/login';
 /**
  * Guard minimale: consente accesso CRUD solo se token presente.
  */
