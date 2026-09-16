@@ -900,7 +900,10 @@ export class CrudPageComponent implements OnInit, OnChanges {
         continue;
       }
 
-      const requestUrl = `${environment.apiBaseUrl}/${resolvedEndpoint}`;
+      const baseUrl = resolvedEndpoint.startsWith('structure-departments?')
+        ? environment.ticketApiBaseUrl
+        : environment.apiBaseUrl;
+      const requestUrl = `${baseUrl}/${resolvedEndpoint}`;
       // eslint-disable-next-line no-console
       console.log('[CrudPageComponent] Loading select options', {
         fieldKey: field.key,
@@ -1058,6 +1061,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
         }
         this.loadSelectOptions();
         this.syncPhoneInputs();
+        this.resolveSelectDependenciesOnEdit();
         for (const field of this.getAllFields().filter((currentField) => currentField.type === 'select')) {
           this.applyRelatedFields(field, this.formModel[field.key]);
         }
@@ -1071,6 +1075,180 @@ export class CrudPageComponent implements OnInit, OnChanges {
 
   private asPhoneString(value: unknown): string {
     return typeof value === 'string' ? value : '';
+  }
+
+  private resolveSelectDependenciesOnEdit(): void {
+    if (this.endpoint !== 'doctors') {
+      return;
+    }
+
+    const departmentId = this.asNumericId(this.formModel['departmentId']);
+    const structureId = this.asNumericId(this.formModel['structureId']);
+
+    if (structureId !== null) {
+      this.resolveDoctorCascadeFromStructure(structureId, departmentId);
+      return;
+    }
+
+    if (departmentId !== null) {
+      this.resolveDoctorCascadeFromDepartment(departmentId);
+    }
+  }
+
+  private resolveDoctorCascadeFromStructure(structureId: number, departmentId: number | null): void {
+    this.http.get<Record<string, unknown>[]>(`${environment.apiBaseUrl}/structures`, {
+      params: {
+        structureType: 'HOSPITAL',
+        active: 'true'
+      }
+    }).subscribe({
+      next: (structures) => {
+        const matchedStructure = (structures ?? []).find((structure) => this.asNumericId(structure['id']) === structureId);
+        if (!matchedStructure) {
+          if (departmentId !== null) {
+            this.resolveDoctorCascadeFromDepartment(departmentId);
+          }
+          return;
+        }
+
+        this.applyDoctorCascadeSelection(
+          matchedStructure['parentStructureId'],
+          matchedStructure['parentStructureName'],
+          matchedStructure['id'],
+          matchedStructure['code'],
+          departmentId
+        );
+      },
+      error: () => {
+        if (departmentId !== null) {
+          this.resolveDoctorCascadeFromDepartment(departmentId);
+        }
+      }
+    });
+  }
+
+  private resolveDoctorCascadeFromDepartment(departmentId: number): void {
+    this.http.get<Record<string, unknown>>(`${environment.ticketApiBaseUrl}/structure-departments/${departmentId}`).subscribe({
+      next: (department) => {
+        const structureCode = this.asText(department['codiceStruttura'] ?? department['structureCode']);
+        if (!structureCode) {
+          return;
+        }
+
+        this.http.get<Record<string, unknown>[]>(`${environment.apiBaseUrl}/structures`, {
+          params: {
+            structureType: 'HOSPITAL',
+            code: structureCode,
+            active: 'true'
+          }
+        }).subscribe({
+          next: (structures) => {
+            const matchedStructure = (structures ?? [])[0];
+            if (!matchedStructure) {
+              return;
+            }
+
+            this.applyDoctorCascadeSelection(
+              matchedStructure['parentStructureId'],
+              matchedStructure['parentStructureName'],
+              matchedStructure['id'],
+              matchedStructure['code'],
+              departmentId
+            );
+          }
+        });
+      },
+      error: () => {
+        // keep the existing edit payload untouched if the downstream lookup is unavailable
+      }
+    });
+  }
+
+  private applyDoctorCascadeSelection(
+    aslId: unknown,
+    aslName: unknown,
+    structureId: unknown,
+    structureCode: unknown,
+    departmentId: number | null
+  ): void {
+    const normalizedAslId = this.asNumericId(aslId);
+    const normalizedAslName = this.asText(aslName);
+    const normalizedStructureId = this.asNumericId(structureId);
+    const normalizedStructureCode = this.asText(structureCode);
+
+    if (normalizedAslId !== null) {
+      this.formModel['aslId'] = normalizedAslId;
+    }
+    if (normalizedAslName) {
+      this.formModel['asl'] = normalizedAslName;
+    }
+    if (normalizedStructureId !== null) {
+      this.formModel['structureId'] = normalizedStructureId;
+    }
+    if (normalizedStructureCode) {
+      this.formModel['ticketStructureCode'] = normalizedStructureCode;
+    }
+
+    this.loadSelectOptions();
+
+    window.setTimeout(() => {
+      if (normalizedAslId !== null) {
+        this.trySetSelectFromTicketMapping('aslId', [normalizedAslId]);
+      }
+      if (normalizedStructureId !== null) {
+        this.trySetSelectFromTicketMapping('structureId', [normalizedStructureId]);
+      }
+      if (departmentId !== null) {
+        this.trySetSelectFromTicketMapping('departmentId', [departmentId]);
+      }
+    }, 300);
+  }
+
+  private trySetSelectFromTicketMapping(fieldKey: string, preferredValues: unknown[]): void {
+    const field = this.getAllFields().find((currentField) => currentField.key === fieldKey && currentField.type === 'select');
+    if (!field) {
+      return;
+    }
+
+    const candidateValues = preferredValues
+      .map((value) => this.asText(value))
+      .filter((value) => value.length > 0);
+    if (candidateValues.length === 0) {
+      return;
+    }
+
+    const matchedOption = this.getFieldOptions(field).find((option) => candidateValues.includes(this.asText(option.value)));
+    if (!matchedOption) {
+      return;
+    }
+
+    this.formModel[fieldKey] = matchedOption.value;
+    this.applyRelatedFields(field, matchedOption.value);
+  }
+
+  private asNumericId(value: unknown): number | null {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+
+    if (typeof value === 'string' && value.trim().length > 0) {
+      const parsedValue = Number(value);
+      return Number.isFinite(parsedValue) ? parsedValue : null;
+    }
+
+    return null;
+  }
+
+  private asText(value: unknown): string {
+    if (typeof value === 'string') {
+      return value.trim();
+    }
+
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return String(value);
+    }
+
+    return '';
   }
 
   private isReadonlyDisabledField(field: CrudField): boolean {

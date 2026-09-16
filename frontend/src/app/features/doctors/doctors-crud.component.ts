@@ -89,9 +89,10 @@ export class DoctorsCrudComponent {
       labelKey: 'doctors.field.associatedStructure',
       type: 'select',
       columnSpan: 2,
-      optionsEndpoint: 'structures?structureType=HOSPITAL&parentStructureName={asl}&active=true',
+      optionsEndpoint: 'structures?structureType=HOSPITAL&parentStructureId={aslId}&active=true',
       optionValueKey: 'id',
       optionLabelKey: 'name',
+      relatedFields: { ticketStructureCode: 'code' },
       resetFieldsOnChange: ['departmentId']
     },
     {
@@ -102,7 +103,7 @@ export class DoctorsCrudComponent {
       optionValueKey: 'externalId',
       optionLabelKey: 'name',
       relatedFields: { asl: 'name' },
-      resetFieldsOnChange: ['structureId', 'departmentId'],
+      resetFieldsOnChange: ['structureId', 'departmentId', 'ticketStructureCode'],
       transient: true
     },
     { key: 'asl', labelKey: 'doctors.field.asl', type: 'text', hidden: true, transient: true },
@@ -230,7 +231,7 @@ export class DoctorsCrudComponent {
           optionValueKey: 'externalId',
           optionLabelKey: 'name',
           relatedFields: { asl: 'name' },
-          resetFieldsOnChange: ['structureId', 'departmentId'],
+          resetFieldsOnChange: ['structureId', 'departmentId', 'ticketStructureCode'],
           transient: true
         },
         {
@@ -238,9 +239,10 @@ export class DoctorsCrudComponent {
           labelKey: 'doctors.field.associatedStructure',
           type: 'select',
           columnSpan: 2,
-          optionsEndpoint: 'structures?structureType=HOSPITAL&parentStructureName={asl}&active=true',
+          optionsEndpoint: 'structures?structureType=HOSPITAL&parentStructureId={aslId}&active=true',
           optionValueKey: 'id',
           optionLabelKey: 'name',
+          relatedFields: { ticketStructureCode: 'code' },
           resetFieldsOnChange: ['departmentId']
         },
         {
@@ -279,9 +281,10 @@ export class DoctorsCrudComponent {
           type: 'select',
           readonly: true,
           columnSpan: 2,
-          optionsEndpoint: 'structures?structureType=HOSPITAL&parentStructureName={asl}&active=true',
+          optionsEndpoint: 'structures?structureType=HOSPITAL&parentStructureId={aslId}&active=true',
           optionValueKey: 'id',
-          optionLabelKey: 'name'
+          optionLabelKey: 'name',
+          relatedFields: { ticketStructureCode: 'code' }
         },
         { key: 'asl', labelKey: 'doctors.field.asl', type: 'text', readonly: true, transient: true },
         {

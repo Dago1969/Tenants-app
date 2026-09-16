@@ -7,4 +7,16 @@
     "proxyTimeout": 300000,
     "timeout": 300000
   }
+  ,
+  "/api/ticket": {
+    "target": "http://localhost:8084",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/api/ticket": "/api"
+    },
+    "logLevel": "debug",
+    "proxyTimeout": 300000,
+    "timeout": 300000
+  }
 }
