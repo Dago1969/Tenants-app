@@ -2,6 +2,7 @@ import { CommonModule, Location } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { AfterViewInit, Component, ElementRef, Input, OnChanges, OnDestroy, OnInit, QueryList, SimpleChanges, ViewChildren } from '@angular/core';
 import { FormsModule, NgForm, NgModel } from '@angular/forms';
+import { NgSelectModule } from '@ng-select/ng-select';
 import intlTelInput, { type AllOptions, type Iti } from 'intl-tel-input';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Subscription } from 'rxjs';
@@ -80,7 +81,7 @@ interface ConsentOtpConfig {
 @Component({
   selector: 'app-crud-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NgSelectModule],
   styleUrls: ['./crud-page.component.css'],
   template: `
     <section class="crud-shell" [class.crud-shell-popup]="popupMode">
@@ -147,22 +148,67 @@ interface ConsentOtpConfig {
                 <div class="crud-field-control">
                   <div class="location-row">
                     <div class="location-item">
-                      <select class="crud-input" [ngModel]="formModel['regionId']" (ngModelChange)="onSelectChange(currentFields[i], $event)" [name]="currentFields[i].key" [disabled]="isFieldDisabled(currentFields[i])">
-                        <option value=""></option>
-                        <option *ngFor="let option of getFieldOptions(currentFields[i])" [ngValue]="option.value">{{ resolveOptionLabel(option.label) }}</option>
-                      </select>
+                      <ng-select
+                        class="crud-input"
+                        [items]="getFieldOptions(currentFields[i])"
+                        bindLabel="label"
+                        bindValue="value"
+                        [(ngModel)]="formModel['regionId']"
+                        (change)="onSelectChange(currentFields[i], formModel['regionId'])"
+                        [name]="currentFields[i].key"
+                        [disabled]="isFieldDisabled(currentFields[i])"
+                        [clearable]="true"
+                        placeholder="{{ translate('structures.select') }}"
+                      >
+                        <ng-template ng-option-tmp let-item="item">
+                          {{ resolveOptionLabel(item.label) }}
+                        </ng-template>
+                        <ng-template ng-label-tmp let-item="item">
+                          {{ resolveOptionLabel(item.label) }}
+                        </ng-template>
+                      </ng-select>
                     </div>
                     <div class="location-item">
-                      <select class="crud-input" [ngModel]="formModel['provinceId']" (ngModelChange)="onSelectChange(currentFields[i+1], $event)" [name]="currentFields[i + 1].key" [disabled]="isFieldDisabled(currentFields[i+1])">
-                        <option value=""></option>
-                        <option *ngFor="let option of getFieldOptions(currentFields[i+1])" [ngValue]="option.value">{{ resolveOptionLabel(option.label) }}</option>
-                      </select>
+                      <ng-select
+                        class="crud-input"
+                        [items]="getFieldOptions(currentFields[i+1])"
+                        bindLabel="label"
+                        bindValue="value"
+                        [(ngModel)]="formModel['provinceId']"
+                        (change)="onSelectChange(currentFields[i+1], formModel['provinceId'])"
+                        [name]="currentFields[i + 1].key"
+                        [disabled]="isFieldDisabled(currentFields[i+1])"
+                        [clearable]="true"
+                        placeholder="{{ translate('structures.select') }}"
+                      >
+                        <ng-template ng-option-tmp let-item="item">
+                          {{ resolveOptionLabel(item.label) }}
+                        </ng-template>
+                        <ng-template ng-label-tmp let-item="item">
+                          {{ resolveOptionLabel(item.label) }}
+                        </ng-template>
+                      </ng-select>
                     </div>
                     <div class="location-item">
-                      <select class="crud-input" [ngModel]="formModel['cityId']" (ngModelChange)="onSelectChange(currentFields[i+2], $event)" [name]="currentFields[i + 2].key" [disabled]="isFieldDisabled(currentFields[i+2])">
-                        <option value=""></option>
-                        <option *ngFor="let option of getFieldOptions(currentFields[i+2])" [ngValue]="option.value">{{ resolveOptionLabel(option.label) }}</option>
-                      </select>
+                      <ng-select
+                        class="crud-input"
+                        [items]="getFieldOptions(currentFields[i+2])"
+                        bindLabel="label"
+                        bindValue="value"
+                        [(ngModel)]="formModel['cityId']"
+                        (change)="onSelectChange(currentFields[i+2], formModel['cityId'])"
+                        [name]="currentFields[i + 2].key"
+                        [disabled]="isFieldDisabled(currentFields[i+2])"
+                        [clearable]="true"
+                        placeholder="{{ translate('structures.select') }}"
+                      >
+                        <ng-template ng-option-tmp let-item="item">
+                          {{ resolveOptionLabel(item.label) }}
+                        </ng-template>
+                        <ng-template ng-label-tmp let-item="item">
+                          {{ resolveOptionLabel(item.label) }}
+                        </ng-template>
+                      </ng-select>
                     </div>
                   </div>
                 </div>
@@ -266,26 +312,53 @@ interface ConsentOtpConfig {
                   </ng-template>
                 </div>
                 <div *ngIf="field.type === 'select'" class="crud-field-control">
-                  <select
-                    class="crud-input"
-                    [class.crud-input-invalid]="shouldShowRequiredError(field, selectField)"
-                    [id]="field.key"
-                    [attr.title]="getSelectedOptionLabel(field)"
-                    [ngModel]="formModel[field.key]"
-                    (ngModelChange)="onSelectChange(field, $event)"
-                    [name]="field.key"
-                    [disabled]="isFieldDisabled(field)"
-                    [required]="field.required === true"
-                    #selectField="ngModel"
-                  >
-                    <option value=""></option>
-                    <option *ngFor="let option of getFieldOptions(field)" [ngValue]="option.value">
-                      {{ resolveOptionLabel(option.label) }}
-                    </option>
-                  </select>
-                  <div *ngIf="shouldShowRequiredError(field, selectField)" class="crud-field-error">
-                    {{ translate(requiredFieldMessageKey) }}
-                  </div>
+                  <ng-container *ngIf="field.key === 'doctorTypeCode'; else ngSelectBlock">
+                    <select
+                      class="crud-input"
+                      [class.crud-input-invalid]="shouldShowRequiredError(field, selectField)"
+                      [id]="field.key"
+                      [attr.title]="getSelectedOptionLabel(field)"
+                      [ngModel]="formModel[field.key]"
+                      (ngModelChange)="onSelectChange(field, $event)"
+                      [name]="field.key"
+                      [disabled]="isFieldDisabled(field)"
+                      [required]="field.required === true"
+                      #selectField="ngModel"
+                    >
+                      <option value=""></option>
+                      <option *ngFor="let option of getFieldOptions(field)" [ngValue]="option.value">
+                        {{ resolveOptionLabel(option.label) }}
+                      </option>
+                    </select>
+                    <div *ngIf="shouldShowRequiredError(field, selectField)" class="crud-field-error">
+                      {{ translate(requiredFieldMessageKey) }}
+                    </div>
+                  </ng-container>
+                  <ng-template #ngSelectBlock>
+                    <ng-select
+                      class="crud-input"
+                      [items]="getFieldOptions(field)"
+                      bindLabel="label"
+                      bindValue="value"
+                      [(ngModel)]="formModel[field.key]"
+                      (change)="onSelectChange(field, formModel[field.key])"
+                      [name]="field.key"
+                      [id]="field.key"
+                      [disabled]="isFieldDisabled(field)"
+                      [clearable]="true"
+                      [required]="field.required === true"
+                    >
+                      <ng-template ng-option-tmp let-item="item">
+                        {{ resolveOptionLabel(item.label) }}
+                      </ng-template>
+                      <ng-template ng-label-tmp let-item="item">
+                        {{ resolveOptionLabel(item.label) }}
+                      </ng-template>
+                    </ng-select>
+                    <div *ngIf="shouldShowRequiredError(field, null)" class="crud-field-error">
+                      {{ translate(requiredFieldMessageKey) }}
+                    </div>
+                  </ng-template>
                 </div>
                 <label *ngIf="field.type === 'checkbox'" class="crud-checkbox-wrap" [for]="field.key">
                   <input

@@ -1,4 +1,6 @@
+@import "@ng-select/ng-select/themes/default.theme.css";
 /* Impedisce il wrapping delle voci di menu nella sidebar */
+.ng-select { font-family: "Work Sans", sans-serif; }
 .nav-group-link, .nav-group-toggle, .nav-group-link span, .nav-group-toggle span, .sidebar-menu a, .sidebar-menu span {
   white-space: nowrap;
   overflow: hidden;
@@ -931,6 +933,46 @@ label {
 .crud-input-invalid {
   border-color: #d9534f;
   box-shadow: 0 0 0 3px rgba(217, 83, 79, 0.12);
+}
+
+/* ng-select visual adjustments: keep only the rounded inner control (no extra rectangle) and refine text */
+.crud-input.ng-select {
+  /* remove outer box styling applied to generic inputs */
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  min-height: 0 !important;
+}
+.crud-input.ng-select .ng-select-container {
+  min-height: 40px;
+  padding: 6px 12px;
+  border-radius: 18px;
+  border: 1.5px solid #d3e5f8;
+  background: #edf6ff;
+  color: #1a3a5d;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+.crud-input.ng-select .ng-value,
+.crud-input.ng-select .ng-value-label,
+.crud-input.ng-select .ng-single-label,
+.crud-input.ng-select .ng-placeholder {
+  font-family: "Work Sans", Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  /* match Tipo operatore: use primary color and heavier weight */
+  font-weight: 700;
+  color: var(--Primary) !important;
+}
+.crud-input.ng-select .ng-placeholder {
+  color: rgba(24,112,232,0.6) !important;
+  font-weight: 700;
+}
+.crud-input.ng-select .ng-dropdown-panel .ng-option {
+  font-family: "Work Sans", Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: #203c66;
 }
 
 .crud-field-error {

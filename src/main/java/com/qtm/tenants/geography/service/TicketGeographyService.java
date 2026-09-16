@@ -1,9 +1,9 @@
 package com.qtm.tenants.geography.service;
 
-import com.qtm.tenants.geography.dto.DashboardCityDto;
-import com.qtm.tenants.geography.dto.DashboardProvinceDto;
-import com.qtm.tenants.geography.dto.DashboardRegionDto;
-import com.qtm.tenants.geography.dto.GeographicOptionDto;
+import com.qtm.commonlib.dto.GeographicOptionDto;
+import com.qtm.commonlib.dto.TicketCityDto;
+import com.qtm.commonlib.dto.TicketProvinceDto;
+import com.qtm.commonlib.dto.TicketRegionDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -24,47 +24,47 @@ import static org.springframework.http.HttpStatus.BAD_GATEWAY;
 import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 /**
- * Proxy backend verso QTMDashboard per esporre a TENANTS-APP le anagrafiche geografiche.
+ * Proxy backend verso QTMTicket per esporre a TENANTS-APP le anagrafiche geografiche.
  */
 @Service
 @Slf4j
-public class DashboardGeographyService {
+public class TicketGeographyService {
 
-    private static final ParameterizedTypeReference<List<DashboardRegionDto>> REGION_LIST_TYPE = new ParameterizedTypeReference<>() {
+    private static final ParameterizedTypeReference<List<TicketRegionDto>> REGION_LIST_TYPE = new ParameterizedTypeReference<>() {
     };
-    private static final ParameterizedTypeReference<List<DashboardProvinceDto>> PROVINCE_LIST_TYPE = new ParameterizedTypeReference<>() {
+    private static final ParameterizedTypeReference<List<TicketProvinceDto>> PROVINCE_LIST_TYPE = new ParameterizedTypeReference<>() {
     };
-    private static final ParameterizedTypeReference<List<DashboardCityDto>> CITY_LIST_TYPE = new ParameterizedTypeReference<>() {
+    private static final ParameterizedTypeReference<List<TicketCityDto>> CITY_LIST_TYPE = new ParameterizedTypeReference<>() {
     };
-    private static final String SERVICE_UNAVAILABLE_MESSAGE = "Servizio geografia QTMDashboard non disponibile";
-    private static final String MISSING_AUTHORIZATION_MESSAGE = "Token non presente per interrogare QTMDashboard";
+    private static final String SERVICE_UNAVAILABLE_MESSAGE = "Servizio geografia QTMTicket non disponibile";
+    private static final String MISSING_AUTHORIZATION_MESSAGE = "Token non presente per interrogare QTMTicket";
 
     private final RestClient restClient;
 
-    public DashboardGeographyService(
+    public TicketGeographyService(
             RestClient.Builder restClientBuilder,
-            @Value("${qtm.dashboard.api-base-url}") String dashboardApiBaseUrl
+            @Value("${qtm.ticket.base-url}") String ticketApiBaseUrl
     ) {
         this.restClient = restClientBuilder
-                .baseUrl(dashboardApiBaseUrl)
+                .baseUrl(ticketApiBaseUrl)
                 .build();
     }
 
     public List<GeographicOptionDto> findRegions() {
-        return executeListRequest("/regions", REGION_LIST_TYPE).stream()
+        return executeListRequest("/api/regions", REGION_LIST_TYPE).stream()
                 .map(region -> new GeographicOptionDto(region.getId(), region.getName()))
                 .toList();
     }
 
     public List<GeographicOptionDto> findProvincesByRegionId(Long regionId) {
-        return executeListRequest("/provinces/by-region/" + regionId, PROVINCE_LIST_TYPE).stream()
+        return executeListRequest("/api/provinces/by-region/" + regionId, PROVINCE_LIST_TYPE).stream()
                 .map(province -> new GeographicOptionDto(province.getId(), province.getName()))
                 .toList();
     }
 
     public List<GeographicOptionDto> findCitiesByProvinceId(Long provinceId) {
-        log.info("[DashboardGeographyService] Loading cities for provinceId={}", provinceId);
-        return executeListRequest("/cities/options/by-province/" + provinceId, CITY_LIST_TYPE).stream()
+        log.info("[TicketGeographyService] Loading cities for provinceId={}", provinceId);
+        return executeListRequest("/api/cities/by-province/" + provinceId, CITY_LIST_TYPE).stream()
                 .map(city -> new GeographicOptionDto(city.getId(), city.getName()))
                 .toList();
     }
@@ -80,11 +80,11 @@ public class DashboardGeographyService {
             List<T> response = request.retrieve().body(bodyType);
             return response == null ? List.of() : response;
         } catch (RestClientResponseException exception) {
-            log.error("[DashboardGeographyService] Downstream response error uri={} status={} body={}",
+            log.error("[TicketGeographyService] Downstream response error uri={} status={} body={}",
                     uri, exception.getStatusCode(), exception.getResponseBodyAsString(), exception);
             throw new ResponseStatusException(exception.getStatusCode(), buildDownstreamMessage(exception), exception);
         } catch (RestClientException exception) {
-            log.error("[DashboardGeographyService] Downstream connectivity error uri={}", uri, exception);
+            log.error("[TicketGeographyService] Downstream connectivity error uri={}", uri, exception);
             throw new ResponseStatusException(BAD_GATEWAY, SERVICE_UNAVAILABLE_MESSAGE, exception);
         }
     }
@@ -92,7 +92,7 @@ public class DashboardGeographyService {
     private void applyForwardedHeaders(HttpHeaders headers) {
         HttpServletRequest currentRequest = resolveCurrentRequest();
         if (currentRequest == null) {
-            log.warn("[DashboardGeographyService] No current request available, no headers forwarded");
+            log.warn("[TicketGeographyService] No current request available, no headers forwarded");
             return;
         }
 
@@ -101,7 +101,7 @@ public class DashboardGeographyService {
         copyHeader(currentRequest, headers, "X-Selected-Client");
         copyHeader(currentRequest, headers, "X-Selected-Project");
 
-        log.info("[DashboardGeographyService] Forwarded headers authorizationPresent={} selectedRole={} selectedClient={} selectedProject={}",
+        log.info("[TicketGeographyService] Forwarded headers authorizationPresent={} selectedRole={} selectedClient={} selectedProject={}",
                 headers.containsKey(HttpHeaders.AUTHORIZATION),
                 headers.getFirst("X-Selected-Role"),
                 headers.getFirst("X-Selected-Client"),
@@ -118,7 +118,7 @@ public class DashboardGeographyService {
     private String buildDownstreamMessage(RestClientResponseException exception) {
         String responseBody = exception.getResponseBodyAsString();
         if (responseBody == null || responseBody.isBlank()) {
-            return "Errore restituito da QTMDashboard durante il caricamento della geografia";
+            return "Errore restituito da QTMTicket durante il caricamento della geografia";
         }
         return responseBody;
     }
