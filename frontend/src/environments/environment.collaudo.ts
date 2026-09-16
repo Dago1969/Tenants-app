@@ -1,6 +1,10 @@
+const runtimeDashboardUrl = (window as any).__env?.dashboardUrl || 'https://dashboard.qtmdev.quicare.com/dashboard';
+const runtimeDashboardBaseUrl = runtimeDashboardUrl.replace(/\/dashboard\/?$/, '');
+
 export const environment = {
   apiBaseUrl: '/api/tenants',
   ticketApiBaseUrl: '/api/ticket',
-  dashboardLoginUrl: 'https://dashboard.qtmdev.quicare.com/login',
-  dashboardBaseUrl: 'https://dashboard.qtmdev.quicare.com'
+  dashboardUrl: runtimeDashboardUrl,
+  dashboardLoginUrl: runtimeDashboardBaseUrl + '/login',
+  dashboardBaseUrl: runtimeDashboardBaseUrl
 };

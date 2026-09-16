@@ -1,6 +1,10 @@
+const runtimeDashboardUrl = (window as any).__env?.dashboardUrl || 'http://localhost:4200/dashboard';
+const runtimeDashboardBaseUrl = runtimeDashboardUrl.replace(/\/dashboard\/?$/, '');
+
 export const environment = {
   apiBaseUrl: '/api/tenants',
   ticketApiBaseUrl: '/api/ticket',
-  dashboardLoginUrl: 'http://localhost:4200/login',
-  dashboardBaseUrl: 'http://localhost:4200'
+  dashboardUrl: runtimeDashboardUrl,
+  dashboardLoginUrl: runtimeDashboardBaseUrl + '/login',
+  dashboardBaseUrl: runtimeDashboardBaseUrl
 };

@@ -7,6 +7,8 @@ services:
       args:
         ANGULAR_BUILD_CONFIGURATION: collaudo
     container_name: tenants-frontend
+    environment:
+      DASHBOARD_URL: ${DASHBOARD_URL:-http://localhost:4200/dashboard}
     ports:
       - "4201:80"
     # Se vuoi servire su una porta diversa, modifica qui
