@@ -13,6 +13,7 @@
     "build": "ng build --configuration sviluppo",
     "build:sviluppo": "ng build --configuration sviluppo",
     "build:collaudo": "ng build --configuration collaudo",
+    "build:prod": "ng build --configuration production && node ./scripts/generate-env.js",
     "test": "ng test"
   },
   "dependencies": {

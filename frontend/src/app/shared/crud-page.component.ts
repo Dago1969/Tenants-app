@@ -660,6 +660,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
     if (nextFolder) {
       this.submissionAttempted = false;
       this.activeFolder = nextFolder.key;
+      this.loadSelectOptions();
     }
   }
 
@@ -679,6 +680,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
     const previousFolder = this.folders[this.currentFolderIndex - 1];
     if (previousFolder) {
       this.activeFolder = previousFolder.key;
+      this.loadSelectOptions();
     }
   }
 
@@ -875,7 +877,10 @@ export class CrudPageComponent implements OnInit, OnChanges {
   }
 
   private loadSelectOptions(): void {
-    for (const field of this.getAllFields().filter((currentField) => currentField.type === 'select')) {
+    const selectFields = (this.wizardMode && this.folders.length > 0 ? this.currentFields : this.getAllFields())
+      .filter((currentField) => currentField.type === 'select');
+
+    for (const field of selectFields) {
       if (field.options && field.options.length > 0) {
         this.fieldOptions[field.key] = field.options.map((option) => ({
           value: option.value,
