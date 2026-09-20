@@ -1,10 +1,8 @@
-import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { Observable, forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { CrudField, CrudFolder, CrudPageComponent } from '../../shared/crud-page.component';
 import { StructureApiService, StructureDto } from '../../core/structure-api.service';
-import { MessageKey, t } from '../../i18n/messages';
 
 /**
  * Pagina CRUD pazienti tenant con selezione strutture filtrate per tipologia.
@@ -12,32 +10,27 @@ import { MessageKey, t } from '../../i18n/messages';
 @Component({
   selector: 'app-patients-crud',
   standalone: true,
-  imports: [CommonModule, CrudPageComponent],
+  imports: [CrudPageComponent],
   template: `
-    <ng-container *ngIf="optionsReady; else loadingTemplate">
-      <app-crud-page
-        [titleKey]="titleKey"
-        [endpoint]="endpoint"
-        [fields]="fields"
-        [folders]="folders"
-        [initialFormModel]="initialFormModel"
-        [fieldPermissionsEndpoint]="permissionsEndpoint"
-        [wizardMode]="true"
-        [popupMode]="true"
-        [closeRoute]="'/patients/search'"
-        [closeOnSave]="true"
-      />
-    </ng-container>
-    <ng-template #loadingTemplate>
-      <div class="patients-loading">{{ translate(loadingMessageKey) }}</div>
-    </ng-template>
+    <app-crud-page
+      [titleKey]="titleKey"
+      [endpoint]="endpoint"
+      [fields]="fields"
+      [folders]="folders"
+      [initialFormModel]="initialFormModel"
+      [fieldPermissionsEndpoint]="permissionsEndpoint"
+      [wizardMode]="true"
+      [popupMode]="true"
+      [closeRoute]="'/patients/search'"
+      [closeOnSave]="true"
+      [externalLoading]="!optionsReady"
+    />
   `
 })
 export class PatientsCrudComponent implements OnInit {
   titleKey = 'patients.title' as const;
   endpoint = 'patients';
   permissionsEndpoint = 'patients/permissions';
-  loadingMessageKey = 'structures.message.loading' as const;
   optionsReady = false;
   initialFormModel = {
     dataProcessingConsent: true,
@@ -256,11 +249,6 @@ export class PatientsCrudComponent implements OnInit {
       }
     });
   }
-
-  translate(key: MessageKey): string {
-    return t(key);
-  }
-
   private loadStructuresForType(structureType: string): Observable<StructureDto[]> {
     return this.structureApiService.getStructuresByType(structureType, true).pipe(
       catchError(() => of([] as StructureDto[]))
