@@ -2,9 +2,19 @@
 application:
   title: ${project.name}
   version: ${project.version}
+server:
+  tomcat:
+    connection-timeout: ${SERVER_CONNECTION_TIMEOUT:900s}
+  servlet:
+    session:
+      timeout: ${SERVER_SESSION_TIMEOUT:60m}
+
 spring:
   profiles:
     active: collaudo
+  mvc:
+    async:
+      request-timeout: ${SPRING_MVC_ASYNC_REQUEST_TIMEOUT:900000}
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
   jackson:
@@ -46,7 +56,7 @@ logging:
 
 app:
   cors:
-    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:4207,http://localhost:4200,http://localhost:4201,https://tenants.qtmdev.quicare.com}
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:4207,http://localhost:4200,http://localhost:4201,http://localhost:8086,https://tenants.qtmdev.quicare.com,https://dashboard.qtmdev.quicare.com}
   keycloak:
     base-url: ${APP_KEYCLOAK_SERVER_URL:https://auth.qtmdev.quicare.com}
     realm: ${APP_KEYCLOAK_REALM_CODE:Lecigimon}
@@ -55,6 +65,10 @@ app:
 
 # Proprietà custom per configurazione interna QTM (non standard Spring)
 qtm:
+  http:
+    client:
+      connect-timeout: ${QTM_HTTP_CLIENT_CONNECT_TIMEOUT:60s}
+      read-timeout: ${QTM_HTTP_CLIENT_READ_TIMEOUT:900s}
   dashboard:
     api-base-url: http://localhost:8086/api
     frontend-base-url: http://localhost:4200

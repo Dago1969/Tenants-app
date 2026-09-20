@@ -2,6 +2,7 @@ package com.qtm.tenants.structure.client;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.qtm.tenants.structure.dto.StructureDto;
+import com.qtm.tenants.structure.dto.StructureOverviewDto;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,6 +19,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Objects;
 
 import static org.springframework.http.HttpStatus.BAD_GATEWAY;
 
@@ -79,6 +81,28 @@ public class StructureRemoteClient {
                 .toList();
     }
 
+    public List<StructureOverviewDto> fetchStructureOverview(String regionCode, String aslCode) {
+        List<HospitalOverviewRemoteDto> remoteHospitals = execute(() -> restClient.get()
+                .uri("/hospital/overview")
+                .headers(this::applyForwardedHeaders)
+                .retrieve()
+                .body(HOSPITAL_LIST_TYPE));
+
+        if (remoteHospitals == null) {
+            return List.of();
+        }
+
+        String normalizedRegionCode = normalizeRegionCode(regionCode);
+        String normalizedAslCode = normalizeCode(aslCode);
+
+        return remoteHospitals.stream()
+                .filter(item -> Boolean.TRUE.equals(item.getImported()))
+                .filter(item -> normalizedRegionCode == null || Objects.equals(normalizeRegionCode(item.getCodiceRegione()), normalizedRegionCode))
+                .filter(item -> normalizedAslCode == null || Objects.equals(normalizeCode(item.getCodiceAsl()), normalizedAslCode))
+                .map(this::toStructureOverviewDto)
+                .toList();
+    }
+
     public List<com.qtm.tenants.ticket.dto.StructureDepartmentSourceDto> fetchStructureDepartmentsByStructureCode(String codiceStruttura) {
         log.info("[StructureRemoteClient] calling QTMDB /structure-departments/by-structure for codiceStruttura={}", codiceStruttura);
         List<com.qtm.tenants.ticket.dto.StructureDepartmentSourceDto> rows = execute(() -> restClient.get()
@@ -135,6 +159,36 @@ public class StructureRemoteClient {
         dto.setStructureTypeDescription(hospital.getTipoStruttura());
         dto.setActive(true);
         return dto;
+    }
+
+    private StructureOverviewDto toStructureOverviewDto(HospitalOverviewRemoteDto hospital) {
+        return StructureOverviewDto.builder()
+                .aslId(hospital.getAslId())
+                .strutturaId(hospital.getId())
+                .codiceRegione(normalizeRegionCode(hospital.getCodiceRegione()))
+                .regione(hospital.getRegione())
+                .codiceAsl(normalizeCode(hospital.getCodiceAsl()))
+                .asl(hospital.getAsl())
+                .codiceStruttura(normalizeCode(hospital.getCodiceStruttura()))
+                .struttura(hospital.getStruttura())
+                .build();
+    }
+
+    private String normalizeRegionCode(String value) {
+        String normalizedValue = normalizeCode(value);
+        if (normalizedValue == null) {
+            return null;
+        }
+        return normalizedValue.matches("\\d+") && normalizedValue.length() < 2
+                ? "0" + normalizedValue
+                : normalizedValue;
+    }
+
+    private String normalizeCode(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim();
     }
 
     private void applyForwardedHeaders(HttpHeaders headers) {
@@ -212,7 +266,9 @@ public class StructureRemoteClient {
         private Long id;
         private Integer anno;
         private String regione;
+        private String codiceRegione;
         private String asl;
+        private String codiceAsl;
         private String codiceStruttura;
         private String struttura;
         private String comune;

@@ -20,10 +20,16 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -37,13 +43,24 @@ public class SecurityConfig {
     private final List<String> allowedOriginPatterns;
 
     public SecurityConfig(
-            @Value("${app.cors.allowed-origins:http://localhost:4207,http://localhost:4200,http://localhost:4201,https://tenants.qtmdev.quicare.com}")
-            String allowedOrigins
+            @Value("${app.cors.allowed-origins:http://localhost:4207,http://localhost:4200,http://localhost:4201,http://localhost:8086,https://tenants.qtmdev.quicare.com,https://dashboard.qtmdev.quicare.com}")
+            String allowedOrigins,
+            @Value("${qtm.dashboard.frontend-base-url:http://localhost:4200}") String dashboardFrontendBaseUrl,
+            @Value("${qtm.dashboard.api-base-url:http://localhost:8086/api}") String dashboardApiBaseUrl,
+            @Value("${qtm.frontend.base-url:http://localhost:4201}") String tenantFrontendBaseUrl
     ) {
-        this.allowedOriginPatterns = Arrays.stream(allowedOrigins.split(","))
+        Set<String> configuredOrigins = new LinkedHashSet<>();
+        Arrays.stream(allowedOrigins.split(","))
                 .map(String::trim)
                 .filter(origin -> !origin.isEmpty())
-                .toList();
+            .forEach(configuredOrigins::add);
+
+        Stream.of(dashboardFrontendBaseUrl, dashboardApiBaseUrl, tenantFrontendBaseUrl)
+            .map(this::extractOrigin)
+            .flatMap(Optional::stream)
+            .forEach(configuredOrigins::add);
+
+        this.allowedOriginPatterns = configuredOrigins.stream().toList();
     }
 
     @Bean
@@ -152,5 +169,27 @@ public class SecurityConfig {
             return null;
         }
         return authentication.getPrincipal() instanceof Jwt jwt ? jwt : null;
+    }
+
+    private Optional<String> extractOrigin(String url) {
+        if (url == null || url.isBlank()) {
+            return Optional.empty();
+        }
+
+        try {
+            URI uri = new URI(url.trim());
+            if (uri.getScheme() == null || uri.getHost() == null) {
+                return Optional.empty();
+            }
+
+            String origin = uri.getScheme() + "://" + uri.getHost();
+            if (uri.getPort() > -1) {
+                origin += ":" + uri.getPort();
+            }
+            return Optional.of(origin);
+        } catch (URISyntaxException exception) {
+            log.warn("[SecurityConfig] Ignoro origine CORS non valida configurata: {}", url);
+            return Optional.empty();
+        }
     }
 }

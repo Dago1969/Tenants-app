@@ -7,6 +7,7 @@ import { PharmacyApiService, PharmacyDto } from '../core/pharmacy-api.service';
 import { StructureApiService, StructureDto } from '../core/structure-api.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { NgSelectModule } from '@ng-select/ng-select';
 import intlTelInput, { type AllOptions, type Iti } from 'intl-tel-input';
 import { QtmStepModalComponent } from './qtm-step-modal.component';
 import { NotificationService } from './notification.service';
@@ -19,7 +20,7 @@ import { STRUCTURE_MODULE_CODES } from '../core/structure-module-codes';
 @Component({
   selector: 'add-wizard-component-asl',
   standalone: true,
-  imports: [CommonModule, FormsModule, QtmStepModalComponent],
+  imports: [CommonModule, FormsModule, QtmStepModalComponent, NgSelectModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <qtm-step-modal
@@ -54,22 +55,51 @@ import { STRUCTURE_MODULE_CODES } from '../core/structure-module-codes';
 
           <div class="form-row">
             <label>{{ translate('structures.field.regione') }}<span class="required-asterisk">*</span>
-              <select class="search-filter-select" name="regionId" [(ngModel)]="model.regionId" (ngModelChange)="onRegioneChange()" required>
-                <option value="">{{ translate('structures.select') }}</option>
-                <option *ngFor="let regione of regioni" [ngValue]="toSelectValue(regione.id)">{{ regione.name }}</option>
-              </select>
+              <ng-select
+                [items]="regioni"
+                bindLabel="name"
+                bindValue="id"
+                name="regionId"
+                [(ngModel)]="model.regionId"
+                (ngModelChange)="onRegioneChange()"
+                [clearable]="true"
+                [searchable]="true"
+                placeholder="{{ translate('structures.select') }}"
+                required
+              >
+              </ng-select>
             </label>
             <label>{{ translate('structures.field.provincia') }}<span class="required-asterisk">*</span>
-              <select class="search-filter-select" name="provinceId" [(ngModel)]="model.provinceId" (ngModelChange)="onProvinciaChange()" [disabled]="!province.length" required>
-                <option value="">{{ translate('structures.select') }}</option>
-                <option *ngFor="let provincia of province" [ngValue]="toSelectValue(provincia.id)">{{ provincia.name }}</option>
-              </select>
+              <ng-select
+                [items]="province"
+                bindLabel="name"
+                bindValue="id"
+                name="provinceId"
+                [(ngModel)]="model.provinceId"
+                (ngModelChange)="onProvinciaChange()"
+                [disabled]="!province.length"
+                [clearable]="true"
+                [searchable]="true"
+                placeholder="{{ translate('structures.select') }}"
+                required
+              >
+              </ng-select>
             </label>
             <label>{{ translate('structures.field.comune') }}<span class="required-asterisk">*</span>
-              <select class="search-filter-select" name="cityId" [(ngModel)]="model.cityId" (ngModelChange)="onComuneChange()" [disabled]="!comuni.length" required>
-                <option value="">{{ translate('structures.select') }}</option>
-                <option *ngFor="let comune of comuni" [ngValue]="toSelectValue(comune.id)">{{ comune.name }}</option>
-              </select>
+              <ng-select
+                [items]="comuni"
+                bindLabel="name"
+                bindValue="id"
+                name="cityId"
+                [(ngModel)]="model.cityId"
+                (ngModelChange)="onComuneChange()"
+                [disabled]="!comuni.length"
+                [clearable]="true"
+                [searchable]="true"
+                placeholder="{{ translate('structures.select') }}"
+                required
+              >
+              </ng-select>
             </label>
           </div>
 

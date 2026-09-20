@@ -5,7 +5,7 @@ import { FormsModule, NgForm, NgModel } from '@angular/forms';
 import { NgSelectModule } from '@ng-select/ng-select';
 import intlTelInput, { type AllOptions, type Iti } from 'intl-tel-input';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Subscription } from 'rxjs';
+import { finalize, firstValueFrom, Observable, Subscription } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { FunctionAuthorizationService } from '../core/function-authorization.service';
 import { OtpApiService, OtpVerificationResultResponse } from '../core/otp-api.service';
@@ -85,7 +85,7 @@ interface ConsentOtpConfig {
   styleUrls: ['./crud-page.component.css'],
   template: `
     <section class="crud-shell" [class.crud-shell-popup]="popupMode">
-      <div class="crud-card" [class.crud-card-popup]="popupMode">
+      <div class="crud-card" [class.crud-card-popup]="popupMode" [attr.aria-busy]="showLoadingOverlay">
         <header class="crud-header" [class.crud-header-wizard]="wizardMode && folders.length > 0">
           <div>
             <h2>{{ translate(titleKey) }}</h2>
@@ -139,6 +139,14 @@ interface ConsentOtpConfig {
         </div>
 
         <form class="crud-form" #crudForm="ngForm" (ngSubmit)="save(crudForm)" novalidate>
+          <div *ngIf="showLoadingOverlay; else crudFormContent" class="crud-loading-body" aria-live="polite" aria-busy="true">
+            <div class="crud-loading-panel">
+              <span class="crud-loading-spinner" aria-hidden="true"></span>
+              <span class="crud-loading-text">{{ translate('crud.loading') }}</span>
+            </div>
+          </div>
+
+          <ng-template #crudFormContent>
           <div class="crud-fields crud-fields-multicol">
             <div class="crud-field-col" *ngFor="let field of currentFields; let i = index" [style.display]="shouldSkipInlineLocationField(i) ? 'none' : null" [style.grid-column]="field.key === 'regionId' && currentFields.length > i+2 && currentFields[i+1].key === 'provinceId' && currentFields[i+2].key === 'cityId' ? 'span 3' : resolveGridColumn(field)">
               <ng-container *ngIf="field.key === 'regionId' && currentFields.length > i+2 && currentFields[i+1].key === 'provinceId' && currentFields[i+2].key === 'cityId'; else normalFieldBlock">
@@ -384,16 +392,17 @@ interface ConsentOtpConfig {
             </div>
           </div>
 
+          <ng-content></ng-content>
+          </ng-template>
+
           <div class="crud-actions" *ngIf="!hideActions && !isViewMode && !wizardMode">
             <button class="crud-btn crud-btn-secondary" type="button" (click)="cancel()">
               {{ translate('crud.actions.cancel') }}
             </button>
-            <button class="crud-btn crud-btn-primary" type="submit">
+            <button class="crud-btn crud-btn-primary" type="submit" [disabled]="showLoadingOverlay">
               {{ loadedEntityKeyValue !== null || isEditMode ? translate('crud.actions.update') : translate('crud.actions.create') }}
             </button>
           </div>
-
-          <ng-content></ng-content>
 
           <div class="crud-actions" *ngIf="!hideActions && isViewMode && !wizardMode">
             <button class="crud-btn crud-btn-secondary" type="button" (click)="cancel()">
@@ -406,15 +415,15 @@ interface ConsentOtpConfig {
               {{ translate(isViewMode ? 'crud.actions.back' : 'crud.actions.cancel') }}
             </button>
 
-            <button *ngIf="!isFirstFolder" class="crud-btn crud-btn-secondary" type="button" (click)="goToPreviousFolder()">
+            <button *ngIf="!isFirstFolder" class="crud-btn crud-btn-secondary" type="button" (click)="goToPreviousFolder()" [disabled]="showLoadingOverlay">
               {{ translate('projects.wizard.actions.previous') }}
             </button>
 
-            <button *ngIf="!isLastFolder && !isViewMode" class="crud-btn crud-btn-primary" type="button" (click)="goToNextFolder()" [disabled]="isNextFolderDisabled()">
+            <button *ngIf="!isLastFolder && !isViewMode" class="crud-btn crud-btn-primary" type="button" (click)="goToNextFolder()" [disabled]="showLoadingOverlay || isNextFolderDisabled()">
               {{ translate('crud.actions.next') }}
             </button>
 
-            <button *ngIf="isLastFolder && !isViewMode" class="crud-btn crud-btn-primary" type="submit">
+            <button *ngIf="isLastFolder && !isViewMode" class="crud-btn crud-btn-primary" type="submit" [disabled]="showLoadingOverlay">
               {{ loadedEntityKeyValue !== null || isEditMode ? translate('crud.actions.update') : translate('crud.actions.create') }}
             </button>
           </div>
@@ -457,8 +466,10 @@ export class CrudPageComponent implements OnInit, OnChanges {
   @Input() closeRoute = '';
   @Input() closeOnSave = false;
   @Input() createEndpoint = '';
+  @Input() externalLoading = false;
 
   formModel: CrudEntity = {};
+  isLoading = false;
   usernameTaken = false;
   submissionAttempted = false;
   activeFolder = '';
@@ -470,8 +481,11 @@ export class CrudPageComponent implements OnInit, OnChanges {
   consentOtpState: ConsentOtpState = this.createConsentOtpState();
   @ViewChildren('phoneInputElement') phoneInputElements!: QueryList<ElementRef<HTMLInputElement>>;
   private operationLogTimeouts: Record<number, any> = {};
+  private loadingOperations = 0;
+  private hasInitialized = false;
   private phoneInputBindings = new Map<string, PhoneInputBinding>();
   private phoneInputChangesSubscription?: Subscription;
+  private isHydratingDoctorAssignment = false;
   protected loadedEntityKeyValue: string | number | null = null;
 
   constructor(
@@ -487,12 +501,22 @@ export class CrudPageComponent implements OnInit, OnChanges {
     // eslint-disable-next-line no-console
     console.log('[CrudPageComponent] ngOnInit for endpoint', this.endpoint, 'with initial model:', this.initialFormModel);
     this.applyInitialFormModel('ngOnInit');
-    void this.initializePage();
+    this.hasInitialized = true;
+    this.startLoading();
+    void this.initializePage().finally(() => this.stopLoading());
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['initialFormModel']) {
       this.applyInitialFormModel('ngOnChanges');
+    }
+
+    if (
+      this.hasInitialized
+      && !this.externalLoading
+      && (changes['fields'] || changes['folders'] || changes['externalLoading'])
+    ) {
+      this.loadSelectOptions();
     }
   }
 
@@ -574,6 +598,10 @@ export class CrudPageComponent implements OnInit, OnChanges {
     return t(key);
   }
 
+  get showLoadingOverlay(): boolean {
+    return this.isLoading || this.externalLoading;
+  }
+
   resolveOptionLabel(label: string): string {
     return hasMessageKey(label) ? t(label) : label;
   }
@@ -633,6 +661,11 @@ export class CrudPageComponent implements OnInit, OnChanges {
   onSelectChange(field: CrudField, value: unknown): void {
     this.formModel[field.key] = value;
     this.applyRelatedFields(field, value);
+
+    if (this.shouldSkipResetDuringDoctorHydration(field)) {
+      return;
+    }
+
     this.resetFieldsOnChange(field);
     this.loadSelectOptions();
   }
@@ -916,7 +949,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
         resolvedEndpoint,
         requestUrl
       });
-      this.http.get<Record<string, unknown>[]>(requestUrl).subscribe({
+      this.withLoading(this.http.get<Record<string, unknown>[]>(requestUrl)).subscribe({
         next: (items) => {
           // eslint-disable-next-line no-console
           console.log('[CrudPageComponent] Loaded select options', {
@@ -1016,6 +1049,9 @@ export class CrudPageComponent implements OnInit, OnChanges {
         hasMissingValue = true;
         return '';
       }
+      if (placeholder === 'clinicalRegionCode') {
+        return encodeURIComponent(this.normalizeRegionCodeForOverview(rawValue));
+      }
       return encodeURIComponent(String(rawValue));
     });
 
@@ -1035,7 +1071,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
   }
 
   private loadFieldPermissions(): void {
-    this.http.get<Record<string, string>>(`${environment.apiBaseUrl}/${this.fieldPermissionsEndpoint}`).subscribe({
+    this.withLoading(this.http.get<Record<string, string>>(`${environment.apiBaseUrl}/${this.fieldPermissionsEndpoint}`)).subscribe({
       next: (permissions) => {
         this.fieldPermissions = permissions ?? {};
       },
@@ -1046,7 +1082,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
   }
 
   private loadById(id: string | number): void {
-    this.http.get<CrudEntity>(`${environment.apiBaseUrl}/${this.endpoint}/${id}`).subscribe({
+    this.withLoading(this.http.get<CrudEntity>(`${environment.apiBaseUrl}/${this.endpoint}/${id}`)).subscribe({
       next: (entity) => {
         this.loadedEntityKeyValue = id;
         this.formModel = { ...entity };
@@ -1088,125 +1124,107 @@ export class CrudPageComponent implements OnInit, OnChanges {
     }
 
     const departmentId = this.asNumericId(this.formModel['departmentId']);
-    const structureId = this.asNumericId(this.formModel['structureId']);
+    const structureIdFromPayload = this.asNumericId(this.formModel['structureId']);
+    const clinicalRegionCode = this.asText(this.formModel['clinicalRegionCode']);
+    const aslCode = this.asText(this.formModel['aslCode']);
 
-    if (structureId !== null) {
-      this.resolveDoctorCascadeFromStructure(structureId, departmentId);
+    if (structureIdFromPayload === null && departmentId === null) {
       return;
     }
 
-    if (departmentId !== null) {
-      this.resolveDoctorCascadeFromDepartment(departmentId);
+    if (clinicalRegionCode.length > 0 && aslCode.length > 0 && structureIdFromPayload !== null) {
+      return;
     }
+
+    void this.hydrateDoctorAssignmentHierarchy(structureIdFromPayload, departmentId);
   }
 
-  private resolveDoctorCascadeFromStructure(structureId: number, departmentId: number | null): void {
-    this.http.get<Record<string, unknown>[]>(`${environment.apiBaseUrl}/structures`, {
-      params: {
-        structureType: 'HOSPITAL',
-        active: 'true'
-      }
-    }).subscribe({
-      next: (structures) => {
-        const matchedStructure = (structures ?? []).find((structure) => this.asNumericId(structure['id']) === structureId);
-        if (!matchedStructure) {
-          if (departmentId !== null) {
-            this.resolveDoctorCascadeFromDepartment(departmentId);
-          }
-          return;
-        }
-
-        this.applyDoctorCascadeSelection(
-          matchedStructure['parentStructureId'],
-          matchedStructure['parentStructureName'],
-          matchedStructure['id'],
-          matchedStructure['code'],
-          departmentId
-        );
-      },
-      error: () => {
-        if (departmentId !== null) {
-          this.resolveDoctorCascadeFromDepartment(departmentId);
-        }
-      }
-    });
-  }
-
-  private resolveDoctorCascadeFromDepartment(departmentId: number): void {
-    this.http.get<Record<string, unknown>>(`${environment.ticketApiBaseUrl}/structure-departments/${departmentId}`).subscribe({
-      next: (department) => {
-        const structureCode = this.asText(department['codiceStruttura'] ?? department['structureCode']);
-        if (!structureCode) {
-          return;
-        }
-
-        this.http.get<Record<string, unknown>[]>(`${environment.apiBaseUrl}/structures`, {
-          params: {
-            structureType: 'HOSPITAL',
-            code: structureCode,
-            active: 'true'
-          }
-        }).subscribe({
-          next: (structures) => {
-            const matchedStructure = (structures ?? [])[0];
-            if (!matchedStructure) {
-              return;
-            }
-
-            this.applyDoctorCascadeSelection(
-              matchedStructure['parentStructureId'],
-              matchedStructure['parentStructureName'],
-              matchedStructure['id'],
-              matchedStructure['code'],
-              departmentId
-            );
-          }
-        });
-      },
-      error: () => {
-        // keep the existing edit payload untouched if the downstream lookup is unavailable
-      }
-    });
-  }
-
-  private applyDoctorCascadeSelection(
-    aslId: unknown,
-    aslName: unknown,
-    structureId: unknown,
-    structureCode: unknown,
-    departmentId: number | null
-  ): void {
-    const normalizedAslId = this.asNumericId(aslId);
-    const normalizedAslName = this.asText(aslName);
-    const normalizedStructureId = this.asNumericId(structureId);
-    const normalizedStructureCode = this.asText(structureCode);
-
-    if (normalizedAslId !== null) {
-      this.formModel['aslId'] = normalizedAslId;
-    }
-    if (normalizedAslName) {
-      this.formModel['asl'] = normalizedAslName;
-    }
-    if (normalizedStructureId !== null) {
-      this.formModel['structureId'] = normalizedStructureId;
-    }
-    if (normalizedStructureCode) {
-      this.formModel['ticketStructureCode'] = normalizedStructureCode;
+  private async hydrateDoctorAssignmentHierarchy(structureId: number | null, departmentId: number | null): Promise<void> {
+    if (this.isHydratingDoctorAssignment) {
+      return;
     }
 
-    this.loadSelectOptions();
+    this.isHydratingDoctorAssignment = true;
 
-    window.setTimeout(() => {
-      if (normalizedAslId !== null) {
-        this.trySetSelectFromTicketMapping('aslId', [normalizedAslId]);
+    try {
+      let resolvedStructureId = structureId;
+      if (resolvedStructureId === null && departmentId !== null) {
+        resolvedStructureId = await this.resolveStructureIdFromDepartment(departmentId);
       }
-      if (normalizedStructureId !== null) {
-        this.trySetSelectFromTicketMapping('structureId', [normalizedStructureId]);
+
+      if (resolvedStructureId === null) {
+        return;
       }
+
+      let overviewRows = await this.fetchRecords(`${environment.apiBaseUrl}/structures/overview`, {
+        strutturaId: String(resolvedStructureId)
+      });
+
+      if (overviewRows.length === 0) {
+        overviewRows = await this.fetchRecords(`${environment.apiBaseUrl}/structures/overview`);
+      }
+
+      const matchedOverview = overviewRows.find((row) => this.asNumericId(row['strutturaId']) === resolvedStructureId) ?? null;
+      if (!matchedOverview) {
+        return;
+      }
+
+      const regionCode = this.normalizeRegionCodeForOverview(this.asText(matchedOverview['codiceRegione']));
+      const structureDbId = this.asNumericId(matchedOverview['strutturaId']) ?? resolvedStructureId;
+      const structureTicketCode = this.asText(matchedOverview['codiceStruttura']);
+      const aslId = this.asNumericId(matchedOverview['aslId']);
+      const aslName = this.asText(matchedOverview['asl']);
+      const resolvedAslCode = this.asText(matchedOverview['codiceAsl']);
+
+      if (regionCode.length > 0) {
+        this.formModel['clinicalRegionCode'] = regionCode;
+      }
+      if (aslId !== null) {
+        this.formModel['aslId'] = aslId;
+      }
+      if (aslName.length > 0) {
+        this.formModel['asl'] = aslName;
+      }
+      if (resolvedAslCode.length > 0) {
+        this.formModel['aslCode'] = resolvedAslCode;
+      }
+      this.formModel['structureId'] = structureDbId;
+      if (structureTicketCode.length > 0) {
+        this.formModel['ticketStructureCode'] = structureTicketCode;
+      }
+      if (departmentId !== null) {
+        this.formModel['departmentId'] = departmentId;
+      }
+
+      await this.loadSelectOptionsForFieldKey('clinicalRegionCode');
+      if (regionCode.length > 0) {
+        this.trySetSelectFromTicketMapping('clinicalRegionCode', [regionCode, Number(regionCode)]);
+      }
+
+      await this.loadSelectOptionsForFieldKey('aslId');
+      if (aslId !== null || resolvedAslCode.length > 0) {
+        this.trySetSelectFromTicketMapping('aslId', [aslId, resolvedAslCode]);
+      }
+
+      await this.loadSelectOptionsForFieldKey('structureId');
+      this.trySetSelectFromTicketMapping('structureId', [structureDbId, structureTicketCode]);
+
+      await this.loadSelectOptionsForFieldKey('departmentId');
       if (departmentId !== null) {
         this.trySetSelectFromTicketMapping('departmentId', [departmentId]);
       }
-    }, 300);
+    } finally {
+      this.isHydratingDoctorAssignment = false;
+      this.loadSelectOptions();
+    }
+  }
+
+  private normalizeRegionCodeForOverview(regionCodeOrRegionId: unknown): string {
+    const normalizedValue = this.asText(regionCodeOrRegionId);
+    if (!normalizedValue) {
+      return '';
+    }
+    return /^\d+$/.test(normalizedValue) ? normalizedValue.padStart(2, '0') : normalizedValue;
   }
 
   private trySetSelectFromTicketMapping(fieldKey: string, preferredValues: unknown[]): void {
@@ -1229,6 +1247,101 @@ export class CrudPageComponent implements OnInit, OnChanges {
 
     this.formModel[fieldKey] = matchedOption.value;
     this.applyRelatedFields(field, matchedOption.value);
+  }
+
+  private shouldSkipResetDuringDoctorHydration(field: CrudField): boolean {
+    if (!this.isHydratingDoctorAssignment || this.endpoint !== 'doctors') {
+      return false;
+    }
+
+    return field.key === 'clinicalRegionCode'
+      || field.key === 'aslId'
+      || field.key === 'structureId'
+      || field.key === 'departmentId';
+  }
+
+  private async resolveStructureIdFromDepartment(departmentId: number): Promise<number | null> {
+    const department = await this.fetchRecord(`${environment.ticketApiBaseUrl}/structure-departments/${departmentId}`);
+    const structureCode = this.asText(department?.['codiceStruttura'] ?? department?.['structureCode']);
+    if (!structureCode) {
+      return null;
+    }
+
+    const overviewRows = await this.fetchRecords(`${environment.apiBaseUrl}/structures/overview`);
+    const matchedOverview = overviewRows.find((row) => this.asText(row['codiceStruttura']) === structureCode) ?? null;
+    return this.asNumericId(matchedOverview?.['strutturaId']);
+  }
+
+  private async loadSelectOptionsForFieldKey(fieldKey: string): Promise<void> {
+    const field = this.getAllFields().find((candidate) => candidate.key === fieldKey && candidate.type === 'select');
+    if (!field) {
+      return;
+    }
+
+    if (field.options && field.options.length > 0) {
+      this.fieldOptions[field.key] = field.options.map((option) => ({
+        value: option.value,
+        label: option.label,
+        source: {
+          value: option.value,
+          label: option.label
+        }
+      }));
+      this.applyRelatedFields(field, this.formModel[field.key]);
+      return;
+    }
+
+    const resolvedEndpoint = this.resolveOptionsEndpoint(field);
+    if (!resolvedEndpoint) {
+      this.fieldOptions[field.key] = [];
+      return;
+    }
+
+    const baseUrl = resolvedEndpoint.startsWith('structure-departments?')
+      ? environment.ticketApiBaseUrl
+      : environment.apiBaseUrl;
+    const requestUrl = `${baseUrl}/${resolvedEndpoint}`;
+
+    try {
+      const items = await firstValueFrom(this.withLoading(this.http.get<Record<string, unknown>[]>(requestUrl)));
+      this.fieldOptions[field.key] = (items ?? [])
+        .map((item) => this.mapToSelectOption(field, item))
+        .filter((option): option is SelectOption => option !== null);
+      this.applyRelatedFields(field, this.formModel[field.key]);
+    } catch {
+      this.fieldOptions[field.key] = [];
+    }
+  }
+
+  private async fetchRecord(url: string): Promise<Record<string, unknown> | null> {
+    try {
+      return await firstValueFrom(this.withLoading(this.http.get<Record<string, unknown>>(url)));
+    } catch {
+      return null;
+    }
+  }
+
+  private async fetchRecords(url: string, params?: Record<string, string>): Promise<Record<string, unknown>[]> {
+    try {
+      return await firstValueFrom(this.withLoading(this.http.get<Record<string, unknown>[]>(url, { params })));
+    } catch {
+      return [];
+    }
+  }
+
+  private withLoading<T>(request$: Observable<T>): Observable<T> {
+    this.startLoading();
+    return request$.pipe(finalize(() => this.stopLoading()));
+  }
+
+  private startLoading(): void {
+    this.loadingOperations += 1;
+    this.isLoading = true;
+  }
+
+  private stopLoading(): void {
+    this.loadingOperations = Math.max(0, this.loadingOperations - 1);
+    this.isLoading = this.loadingOperations > 0;
   }
 
   private asNumericId(value: unknown): number | null {

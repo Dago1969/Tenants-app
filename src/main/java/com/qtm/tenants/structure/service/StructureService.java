@@ -8,6 +8,7 @@ import com.qtm.tenants.structure.dto.HospitalDepartmentDto;
 import com.qtm.tenants.structure.StructureType;
 import com.qtm.tenants.structure.dto.StructureDepartmentOptionDto;
 import com.qtm.tenants.structure.dto.StructureDto;
+import com.qtm.tenants.structure.dto.StructureOverviewDto;
 import com.qtm.tenants.structure.dto.StructureParentOptionDto;
 import com.qtm.tenants.structure.dto.StructureTypeDto;
 import com.qtm.tenants.structure.entity.HospitalDepartmentEntity;
@@ -113,6 +114,11 @@ public class StructureService {
             .filter(dto -> active == null || Boolean.TRUE.equals(dto.isActive()) == active)
             .toList();
         }
+
+    @Transactional(readOnly = true)
+    public List<StructureOverviewDto> findOverview(String regionCode, String aslCode) {
+        return structureRemoteClient.fetchStructureOverview(regionCode, aslCode);
+    }
 
     @Transactional(readOnly = true)
     public StructureDto findById(Long id) {

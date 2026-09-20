@@ -20,6 +20,22 @@ export interface StructureSearchParams {
   active?: boolean;
 }
 
+export interface StructureOverviewLookupParams {
+  regionCode?: string;
+  aslCode?: string;
+}
+
+export interface StructureOverviewLookupDto {
+  aslId?: number;
+  strutturaId?: number;
+  codiceRegione?: string;
+  regione?: string;
+  codiceAsl?: string;
+  asl?: string;
+  codiceStruttura?: string;
+  struttura?: string;
+}
+
 export interface StructureDto {
   id?: number;
   code: string;
@@ -53,6 +69,7 @@ export interface StructureDto {
 @Injectable({ providedIn: 'root' })
 export class StructureApiService {
   private baseUrl = `${environment.apiBaseUrl}/structures`;
+  private overviewUrl = `${this.baseUrl}/overview`;
 
   constructor(private http: HttpClient) {}
 
@@ -76,6 +93,20 @@ export class StructureApiService {
     }
 
     return this.http.get<StructureDto[]>(this.baseUrl, { params });
+  }
+
+  getStructuresOverview(params: StructureOverviewLookupParams): Observable<StructureOverviewLookupDto[]> {
+    let httpParams = new HttpParams();
+
+    if (params.regionCode?.trim().length) {
+      httpParams = httpParams.set('regionCode', params.regionCode.trim());
+    }
+
+    if (params.aslCode?.trim().length) {
+      httpParams = httpParams.set('aslCode', params.aslCode.trim());
+    }
+
+    return this.http.get<StructureOverviewLookupDto[]>(this.overviewUrl, { params: httpParams });
   }
 
   getParentOptions(structureType: string): Observable<Array<{ id: number; code: string; name: string; structureType: string; structureTypeDescription?: string }>> {

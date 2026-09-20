@@ -4,6 +4,7 @@ import com.qtm.tenants.authorization.service.ControllerFunctionAuthorizationServ
 import com.qtm.tenants.structure.StructureModuleCodes;
 import com.qtm.tenants.structure.dto.StructureDepartmentOptionDto;
 import com.qtm.tenants.structure.dto.StructureDto;
+import com.qtm.tenants.structure.dto.StructureOverviewDto;
 import com.qtm.tenants.structure.dto.StructureParentOptionDto;
 import com.qtm.tenants.structure.dto.StructureTypeDto;
 import com.qtm.tenants.structure.service.StructureService;
@@ -102,6 +103,17 @@ public class StructureController {
     ) {
                 controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, resolveModuleCode(structureType));
         return ResponseEntity.ok(structureService.findParentOptions(structureType));
+    }
+
+    @GetMapping("/overview")
+    public ResponseEntity<List<StructureOverviewDto>> findOverview(
+            @RequestParam(required = false) String regionCode,
+            @RequestParam(required = false) String aslCode,
+            @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
+    ) {
+        controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, StructureModuleCodes.GENERIC);
+        log.info("[StructureController] GET /structures/overview regionCode={} aslCode={} selectedRole={}", regionCode, aslCode, selectedRole);
+        return ResponseEntity.ok(structureService.findOverview(regionCode, aslCode));
     }
 
     @GetMapping("/{id}")

@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { NgSelectModule } from '@ng-select/ng-select';
 import intlTelInput, { type AllOptions, type Iti } from 'intl-tel-input';
 import { GeographyApiService, GeographicOptionDto } from '../core/geography-api.service';
 import { PharmacyApiService, DepartmentDto } from '../core/pharmacy-api.service';
@@ -16,7 +17,7 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
 @Component({
   selector: 'add-wizard-component-hospital',
   standalone: true,
-  imports: [CommonModule, FormsModule, QtmStepModalComponent],
+  imports: [CommonModule, FormsModule, QtmStepModalComponent, NgSelectModule],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   template: `
     <qtm-step-modal
@@ -60,23 +61,52 @@ import { QtmStepModalComponent } from './qtm-step-modal.component';
 
           <div class="form-row">
             <label>{{ translate('structures.field.regione') }}<span class="required-asterisk">*</span>
-              <select class="search-filter-select" name="regionId" [(ngModel)]="model.regionId" (change)="onRegioneChange()" required>
-                <option value="">{{ translate('structures.select') }}</option>
-                <option *ngFor="let regione of regioni" [value]="regione.id">{{ regione.name }}</option>
-              </select>
+              <ng-select
+                [items]="regioni"
+                bindLabel="name"
+                bindValue="id"
+                name="regionId"
+                [(ngModel)]="model.regionId"
+                (ngModelChange)="onRegioneChange()"
+                [clearable]="true"
+                [searchable]="true"
+                placeholder="{{ translate('structures.select') }}"
+                required
+              >
+              </ng-select>
             </label>
             <label>{{ translate('structures.field.provincia') }}<span class="required-asterisk">*</span>
-              <select class="search-filter-select" name="provinceId" [(ngModel)]="model.provinceId" (change)="onProvinciaChange()" [disabled]="!province.length" required>
-                <option value="">{{ translate('structures.select') }}</option>
-                <option *ngFor="let provincia of province" [value]="provincia.id">{{ provincia.name }}</option>
-              </select>
+              <ng-select
+                [items]="province"
+                bindLabel="name"
+                bindValue="id"
+                name="provinceId"
+                [(ngModel)]="model.provinceId"
+                (ngModelChange)="onProvinciaChange()"
+                [disabled]="!province.length"
+                [clearable]="true"
+                [searchable]="true"
+                placeholder="{{ translate('structures.select') }}"
+                required
+              >
+              </ng-select>
             </label>
          
             <label>{{ translate('structures.field.comune') }}<span class="required-asterisk">*</span>
-              <select class="search-filter-select" name="cityId" [(ngModel)]="model.cityId" (change)="onComuneChange()" [disabled]="!comuni.length" required>
-                <option value="">{{ translate('structures.select') }}</option>
-                <option *ngFor="let comune of comuni" [value]="comune.id">{{ comune.name }}</option>
-              </select>
+              <ng-select
+                [items]="comuni"
+                bindLabel="name"
+                bindValue="id"
+                name="cityId"
+                [(ngModel)]="model.cityId"
+                (ngModelChange)="onComuneChange()"
+                [disabled]="!comuni.length"
+                [clearable]="true"
+                [searchable]="true"
+                placeholder="{{ translate('structures.select') }}"
+                required
+              >
+              </ng-select>
             </label>
              </div>
 

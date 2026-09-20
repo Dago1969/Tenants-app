@@ -49,35 +49,47 @@
     </section>
 
     <section *ngIf="currentStep.key === 'clinical'" class="therapeutic-plan-grid">
-      <label class="therapeutic-plan-field">
+      <div class="therapeutic-plan-field">
         <span>{{ translate('doctors.field.region') }}</span>
-        <select [(ngModel)]="clinicalFilters.regionId" (ngModelChange)="onClinicalRegionChange()">
-          <option [ngValue]="null"></option>
-          <option *ngFor="let region of regions" [ngValue]="region.id">
-            {{ region.name }}
-          </option>
-        </select>
-      </label>
+        <ng-select2
+          class="therapeutic-plan-medicine-select"
+          [(ngModel)]="clinicalRegionValue"
+          name="clinicalRegion"
+          [data]="regionSelect2Data"
+          [placeholder]="translate('search.option.all')"
+          [displaySearchStatus]="'always'"
+          [resettable]="true"
+          (update)="onRegionSelect2Update($event)"
+        ></ng-select2>
+      </div>
 
-      <label class="therapeutic-plan-field">
+      <div class="therapeutic-plan-field">
         <span>{{ translate('doctors.field.asl') }}</span>
-        <select [(ngModel)]="clinicalFilters.aslId" (ngModelChange)="onClinicalAslChange()">
-          <option [ngValue]="null"></option>
-          <option *ngFor="let asl of aslStructures" [ngValue]="asl.id">
-            {{ getStructureLabel(asl) }}
-          </option>
-        </select>
-      </label>
+        <ng-select2
+          class="therapeutic-plan-medicine-select"
+          [(ngModel)]="clinicalAslValue"
+          name="clinicalAsl"
+          [data]="aslSelect2Data"
+          [placeholder]="translate('search.option.all')"
+          [displaySearchStatus]="'always'"
+          [resettable]="true"
+          (update)="onAslSelect2Update($event)"
+        ></ng-select2>
+      </div>
 
-      <label class="therapeutic-plan-field therapeutic-plan-field-full">
+      <div class="therapeutic-plan-field therapeutic-plan-field-full">
         <span>{{ translate('therapeuticPlan.field.structure') }}</span>
-        <select [(ngModel)]="formModel.structureId" (ngModelChange)="onStructureSelectionChange()">
-          <option [ngValue]="null"></option>
-          <option *ngFor="let structure of availableStructures" [ngValue]="structure.id">
-            {{ getStructureLabel(structure) }}
-          </option>
-        </select>
-      </label>
+        <ng-select2
+          class="therapeutic-plan-medicine-select"
+          [(ngModel)]="clinicalStructureValue"
+          name="clinicalStructure"
+          [data]="structureSelect2Data"
+          [placeholder]="translate('search.option.all')"
+          [displaySearchStatus]="'always'"
+          [resettable]="true"
+          (update)="onStructureSelect2Update($event)"
+        ></ng-select2>
+      </div>
 
       <label class="therapeutic-plan-field therapeutic-plan-field-full">
         <span>{{ translate('doctors.field.departmentId') }}</span>

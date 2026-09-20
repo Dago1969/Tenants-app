@@ -85,28 +85,40 @@ export class DoctorsCrudComponent {
     { key: 'deliveryAddress', labelKey: 'doctors.field.deliveryAddress', type: 'text' },
     { key: 'secondaryAddresses', labelKey: 'doctors.field.secondaryAddresses', type: 'text' },
     {
-      key: 'structureId',
-      labelKey: 'doctors.field.associatedStructure',
+      key: 'clinicalRegionCode',
+      labelKey: 'doctors.field.region',
       type: 'select',
-      columnSpan: 2,
-      optionsEndpoint: 'structures?structureType=HOSPITAL&parentStructureId={aslId}&active=true',
+      optionsEndpoint: 'geography/regions',
       optionValueKey: 'id',
       optionLabelKey: 'name',
-      relatedFields: { ticketStructureCode: 'code' },
-      resetFieldsOnChange: ['departmentId']
+      relatedFields: { region: 'name' },
+      resetFieldsOnChange: ['aslId', 'asl', 'aslCode', 'structureId', 'departmentId', 'ticketStructureCode'],
+      transient: true
     },
     {
       key: 'aslId',
       labelKey: 'doctors.field.asl',
       type: 'select',
-      optionsEndpoint: 'structures?structureType=ASL',
-      optionValueKey: 'externalId',
-      optionLabelKey: 'name',
-      relatedFields: { asl: 'name' },
+      optionsEndpoint: 'structures/overview?regionCode={clinicalRegionCode}',
+      optionValueKey: 'aslId',
+      optionLabelKey: 'asl',
+      relatedFields: { asl: 'asl', aslCode: 'codiceAsl' },
       resetFieldsOnChange: ['structureId', 'departmentId', 'ticketStructureCode'],
       transient: true
     },
     { key: 'asl', labelKey: 'doctors.field.asl', type: 'text', hidden: true, transient: true },
+    { key: 'aslCode', labelKey: 'doctors.field.asl', type: 'text', hidden: true, transient: true },
+    {
+      key: 'structureId',
+      labelKey: 'doctors.field.associatedStructure',
+      type: 'select',
+      columnSpan: 2,
+      optionsEndpoint: 'structures/overview?regionCode={clinicalRegionCode}&aslCode={aslCode}',
+      optionValueKey: 'strutturaId',
+      optionLabelKey: 'struttura',
+      relatedFields: { ticketStructureCode: 'codiceStruttura' },
+      resetFieldsOnChange: ['departmentId']
+    },
     {
       key: 'departmentId',
       labelKey: 'doctors.field.departmentId',
@@ -224,25 +236,37 @@ export class DoctorsCrudComponent {
       titleKey: 'doctors.folder.assignment',
       fields: [
         {
+          key: 'clinicalRegionCode',
+          labelKey: 'doctors.field.region',
+          type: 'select',
+          optionsEndpoint: 'geography/regions',
+          optionValueKey: 'id',
+          optionLabelKey: 'name',
+          relatedFields: { region: 'name' },
+          resetFieldsOnChange: ['aslId', 'asl', 'aslCode', 'structureId', 'departmentId', 'ticketStructureCode'],
+          transient: true
+        },
+        {
           key: 'aslId',
           labelKey: 'doctors.field.asl',
           type: 'select',
-          optionsEndpoint: 'structures?structureType=ASL',
-          optionValueKey: 'externalId',
-          optionLabelKey: 'name',
-          relatedFields: { asl: 'name' },
+          optionsEndpoint: 'structures/overview?regionCode={clinicalRegionCode}',
+          optionValueKey: 'aslId',
+          optionLabelKey: 'asl',
+          relatedFields: { asl: 'asl', aslCode: 'codiceAsl' },
           resetFieldsOnChange: ['structureId', 'departmentId', 'ticketStructureCode'],
           transient: true
         },
+        { key: 'aslCode', labelKey: 'doctors.field.asl', type: 'text', hidden: true, transient: true },
         {
           key: 'structureId',
           labelKey: 'doctors.field.associatedStructure',
           type: 'select',
           columnSpan: 2,
-          optionsEndpoint: 'structures?structureType=HOSPITAL&parentStructureId={aslId}&active=true',
-          optionValueKey: 'id',
-          optionLabelKey: 'name',
-          relatedFields: { ticketStructureCode: 'code' },
+          optionsEndpoint: 'structures/overview?regionCode={clinicalRegionCode}&aslCode={aslCode}',
+          optionValueKey: 'strutturaId',
+          optionLabelKey: 'struttura',
+          relatedFields: { ticketStructureCode: 'codiceStruttura' },
           resetFieldsOnChange: ['departmentId']
         },
         {
@@ -281,10 +305,10 @@ export class DoctorsCrudComponent {
           type: 'select',
           readonly: true,
           columnSpan: 2,
-          optionsEndpoint: 'structures?structureType=HOSPITAL&parentStructureId={aslId}&active=true',
-          optionValueKey: 'id',
-          optionLabelKey: 'name',
-          relatedFields: { ticketStructureCode: 'code' }
+          optionsEndpoint: 'structures/overview?regionCode={clinicalRegionCode}&aslCode={aslCode}',
+          optionValueKey: 'strutturaId',
+          optionLabelKey: 'struttura',
+          relatedFields: { ticketStructureCode: 'codiceStruttura' }
         },
         { key: 'asl', labelKey: 'doctors.field.asl', type: 'text', readonly: true, transient: true },
         {
