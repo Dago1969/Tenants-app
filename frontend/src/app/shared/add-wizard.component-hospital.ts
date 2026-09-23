@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, CUSTOM_ELEMENTS_SCHEMA, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { NgSelectModule } from '@ng-select/ng-select';
-import intlTelInput, { type AllOptions, type Iti } from 'intl-tel-input';
+import intlTelInput, { AllOptions, Iti } from 'intl-tel-input';
 import { GeographyApiService, GeographicOptionDto } from '../core/geography-api.service';
 import { PharmacyApiService, DepartmentDto } from '../core/pharmacy-api.service';
 import { ReferentApiService, ReferentDto } from '../core/referent-api.service';

@@ -358,6 +358,24 @@
 .location-item { flex: 1; }
 .location-item select, .location-item input { width: 100%; }
 
+.crud-sub-label {
+  display: block;
+  font-size: 0.75rem;
+  color: #36557f;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.otp-recipient-select {
+  /* increase width visually by using full column and larger font */
+  padding: 10px 12px;
+}
+
+.otp-code-input {
+  max-width: 160px;
+  width: 100%;
+}
+
 @media (max-width: 768px) {
   .crud-shell {
     padding: 18px 12px 28px;

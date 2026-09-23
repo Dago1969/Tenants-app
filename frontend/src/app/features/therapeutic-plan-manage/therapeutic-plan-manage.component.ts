@@ -9,7 +9,7 @@ import { catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { StructureApiService, StructureDto } from '../../core/structure-api.service';
 import { MessageKey, t } from '../../i18n/messages';
-import { AppointmentService, type Appointment } from '../../services/appointment.service';
+import { AppointmentService, Appointment } from '../../services/appointment.service';
 import { AppointmentFormComponent } from '../appointments/appointment-form/appointment-form.component';
 import { PatientContactsSearchComponent } from '../patient-contacts-search/patient-contacts-search.component';
 import { QtmStepModalComponent } from '../../shared/qtm-step-modal.component';

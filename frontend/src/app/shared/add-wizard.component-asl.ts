@@ -8,7 +8,7 @@ import { StructureApiService, StructureDto } from '../core/structure-api.service
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { NgSelectModule } from '@ng-select/ng-select';
-import intlTelInput, { type AllOptions, type Iti } from 'intl-tel-input';
+import intlTelInput, { AllOptions, Iti } from 'intl-tel-input';
 import { QtmStepModalComponent } from './qtm-step-modal.component';
 import { NotificationService } from './notification.service';
 import { FunctionAuthorizationService } from '../core/function-authorization.service';

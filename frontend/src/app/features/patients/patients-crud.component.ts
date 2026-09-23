@@ -42,7 +42,6 @@ export class PatientsCrudComponent implements OnInit {
   fields: CrudField[] = [
     { key: 'assistedId', labelKey: 'patients.field.assistedId', type: 'text', columnSpan: 2 },
     { key: 'fiscalCode', labelKey: 'patients.field.fiscalCode', type: 'text' },
-
     { key: 'firstName', labelKey: 'patients.field.firstName', type: 'text' },
     { key: 'lastName', labelKey: 'patients.field.lastName', type: 'text' },
     { key: 'birthDate', labelKey: 'patients.field.birthDate', type: 'date' },
@@ -59,9 +58,6 @@ export class PatientsCrudComponent implements OnInit {
     { key: 'email', labelKey: 'patients.field.email', type: 'text', columnSpan: 2 },
     { key: 'primaryPhone', labelKey: 'patients.field.primaryPhone', type: 'text', columnSpan: 2 },
     { key: 'secondaryPhone', labelKey: 'patients.field.secondaryPhone', type: 'text', columnSpan: 2 },
-
-    
-
     { key: 'deliveryAddress', labelKey: 'patients.field.deliveryAddress', type: 'text', columnSpan: 2 },
     { key: 'secondaryAddresses', labelKey: 'patients.field.secondaryAddresses', type: 'text', columnSpan: 2 },
     {
@@ -80,7 +76,7 @@ export class PatientsCrudComponent implements OnInit {
     { key: 'dataProcessingConsentDateTime', labelKey: 'patients.field.dataProcessingConsentDateTime', type: 'datetime-local', readonly: true, required: true },
     { key: 'dataProcessingConsentRevocationLog', labelKey: 'patients.field.dataProcessingConsentRevocationLog', type: 'text' },
     { key: 'additionalConsents', labelKey: 'patients.field.additionalConsents', type: 'text' },
-    { key: 'patientConsentOtpCode', labelKey: 'patients.privacy.otp.code', type: 'text', transient: true, columnSpan: 2 },
+    { key: 'patientConsentOtpCode', labelKey: 'patients.privacy.otp.code', type: 'text', transient: true, columnSpan: 2, maxLength: 6, maxWidth: 160 },
     {
       key: 'patientConsentOtpSendAction',
       labelKey: 'patients.privacy.otp.sendAction',
@@ -182,10 +178,16 @@ export class PatientsCrudComponent implements OnInit {
       titleKey: 'patients.folder.privacy',
       fields: [
         { key: 'dataProcessingConsent', labelKey: 'patients.field.dataProcessingConsent', type: 'checkbox', readonly: true, required: true },
-        { key: 'otpRecipient', labelKey: 'patients.field.otpRecipient', type: 'select', transient: true, options: [
-          { value: 'primaryPhone', label: 'patients.otp.recipient.primary' },
-          { value: 'caregiverPhone', label: 'patients.otp.recipient.caregiver' }
-        ] },
+        {
+          key: 'otpRecipient',
+          labelKey: 'patients.field.otpRecipient',
+          type: 'select',
+          transient: true,
+          options: [
+            { value: 'primaryPhone', label: 'patients.otp.recipient.primary' },
+            { value: 'caregiverPhone', label: 'patients.otp.recipient.caregiver' }
+          ]
+        },
         {
           key: 'patientConsentOtpSendAction',
           labelKey: 'patients.privacy.otp.sendAction',
@@ -194,7 +196,7 @@ export class PatientsCrudComponent implements OnInit {
           actionType: 'send-patient-consent-otp',
           actionButtonStyle: 'secondary'
         },
-        { key: 'patientConsentOtpCode', labelKey: 'patients.privacy.otp.code', type: 'text', transient: true, columnSpan: 2 },
+        { key: 'patientConsentOtpCode', labelKey: 'patients.privacy.otp.code', type: 'text', transient: true, columnSpan: 2, maxLength: 6, maxWidth: 160 },
         {
           key: 'patientConsentOtpVerifyAction',
           labelKey: 'patients.privacy.otp.verifyAction',
@@ -249,6 +251,7 @@ export class PatientsCrudComponent implements OnInit {
       }
     });
   }
+
   private loadStructuresForType(structureType: string): Observable<StructureDto[]> {
     return this.structureApiService.getStructuresByType(structureType, true).pipe(
       catchError(() => of([] as StructureDto[]))

@@ -9,7 +9,7 @@ import { catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../core/auth.service';
 import { GeographyApiService, GeographicOptionDto } from '../../core/geography-api.service';
-import { MedicineApiService, type MedicineLookupDto } from '../../core/medicine-api.service';
+import { MedicineApiService, MedicineLookupDto } from '../../core/medicine-api.service';
 import { StructureApiService, StructureDepartmentOptionDto, StructureDto, StructureOverviewLookupDto } from '../../core/structure-api.service';
 import { MessageKey, t } from '../../i18n/messages';
 import { QtmStepModalComponent } from '../../shared/qtm-step-modal.component';
