@@ -1,7 +1,7 @@
 package com.qtm.tenants.doctor.controller;
 
 import com.qtm.tenants.authorization.service.ControllerFunctionAuthorizationService;
-import com.qtm.tenants.doctor.dto.DoctorDto;
+import com.qtm.commonlib.dto.DoctorDto;
 import com.qtm.tenants.doctor.service.DoctorService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

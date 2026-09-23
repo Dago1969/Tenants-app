@@ -1,6 +1,6 @@
 package com.qtm.tenants.doctor.mapper;
 
-import com.qtm.tenants.doctor.dto.DoctorDto;
+import com.qtm.commonlib.dto.DoctorDto;
 import com.qtm.tenants.doctor.entity.DoctorEntity;
 import org.springframework.stereotype.Component;
 
@@ -30,6 +30,8 @@ public class DoctorMapper {
         dto.setStructureId(entity.getStructureId());
         dto.setDepartmentId(entity.getDepartmentId());
         dto.setSpecialization(entity.getSpecialization());
+        dto.setCommunicationChannels(entity.getCommunicationChannels());
+        dto.setOtpRecipient(entity.getOtpRecipient());
         dto.setDataProcessingConsent(entity.getDataProcessingConsent());
         dto.setDataProcessingConsentDateTime(entity.getDataProcessingConsentDateTime());
         dto.setDataProcessingConsentRevocationLog(entity.getDataProcessingConsentRevocationLog());
@@ -57,6 +59,8 @@ public class DoctorMapper {
         entity.setStructureId(dto.getStructureId());
         entity.setDepartmentId(dto.getDepartmentId());
         entity.setSpecialization(dto.getSpecialization());
+        entity.setCommunicationChannels(dto.getCommunicationChannels());
+        entity.setOtpRecipient(dto.getOtpRecipient());
         entity.setDataProcessingConsent(dto.getDataProcessingConsent());
         entity.setDataProcessingConsentDateTime(dto.getDataProcessingConsentDateTime());
         entity.setDataProcessingConsentRevocationLog(dto.getDataProcessingConsentRevocationLog());

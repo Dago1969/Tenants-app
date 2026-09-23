@@ -1,0 +1,76 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20260923-01-create-doctor-communication-channels
+      author: copilot
+      preConditions:
+        - not:
+            tableExists:
+              tableName: doctor_communication_channels
+      changes:
+        - createTable:
+            tableName: doctor_communication_channels
+            columns:
+              - column:
+                  name: id
+                  type: BIGINT
+                  autoIncrement: true
+                  constraints:
+                    primaryKey: true
+              - column:
+                  name: doctor_id
+                  type: BIGINT UNSIGNED
+                  constraints:
+                    nullable: false
+              - column:
+                  name: communication_channel
+                  type: VARCHAR(255)
+
+  - changeSet:
+      id: 20260923-02-add-otp-recipient-column
+      author: copilot
+      preConditions:
+        - not:
+            columnExists:
+              tableName: doctors
+              columnName: otp_recipient
+      changes:
+        - addColumn:
+            tableName: doctors
+            columns:
+              - column:
+                  name: otp_recipient
+                  type: VARCHAR(255)
+
+  - changeSet:
+      id: 20260923-03-add-foreignkey-doctor-communication
+      author: copilot
+      preConditions:
+        - not:
+            foreignKeyConstraintExists:
+              foreignKeyName: fk_doctor_comm_channel_doctor
+      changes:
+        - preConditions:
+            onFail: MARK_RAN
+            onError: HALT
+            and:
+              - tableExists:
+                  tableName: doctor_communication_channels
+              - columnExists:
+                  tableName: doctor_communication_channels
+                  columnName: doctor_id
+        - sql:
+            splitStatements: false
+            stripComments: false
+            sql: |
+              ALTER TABLE doctor_communication_channels MODIFY COLUMN doctor_id BIGINT UNSIGNED;
+        - rollback:
+            sql: |
+              -- rollback not implemented for type migration
+              SELECT 1;
+        - addForeignKeyConstraint:
+            constraintName: fk_doctor_comm_channel_doctor
+            baseTableName: doctor_communication_channels
+            baseColumnNames: doctor_id
+            referencedTableName: doctors
+            referencedColumnNames: id
+            onDelete: CASCADE

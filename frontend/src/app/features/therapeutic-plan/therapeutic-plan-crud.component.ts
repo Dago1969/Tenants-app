@@ -172,6 +172,15 @@ export class TherapeuticPlanCrudComponent implements OnInit {
     return this.steps[this.currentStepIndex] ?? this.steps[0];
   }
 
+  get isEditMode(): boolean {
+    return this.therapeuticPlanId !== null;
+  }
+
+  get selectedPatientLabel(): string {
+    const patient = this.patients.find((p) => p.id === this.formModel.patientId) ?? null;
+    return patient ? this.getPatientLabel(patient) : '';
+  }
+
   get isFirstStep(): boolean {
     return this.currentStepIndex === 0;
   }

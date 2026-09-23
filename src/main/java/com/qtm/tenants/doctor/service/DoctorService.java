@@ -5,7 +5,7 @@ import com.qtm.tenants.authorization.FieldAuthorizationEntity;
 import com.qtm.tenants.authorization.FieldAuthorizationRepository;
 import com.qtm.tenants.authorization.ModuleRoleAuthorizationEntity;
 import com.qtm.tenants.authorization.ModuleRoleAuthorizationRepository;
-import com.qtm.tenants.doctor.dto.DoctorDto;
+import com.qtm.commonlib.dto.DoctorDto;
 import com.qtm.tenants.doctor.entity.DoctorEntity;
 import com.qtm.tenants.doctor.mapper.DoctorMapper;
 import com.qtm.tenants.doctor.repository.DoctorRepository;

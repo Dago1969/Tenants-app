@@ -31,7 +31,9 @@ export class DoctorsCrudComponent {
     doctorTypeCode: 'MED',
     dataProcessingConsent: true,
     dataProcessingConsentDateTime: '',
-    doctorConsentOtpCode: ''
+    doctorConsentOtpCode: '',
+    communicationChannels: [],
+    otpRecipient: 'primaryPhone'
   };
   fields: CrudField[] = [
     { key: 'doctorFlyerId', labelKey: 'doctors.field.doctorFlyerId', type: 'text', readonly: true },
@@ -209,8 +211,30 @@ export class DoctorsCrudComponent {
       key: 'privacy',
       titleKey: 'doctors.folder.privacy',
       fields: [
-        { key: 'dataProcessingConsent', labelKey: 'doctors.field.dataProcessingConsent', type: 'checkbox', readonly: true, required: true, hidden: true },
-        { key: 'dataProcessingConsentDateTime', labelKey: 'doctors.field.dataProcessingConsentDateTime', type: 'datetime-local', readonly: true, required: true },
+        // RIGA 1: Consenso (readonly), Canali (multi select), Destinatario OTP (select - remote)
+        { key: 'dataProcessingConsent', labelKey: 'doctors.field.dataProcessingConsent', type: 'checkbox', readonly: true, required: true, columnSpan: 1 },
+        {
+          key: 'communicationChannels',
+          labelKey: 'doctors.field.communicationChannels',
+          type: 'select',
+          columnSpan: 1,
+          multiple: true,
+          options: [
+            { value: 'SMS', label: 'doctors.communicationChannel.sms' },
+            { value: 'EMail', label: 'doctors.communicationChannel.email' },
+            { value: 'whatsapp', label: 'doctors.communicationChannel.whatsapp' }
+          ]
+        },
+        {
+          key: 'otpRecipient',
+          labelKey: 'doctors.field.otpRecipient',
+          type: 'select',
+          transient: true,
+          columnSpan: 2,
+          optionsEndpoint: 'doctors/otp-recipients'
+        },
+
+        // RIGA 2: Azioni e Codice OTP
         {
           key: 'doctorConsentOtpSendAction',
           labelKey: 'doctors.privacy.otp.sendAction',
@@ -219,7 +243,7 @@ export class DoctorsCrudComponent {
           actionType: 'send-doctor-consent-otp',
           actionButtonStyle: 'secondary'
         },
-        { key: 'doctorConsentOtpCode', labelKey: 'doctors.privacy.otp.code', type: 'text', transient: true },
+        { key: 'doctorConsentOtpCode', labelKey: 'doctors.privacy.otp.code', type: 'text', transient: true, columnSpan: 2 },
         {
           key: 'doctorConsentOtpVerifyAction',
           labelKey: 'doctors.privacy.otp.verifyAction',
@@ -227,8 +251,11 @@ export class DoctorsCrudComponent {
           transient: true,
           actionType: 'verify-doctor-consent-otp'
         },
-        { key: 'dataProcessingConsentRevocationLog', labelKey: 'doctors.field.dataProcessingConsentRevocationLog', type: 'text' },
-        { key: 'additionalConsents', labelKey: 'doctors.field.additionalConsents', type: 'text' }
+
+        // RIGA 3: Data/ora consenso, Log revoca, Altri consensi
+        { key: 'dataProcessingConsentDateTime', labelKey: 'doctors.field.dataProcessingConsentDateTime', type: 'datetime-local', readonly: true, required: true, columnSpan: 1 },
+        { key: 'dataProcessingConsentRevocationLog', labelKey: 'doctors.field.dataProcessingConsentRevocationLog', type: 'text', columnSpan: 1 },
+        { key: 'additionalConsents', labelKey: 'doctors.field.additionalConsents', type: 'text', columnSpan: 2 }
       ]
     },
     {

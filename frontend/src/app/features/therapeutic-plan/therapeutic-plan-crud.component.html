@@ -14,17 +14,27 @@
     <section *ngIf="currentStep.key === 'main'" class="therapeutic-plan-grid">
       <label class="therapeutic-plan-field">
         <span>{{ translate('therapeuticPlan.field.patient') }}</span>
-        <select [(ngModel)]="formModel.patientId">
-          <option [ngValue]="null"></option>
-          <option *ngFor="let patient of patients" [ngValue]="patient.id">
-            {{ getPatientLabel(patient) }}
-          </option>
-        </select>
+        <ng-container *ngIf="isEditMode; else patientSelect">
+          <div class="readonly-value">{{ selectedPatientLabel }}</div>
+        </ng-container>
+        <ng-template #patientSelect>
+          <select [(ngModel)]="formModel.patientId">
+            <option [ngValue]="null"></option>
+            <option *ngFor="let patient of patients" [ngValue]="patient.id">
+              {{ getPatientLabel(patient) }}
+            </option>
+          </select>
+        </ng-template>
       </label>
 
       <label class="therapeutic-plan-field">
         <span>{{ translate('therapeuticPlan.field.projectCode') }}</span>
-        <input [(ngModel)]="formModel.projectCode" type="text" readonly />
+        <ng-container *ngIf="isEditMode; else projectInput">
+          <div class="readonly-value">{{ formModel.projectCode }}</div>
+        </ng-container>
+        <ng-template #projectInput>
+          <input [(ngModel)]="formModel.projectCode" type="text" />
+        </ng-template>
       </label>
 
       <label class="therapeutic-plan-field">

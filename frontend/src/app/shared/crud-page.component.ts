@@ -31,6 +31,7 @@ export interface CrudField {
   includeValueInOptionLabel?: boolean;
   relatedFields?: Record<string, string>;
   required?: boolean;
+  multiple?: boolean;
   transient?: boolean;
   actionButtonStyle?: 'primary' | 'secondary';
   actionType?: 'send-patient-consent-otp' | 'verify-patient-consent-otp' | 'send-doctor-consent-otp' | 'verify-doctor-consent-otp' | 'send-nurse-consent-otp' | 'verify-nurse-consent-otp';
@@ -363,6 +364,7 @@ interface ConsentOtpConfig {
                       [disabled]="isFieldDisabled(field)"
                       [clearable]="true"
                       [required]="field.required === true"
+                      [multiple]="field.multiple === true"
                     >
                       <ng-template ng-option-tmp let-item="item">
                         {{ resolveOptionLabel(item.label) }}

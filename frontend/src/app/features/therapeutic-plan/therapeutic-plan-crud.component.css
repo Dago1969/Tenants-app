@@ -27,8 +27,8 @@
   --select2-selection-border-radius: 16px;
   --select2-selection-background: #edf6ff;
   --select2-selection-border-color: #d3e5f8;
-  --select2-selection-focus-border-color: #1870e8;
-  --select2-selection-text-color: #1a3a5d;
+  --select2-selection-focus-border-color: #1a73e8;
+  --select2-selection-text-color: #1a73e8;
   --select2-selection-padding: 0 44px 0 16px;
   --select2-placeholder-color: #6f87a3;
   --select2-dropdown-border-color: #d3e5f8;
@@ -38,6 +38,20 @@
   --select2-option-highlighted-text-color: #ffffff;
   --select2-search-background: #f8fbff;
   --select2-search-border-color: #d3e5f8;
+}
+
+/* Ensure ng-select2 selected text uses primary blue like department and associated lists */
+:host ::ng-deep ng-select2 .select2-container--default .select2-selection--single .select2-selection__rendered,
+:host ::ng-deep ng-select2 .select2-selection__rendered,
+:host ::ng-deep ng-select2 .select2-selection--single .select2-selection__placeholder,
+:host ::ng-deep ng-select2 .select2-selection__single .select2-selection__rendered {
+  color: #1a73e8 !important;
+  font-weight: 700 !important;
+}
+
+/* also ensure placeholder when treated as selected appears bluish */
+:host ::ng-deep ng-select2 .select2-selection__placeholder {
+  color: rgba(26,115,232,0.75) !important;
 }
 
 .therapeutic-plan-field-help {
@@ -52,6 +66,17 @@
   background: #f0f7ff;
   color: #466487;
   font-size: 0.92rem;
+}
+
+.readonly-value {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: #edf6ff;
+  color: #1a3a5d;
+  border: 1px solid #d3e5f8;
 }
 
 .therapeutic-plan-operator-panel {

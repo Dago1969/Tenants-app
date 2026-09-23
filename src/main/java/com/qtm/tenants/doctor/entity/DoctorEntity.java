@@ -1,6 +1,10 @@
 package com.qtm.tenants.doctor.entity;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -76,6 +80,14 @@ public class DoctorEntity {
 
     @Column(name = "specialization")
     private String specialization;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "doctor_communication_channels", joinColumns = @JoinColumn(name = "doctor_id"))
+    @Column(name = "communication_channel")
+    private java.util.List<String> communicationChannels = new java.util.ArrayList<>();
+
+    @Column(name = "otp_recipient")
+    private String otpRecipient;
 
     @Column(name = "data_processing_consent")
     private Boolean dataProcessingConsent;
