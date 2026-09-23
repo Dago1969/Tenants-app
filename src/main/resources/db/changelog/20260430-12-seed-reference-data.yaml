@@ -49,7 +49,7 @@ databaseChangeLog:
                 ('ROLE', 'ROLE'),
                 ('MODULE', 'MODULE'),
                 ('FUNCTION', 'FUNCTION'),
-                ('PATIENT', 'PATIENT'),
+                -- ('PATIENT', 'PATIENT'), -- removed: patient module managed in QTMDB
                 ('DOCTOR', 'DOCTOR'),
                 ('NURSE', 'NURSE'),
                 ('THERAPEUTIC_PLAN', 'THERAPEUTIC_PLAN');

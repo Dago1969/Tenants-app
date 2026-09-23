@@ -194,3 +194,15 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* Classe riutilizzabile per qualsiasi input con placeholder rosso */
+.placeholder-red::placeholder {
+  color: #d32f2f !important; /* Rosso intenso */
+  opacity: 1 !important;     /* Necessario per Firefox/Chrome */
+}
+
+/* Nel caso la tua classe agisca da container del campo */
+.placeholder-red input::placeholder {
+  color: #d32f2f !important;
+  opacity: 1 !important;
+}

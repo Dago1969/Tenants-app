@@ -36,7 +36,7 @@ import com.qtm.tenants.function.repository.FunctionRepository;
 import com.qtm.tenants.module.entity.ModuleEntity;
 import com.qtm.tenants.module.repository.ModuleRepository;
 import com.qtm.tenants.nurse.entity.NurseEntity;
-import com.qtm.tenants.patient.entity.PatientEntity;
+// PatientEntity removed from TENAPP; patient fields resolved via QTMDB DTO when needed
 import com.qtm.tenants.role.entity.RoleEntity;
 import com.qtm.tenants.role.repository.RoleRepository;
 import com.qtm.tenants.role.service.DashboardRoleClient;
@@ -142,13 +142,13 @@ public class AuthorizationManagementService {
                     resolveEntityFields(ModuleEntity.class, Set.of(), Map.of()), 
                     List.of()
             ),
-            new ModuleDefinition(
-                    MODULE_PATIENT,
-                    "Pazienti",
-                    "patient",
-                    resolveEntityFields(PatientEntity.class, Set.of("id"), Map.of()),
-                    List.of()
-            ),
+//            new ModuleDefinition(
+//                    MODULE_PATIENT,
+//                    "Pazienti",
+//                    "patient",
+//                    resolveEntityFields(PatientEntity.class, Set.of("id"), Map.of()),
+//                    List.of()
+//            ),
             structureModuleDefinition(StructureModuleCodes.PHARMA_COMPANY),
             new ModuleDefinition(
                     MODULE_THERAPEUTIC_PLAN,

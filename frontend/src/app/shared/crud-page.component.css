@@ -376,6 +376,19 @@
   width: 100%;
 }
 
+/* placeholder-red styling: ensure placeholder text is red. Put in component CSS; ::ng-deep used to penetrate ng-select/inputs if necessary. */
+.placeholder-red::placeholder {
+  color: #d32f2f !important;
+  opacity: 1 !important;
+}
+
+/* For ng-select internal input, apply via ::ng-deep */
+::ng-deep .placeholder-red .ng-input > input::placeholder {
+  color: #d32f2f !important;
+  opacity: 1 !important;
+}
+
+
 @media (max-width: 768px) {
   .crud-shell {
     padding: 18px 12px 28px;
@@ -413,4 +426,16 @@
   .crud-btn {
     width: 100%;
   }
+}
+
+/* Classe riutilizzabile per qualsiasi input con placeholder rosso */
+.placeholder-red::placeholder {
+  color: #d32f2f !important; /* Rosso intenso */
+  opacity: 1 !important;     /* Necessario per Firefox/Chrome */
+}
+
+/* Nel caso la tua classe agisca da container del campo */
+.placeholder-red input::placeholder {
+  color: #d32f2f !important;
+  opacity: 1 !important;
 }

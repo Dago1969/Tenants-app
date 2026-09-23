@@ -1,31 +1,7 @@
 package com.qtm.tenants.therapeuticplan.service;
 
-import com.qtm.tenants.alert.repository.AlertRepository;
-import com.qtm.tenants.notification.repository.NotificationRepository;
-import com.qtm.tenants.project.service.DashboardProjectClient;
-import com.qtm.tenants.doctor.entity.DoctorEntity;
-import com.qtm.tenants.doctor.repository.DoctorRepository;
-import com.qtm.tenants.equipment.EquipmentStatusRules;
-import com.qtm.tenants.equipment.entity.EquipmentEntity;
-import com.qtm.tenants.equipment.repository.EquipmentRepository;
-import com.qtm.tenants.nurse.entity.NurseEntity;
-import com.qtm.tenants.nurse.repository.NurseRepository;
-import com.qtm.tenants.patient.service.DashboardPatientClient;
-import com.qtm.tenants.structure.entity.StructureEntity;
-import com.qtm.tenants.structure.repository.StructureRepository;
-import com.qtm.tenants.therapeuticplan.TherapeuticPlanStatusRules;
-import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanProfessionalAssignmentDto;
-import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanDto;
-import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanDoctorAssignmentEntity;
-import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanEntity;
-import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanNurseAssignmentEntity;
-import com.qtm.tenants.therapeuticplan.mapper.TherapeuticPlanMapper;
-import com.qtm.tenants.therapeuticplan.repository.TherapeuticPlanRepository;
-import com.qtm.commonlib.dto.PatientDto;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -40,8 +16,35 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.qtm.commonlib.dto.PatientDto;
+import com.qtm.tenants.alert.repository.AlertRepository;
+import com.qtm.tenants.doctor.entity.DoctorEntity;
+import com.qtm.tenants.doctor.repository.DoctorRepository;
+import com.qtm.tenants.equipment.EquipmentStatusRules;
+import com.qtm.tenants.equipment.entity.EquipmentEntity;
+import com.qtm.tenants.equipment.repository.EquipmentRepository;
+import com.qtm.tenants.notification.repository.NotificationRepository;
+import com.qtm.tenants.nurse.entity.NurseEntity;
+import com.qtm.tenants.nurse.repository.NurseRepository;
+import com.qtm.tenants.patient.service.DashboardPatientClient;
+import com.qtm.tenants.project.service.DashboardProjectClient;
+// DashboardPatientClient removed from TENAPP; patient data retrieved from QTMDB via shared client
+import com.qtm.tenants.structure.entity.StructureEntity;
+import com.qtm.tenants.structure.repository.StructureRepository;
+import com.qtm.tenants.therapeuticplan.TherapeuticPlanStatusRules;
+import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanDto;
+import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanProfessionalAssignmentDto;
+import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanDoctorAssignmentEntity;
+import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanEntity;
+import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanNurseAssignmentEntity;
+import com.qtm.tenants.therapeuticplan.mapper.TherapeuticPlanMapper;
+import com.qtm.tenants.therapeuticplan.repository.TherapeuticPlanRepository;
+
+import lombok.RequiredArgsConstructor;
 
 /**
  * Service orchestratore dei piani terapeutici con validazioni di dominio e sincronizzazione delle attrezzature assegnate.

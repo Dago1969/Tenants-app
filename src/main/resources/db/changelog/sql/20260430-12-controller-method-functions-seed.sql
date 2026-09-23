@@ -5,11 +5,7 @@ INSERT IGNORE INTO controller_method_functions (module_code, method_name, functi
   ('USER', 'findById', 'READ'),
   ('USER', 'search', 'SEARCH'),
   ('USER', 'update', 'UPDATE'),
-  ('PATIENT', 'create', 'CREATE'),
-  ('PATIENT', 'delete', 'DELETE'),
-  ('PATIENT', 'findAll', 'SEARCH'),
-  ('PATIENT', 'findById', 'READ'),
-  ('PATIENT', 'update', 'UPDATE'),
+  -- Patient controller-method-function seeds removed: managed in QTMDB
   ('DOCTOR', 'approve', 'APPROVE'),
   ('DOCTOR', 'create', 'CREATE'),
   ('DOCTOR', 'delete', 'DELETE'),

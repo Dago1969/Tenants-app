@@ -1,19 +1,7 @@
 package com.qtm.tenants.therapeuticplan.service;
 
-import com.qtm.commonlib.dto.PatientDto;
-import com.qtm.tenants.patient.service.DashboardPatientClient;
-import com.qtm.tenants.structure.entity.StructureEntity;
-import com.qtm.tenants.therapeuticplan.TherapeuticPlanActivityBookingRules;
-import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanActivityBookingDto;
-import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanActivityBookingEntity;
-import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanEntity;
-import com.qtm.tenants.therapeuticplan.mapper.TherapeuticPlanActivityBookingMapper;
-import com.qtm.tenants.therapeuticplan.repository.TherapeuticPlanActivityBookingRepository;
-import com.qtm.tenants.therapeuticplan.repository.TherapeuticPlanRepository;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -24,8 +12,23 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.springframework.http.HttpStatus.BAD_REQUEST;
-import static org.springframework.http.HttpStatus.NOT_FOUND;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+import com.qtm.commonlib.dto.PatientDto;
+import com.qtm.tenants.patient.service.DashboardPatientClient;
+// DashboardPatientClient removed from TENAPP; use direct DTOs and external patient client in shared layer if needed
+import com.qtm.tenants.structure.entity.StructureEntity;
+import com.qtm.tenants.therapeuticplan.TherapeuticPlanActivityBookingRules;
+import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanActivityBookingDto;
+import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanActivityBookingEntity;
+import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanEntity;
+import com.qtm.tenants.therapeuticplan.mapper.TherapeuticPlanActivityBookingMapper;
+import com.qtm.tenants.therapeuticplan.repository.TherapeuticPlanActivityBookingRepository;
+import com.qtm.tenants.therapeuticplan.repository.TherapeuticPlanRepository;
+
+import lombok.RequiredArgsConstructor;
 
 /**
  * Service orchestratore per registrare le prenotazioni attivita del piano terapeutico con centro e paziente preimpostati.

@@ -10,7 +10,7 @@ import com.qtm.tenants.module.controller.ModuleController;
 import com.qtm.tenants.module.entity.ModuleEntity;
 import com.qtm.tenants.module.repository.ModuleRepository;
 import com.qtm.tenants.nurse.controller.NurseController;
-import com.qtm.tenants.patient.controller.PatientController;
+// PatientController removed from TENAPP; module PATIENT managed externally in QTMDB
 import com.qtm.tenants.role.controller.RoleController;
 import com.qtm.tenants.structure.StructureModuleCodes;
 import com.qtm.tenants.structure.controller.StructureBulkImportController;
@@ -85,7 +85,7 @@ public class ControllerMethodFunctionService {
     private static Map<String, Class<?>> buildModuleControllers() {
         LinkedHashMap<String, Class<?>> controllers = new LinkedHashMap<>();
         controllers.put("USER", UserController.class);
-        controllers.put("PATIENT", PatientController.class);
+//        controllers.put("PATIENT", PatientController.class);
         controllers.put("DOCTOR", DoctorController.class);
         controllers.put("NURSE", NurseController.class);
         controllers.put("THERAPEUTIC_PLAN", TherapeuticPlanController.class);

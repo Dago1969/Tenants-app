@@ -66,28 +66,28 @@ export class PatientsCrudComponent implements OnInit {
 
 		        // RIGA 4: caregiverFullName, caregiverPhone (15 car)
 		        { key: 'caregiverFullName', labelKey: 'patients.field.caregiverFullName', type: 'text' },
-		        { key: 'caregiverPhone', labelKey: 'patients.field.caregiverPhone', type: 'text', maxLength: 15, columnSpan: 3 },
+		        { key: 'caregiverPhone', labelKey: 'patients.field.caregiverPhone', type: 'text', columnSpan: 3 },
 				
 	
     { key: 'deliveryAddress', labelKey: 'patients.field.deliveryAddress', type: 'text', columnSpan: 2 },
-    { key: 'secondaryAddresses', labelKey: 'patients.field.secondaryAddresses', type: 'text', columnSpan: 2 },
+    { key: 'secondaryAddresses', labelKey: 'patients.field.secondaryAddresses', type: 'text', columnSpan: 2 , placeholder: 'DA DEFINIRE',  customClass: 'placeholder-red'},
     {
       key: 'communicationChannels',
       labelKey: 'patients.field.communicationChannels',
       type: 'select',
-      columnSpan: 2,
+      columnSpan: 1,
       options: [
         { value: 'whatsapp', label: 'patients.communicationChannel.whatsapp' },
         { value: 'SMS', label: 'patients.communicationChannel.sms' },
         { value: 'EMail', label: 'patients.communicationChannel.email' }
       ]
     },
-    { key: 'identificationDocumentReference', labelKey: 'patients.field.identificationDocumentReference', type: 'text', columnSpan: 2 },
+    { key: 'identificationDocumentReference', labelKey: 'patients.field.identificationDocumentReference', type: 'text', columnSpan: 2 ,placeholder: 'DA DEFINIRE' },
     { key: 'dataProcessingConsent', labelKey: 'patients.field.dataProcessingConsent', type: 'checkbox', readonly: true, required: true },
     { key: 'dataProcessingConsentDateTime', labelKey: 'patients.field.dataProcessingConsentDateTime', type: 'datetime-local', readonly: true, required: true },
     { key: 'dataProcessingConsentRevocationLog', labelKey: 'patients.field.dataProcessingConsentRevocationLog', type: 'text' },
     { key: 'additionalConsents', labelKey: 'patients.field.additionalConsents', type: 'text' },
-    { key: 'patientConsentOtpCode', labelKey: 'patients.privacy.otp.code', type: 'text', transient: true, columnSpan: 2, maxLength: 6, maxWidth: 160 },
+    { key: 'patientConsentOtpCode', labelKey: 'patients.privacy.otp.code', type: 'text', transient: true, columnSpan: 2 },
     {
       key: 'patientConsentOtpSendAction',
       labelKey: 'patients.privacy.otp.sendAction',
@@ -103,15 +103,65 @@ export class PatientsCrudComponent implements OnInit {
       transient: true,
       actionType: 'verify-patient-consent-otp'
     },
-    { key: 'therapyStatus', labelKey: 'patients.field.therapyStatus', type: 'text' },
-    { key: 'prescribingSpecialist', labelKey: 'patients.field.prescribingSpecialist', type: 'text' },
-    { key: 'referenceHospitalStructure', labelKey: 'patients.field.referenceHospitalStructure', type: 'select' },
+    {
+      key: 'clinicalRegionCode',
+      labelKey: 'patients.field.region',
+      type: 'select',
+      optionsEndpoint: 'geography/regions',
+      optionValueKey: 'id',
+      optionLabelKey: 'name',
+      relatedFields: { region: 'name' },
+      resetFieldsOnChange: ['aslId', 'asl', 'aslCode', 'structureId', 'departmentId', 'ticketStructureCode'],
+      transient: true
+    },
+    {
+      key: 'aslId',
+      labelKey: 'patients.field.asl',
+      type: 'select',
+      optionsEndpoint: 'structures/overview?regionCode={clinicalRegionCode}',
+      optionValueKey: 'aslId',
+      optionLabelKey: 'asl',
+      relatedFields: { asl: 'asl', aslCode: 'codiceAsl' },
+      resetFieldsOnChange: ['structureId', 'departmentId', 'ticketStructureCode'],
+      transient: true
+    },
+    { key: 'asl', labelKey: 'patients.field.asl', type: 'text', hidden: true, transient: true },
+    { key: 'aslCode', labelKey: 'patients.field.asl', type: 'text', hidden: true, transient: true },
+    {
+      key: 'structureId',
+      labelKey: 'patients.field.referenceHospitalStructure',
+      type: 'select',
+      columnSpan: 2,
+      optionsEndpoint: 'structures/overview?regionCode={clinicalRegionCode}&aslCode={aslCode}',
+      optionValueKey: 'strutturaId',
+      optionLabelKey: 'struttura',
+      relatedFields: { ticketStructureCode: 'codiceStruttura' },
+      resetFieldsOnChange: ['departmentId']
+    },
+    {
+      key: 'departmentId',
+      labelKey: 'patients.field.departmentId',
+      type: 'select',
+      optionsEndpoint: 'structures/{structureId}/departments',
+      optionValueKey: 'id',
+      optionLabelKey: 'label',
+      resetFieldsOnChange: ['prescribingSpecialist']
+    },
+    {
+      key: 'prescribingSpecialist',
+      labelKey: 'patients.field.prescribingSpecialist',
+      type: 'select',
+      optionsEndpoint: 'doctors?departmentId={departmentId}&structureId={structureId}',
+      optionValueKey: 'id',
+      optionLabelKey: 'fullName'
+    },
+	{ key: 'therapyStatus', labelKey: 'patients.field.therapyStatus', type: 'text' },
     { key: 'referencePharmacy', labelKey: 'patients.field.referencePharmacy', type: 'select' },
     { key: 'preferredPickupPharmacy', labelKey: 'patients.field.preferredPickupPharmacy', type: 'select' },
     { key: 'deliveryMode', labelKey: 'patients.field.deliveryMode', type: 'text' },
     { key: 'reminderEnabled', labelKey: 'patients.field.reminderEnabled', type: 'checkbox' },
     { key: 'preferredContact', labelKey: 'patients.field.preferredContact', type: 'text' },
-    { key: 'structureId', labelKey: 'patients.field.structureId', type: 'number' }
+    
   ];
 
   folders: CrudFolder[] = [
@@ -145,7 +195,7 @@ export class PatientsCrudComponent implements OnInit {
 
 	        // RIGA 4: caregiverFullName, caregiverPhone (15 car)
 	        { key: 'caregiverFullName', labelKey: 'patients.field.caregiverFullName', type: 'text' },
-	        { key: 'caregiverPhone', labelKey: 'patients.field.caregiverPhone', type: 'text', maxLength: 15 },
+	        { key: 'caregiverPhone', labelKey: 'patients.field.caregiverPhone', type: 'text' },
 			
 			
         { key: 'caregiverFullName', labelKey: 'patients.field.caregiverFullName', type: 'text' },
@@ -179,20 +229,16 @@ export class PatientsCrudComponent implements OnInit {
           optionLabelKey: 'name',
           relatedFields: { city: 'name' }
         },
-        { key: 'deliveryAddress', labelKey: 'patients.field.deliveryAddress', type: 'text', columnSpan: 2 },
-        { key: 'secondaryAddresses', labelKey: 'patients.field.secondaryAddresses', type: 'text', columnSpan: 2 },
-        {
-          key: 'communicationChannels',
-          labelKey: 'patients.field.communicationChannels',
-          type: 'select',
-          columnSpan: 2,
-          options: [
-            { value: 'whatsapp', label: 'patients.communicationChannel.whatsapp' },
-            { value: 'SMS', label: 'patients.communicationChannel.sms' },
-            { value: 'EMail', label: 'patients.communicationChannel.email' }
-          ]
-        },
-        { key: 'identificationDocumentReference', labelKey: 'patients.field.identificationDocumentReference', type: 'text', columnSpan: 2 }
+		{ 
+		  key: 'deliveryAddress', 
+		  labelKey: 'patients.field.deliveryAddress', 
+		  type: 'text', 
+		  columnSpan: 2,
+		  placeholder: 'DA DEFINIRE'
+		},
+        { key: 'secondaryAddresses', labelKey: 'patients.field.secondaryAddresses', type: 'text', columnSpan: 2, placeholder: 'DA DEFINIRE',  customClass: 'placeholder-red'  },
+       
+        { key: 'identificationDocumentReference', labelKey: 'patients.field.identificationDocumentReference', type: 'text', columnSpan: 2, placeholder: 'DA DEFINIRE',  customClass: 'placeholder-red' }
       ]
     },
     {
@@ -200,10 +246,22 @@ export class PatientsCrudComponent implements OnInit {
       titleKey: 'patients.folder.privacy',
       fields: [
         { key: 'dataProcessingConsent', labelKey: 'patients.field.dataProcessingConsent', type: 'checkbox', readonly: true, required: true, columnSpan: 1 },
-        {
+		{
+	         key: 'communicationChannels',
+	         labelKey: 'patients.field.communicationChannels',
+	         type: 'select',
+	         columnSpan: 1,
+	         options: [
+	           { value: 'whatsapp', label: 'patients.communicationChannel.whatsapp' },
+	           { value: 'SMS', label: 'patients.communicationChannel.sms' },
+	           { value: 'EMail', label: 'patients.communicationChannel.email' }
+	         ]
+	       },
+		 {
           key: 'otpRecipient',
           labelKey: 'patients.field.otpRecipient',
           type: 'select',
+		  columnSpan: 2,
           transient: true,
           options: [
             { value: 'primaryPhone', label: 'patients.otp.recipient.primary' },
@@ -215,10 +273,9 @@ export class PatientsCrudComponent implements OnInit {
           labelKey: 'patients.privacy.otp.sendAction',
           type: 'action',
           transient: true,
-          actionType: 'send-patient-consent-otp',
-          actionButtonStyle: 'secondary'
+          actionType: 'send-patient-consent-otp'
         },
-        { key: 'patientConsentOtpCode', labelKey: 'patients.privacy.otp.code', type: 'text', transient: true, columnSpan: 2, maxLength: 6, maxWidth: 160 },
+        { key: 'patientConsentOtpCode', labelKey: 'patients.privacy.otp.code', type: 'text', transient: true, columnSpan: 2},
         {
           key: 'patientConsentOtpVerifyAction',
           labelKey: 'patients.privacy.otp.verifyAction',
@@ -227,23 +284,72 @@ export class PatientsCrudComponent implements OnInit {
           actionType: 'verify-patient-consent-otp'
         },
         { key: 'dataProcessingConsentDateTime', labelKey: 'patients.field.dataProcessingConsentDateTime', type: 'datetime-local', readonly: true, required: true },
-        { key: 'dataProcessingConsentRevocationLog', labelKey: 'patients.field.dataProcessingConsentRevocationLog', type: 'text' },
-        { key: 'additionalConsents', labelKey: 'patients.field.additionalConsents', type: 'text' }
+        { key: 'dataProcessingConsentRevocationLog', labelKey: 'patients.field.dataProcessingConsentRevocationLog', type: 'text' , placeholder: 'DA DEFINIRE',  customClass: 'placeholder-red' },
+        { key: 'additionalConsents', labelKey: 'patients.field.additionalConsents', type: 'text', placeholder: 'DA DEFINIRE',  customClass: 'placeholder-red'  }
       ]
     },
     {
       key: 'medical',
       titleKey: 'patients.folder.medical',
       fields: [
-        { key: 'therapyStatus', labelKey: 'patients.field.therapyStatus', type: 'text' },
-        { key: 'prescribingSpecialist', labelKey: 'patients.field.prescribingSpecialist', type: 'text' },
-        { key: 'referenceHospitalStructure', labelKey: 'patients.field.referenceHospitalStructure', type: 'select' },
+        {
+          key: 'clinicalRegionCode',
+          labelKey: 'patients.field.region',
+          type: 'select',
+          optionsEndpoint: 'geography/regions',
+          optionValueKey: 'id',
+          optionLabelKey: 'name',
+          relatedFields: { region: 'name' },
+          resetFieldsOnChange: ['aslId', 'asl', 'aslCode', 'structureId', 'departmentId', 'ticketStructureCode'],
+          transient: true
+        },
+        {
+          key: 'aslId',
+          labelKey: 'patients.field.asl',
+          type: 'select',
+          optionsEndpoint: 'structures/overview?regionCode={clinicalRegionCode}',
+          optionValueKey: 'aslId',
+          optionLabelKey: 'asl',
+          relatedFields: { asl: 'asl', aslCode: 'codiceAsl' },
+          resetFieldsOnChange: ['structureId', 'departmentId', 'ticketStructureCode'],
+          transient: true
+        },
+        { key: 'asl', labelKey: 'patients.field.asl', type: 'text', hidden: true, transient: true },
+        { key: 'aslCode', labelKey: 'patients.field.asl', type: 'text', hidden: true, transient: true },
+        {
+          key: 'structureId',
+          labelKey: 'patients.field.referenceHospitalStructure',
+          type: 'select',
+          columnSpan: 2,
+          optionsEndpoint: 'structures/overview?regionCode={clinicalRegionCode}&aslCode={aslCode}',
+          optionValueKey: 'strutturaId',
+          optionLabelKey: 'struttura',
+          relatedFields: { ticketStructureCode: 'codiceStruttura' },
+          resetFieldsOnChange: ['departmentId']
+        },
+        {
+          key: 'departmentId',
+          labelKey: 'patients.field.departmentId',
+          type: 'select',
+          optionsEndpoint: 'structures/{structureId}/departments',
+          optionValueKey: 'id',
+          optionLabelKey: 'label',
+          resetFieldsOnChange: ['prescribingSpecialist']
+        },
+		{
+		  key: 'prescribingSpecialist',
+		  labelKey: 'patients.field.prescribingSpecialist',
+		  type: 'select',
+		  optionsEndpoint: 'doctors?departmentId={departmentId}&structureId={structureId}',
+		  optionValueKey: 'id',
+		  optionLabelKey: 'fullName'
+		},
+		{ key: 'therapyStatus', labelKey: 'patients.field.therapyStatus', type: 'text' },
         { key: 'referencePharmacy', labelKey: 'patients.field.referencePharmacy', type: 'select' },
         { key: 'preferredPickupPharmacy', labelKey: 'patients.field.preferredPickupPharmacy', type: 'select' },
-        { key: 'deliveryMode', labelKey: 'patients.field.deliveryMode', type: 'text' },
+        { key: 'deliveryMode', labelKey: 'patients.field.deliveryMode', type: 'text' , placeholder: 'DA DEFINIRE',  customClass: 'placeholder-red' },
         { key: 'reminderEnabled', labelKey: 'patients.field.reminderEnabled', type: 'checkbox' },
-        { key: 'preferredContact', labelKey: 'patients.field.preferredContact', type: 'text' },
-        { key: 'structureId', labelKey: 'patients.field.structureId', type: 'number' }
+        { key: 'preferredContact', labelKey: 'patients.field.preferredContact', type: 'text' , placeholder: 'DA DEFINIRE',  customClass: 'placeholder-red' }
       ]
     }
   ];
@@ -252,17 +358,10 @@ export class PatientsCrudComponent implements OnInit {
 
   ngOnInit(): void {
     forkJoin([
-      forkJoin([
-        this.loadStructuresForType('HOSPITAL'),
-        this.loadStructuresForType('SPECIALIST_CLINIC')
-      ]),
-      forkJoin([
-        this.loadStructuresForType('HOSPITAL_PHARMACY'),
-        this.loadStructuresForType('RETAIL_PHARMACY')
-      ])
+      this.loadStructuresForType('HOSPITAL_PHARMACY'),
+      this.loadStructuresForType('RETAIL_PHARMACY')
     ]).subscribe({
-      next: ([[hospitalStructures, specialistClinics], [hospitalPharmacies, retailPharmacies]]) => {
-        this.applySelectOptions('referenceHospitalStructure', this.toSelectOptions([...hospitalStructures, ...specialistClinics]));
+      next: ([hospitalPharmacies, retailPharmacies]) => {
         const pharmacyOptions = this.toSelectOptions([...hospitalPharmacies, ...retailPharmacies]);
         this.applySelectOptions('referencePharmacy', pharmacyOptions);
         this.applySelectOptions('preferredPickupPharmacy', pharmacyOptions);

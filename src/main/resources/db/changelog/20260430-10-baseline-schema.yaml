@@ -32,45 +32,14 @@ databaseChangeLog:
                 name VARCHAR(255) NOT NULL,
                 description VARCHAR(255),
                 address VARCHAR(255) NOT NULL,
-                cap VARCHAR(255),
-                city_id BIGINT,
-                city VARCHAR(255),
-                province_id BIGINT,
-                province VARCHAR(255),
-                region_id BIGINT,
-                region VARCHAR(255),
-                phone VARCHAR(255),
-                email VARCHAR(255),
-                service_calendar_hours TEXT,
-                active BIT,
-                structure_type VARCHAR(255),
-                parent_structure_id BIGINT
-              );
-
-              CREATE TABLE IF NOT EXISTS structure_types (
-                code VARCHAR(255) PRIMARY KEY,
-                description VARCHAR(255) NOT NULL,
-                function_description VARCHAR(1000) NOT NULL,
-                parent_type_code VARCHAR(255),
-                display_order INT NOT NULL
-              );
-
-              CREATE TABLE IF NOT EXISTS referents (
-                id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-                first_name VARCHAR(255) NOT NULL,
-                last_name VARCHAR(255) NOT NULL,
-                role VARCHAR(255),
-                phone VARCHAR(255),
-                email VARCHAR(255)
-              );
-
-              CREATE TABLE IF NOT EXISTS structure_referents (
-                structure_id BIGINT UNSIGNED NOT NULL,
-                referent_id BIGINT UNSIGNED NOT NULL,
+                              -- patients table removed from TENAPP baseline: managed centrally in QTMDB
+              
+                              -- The patients table has been removed as it is now managed centrally in QTMDB.
+                              -- The therapeutic_plan table has been updated accordingly.
                 PRIMARY KEY (structure_id, referent_id)
               );
 
-              CREATE TABLE IF NOT EXISTS structure_pharmacies (
+                                -- patient_id removed: reference to patient kept only in QTMDB
                 structure_id BIGINT UNSIGNED NOT NULL,
                 pharmacy_id BIGINT UNSIGNED NOT NULL,
                 PRIMARY KEY (structure_id, pharmacy_id)
@@ -82,7 +51,7 @@ databaseChangeLog:
               );
 
               CREATE TABLE IF NOT EXISTS roles (
-                id VARCHAR(255) PRIMARY KEY,
+                                -- KEY idx_therapeutic_plan_patient_id (patient_id),
                 name VARCHAR(255) NOT NULL,
                 description VARCHAR(255) NOT NULL
               );

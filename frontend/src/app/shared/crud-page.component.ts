@@ -15,6 +15,8 @@ export interface CrudField {
   key: string;
   labelKey: MessageKey;
   type: 'text' | 'textarea' | 'number' | 'checkbox' | 'date' | 'datetime-local' | 'select' | 'action';
+  placeholder?: string;      // <--- Supporto per il testo del placeholder
+    customClass?: string;      // <--- Classe CSS opzionale (es. 'placeholder-red')
   columnSpan?: number;
   rows?: number;
   hidden?: boolean;
@@ -29,8 +31,6 @@ export interface CrudField {
   includeValueInOptionLabel?: boolean;
   relatedFields?: Record<string, string>;
   required?: boolean;
-  maxLength?: number;
-  maxWidth?: number;
   transient?: boolean;
   actionButtonStyle?: 'primary' | 'secondary';
   actionType?: 'send-patient-consent-otp' | 'verify-patient-consent-otp' | 'send-doctor-consent-otp' | 'verify-doctor-consent-otp' | 'send-nurse-consent-otp' | 'verify-nurse-consent-otp';
@@ -87,7 +87,13 @@ interface ConsentOtpConfig {
   styleUrls: ['./crud-page.component.css'],
   template: `
     <section class="crud-shell" [class.crud-shell-popup]="popupMode">
-      <div class="crud-card" [class.crud-card-popup]="popupMode" [attr.aria-busy]="showLoadingOverlay">
+      <div class="crud-card" [class.crud-card-popup]="popupMode" [class.crud-card-loading]="isLoading || externalLoading" [attr.aria-busy]="isLoading || externalLoading">
+        <div *ngIf="isLoading || externalLoading" class="crud-loading-overlay" aria-live="polite" aria-busy="true">
+          <div class="crud-loading-panel">
+            <span class="crud-loading-spinner" aria-hidden="true"></span>
+            <span class="crud-loading-text">{{ translate('crud.loading') }}</span>
+          </div>
+        </div>
         <header class="crud-header" [class.crud-header-wizard]="wizardMode && folders.length > 0">
           <div>
             <h2>{{ translate(titleKey) }}</h2>
@@ -141,11 +147,6 @@ interface ConsentOtpConfig {
         </div>
 
         <form class="crud-form" #crudForm="ngForm" (ngSubmit)="save(crudForm)" novalidate>
-          <div *ngIf="isLoading && !initialPageLoaded" class="crud-loading-body d-flex align-items-center justify-content-center my-5 fw-bold text-muted fs-5" aria-live="polite" aria-busy="true">
-            {{ translate('crud.loading') }}
-          </div>
-
-          <ng-container *ngIf="!isLoading || initialPageLoaded">
           <div class="crud-fields crud-fields-multicol">
             <div class="crud-field-col" *ngFor="let field of currentFields; let i = index" [style.display]="shouldSkipInlineLocationField(i) ? 'none' : null" [style.grid-column]="field.key === 'regionId' && currentFields.length > i+2 && currentFields[i+1].key === 'provinceId' && currentFields[i+2].key === 'cityId' ? 'span 3' : resolveGridColumn(field)">
               <ng-container *ngIf="field.key === 'regionId' && currentFields.length > i+2 && currentFields[i+1].key === 'provinceId' && currentFields[i+2].key === 'cityId'; else normalFieldBlock">
@@ -155,14 +156,14 @@ interface ConsentOtpConfig {
                 <div class="crud-field-control">
                   <div class="location-row">
                     <div class="location-item">
-                      <label class="crud-sub-label">{{ translate('structures.region') }}</label>
                       <ng-select
                         class="crud-input"
+                        [ngClass]="currentFields[i].customClass"
                         [items]="getFieldOptions(currentFields[i])"
                         bindLabel="label"
                         bindValue="value"
                         [(ngModel)]="formModel['regionId']"
-                        (change)="onRegionChange(formModel['regionId'])"
+                        (change)="onSelectChange(currentFields[i], formModel['regionId'])"
                         [name]="currentFields[i].key"
                         [disabled]="isFieldDisabled(currentFields[i])"
                         [clearable]="true"
@@ -177,14 +178,14 @@ interface ConsentOtpConfig {
                       </ng-select>
                     </div>
                     <div class="location-item">
-                      <label class="crud-sub-label">{{ translate('structures.province') }}</label>
                       <ng-select
                         class="crud-input"
+                        [ngClass]="currentFields[i+1].customClass"
                         [items]="getFieldOptions(currentFields[i+1])"
                         bindLabel="label"
                         bindValue="value"
                         [(ngModel)]="formModel['provinceId']"
-                        (change)="onProvinceChange(formModel['provinceId'])"
+                        (change)="onSelectChange(currentFields[i+1], formModel['provinceId'])"
                         [name]="currentFields[i + 1].key"
                         [disabled]="isFieldDisabled(currentFields[i+1])"
                         [clearable]="true"
@@ -199,14 +200,14 @@ interface ConsentOtpConfig {
                       </ng-select>
                     </div>
                     <div class="location-item">
-                      <label class="crud-sub-label">{{ translate('structures.city') }}</label>
                       <ng-select
                         class="crud-input"
+                        [ngClass]="currentFields[i+2].customClass"
                         [items]="getFieldOptions(currentFields[i+2])"
                         bindLabel="label"
                         bindValue="value"
                         [(ngModel)]="formModel['cityId']"
-                        (change)="onCityChange(formModel['cityId'])"
+                        (change)="onSelectChange(currentFields[i+2], formModel['cityId'])"
                         [name]="currentFields[i + 2].key"
                         [disabled]="isFieldDisabled(currentFields[i+2])"
                         [clearable]="true"
@@ -263,8 +264,9 @@ interface ConsentOtpConfig {
                   </ng-container>
                   <ng-template #genericInput>
                     <ng-container *ngIf="field.type === 'textarea'; else genericTextInput">
-                      <textarea
+                        <textarea
                         class="crud-input crud-textarea"
+                        [ngClass]="field.customClass"
                         [class.crud-input-invalid]="shouldShowRequiredError(field, genericField)"
                         [id]="field.key"
                         [(ngModel)]="formModel[field.key]"
@@ -273,6 +275,7 @@ interface ConsentOtpConfig {
                         (blur)="onFieldBlur(field)"
                         [required]="field.required === true"
                         [rows]="field.rows ?? 6"
+                        [placeholder]="field.placeholder || ''"
                         #genericField="ngModel"
                       ></textarea>
                       <div *ngIf="shouldShowRequiredError(field, genericField)" class="crud-field-error">
@@ -302,21 +305,18 @@ interface ConsentOtpConfig {
                       <ng-template #defaultTextInput>
                         <input
                           class="crud-input"
+                          [ngClass]="field.customClass"
                           [class.crud-input-invalid]="shouldShowRequiredError(field, genericField)"
-                          [class.otp-code-input]="field.key === 'patientConsentOtpCode' || field.key === 'doctorConsentOtpCode' || field.key === 'nurseConsentOtpCode'"
                           [id]="field.key"
-                          [type]="field.type === 'text' ? 'text' : field.type"
-                          [attr.inputmode]="field.key === 'patientConsentOtpCode' || field.key === 'doctorConsentOtpCode' || field.key === 'nurseConsentOtpCode' ? 'numeric' : null"
-                          [attr.maxlength]="field.key === 'patientConsentOtpCode' || field.key === 'doctorConsentOtpCode' || field.key === 'nurseConsentOtpCode' ? 6 : null"
+                          [type]="field.type"
                           [(ngModel)]="formModel[field.key]"
                           [name]="field.key"
                           [disabled]="isFieldDisabled(field)"
                           [readOnly]="isFieldReadonly(field)"
                           (blur)="onFieldBlur(field)"
-                          (keypress)="isOtpCodeField(field) ? onlyNumbers($event) : true"
-                          (input)="isOtpCodeField(field) ? onOtpInput(field.key, $event) : null"
                           [required]="field.required === true"
                           [attr.title]="asString(formModel[field.key])"
+                          [placeholder]="field.placeholder || ''"
                           #genericField="ngModel"
                         />
                         <div *ngIf="shouldShowRequiredError(field, genericField)" class="crud-field-error">
@@ -330,6 +330,7 @@ interface ConsentOtpConfig {
                   <ng-container *ngIf="field.key === 'doctorTypeCode'; else ngSelectBlock">
                     <select
                       class="crud-input"
+                      [ngClass]="field.customClass"
                       [class.crud-input-invalid]="shouldShowRequiredError(field, selectField)"
                       [id]="field.key"
                       [attr.title]="getSelectedOptionLabel(field)"
@@ -350,50 +351,27 @@ interface ConsentOtpConfig {
                     </div>
                   </ng-container>
                   <ng-template #ngSelectBlock>
-                    <!-- Special-case: OTP recipient rendered as native select (non-searchable) -->
-                    <ng-container *ngIf="field.key === 'otpRecipient'; else defaultNgSelect">
-                      <select
-                        class="crud-input otp-recipient-select"
-                        [class.crud-input-invalid]="shouldShowRequiredError(field, selectField)"
-                        [id]="field.key"
-                        [ngModel]="formModel[field.key]"
-                        (ngModelChange)="onSelectChange(field, $event)"
-                        [name]="field.key"
-                        [disabled]="isFieldDisabled(field)"
-                        [required]="field.required === true"
-                        #selectField="ngModel"
-                      >
-                        <option value=""></option>
-                        <option *ngFor="let option of getFieldOptions(field)" [ngValue]="option.value" [disabled]="!option.source || !option.source['phone']">
-                          {{ formatOptionWithPhone(option) }}
-                        </option>
-                      </select>
-                      <div *ngIf="shouldShowRequiredError(field, selectField)" class="crud-field-error">
-                        {{ translate(requiredFieldMessageKey) }}
-                      </div>
-                    </ng-container>
-                    <ng-template #defaultNgSelect>
-                      <ng-select
-                        class="crud-input"
-                        [items]="getFieldOptions(field)"
-                        bindLabel="label"
-                        bindValue="value"
-                        [(ngModel)]="formModel[field.key]"
-                        (change)="onSelectChange(field, formModel[field.key])"
-                        [name]="field.key"
-                        [id]="field.key"
-                        [disabled]="isFieldDisabled(field)"
-                        [clearable]="true"
-                        [required]="field.required === true"
-                      >
-                        <ng-template ng-option-tmp let-item="item">
-                          {{ resolveOptionLabel(item.label) }}
-                        </ng-template>
-                        <ng-template ng-label-tmp let-item="item">
-                          {{ resolveOptionLabel(item.label) }}
-                        </ng-template>
-                      </ng-select>
-                    </ng-template>
+                    <ng-select
+                      class="crud-input"
+                      [items]="getFieldOptions(field)"
+                      bindLabel="label"
+                      bindValue="value"
+                      [(ngModel)]="formModel[field.key]"
+                      (change)="onSelectChange(field, formModel[field.key])"
+                      [name]="field.key"
+                      [id]="field.key"
+                      [disabled]="isFieldDisabled(field)"
+                      [clearable]="true"
+                      [required]="field.required === true"
+                    >
+                      <ng-template ng-option-tmp let-item="item">
+                        {{ resolveOptionLabel(item.label) }}
+                      </ng-template>
+                      <ng-template ng-label-tmp let-item="item">
+                        {{ resolveOptionLabel(item.label) }}
+                      </ng-template>
+                    </ng-select>
+                    <!-- per-field inline spinner removed as requested -->
                     <div *ngIf="shouldShowRequiredError(field, null)" class="crud-field-error">
                       {{ translate(requiredFieldMessageKey) }}
                     </div>
@@ -423,17 +401,16 @@ interface ConsentOtpConfig {
             </div>
           </div>
 
-          <ng-content></ng-content>
-          </ng-container>
-
           <div class="crud-actions" *ngIf="!hideActions && !isViewMode && !wizardMode">
             <button class="crud-btn crud-btn-secondary" type="button" (click)="cancel()">
               {{ translate('crud.actions.cancel') }}
             </button>
-            <button class="crud-btn crud-btn-primary" type="submit" [disabled]="showLoadingOverlay">
+            <button class="crud-btn crud-btn-primary" type="submit">
               {{ loadedEntityKeyValue !== null || isEditMode ? translate('crud.actions.update') : translate('crud.actions.create') }}
             </button>
           </div>
+
+          <ng-content></ng-content>
 
           <div class="crud-actions" *ngIf="!hideActions && isViewMode && !wizardMode">
             <button class="crud-btn crud-btn-secondary" type="button" (click)="cancel()">
@@ -446,15 +423,15 @@ interface ConsentOtpConfig {
               {{ translate(isViewMode ? 'crud.actions.back' : 'crud.actions.cancel') }}
             </button>
 
-            <button *ngIf="!isFirstFolder" class="crud-btn crud-btn-secondary" type="button" (click)="goToPreviousFolder()" [disabled]="showLoadingOverlay">
+            <button *ngIf="!isFirstFolder" class="crud-btn crud-btn-secondary" type="button" (click)="goToPreviousFolder()">
               {{ translate('projects.wizard.actions.previous') }}
             </button>
 
-            <button *ngIf="!isLastFolder && !isViewMode" class="crud-btn crud-btn-primary" type="button" (click)="goToNextFolder()" [disabled]="showLoadingOverlay || isNextFolderDisabled()">
+            <button *ngIf="!isLastFolder && !isViewMode" class="crud-btn crud-btn-primary" type="button" (click)="goToNextFolder()" [disabled]="isNextFolderDisabled()">
               {{ translate('crud.actions.next') }}
             </button>
 
-            <button *ngIf="isLastFolder && !isViewMode" class="crud-btn crud-btn-primary" type="submit" [disabled]="showLoadingOverlay">
+            <button *ngIf="isLastFolder && !isViewMode" class="crud-btn crud-btn-primary" type="submit">
               {{ loadedEntityKeyValue !== null || isEditMode ? translate('crud.actions.update') : translate('crud.actions.create') }}
             </button>
           </div>
@@ -501,85 +478,19 @@ export class CrudPageComponent implements OnInit, OnChanges {
 
   formModel: CrudEntity = {};
   isLoading = false;
-  initialPageLoaded = false;
-
-  get provincesList(): SelectOption[] {
-    return this.fieldOptions['provinceId'] ?? [];
-  }
-  set provincesList(val: SelectOption[]) {
-    this.fieldOptions['provinceId'] = val;
-  }
-
-  get citiesList(): SelectOption[] {
-    return this.fieldOptions['cityId'] ?? [];
-  }
-  set citiesList(val: SelectOption[]) {
-    this.fieldOptions['cityId'] = val;
-  }
-
-  onRegionChange(regionId: any): void {
-    const rawVal = regionId === undefined ? null : regionId;
-    this.formModel['regionId'] = rawVal;
-    
-    const regionField = this.getAllFields().find(f => f.key === 'regionId');
-    if (regionField) {
-      this.applyRelatedFields(regionField, rawVal);
-    }
-
-    this.formModel['provinceId'] = null;
-    this.formModel['province'] = '';
-    this.formModel['cityId'] = null;
-    this.formModel['city'] = '';
-
-    if (rawVal !== null && String(rawVal).trim().length > 0) {
-      void this.loadSelectOptionsForFieldKey('provinceId', true);
-    } else {
-      this.fieldOptions['provinceId'] = [];
-      this.fieldOptions['cityId'] = [];
-    }
-  }
-
-  onProvinceChange(provinceId: any): void {
-    const rawVal = provinceId === undefined ? null : provinceId;
-    this.formModel['provinceId'] = rawVal;
-
-    const provinceField = this.getAllFields().find(f => f.key === 'provinceId');
-    if (provinceField) {
-      this.applyRelatedFields(provinceField, rawVal);
-    }
-
-    this.formModel['cityId'] = null;
-    this.formModel['city'] = '';
-
-    if (rawVal !== null && String(rawVal).trim().length > 0) {
-      void this.loadSelectOptionsForFieldKey('cityId', true);
-    } else {
-      this.fieldOptions['cityId'] = [];
-    }
-  }
-
-  onCityChange(cityId: any): void {
-    const rawVal = cityId === undefined ? null : cityId;
-    this.formModel['cityId'] = rawVal;
-
-    const cityField = this.getAllFields().find(f => f.key === 'cityId');
-    if (cityField) {
-      this.applyRelatedFields(cityField, rawVal);
-    }
-  }
   usernameTaken = false;
   submissionAttempted = false;
   activeFolder = '';
   isViewMode = false;
   fieldPermissions: Record<string, string> = {};
   fieldOptions: Record<string, SelectOption[]> = {};
+  fieldLoading: Record<string, boolean> = {};
   operationLogs: OperationLogEntry[] = [];
   phoneFieldTouched: Record<string, boolean> = {};
   consentOtpState: ConsentOtpState = this.createConsentOtpState();
   @ViewChildren('phoneInputElement') phoneInputElements!: QueryList<ElementRef<HTMLInputElement>>;
   private operationLogTimeouts: Record<number, any> = {};
   private loadingOperations = 0;
-  private hasInitialized = false;
   private phoneInputBindings = new Map<string, PhoneInputBinding>();
   private phoneInputChangesSubscription?: Subscription;
   private isHydratingDoctorAssignment = false;
@@ -598,30 +509,12 @@ export class CrudPageComponent implements OnInit, OnChanges {
     // eslint-disable-next-line no-console
     console.log('[CrudPageComponent] ngOnInit for endpoint', this.endpoint, 'with initial model:', this.initialFormModel);
     this.applyInitialFormModel('ngOnInit');
-    this.hasInitialized = true;
-    this.startLoading();
-    void this.initializePage().finally(() => {
-      this.stopLoading();
-      this.initialPageLoaded = true;
-    });
-
+    void this.initializePage();
   }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['initialFormModel']) {
       this.applyInitialFormModel('ngOnChanges');
-    }
-
-    if (changes['externalLoading']) {
-      this.syncLoadingState();
-    }
-
-    if (
-      this.hasInitialized
-      && !this.externalLoading
-      && (changes['fields'] || changes['folders'] || changes['externalLoading'])
-    ) {
-      this.loadSelectOptions();
     }
   }
 
@@ -703,10 +596,6 @@ export class CrudPageComponent implements OnInit, OnChanges {
     return t(key);
   }
 
-  get showLoadingOverlay(): boolean {
-    return this.isLoading;
-  }
-
   resolveOptionLabel(label: string): string {
     return hasMessageKey(label) ? t(label) : label;
   }
@@ -718,26 +607,32 @@ export class CrudPageComponent implements OnInit, OnChanges {
   }
 
   getFieldOptions(field: CrudField): SelectOption[] {
-    const base = this.fieldOptions[field.key] ?? [];
-    // Special handling for OTP recipient: attach phone numbers from the current form model
+    // Special case: dynamically include phone numbers in otpRecipient option labels
     if (field.key === 'otpRecipient') {
-      return base.map((opt) => {
-        const valueStr = String(opt.value ?? '');
-        const phone = valueStr === 'caregiverPhone'
-          ? this.asText(this.formModel['caregiverPhone'])
-          : this.asText(this.formModel['primaryPhone']);
-        return {
-          value: opt.value,
-          label: opt.label,
-          source: {
-            ...opt.source,
-            phone
-          }
-        };
+      const primary = this.asPhoneString(this.formModel['primaryPhone']);
+      const caregiver = this.asPhoneString(this.formModel['caregiverPhone']);
+
+      // Prefer explicit field.options (declared in field definition) otherwise fall back to loaded options
+      let sourceOptions: SelectOption[] = [];
+      if (field.options && field.options.length > 0) {
+        sourceOptions = field.options.map((o) => ({ value: o.value, label: o.label, source: { value: o.value, label: o.label } }));
+      } else {
+        sourceOptions = this.fieldOptions[field.key] ?? [];
+      }
+
+      return sourceOptions.map((opt) => {
+        const rawLabel = this.resolveOptionLabel(String(opt.label));
+        let appended = rawLabel;
+        if (String(opt.value) === 'primaryPhone') {
+          appended = `${rawLabel} (${primary ? primary : 'non presente'})`;
+        } else if (String(opt.value) === 'caregiverPhone') {
+          appended = `${rawLabel} (${caregiver ? caregiver : 'non presente'})`;
+        }
+        return { ...opt, label: appended };
       });
     }
 
-    return base;
+    return this.fieldOptions[field.key] ?? [];
   }
 
   onFieldBlur(field: CrudField): void {
@@ -782,48 +677,21 @@ export class CrudPageComponent implements OnInit, OnChanges {
       && this.asPhoneString(this.formModel[field.key]).trim().length === 0;
   }
 
-  isOtpCodeField(field: CrudField): boolean {
-    return field.key === 'patientConsentOtpCode'
-      || field.key === 'doctorConsentOtpCode'
-      || field.key === 'nurseConsentOtpCode';
-  }
-
-  onlyNumbers(event: KeyboardEvent): boolean {
-    const charCode = event.which ?? event.keyCode;
-    if (charCode > 31 && (charCode < 48 || charCode > 57)) {
-      event.preventDefault();
-      return false;
-    }
-    return true;
-  }
-
-  onOtpInput(fieldKey: string, event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const cleaned = (input.value ?? '').replace(/[^0-9]/g, '').slice(0, 6);
-    if (input.value !== cleaned) {
-      input.value = cleaned;
-    }
-    this.formModel[fieldKey] = cleaned;
-  }
-
   onSelectChange(field: CrudField, value: unknown): void {
     this.formModel[field.key] = value;
     this.applyRelatedFields(field, value);
+
+    // If otpRecipient changed, update consent destination preview
+    if (field.key === 'otpRecipient') {
+      this.consentOtpState.destination = this.getConsentPrimaryPhone();
+    }
 
     if (this.shouldSkipResetDuringDoctorHydration(field)) {
       return;
     }
 
     this.resetFieldsOnChange(field);
-
-    let hasDependent = false;
-    for (const candidate of this.getAllFields().filter((f) => f.type === 'select')) {
-      const candidatePlaceholders = this.extractEndpointPlaceholders(candidate.optionsEndpoint ?? '');
-      if (candidatePlaceholders.includes(field.key)) {
-        hasDependent = true;
-        void this.loadSelectOptionsForFieldKey(candidate.key, true);
-      }
-    }
+    this.loadSelectOptions();
   }
 
   goToNextFolder(): void {
@@ -1105,7 +973,10 @@ export class CrudPageComponent implements OnInit, OnChanges {
         resolvedEndpoint,
         requestUrl
       });
-      this.withLoading(this.http.get<Record<string, unknown>[]>(requestUrl)).subscribe({
+      this.fieldLoading[field.key] = true;
+      this.http.get<Record<string, unknown>[]>(requestUrl).pipe(finalize(() => {
+        this.fieldLoading[field.key] = false;
+      })).subscribe({
         next: (items) => {
           // eslint-disable-next-line no-console
           console.log('[CrudPageComponent] Loaded select options', {
@@ -1156,16 +1027,6 @@ export class CrudPageComponent implements OnInit, OnChanges {
       label,
       source: item
     };
-  }
-
-  formatOptionWithPhone(option: SelectOption): string {
-    // Prefer explicit phone attached to source first, then fallback to known keys
-    const phoneRaw = option.source && (option.source['phone'] ?? option.source['telefono'] ?? option.source['phoneNumber']);
-    const phone = this.asText(phoneRaw);
-    if (phone.length > 0) {
-      return `${this.resolveOptionLabel(option.label)} - ${phone}`;
-    }
-    return this.resolveOptionLabel(option.label);
   }
 
   private applyRelatedFields(field: CrudField, value: unknown): void {
@@ -1285,7 +1146,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
   }
 
   private resolveSelectDependenciesOnEdit(): void {
-    if (this.endpoint !== 'doctors') {
+    if (this.endpoint !== 'doctors' && this.endpoint !== 'patients') {
       return;
     }
 
@@ -1416,7 +1277,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
   }
 
   private shouldSkipResetDuringDoctorHydration(field: CrudField): boolean {
-    if (!this.isHydratingDoctorAssignment || this.endpoint !== 'doctors') {
+    if (!this.isHydratingDoctorAssignment || (this.endpoint !== 'doctors' && this.endpoint !== 'patients')) {
       return false;
     }
 
@@ -1438,7 +1299,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
     return this.asNumericId(matchedOverview?.['strutturaId']);
   }
 
-  private async loadSelectOptionsForFieldKey(fieldKey: string, silent = false): Promise<void> {
+  private async loadSelectOptionsForFieldKey(fieldKey: string): Promise<void> {
     const field = this.getAllFields().find((candidate) => candidate.key === fieldKey && candidate.type === 'select');
     if (!field) {
       return;
@@ -1468,15 +1329,18 @@ export class CrudPageComponent implements OnInit, OnChanges {
       : environment.apiBaseUrl;
     const requestUrl = `${baseUrl}/${resolvedEndpoint}`;
 
+    this.fieldLoading[field.key] = true;
     try {
-      const request$ = this.http.get<Record<string, unknown>[]>(requestUrl);
-      const items = await firstValueFrom(silent ? request$ : this.withLoading(request$));
+      const items = await firstValueFrom(this.http.get<Record<string, unknown>[]>(requestUrl).pipe(finalize(() => {
+        this.fieldLoading[field.key] = false;
+      })));
       this.fieldOptions[field.key] = (items ?? [])
         .map((item) => this.mapToSelectOption(field, item))
         .filter((option): option is SelectOption => option !== null);
       this.applyRelatedFields(field, this.formModel[field.key]);
     } catch {
       this.fieldOptions[field.key] = [];
+      this.fieldLoading[field.key] = false;
     }
   }
 
@@ -1503,16 +1367,12 @@ export class CrudPageComponent implements OnInit, OnChanges {
 
   private startLoading(): void {
     this.loadingOperations += 1;
-    this.syncLoadingState();
+    this.isLoading = true;
   }
 
   private stopLoading(): void {
     this.loadingOperations = Math.max(0, this.loadingOperations - 1);
-    this.syncLoadingState();
-  }
-
-  private syncLoadingState(): void {
-    this.isLoading = this.loadingOperations > 0 || this.externalLoading;
+    this.isLoading = this.loadingOperations > 0;
   }
 
   private asNumericId(value: unknown): number | null {

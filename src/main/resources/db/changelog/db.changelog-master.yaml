@@ -74,3 +74,4 @@ databaseChangeLog:
   - include:
       file: 20260912-01-add-doctor-type-and-department.yaml
       relativeToChangelogFile: true
+  # Patient-specific FK changes removed: patient table managed in QTMDB

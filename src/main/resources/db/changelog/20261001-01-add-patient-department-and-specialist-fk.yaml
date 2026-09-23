@@ -1,0 +1,54 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20261001-01-add-patient-department-and-specialist-fk
+      author: copilot
+      changes:
+        - addColumn:
+            tableName: patients
+            columns:
+              - column:
+                  name: department_id
+                  type: BIGINT
+                  constraints:
+                    nullable: true
+        - modifyDataType:
+            tableName: patients
+            columnName: prescribing_specialist
+            newDataType: BIGINT
+        - addForeignKeyConstraint:
+            baseTableName: patients
+            baseColumnNames: department_id
+            referencedTableName: hospital_departments
+            referencedColumnNames: id
+            constraintName: fk_patients_department
+            deferrable: false
+            initiallyDeferred: false
+            onDelete: SET NULL
+        - addForeignKeyConstraint:
+            baseTableName: patients
+            baseColumnNames: prescribing_specialist
+            referencedTableName: doctors
+            referencedColumnNames: id
+            constraintName: fk_patients_prescribing_specialist
+            deferrable: false
+            initiallyDeferred: false
+            onDelete: SET NULL
+      preConditions:
+        - not:
+            columnExists:
+              tableName: patients
+              columnName: department_id
+      rollback:
+        - dropForeignKeyConstraint:
+            baseTableName: patients
+            constraintName: fk_patients_prescribing_specialist
+        - dropForeignKeyConstraint:
+            baseTableName: patients
+            constraintName: fk_patients_department
+        - modifyDataType:
+            tableName: patients
+            columnName: prescribing_specialist
+            newDataType: VARCHAR(255)
+        - dropColumn:
+            columnName: department_id
+            tableName: patients

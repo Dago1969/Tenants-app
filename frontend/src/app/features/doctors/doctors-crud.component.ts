@@ -200,9 +200,9 @@ export class DoctorsCrudComponent {
           optionLabelKey: 'name',
           relatedFields: { city: 'name' }
         },
-        { key: 'deliveryAddress', labelKey: 'doctors.field.deliveryAddress', type: 'text' },
-        { key: 'secondaryAddresses', labelKey: 'doctors.field.secondaryAddresses', type: 'text' },
-        { key: 'specialization', labelKey: 'doctors.field.specialization', type: 'text' }
+        { key: 'deliveryAddress', labelKey: 'doctors.field.deliveryAddress', type: 'text' , placeholder: 'DA DEFINIRE',  customClass: 'placeholder-red'},
+        { key: 'secondaryAddresses', labelKey: 'doctors.field.secondaryAddresses', type: 'text' , placeholder: 'DA DEFINIRE',  customClass: 'placeholder-red'},
+        { key: 'specialization', labelKey: 'doctors.field.specialization', type: 'text' , placeholder: 'DA DEFINIRE',  customClass: 'placeholder-red'}
       ]
     },
     {
