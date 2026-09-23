@@ -40,24 +40,35 @@ export class PatientsCrudComponent implements OnInit {
   };
 
   fields: CrudField[] = [
-    { key: 'assistedId', labelKey: 'patients.field.assistedId', type: 'text', columnSpan: 2 },
-    { key: 'fiscalCode', labelKey: 'patients.field.fiscalCode', type: 'text' },
-    { key: 'firstName', labelKey: 'patients.field.firstName', type: 'text' },
-    { key: 'lastName', labelKey: 'patients.field.lastName', type: 'text' },
-    { key: 'birthDate', labelKey: 'patients.field.birthDate', type: 'date' },
-    {
-      key: 'gender',
-      labelKey: 'patients.field.gender',
-      type: 'select',
-      options: [
-        { value: 'M', label: 'patients.gender.male' },
-        { value: 'F', label: 'patients.gender.female' },
-        { value: 'OTHER', label: 'patients.gender.other' }
-      ]
-    },
-    { key: 'email', labelKey: 'patients.field.email', type: 'text', columnSpan: 2 },
-    { key: 'primaryPhone', labelKey: 'patients.field.primaryPhone', type: 'text', columnSpan: 2 },
-    { key: 'secondaryPhone', labelKey: 'patients.field.secondaryPhone', type: 'text', columnSpan: 2 },
+	// RIGA 1: assistedId (15 car), fiscalCode, lastName, firstName
+		        { key: 'assistedId', labelKey: 'patients.field.assistedId', type: 'text', readonly: true, columnSpan: 1  },
+		        { key: 'fiscalCode', labelKey: 'patients.field.fiscalCode', type: 'text' },
+		        { key: 'lastName', labelKey: 'patients.field.lastName', type: 'text' },
+		        { key: 'firstName', labelKey: 'patients.field.firstName', type: 'text' },
+
+		        // RIGA 2: birthDate, gender
+		        { key: 'birthDate', labelKey: 'patients.field.birthDate', type: 'date' },
+		        {
+		          key: 'gender',
+		          labelKey: 'patients.field.gender',
+		          type: 'select',
+		          options: [
+		            { value: 'M', label: 'patients.gender.male' },
+		            { value: 'F', label: 'patients.gender.female' },
+		            { value: 'OTHER', label: 'patients.gender.other' }
+		          ]
+		        },
+
+		        // RIGA 3: email, primaryPhone (15 car), secondaryPhone (15 car)
+				{ key: 'email', labelKey: 'patients.field.email', type: 'text', columnSpan: 2 },
+				    { key: 'primaryPhone', labelKey: 'patients.field.primaryPhone', type: 'text', columnSpan: 1 },
+				    { key: 'secondaryPhone', labelKey: 'patients.field.secondaryPhone', type: 'text', columnSpan: 1 },
+
+		        // RIGA 4: caregiverFullName, caregiverPhone (15 car)
+		        { key: 'caregiverFullName', labelKey: 'patients.field.caregiverFullName', type: 'text' },
+		        { key: 'caregiverPhone', labelKey: 'patients.field.caregiverPhone', type: 'text', maxLength: 15, columnSpan: 3 },
+				
+	
     { key: 'deliveryAddress', labelKey: 'patients.field.deliveryAddress', type: 'text', columnSpan: 2 },
     { key: 'secondaryAddresses', labelKey: 'patients.field.secondaryAddresses', type: 'text', columnSpan: 2 },
     {
@@ -108,24 +119,35 @@ export class PatientsCrudComponent implements OnInit {
       key: 'identity',
       titleKey: 'patients.folder.identity',
       fields: [
-        { key: 'assistedId', labelKey: 'patients.field.assistedId', type: 'text', readonly: true, columnSpan: 2 },
-        { key: 'fiscalCode', labelKey: 'patients.field.fiscalCode', type: 'text' },
-        { key: 'firstName', labelKey: 'patients.field.firstName', type: 'text' },
-        { key: 'lastName', labelKey: 'patients.field.lastName', type: 'text' },
-        { key: 'birthDate', labelKey: 'patients.field.birthDate', type: 'date' },
-        {
-          key: 'gender',
-          labelKey: 'patients.field.gender',
-          type: 'select',
-          options: [
-            { value: 'M', label: 'patients.gender.male' },
-            { value: 'F', label: 'patients.gender.female' },
-            { value: 'OTHER', label: 'patients.gender.other' }
-          ]
-        },
-        { key: 'email', labelKey: 'patients.field.email', type: 'text', columnSpan: 2 },
-        { key: 'primaryPhone', labelKey: 'patients.field.primaryPhone', type: 'text', columnSpan: 2 },
-        { key: 'secondaryPhone', labelKey: 'patients.field.secondaryPhone', type: 'text', columnSpan: 2 },
+		// RIGA 1: assistedId (15 car), fiscalCode, lastName, firstName
+	        { key: 'assistedId', labelKey: 'patients.field.assistedId', type: 'text', readonly: true, columnSpan: 1  },
+	        { key: 'fiscalCode', labelKey: 'patients.field.fiscalCode', type: 'text' },
+	        { key: 'lastName', labelKey: 'patients.field.lastName', type: 'text' },
+	        { key: 'firstName', labelKey: 'patients.field.firstName', type: 'text' },
+
+	        // RIGA 2: birthDate, gender
+	        { key: 'birthDate', labelKey: 'patients.field.birthDate', type: 'date' },
+	        {
+	          key: 'gender',
+	          labelKey: 'patients.field.gender',
+	          type: 'select',
+	          options: [
+	            { value: 'M', label: 'patients.gender.male' },
+	            { value: 'F', label: 'patients.gender.female' },
+	            { value: 'OTHER', label: 'patients.gender.other' }
+	          ]
+	        },
+
+	        // RIGA 3: email, primaryPhone (15 car), secondaryPhone (15 car)
+			{ key: 'email', labelKey: 'patients.field.email', type: 'text', columnSpan: 2 },
+			    { key: 'primaryPhone', labelKey: 'patients.field.primaryPhone', type: 'text', columnSpan: 1 },
+			    { key: 'secondaryPhone', labelKey: 'patients.field.secondaryPhone', type: 'text', columnSpan: 1 },
+
+	        // RIGA 4: caregiverFullName, caregiverPhone (15 car)
+	        { key: 'caregiverFullName', labelKey: 'patients.field.caregiverFullName', type: 'text' },
+	        { key: 'caregiverPhone', labelKey: 'patients.field.caregiverPhone', type: 'text', maxLength: 15 },
+			
+			
         { key: 'caregiverFullName', labelKey: 'patients.field.caregiverFullName', type: 'text' },
         { key: 'caregiverPhone', labelKey: 'patients.field.caregiverPhone', type: 'text' },
         {
@@ -177,7 +199,7 @@ export class PatientsCrudComponent implements OnInit {
       key: 'privacy',
       titleKey: 'patients.folder.privacy',
       fields: [
-        { key: 'dataProcessingConsent', labelKey: 'patients.field.dataProcessingConsent', type: 'checkbox', readonly: true, required: true },
+        { key: 'dataProcessingConsent', labelKey: 'patients.field.dataProcessingConsent', type: 'checkbox', readonly: true, required: true, columnSpan: 1 },
         {
           key: 'otpRecipient',
           labelKey: 'patients.field.otpRecipient',
