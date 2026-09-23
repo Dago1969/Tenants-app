@@ -78,4 +78,7 @@ databaseChangeLog:
   - include:
       file: 20260923-01-add-doctor-communication-otp.yaml
       relativeToChangelogFile: true
+  - include:
+      file: 20261002-01-add-therapeutic-plan-department.yaml
+      relativeToChangelogFile: true
   # Patient-specific FK changes removed: patient table managed in QTMDB

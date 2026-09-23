@@ -31,7 +31,19 @@ public class TherapeuticPlanMapper {
             return null;
         }
 
-        StructureEntity structure = entity.getStructure();
+        StructureEntity structure = null;
+        try {
+            // entity now stores structureId instead of StructureEntity; keep compatibility when structure relation exists
+            java.lang.reflect.Field f = entity.getClass().getDeclaredField("structureId");
+            f.setAccessible(true);
+            Object sid = f.get(entity);
+            if (sid != null) {
+                StructureEntity tmp = new StructureEntity();
+                tmp.setId((Long) sid);
+                structure = tmp;
+            }
+        } catch (NoSuchFieldException | IllegalAccessException ignored) {
+        }
         List<EquipmentEntity> equipments = entity.getEquipments() == null ? List.of() : entity.getEquipments();
         List<TherapeuticPlanNurseAssignmentEntity> nurseAssignments = entity.getNurseAssignments() == null ? List.of() : entity.getNurseAssignments();
         List<TherapeuticPlanDoctorAssignmentEntity> doctorAssignments = entity.getDoctorAssignments() == null ? List.of() : entity.getDoctorAssignments();
@@ -51,9 +63,10 @@ public class TherapeuticPlanMapper {
                         .map(EquipmentEntity::getCode)
                         .filter(Objects::nonNull)
                         .toList())
-                .structureId(structure != null ? structure.getId() : null)
+                .structureId(entity.getStructureId())
                 .structureType(structure != null ? structure.getStructureType() : null)
                 .structureName(structure != null ? structure.getName() : null)
+                .departmentId(entity.getDepartmentId())
                         .nurseIds(nurseAssignments.stream()
                             .map(TherapeuticPlanNurseAssignmentEntity::getNurse)
                             .filter(Objects::nonNull)
@@ -110,13 +123,13 @@ public class TherapeuticPlanMapper {
 
     public TherapeuticPlanEntity toNewEntity(
             TherapeuticPlanDto dto,
-            StructureEntity structure,
+            Long structureId,
             List<TherapeuticPlanNurseAssignmentEntity> nurseAssignments,
             List<TherapeuticPlanDoctorAssignmentEntity> doctorAssignments,
             List<EquipmentEntity> equipments
     ) {
         TherapeuticPlanEntity entity = new TherapeuticPlanEntity();
-        updateEntity(entity, dto, structure, nurseAssignments, doctorAssignments, equipments);
+        updateEntity(entity, dto, structureId, nurseAssignments, doctorAssignments, equipments);
         entity.setId(dto.getId());
         return entity;
     }
@@ -124,7 +137,7 @@ public class TherapeuticPlanMapper {
     public void updateEntity(
             TherapeuticPlanEntity entity,
             TherapeuticPlanDto dto,
-            StructureEntity structure,
+            Long structureId,
             List<TherapeuticPlanNurseAssignmentEntity> nurseAssignments,
             List<TherapeuticPlanDoctorAssignmentEntity> doctorAssignments,
             List<EquipmentEntity> equipments
@@ -132,7 +145,14 @@ public class TherapeuticPlanMapper {
         entity.setPatientId(dto.getPatientId());
         entity.setProjectCode(dto.getProjectCode());
         entity.setEquipments(new ArrayList<>(equipments));
-        entity.setStructure(structure);
+        // structure is mapped by id in the entity; keep backward compatibility with provided StructureEntity
+//        if (structure != null) {
+//            entity.setStructureId(structure.getId());
+//        } else {
+//            entity.setStructureId(dto.getStructureId());
+//        }
+        entity.setStructureId(structureId);
+        entity.setDepartmentId(dto.getDepartmentId());
         syncNurseAssignments(entity, nurseAssignments);
         syncDoctorAssignments(entity, doctorAssignments);
         entity.setDrugCode(dto.getDrugCode());

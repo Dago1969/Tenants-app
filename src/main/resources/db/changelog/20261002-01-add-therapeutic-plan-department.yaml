@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20261002-01-add-therapeutic-plan-department
+      author: copilot
+      comment: Adds department_id column to therapeutic_plan to align with DoctorEntity
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        and:
+          - tableExists:
+              tableName: therapeutic_plan
+          - not:
+              columnExists:
+                tableName: therapeutic_plan
+                columnName: department_id
+      changes:
+        - addColumn:
+            tableName: therapeutic_plan
+            columns:
+              - column:
+                  name: department_id
+                  type: BIGINT

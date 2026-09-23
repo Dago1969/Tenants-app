@@ -8,6 +8,7 @@ import com.qtm.tenants.therapeuticplan.mapper.TherapeuticPlanVisitMapper;
 import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanEntity;
 import com.qtm.tenants.therapeuticplan.repository.TherapeuticPlanRepository;
 import com.qtm.tenants.structure.entity.StructureEntity;
+import com.qtm.tenants.structure.repository.StructureRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.qtm.tenants.therapeuticplan.repository.TherapeuticPlanVisitRepository;
@@ -29,17 +30,20 @@ public class TherapeuticPlanVisitService {
     private final TherapeuticPlanRepository therapeuticPlanRepository;
     private final DashboardProjectClient dashboardProjectClient;
     private final ObjectMapper objectMapper;
+    private final StructureRepository structureRepository;
 
     public TherapeuticPlanVisitService(TherapeuticPlanVisitRepository repository,
                                        TherapeuticPlanVisitMapper mapper,
                                        TherapeuticPlanRepository therapeuticPlanRepository,
                                        DashboardProjectClient dashboardProjectClient,
-                                       ObjectMapper objectMapper) {
+                                       ObjectMapper objectMapper,
+                                       StructureRepository structureRepository) {
         this.repository = repository;
         this.mapper = mapper;
         this.therapeuticPlanRepository = therapeuticPlanRepository;
         this.dashboardProjectClient = dashboardProjectClient;
         this.objectMapper = objectMapper;
+        this.structureRepository = structureRepository;
     }
 
     public TherapeuticPlanVisitDto save(TherapeuticPlanVisitDto dto) {
@@ -94,7 +98,12 @@ public class TherapeuticPlanVisitService {
     }
 
     private String getPlanStructureName(TherapeuticPlanEntity planEntity) {
-        StructureEntity structure = planEntity.getStructure();
+        Long structureId = planEntity.getStructureId();
+        if (structureId == null) {
+            return null;
+        }
+
+        StructureEntity structure = structureRepository.findById(structureId).orElse(null);
         if (structure == null || structure.getName() == null || structure.getName().isBlank()) {
             return null;
         }

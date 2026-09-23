@@ -22,14 +22,25 @@ public class TherapeuticPlanActivityBookingMapper {
         }
 
         TherapeuticPlanEntity therapeuticPlan = entity.getTherapeuticPlan();
-        StructureEntity structure = entity.getStructure();
+        StructureEntity structure = null;
+        try {
+            java.lang.reflect.Field f = entity.getClass().getDeclaredField("structureId");
+            f.setAccessible(true);
+            Object sid = f.get(entity);
+            if (sid != null) {
+                StructureEntity tmp = new StructureEntity();
+                tmp.setId((Long) sid);
+                structure = tmp;
+            }
+        } catch (NoSuchFieldException | IllegalAccessException ignored) {
+        }
 
         return TherapeuticPlanActivityBookingDto.builder()
                 .id(entity.getId())
                 .therapeuticPlanId(therapeuticPlan != null ? therapeuticPlan.getId() : null)
                 .patientId(entity.getPatientId())
                 .patientName(patientName)
-                .structureId(structure != null ? structure.getId() : null)
+                .structureId(entity.getStructureId())
                 .structureName(structure != null ? structure.getName() : null)
                 .bookingDate(entity.getBookingDate())
                 .visitType(entity.getVisitType())
@@ -46,7 +57,7 @@ public class TherapeuticPlanActivityBookingMapper {
                 .id(dto.getId())
                 .therapeuticPlan(therapeuticPlan)
                 .patientId(dto.getPatientId())
-                .structure(structure)
+            .structureId(structure != null ? structure.getId() : null)
                 .bookingDate(dto.getBookingDate())
                 .visitType(dto.getVisitType())
                 .protocolPlanned(dto.getProtocolPlanned())

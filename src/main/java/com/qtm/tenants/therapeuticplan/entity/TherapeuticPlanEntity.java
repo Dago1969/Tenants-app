@@ -1,7 +1,7 @@
 package com.qtm.tenants.therapeuticplan.entity;
 
 import com.qtm.tenants.equipment.entity.EquipmentEntity;
-import com.qtm.tenants.structure.entity.StructureEntity;
+// Structure is referenced by id to match DoctorEntity
 import jakarta.persistence.ConstraintMode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -52,9 +52,11 @@ public class TherapeuticPlanEntity {
     @Builder.Default
     private List<EquipmentEntity> equipments = new ArrayList<>();
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @jakarta.persistence.JoinColumn(name = "structure_id", nullable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
-    private StructureEntity structure;
+    @Column(name = "structure_id")
+    private Long structureId;
+
+    @Column(name = "department_id")
+    private Long departmentId;
 
     @OneToMany(mappedBy = "therapeuticPlan", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("priorityIndex ASC")

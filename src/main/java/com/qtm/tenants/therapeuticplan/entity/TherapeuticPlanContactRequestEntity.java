@@ -53,9 +53,8 @@ public class TherapeuticPlanContactRequestEntity {
     @Column(name = "outpatient_clinic", nullable = false, length = 255)
     private String outpatientClinic;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "structure_id", nullable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
-    private StructureEntity structure;
+    @Column(name = "structure_id", nullable = false)
+    private Long structureId;
 
     @Column(name = "status", nullable = false, length = 64)
     private String status;

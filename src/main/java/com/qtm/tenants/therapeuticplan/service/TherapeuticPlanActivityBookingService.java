@@ -41,6 +41,7 @@ public class TherapeuticPlanActivityBookingService {
     private final DashboardPatientClient dashboardPatientClient;
     private final TherapeuticPlanRepository therapeuticPlanRepository;
     private final TherapeuticPlanActivityBookingMapper activityBookingMapper;
+    private final com.qtm.tenants.structure.repository.StructureRepository structureRepository;
 
     @Transactional(readOnly = true)
     public List<TherapeuticPlanActivityBookingDto> findAll(Long therapeuticPlanId) {
@@ -72,11 +73,14 @@ public class TherapeuticPlanActivityBookingService {
 
         PatientDto patient = resolvePatient(patientId);
 
-        StructureEntity structure = therapeuticPlan.getStructure();
-        if (structure == null || structure.getId() == null) {
+        Long structureId = therapeuticPlan.getStructureId();
+        if (structureId == null) {
             throw new ResponseStatusException(BAD_REQUEST,
-                    "Il piano terapeutico deve avere un centro medico associato per registrare la prenotazione attivita");
+                "Il piano terapeutico deve avere un centro medico associato per registrare la prenotazione attivita");
         }
+
+        StructureEntity structure = structureRepository.findById(structureId)
+            .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Struttura del piano terapeutico non trovata"));
 
         TherapeuticPlanActivityBookingEntity savedEntity = activityBookingRepository.save(
             activityBookingMapper.toNewEntity(

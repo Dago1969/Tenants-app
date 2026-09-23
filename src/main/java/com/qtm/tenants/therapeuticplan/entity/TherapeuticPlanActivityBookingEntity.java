@@ -44,9 +44,8 @@ public class TherapeuticPlanActivityBookingEntity {
     @Column(name = "patient_id", nullable = false)
     private Long patientId;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "structure_id", nullable = false, foreignKey = @ForeignKey(ConstraintMode.NO_CONSTRAINT))
-    private StructureEntity structure;
+    @Column(name = "structure_id", nullable = false)
+    private Long structureId;
 
     @Column(name = "booking_date", nullable = false)
     private LocalDate bookingDate;

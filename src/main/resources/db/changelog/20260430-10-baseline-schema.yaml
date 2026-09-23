@@ -224,6 +224,7 @@ databaseChangeLog:
                 patient_id BIGINT NOT NULL,
                 project_code VARCHAR(128) NOT NULL,
                 structure_id BIGINT NOT NULL,
+                department_id BIGINT,
                 nurse_id BIGINT NOT NULL,
                 doctor_id BIGINT NOT NULL,
                 drug_code VARCHAR(128) NOT NULL,

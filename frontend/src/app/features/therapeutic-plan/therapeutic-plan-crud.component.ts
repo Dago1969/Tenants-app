@@ -4,7 +4,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Select2 } from 'ng-select2-component';
-import { forkJoin, of } from 'rxjs';
+import { forkJoin, of, firstValueFrom } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../core/auth.service';
@@ -54,6 +54,7 @@ interface TherapeuticPlanPayload {
   projectCode: string;
   equipmentIds: number[];
   structureId: number | null;
+  departmentId?: number | null;
   nurseIds: number[];
   prevalentNurseId: number | null;
   nurseId?: number | null;
@@ -344,6 +345,7 @@ export class TherapeuticPlanCrudComponent implements OnInit {
   }
 
   onDepartmentFilterChange(): void {
+    this.formModel.departmentId = this.clinicalFilters.departmentId;
     this.loadAvailableDoctors();
   }
 
@@ -538,11 +540,13 @@ export class TherapeuticPlanCrudComponent implements OnInit {
   private loadTherapeuticPlan(): void {
     this.http.get<TherapeuticPlanResponse>(`${environment.apiBaseUrl}/therapeutic-plans/${this.therapeuticPlanId}`).subscribe({
       next: (plan) => {
+        const loadedDepartmentId = typeof plan.departmentId === 'number' ? plan.departmentId : null;
         this.formModel = {
           patientId: typeof plan.patientId === 'number' ? plan.patientId : null,
           projectCode: typeof plan.projectCode === 'string' && plan.projectCode.trim().length ? plan.projectCode : this.authService.getSelectedProject().trim(),
           equipmentIds: Array.isArray(plan.equipmentIds) ? plan.equipmentIds.filter((currentId): currentId is number => typeof currentId === 'number') : [],
           structureId: typeof plan.structureId === 'number' ? plan.structureId : null,
+          departmentId: loadedDepartmentId,
           nurseIds: this.normalizeLoadedProfessionalIds(plan.nurseIds, plan.prevalentNurseId, plan.nurseId),
           prevalentNurseId: this.resolveLoadedPrevalentId(plan.nurseIds, plan.prevalentNurseId, plan.nurseId),
           nurseId: typeof plan.nurseId === 'number' ? plan.nurseId : null,
@@ -555,6 +559,9 @@ export class TherapeuticPlanCrudComponent implements OnInit {
           status: typeof plan.status === 'string' ? plan.status : 'draft',
           notes: typeof plan.notes === 'string' ? plan.notes : ''
         };
+        if (loadedDepartmentId !== null) {
+          this.clinicalFilters.departmentId = loadedDepartmentId;
+        }
         this.initializeClinicalFiltersFromFormModel();
         // nessun caricamento selezione farmaco custom
         this.loading = false;
@@ -618,11 +625,13 @@ export class TherapeuticPlanCrudComponent implements OnInit {
   }
 
   private buildPayload(): TherapeuticPlanPayload {
+    const selectedDepartmentId = this.clinicalFilters.departmentId ?? this.formModel.departmentId ?? null;
     return {
       patientId: this.formModel.patientId,
       projectCode: this.formModel.projectCode.trim(),
       equipmentIds: [...this.formModel.equipmentIds],
       structureId: this.formModel.structureId,
+      departmentId: selectedDepartmentId,
       nurseIds: [...this.formModel.nurseIds],
       prevalentNurseId: this.formModel.prevalentNurseId,
       nurseId: this.formModel.prevalentNurseId,
@@ -651,6 +660,7 @@ export class TherapeuticPlanCrudComponent implements OnInit {
       projectCode: '',
       equipmentIds: [],
       structureId: null,
+      departmentId: null,
       nurseIds: [],
       prevalentNurseId: null,
       nurseId: null,
@@ -726,37 +736,191 @@ export class TherapeuticPlanCrudComponent implements OnInit {
 
     const selectedStructure = this.findKnownStructureById(structureId);
     if (selectedStructure) {
-      this.applyClinicalFiltersFromStructure(selectedStructure);
+      const savedDept = (this.formModel as any).departmentId ?? null;
+      void this.applyClinicalFiltersFromStructure(selectedStructure, savedDept);
       return;
     }
 
-    this.structureApiService.getStructure(structureId).pipe(
-      catchError(() => of(null))
-    ).subscribe((structure) => {
-      if (!structure) {
+    // Try to resolve the structure via the overview endpoint (avoid calling /structures/{id} which sometimes 404s)
+    const params: Record<string, string> = {};
+    params['strutturaId'] = String(structureId);
+    this.http.get<any[]>(`${environment.apiBaseUrl}/structures/overview`, { params }).pipe(
+      catchError(() => of([] as any[]))
+    ).subscribe(async (overviewRows) => {
+      const matched = (overviewRows ?? []).find((row) => this.normalizeNumericId(row['strutturaId']) === structureId) ?? null;
+      if (!matched) {
         this.clinicalFilters = this.createEmptyClinicalFilters();
         this.clearDepartmentSelection();
         this.syncClinicalSelections();
         return;
       }
 
-      this.applyClinicalFiltersFromStructure(structure);
+      // Build a minimal StructureDto from overview row and apply filters
+      const structureDto: StructureDto = {
+        id: this.normalizeNumericId(matched['strutturaId']) ?? undefined,
+        code: this.normalizeCodeValue(matched['codiceStruttura']),
+        name: (matched['struttura'] ?? '').trim() || this.normalizeCodeValue(matched['codiceStruttura']),
+        selectionLabel: (matched['struttura'] ?? '').trim().length ? `${(matched['struttura'] ?? '').trim()} (${this.normalizeCodeValue(matched['codiceStruttura'])})` : this.normalizeCodeValue(matched['codiceStruttura']),
+        address: '',
+        cap: '',
+        provinceId: '',
+        regionId: this.normalizeCodeValue(matched['codiceRegione']) ? (this.normalizeNumericId(matched['codiceRegione']) ?? this.normalizeCodeValue(matched['codiceRegione'])) : '',
+        region: (matched['regione'] ?? '').trim(),
+        phone: '',
+        referents: [],
+        structureType: 'HOSPITAL',
+        active: true,
+        parentStructureId: this.normalizeNumericId(matched['aslId']) ?? undefined,
+        parentStructureName: (matched['asl'] ?? '').trim() || undefined
+      };
+
+      const savedDept = (this.formModel as any).departmentId ?? null;
+      const regionCode = this.normalizeCodeValue(matched['codiceRegione']);
+      const aslCode = this.normalizeCodeValue(matched['codiceAsl']);
+      const strutturaId = this.normalizeNumericId(matched['strutturaId']);
+      await this.applyClinicalFiltersFromStructure(structureDto, savedDept, regionCode, aslCode, this.normalizeNumericId(matched['aslId']) ?? undefined, strutturaId ?? undefined);
     });
   }
 
-  private applyClinicalFiltersFromStructure(selectedStructure: StructureDto): void {
+  private async applyClinicalFiltersFromStructure(
+    selectedStructure: StructureDto,
+    initialDepartmentId: number | null = null,
+    overviewRegionCode?: string,
+    overviewAslCode?: string,
+    overviewAslId?: number | undefined,
+    overviewStrutturaId?: number | undefined
+  ): Promise<void> {
     const matchedAsl = this.resolveAslForStructure(selectedStructure);
 
     this.clinicalFilters = {
       regionId: this.normalizeNumericId(selectedStructure.regionId),
       aslId: matchedAsl?.id ?? this.normalizeNumericId(selectedStructure.parentStructureId),
-      departmentId: null
+      departmentId: initialDepartmentId ?? null
     };
 
-    this.loadHospitalStructures();
-    this.loadDepartmentsForSelectedStructure();
-    this.loadAvailableDoctors();
-    this.syncClinicalSelections();
+    // Ensure clinicalFilters.regionId/aslId are set so we can fetch lists
+    if (overviewRegionCode !== undefined) {
+      const regionNumeric = this.normalizeNumericId(overviewRegionCode);
+      if (regionNumeric !== null) {
+        this.clinicalFilters.regionId = regionNumeric;
+      }
+    }
+    if (overviewAslId !== undefined) {
+      this.clinicalFilters.aslId = overviewAslId ?? this.clinicalFilters.aslId;
+    }
+
+    // Load in sequence: 1) ASL list for region, 2) structures for ASL, 3) departments for structure
+    try {
+      await this.loadHospitalStructuresAsync(overviewRegionCode, overviewAslCode);
+      await this.loadDepartmentsForSelectedStructureAsync();
+      await this.loadAvailableDoctorsAsync();
+
+      // After options are populated, assign formModel values (programmatic set, avoid triggering change handlers)
+      if (overviewRegionCode !== undefined) {
+        (this.formModel as any).clinicalRegionCode = overviewRegionCode;
+      }
+      if (overviewAslCode !== undefined) {
+        (this.formModel as any).aslCode = overviewAslCode;
+      }
+      if (overviewAslId !== undefined) {
+        (this.formModel as any).aslId = overviewAslId;
+      }
+      if (overviewStrutturaId !== undefined && overviewStrutturaId !== null) {
+        this.formModel.structureId = overviewStrutturaId;
+      }
+
+      // Ensure departmentId from initialDepartmentId is applied after departments list loaded
+      if (initialDepartmentId !== null && typeof initialDepartmentId === 'number') {
+        this.clinicalFilters.departmentId = initialDepartmentId;
+        (this.formModel as any).departmentId = initialDepartmentId;
+      }
+    } finally {
+      // Sync select2 internal values and visible option lists
+      this.syncClinicalSelections();
+      this.refreshClinicalSelect2Data();
+    }
+  }
+
+  private async loadHospitalStructuresAsync(overviewRegionCode?: string, overviewAslCode?: string): Promise<void> {
+    const regionCode = overviewRegionCode ?? this.getNormalizedRegionCode(this.clinicalFilters.regionId);
+    if (!regionCode) {
+      this.aslStructures = [];
+      this.hospitalStructures = [];
+      this.aslOptions = [];
+      this.structureOptions = [];
+      this.syncClinicalSelections();
+      return;
+    }
+
+    // 1) Fetch ASL list for the region (mandatory)
+    const overviewRegion$ = this.structureApiService.getStructuresOverview({ regionCode }).pipe(
+      catchError(() => of([] as StructureOverviewLookupDto[]))
+    );
+    const overviewRegionRows = await firstValueFrom(overviewRegion$);
+    this.aslStructures = this.mapOverviewRowsToAslStructures(overviewRegionRows);
+    this.aslOptions = [...this.aslStructures];
+
+    // 2) Fetch structures for the selected ASL (if any). Prefer explicit overviewAslCode if provided.
+    const aslCodeToUse = overviewAslCode ?? this.getNormalizedAslCode(this.clinicalFilters.aslId);
+
+    let overviewRowsForStructures: StructureOverviewLookupDto[] = [];
+    if (aslCodeToUse && aslCodeToUse.trim().length) {
+      const overviewStructures$ = this.structureApiService.getStructuresOverview({ regionCode, aslCode: aslCodeToUse }).pipe(
+        catchError(() => of([] as StructureOverviewLookupDto[]))
+      );
+      overviewRowsForStructures = await firstValueFrom(overviewStructures$);
+    } else {
+      // fallback: use the region rows to populate structures
+      overviewRowsForStructures = overviewRegionRows;
+    }
+
+    this.hospitalStructures = this.mapOverviewRowsToHospitalStructures(overviewRowsForStructures);
+    this.structureOptions = [...this.hospitalStructures];
+  }
+
+  private async loadDepartmentsForSelectedStructureAsync(): Promise<void> {
+    const selectedStructure = this.resolveSelectedStructureFromCurrentValue();
+    const structureDatabaseId = this.normalizeNumericId(selectedStructure?.id) ?? this.normalizeNumericId(this.formModel.structureId);
+
+    if (structureDatabaseId === null) {
+      this.clearDepartmentSelection();
+      return;
+    }
+
+    this.formModel.structureId = structureDatabaseId;
+
+    const departments$ = this.structureApiService.getDepartmentsByStructure(structureDatabaseId).pipe(
+      catchError(() => of([] as StructureDepartmentOptionDto[]))
+    );
+
+    const departments = await firstValueFrom(departments$);
+    this.departmentOptions = [...departments].sort((left, right) => left.label.localeCompare(right.label, 'it', { sensitivity: 'base' }));
+    if (!this.departmentOptions.some((department) => department.id === this.clinicalFilters.departmentId)) {
+      this.clinicalFilters.departmentId = null;
+    }
+  }
+
+  private async loadAvailableDoctorsAsync(): Promise<void> {
+    const params: Record<string, string | number> = {};
+
+    if (this.clinicalFilters.regionId !== null) {
+      params['regionId'] = this.clinicalFilters.regionId;
+    }
+
+    if (this.formModel.structureId !== null) {
+      params['structureId'] = this.formModel.structureId;
+    }
+
+    if (this.clinicalFilters.departmentId !== null) {
+      params['departmentId'] = this.clinicalFilters.departmentId;
+    }
+
+    const doctors$ = this.http.get<DoctorOption[]>(`${environment.apiBaseUrl}/doctors`, { params }).pipe(
+      catchError(() => of([] as DoctorOption[]))
+    );
+
+    const doctors = await firstValueFrom(doctors$);
+    this.doctors = [...doctors].sort((left, right) => left.fullName.localeCompare(right.fullName, 'it', { sensitivity: 'base' }));
   }
 
   private findKnownStructureById(structureId: number): StructureDto | null {

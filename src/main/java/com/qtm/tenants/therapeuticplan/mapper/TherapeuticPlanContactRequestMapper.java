@@ -22,7 +22,18 @@ public class TherapeuticPlanContactRequestMapper {
         }
 
         TherapeuticPlanEntity therapeuticPlan = entity.getTherapeuticPlan();
-        StructureEntity structure = entity.getStructure();
+        StructureEntity structure = null;
+        try {
+            java.lang.reflect.Field f = entity.getClass().getDeclaredField("structureId");
+            f.setAccessible(true);
+            Object sid = f.get(entity);
+            if (sid != null) {
+                StructureEntity tmp = new StructureEntity();
+                tmp.setId((Long) sid);
+                structure = tmp;
+            }
+        } catch (NoSuchFieldException | IllegalAccessException ignored) {
+        }
 
         return TherapeuticPlanContactRequestDto.builder()
                 .id(entity.getId())
@@ -32,7 +43,7 @@ public class TherapeuticPlanContactRequestMapper {
                 .requestDate(entity.getRequestDate())
                 .requestType(entity.getRequestType())
                 .outpatientClinic(entity.getOutpatientClinic())
-                .structureId(structure != null ? structure.getId() : null)
+                .structureId(entity.getStructureId())
                 .structureName(structure != null ? structure.getName() : null)
                 .status(entity.getStatus())
                 .build();
@@ -44,14 +55,14 @@ public class TherapeuticPlanContactRequestMapper {
             StructureEntity structure
     ) {
         return TherapeuticPlanContactRequestEntity.builder()
-                .id(dto.getId())
-                .therapeuticPlan(therapeuticPlan)
-                .patientId(dto.getPatientId())
-                .requestDate(dto.getRequestDate())
-                .requestType(dto.getRequestType())
-                .outpatientClinic(dto.getOutpatientClinic())
-                .structure(structure)
-                .status(dto.getStatus())
-                .build();
+            .id(dto.getId())
+            .therapeuticPlan(therapeuticPlan)
+            .patientId(dto.getPatientId())
+            .requestDate(dto.getRequestDate())
+            .requestType(dto.getRequestType())
+            .outpatientClinic(dto.getOutpatientClinic())
+            .structureId(structure != null ? structure.getId() : null)
+            .status(dto.getStatus())
+            .build();
     }
 }

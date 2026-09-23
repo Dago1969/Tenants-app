@@ -93,7 +93,7 @@ public class TherapeuticPlanService {
 
     @Transactional(readOnly = true)
     public TherapeuticPlanDto findById(Long id) {
-        return therapeuticPlanRepository.findById(requireId(id))
+    	return therapeuticPlanRepository.findById(requireId(id))
             .map(entity -> enrichWithProjectJsonVisit(
                     therapeuticPlanMapper.toDto(entity, resolvePatientDisplayName(entity.getPatientId()))
             ))
@@ -109,12 +109,13 @@ public class TherapeuticPlanService {
         List<TherapeuticPlanDoctorAssignmentEntity> doctorAssignments = buildDoctorAssignments(normalizedDto.getDoctorIds());
         List<EquipmentEntity> selectedEquipments = resolveEquipments(normalizedDto.getEquipmentIds(), null);
         TherapeuticPlanEntity entity = therapeuticPlanMapper.toNewEntity(
-                normalizedDto,
-                structure,
+            normalizedDto,
+            normalizedDto.getStructureId(),
             nurseAssignments,
             doctorAssignments,
-                selectedEquipments
+            selectedEquipments
         );
+        entity.setDepartmentId(normalizedDto.getDepartmentId());
         TherapeuticPlanEntity savedEntity = therapeuticPlanRepository.save(entity);
             synchronizeEquipmentAssignments(List.of(), selectedEquipments, savedEntity);
             savedEntity.setEquipments(new ArrayList<>(selectedEquipments));
@@ -131,7 +132,7 @@ public class TherapeuticPlanService {
 
         TherapeuticPlanDto normalizedDto = normalizeDto(dto);
         validatePatientExists(normalizedDto.getPatientId());
-        StructureEntity structure = resolveStructure(normalizedDto.getStructureId());
+//        StructureEntity structure = resolveStructure(normalizedDto.getStructureId());
         List<TherapeuticPlanNurseAssignmentEntity> nurseAssignments = buildNurseAssignments(normalizedDto.getNurseIds());
         List<TherapeuticPlanDoctorAssignmentEntity> doctorAssignments = buildDoctorAssignments(normalizedDto.getDoctorIds());
         List<EquipmentEntity> currentEquipments = entity.getEquipments() == null
@@ -150,11 +151,12 @@ public class TherapeuticPlanService {
         therapeuticPlanMapper.updateEntity(
                 entity,
                 normalizedDto,
-                structure,
-            nurseAssignments,
-            doctorAssignments,
+                normalizedDto.getStructureId(),
+                nurseAssignments,
+                doctorAssignments,
                 selectedEquipments
         );
+        entity.setDepartmentId(normalizedDto.getDepartmentId());
         TherapeuticPlanEntity savedEntity = therapeuticPlanRepository.save(entity);
             synchronizeEquipmentAssignments(currentEquipments, selectedEquipments, savedEntity);
             savedEntity.setEquipments(new ArrayList<>(selectedEquipments));
@@ -215,12 +217,13 @@ public class TherapeuticPlanService {
                 .projectCode(normalizeRequiredText(dto.getProjectCode(), "Progetto obbligatorio"))
                 .equipmentIds(normalizeEquipmentIds(dto.getEquipmentIds()))
                 .structureId(dto.getStructureId())
-            .nurseIds(normalizedNurseIds)
-            .prevalentNurseId(normalizedNurseIds.get(0))
-            .nurseId(normalizedNurseIds.get(0))
-            .doctorIds(normalizedDoctorIds)
-            .prevalentDoctorId(normalizedDoctorIds.get(0))
-            .doctorId(normalizedDoctorIds.get(0))
+                .departmentId(dto.getDepartmentId())
+                .nurseIds(normalizedNurseIds)
+                .prevalentNurseId(normalizedNurseIds.get(0))
+                .nurseId(normalizedNurseIds.get(0))
+                .doctorIds(normalizedDoctorIds)
+                .prevalentDoctorId(normalizedDoctorIds.get(0))
+                .doctorId(normalizedDoctorIds.get(0))
                 .drugCode(normalizeRequiredText(dto.getDrugCode(), "Codice farmaco obbligatorio"))
                 .startDate(startDate)
                 .endDate(endDate)
