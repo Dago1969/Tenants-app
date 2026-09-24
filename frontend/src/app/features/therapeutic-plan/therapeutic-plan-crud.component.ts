@@ -64,6 +64,8 @@ interface TherapeuticPlanPayload {
   drugCode: string;
   startDate: string;
   endDate: string;
+  dischargeDate?: string | null;
+  dischargeType?: string | null;
   status: string;
   notes: string;
 }
@@ -556,6 +558,8 @@ export class TherapeuticPlanCrudComponent implements OnInit {
           drugCode: typeof plan.drugCode === 'string' ? plan.drugCode : '',
           startDate: typeof plan.startDate === 'string' ? plan.startDate : '',
           endDate: typeof plan.endDate === 'string' ? plan.endDate : '',
+          dischargeDate: typeof plan.dischargeDate === 'string' ? plan.dischargeDate : '',
+          dischargeType: typeof plan.dischargeType === 'string' ? plan.dischargeType : null,
           status: typeof plan.status === 'string' ? plan.status : 'draft',
           notes: typeof plan.notes === 'string' ? plan.notes : ''
         };
@@ -641,6 +645,8 @@ export class TherapeuticPlanCrudComponent implements OnInit {
       drugCode: this.formModel.drugCode.trim(),
       startDate: this.formModel.startDate,
       endDate: this.formModel.endDate,
+      dischargeDate: this.formModel.dischargeDate || null,
+      dischargeType: this.formModel.dischargeType || null,
       status: this.formModel.status,
       notes: this.formModel.notes.trim()
     };
@@ -670,6 +676,8 @@ export class TherapeuticPlanCrudComponent implements OnInit {
       drugCode: '',
       startDate: '',
       endDate: '',
+      dischargeDate: '',
+      dischargeType: null,
       status: 'draft',
       notes: ''
     };

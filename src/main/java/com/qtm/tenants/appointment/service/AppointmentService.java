@@ -11,6 +11,8 @@ import com.qtm.tenants.nurse.entity.NurseEntity;
 import com.qtm.tenants.nurse.repository.NurseRepository;
 import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanEntity;
 import com.qtm.tenants.therapeuticplan.repository.TherapeuticPlanRepository;
+import com.qtm.tenants.ticket.client.TicketClient;
+import com.qtm.commonlib.dto.TicketDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -38,6 +40,7 @@ public class AppointmentService {
     private final TherapeuticPlanRepository therapeuticPlanRepository;
     private final NurseRepository nurseRepository;
     private final AppointmentMapper appointmentMapper;
+    private final TicketClient ticketClient;
 
     @Transactional(readOnly = true)
     public List<AppointmentDto> findByTherapeuticPlan(Long therapeuticPlanId) {
@@ -138,6 +141,37 @@ public class AppointmentService {
         log.info("Creati {} appuntamenti (ricorrenza: {})", 
                  savedAppointments.size(), 
                  dto.getRecurrenceType());
+
+        // Per ogni appuntamento creato, crea un ticket associato all'infermiere
+        for (AppointmentEntity app : savedAppointments) {
+            try {
+                NurseEntity assignedNurse = app.getNurse();
+                TherapeuticPlanEntity plan = app.getTherapeuticPlan();
+                String projectCode = plan != null && plan.getProjectCode() != null ? plan.getProjectCode() : "TENANTS";
+                String patientIdStr = plan != null && plan.getPatientId() != null ? String.valueOf(plan.getPatientId()) : "";
+                String planIdStr = plan != null && plan.getId() != null ? String.valueOf(plan.getId()) : "";
+                String nurseName = assignedNurse != null ? assignedNurse.getFullName() : "N/D";
+                Long nurseId = assignedNurse != null ? assignedNurse.getId() : null;
+
+                TicketDto ticketDto = TicketDto.builder()
+                        .realm(projectCode)
+                        .project("TENANTS")
+                        .patientId(patientIdStr)
+                        .therapeuticPlanId(planIdStr)
+                        .ticketType("THERAPEUTIC_PLAN_UPDATE")
+                        .status("OPEN")
+                        .title("Appuntamento: " + (app.getAppointmentType() != null ? app.getAppointmentType().getName() : "Visita"))
+                        .description("Appuntamento programmato per il " + app.getStartDateTime() +
+                                ". Infermiere: " + nurseName + (nurseId != null ? " (ID: " + nurseId + ")" : "") +
+                                ". Note: " + (app.getNotes() != null ? app.getNotes() : ""))
+                        .build();
+
+                ticketClient.createTicket(ticketDto);
+                log.info("Ticket creato con successo per l'appuntamento ID {}", app.getId());
+            } catch (Exception e) {
+                log.warn("Impossibile creare il ticket su QTMTicket per l'appuntamento {}: {}", app.getId(), e.getMessage());
+            }
+        }
 
         // Restituisci il primo (rappresentativo della serie)
         return appointmentMapper.toDto(savedAppointments.get(0));

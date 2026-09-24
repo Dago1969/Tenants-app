@@ -65,6 +65,7 @@ public class TherapeuticPlanService {
     private final DashboardProjectClient dashboardProjectClient;
     private final AlertRepository alertRepository;
     private final NotificationRepository notificationRepository;
+    private final TherapeuticPlanScheduleEngineService therapeuticPlanScheduleEngineService;
 
     @Transactional(readOnly = true)
     public List<TherapeuticPlanDto> findAll(String patientName, String nurseName, String doctorName, String projectCode, String status, String drugCode) {
@@ -117,8 +118,9 @@ public class TherapeuticPlanService {
         );
         entity.setDepartmentId(normalizedDto.getDepartmentId());
         TherapeuticPlanEntity savedEntity = therapeuticPlanRepository.save(entity);
-            synchronizeEquipmentAssignments(List.of(), selectedEquipments, savedEntity);
-            savedEntity.setEquipments(new ArrayList<>(selectedEquipments));
+        synchronizeEquipmentAssignments(List.of(), selectedEquipments, savedEntity);
+        savedEntity.setEquipments(new ArrayList<>(selectedEquipments));
+        therapeuticPlanScheduleEngineService.generateAutomaticVisits(savedEntity);
         return enrichWithProjectJsonVisit(
                 therapeuticPlanMapper.toDto(savedEntity, resolvePatientDisplayName(savedEntity.getPatientId()))
         );
@@ -158,11 +160,12 @@ public class TherapeuticPlanService {
         );
         entity.setDepartmentId(normalizedDto.getDepartmentId());
         TherapeuticPlanEntity savedEntity = therapeuticPlanRepository.save(entity);
-            synchronizeEquipmentAssignments(currentEquipments, selectedEquipments, savedEntity);
-            savedEntity.setEquipments(new ArrayList<>(selectedEquipments));
-            return enrichWithProjectJsonVisit(
-                therapeuticPlanMapper.toDto(savedEntity, resolvePatientDisplayName(savedEntity.getPatientId()))
-            );
+        synchronizeEquipmentAssignments(currentEquipments, selectedEquipments, savedEntity);
+        savedEntity.setEquipments(new ArrayList<>(selectedEquipments));
+        therapeuticPlanScheduleEngineService.generateAutomaticVisits(savedEntity);
+        return enrichWithProjectJsonVisit(
+            therapeuticPlanMapper.toDto(savedEntity, resolvePatientDisplayName(savedEntity.getPatientId()))
+        );
     }
 
     @Transactional
@@ -227,6 +230,8 @@ public class TherapeuticPlanService {
                 .drugCode(normalizeRequiredText(dto.getDrugCode(), "Codice farmaco obbligatorio"))
                 .startDate(startDate)
                 .endDate(endDate)
+                .dischargeDate(dto.getDischargeDate())
+                .dischargeType(normalizeOptionalText(dto.getDischargeType()))
                 .status(normalizeStatus(dto.getStatus()))
                 .notes(normalizeOptionalText(dto.getNotes()))
                 .build();

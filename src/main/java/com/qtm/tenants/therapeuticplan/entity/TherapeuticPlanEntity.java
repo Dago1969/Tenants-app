@@ -83,6 +83,12 @@ public class TherapeuticPlanEntity {
     @Column(name = "notes", length = 1000)
     private String notes;
 
+    @Column(name = "discharge_date")
+    private LocalDate dischargeDate;
+
+    @Column(name = "discharge_type", length = 32)
+    private String dischargeType;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 

@@ -46,6 +46,14 @@
         <span class="overview-label">{{ translate('therapeuticPlan.field.endDate') }}</span>
         <strong>{{ formatDate(plan?.endDate) }}</strong>
       </article>
+      <article class="overview-card" *ngIf="plan?.dischargeDate">
+        <span class="overview-label">{{ translate('therapeuticPlan.field.dischargeDate') }}</span>
+        <strong>{{ formatDate(plan?.dischargeDate) }}</strong>
+      </article>
+      <article class="overview-card" *ngIf="plan?.dischargeType">
+        <span class="overview-label">{{ translate('therapeuticPlan.field.dischargeType') }}</span>
+        <strong>{{ plan?.dischargeType }}</strong>
+      </article>
     </section>
 
     <nav class="manage-tabs" [attr.aria-label]="translate('therapeuticPlan.manage.tabs.ariaLabel')">

@@ -36,6 +36,8 @@ interface TherapeuticPlanManageResponse {
   drugCode: string;
   startDate: string;
   endDate: string;
+  dischargeDate?: string | null;
+  dischargeType?: string | null;
   status: string;
   notes: string;
   // Campo che può contenere un JSON di grandi dimensioni associato al piano terapeutico
@@ -1564,7 +1566,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
         : 'therapeuticPlan.alert.confirmationSent.na');
   }
 
-  formatDate(value?: string): string {
+  formatDate(value?: string | null): string {
     if (!value?.trim()) {
       return this.translate('common.notAvailable');
     }
@@ -2353,20 +2355,71 @@ export class TherapeuticPlanManageComponent implements OnInit {
     });
   }
 
-  getVisitTypeLabel(value: TherapeuticPlanVisitType): string {
-    return this.translate(`therapeuticPlan.visits.type.${value}`);
+  getVisitTypeLabel(value: TherapeuticPlanVisitType | string | null | undefined): string {
+    if (!value) {
+      return this.translate('common.notAvailable');
+    }
+    const rawValue = value.toString().trim();
+    if (!rawValue) {
+      return this.translate('common.notAvailable');
+    }
+    const exactKey = `therapeuticPlan.visits.type.${rawValue}`;
+    const translatedExact = this.translate(exactKey);
+    if (translatedExact !== exactKey) {
+      return translatedExact;
+    }
+    const lowerKey = `therapeuticPlan.visits.type.${rawValue.toLowerCase()}`;
+    const translatedLower = this.translate(lowerKey);
+    if (translatedLower !== lowerKey) {
+      return translatedLower;
+    }
+    return rawValue;
   }
 
   getVisitPatientFullName(visit: TherapeuticPlanVisitRecord): string {
     return `${visit.patientFirstName} ${visit.patientLastName}`.trim() || this.visitPatientFullName;
   }
 
-  getVisitCaregiverLabel(value: TherapeuticPlanVisitCaregiver): string {
-    return this.translate(`therapeuticPlan.visits.caregiver.${value}`);
+  getVisitCaregiverLabel(value: TherapeuticPlanVisitCaregiver | string | null | undefined): string {
+    if (!value) {
+      return this.translate('common.notAvailable');
+    }
+    const rawValue = value.toString().trim();
+    if (!rawValue) {
+      return this.translate('common.notAvailable');
+    }
+    const exactKey = `therapeuticPlan.visits.caregiver.${rawValue}`;
+    const translatedExact = this.translate(exactKey);
+    if (translatedExact !== exactKey) {
+      return translatedExact;
+    }
+    const lowerKey = `therapeuticPlan.visits.caregiver.${rawValue.toLowerCase()}`;
+    const translatedLower = this.translate(lowerKey);
+    if (translatedLower !== lowerKey) {
+      return translatedLower;
+    }
+    return rawValue;
   }
 
-  getVisitPriorityLabel(value: TherapeuticPlanVisitPriority): string {
-    return this.translate(`therapeuticPlan.visits.priority.${value}`);
+  getVisitPriorityLabel(value: TherapeuticPlanVisitPriority | string | null | undefined): string {
+    if (!value) {
+      return this.translate('common.notAvailable');
+    }
+    const rawValue = value.toString().trim();
+    if (!rawValue) {
+      return this.translate('common.notAvailable');
+    }
+    const exactKey = `therapeuticPlan.visits.priority.${rawValue}`;
+    const translatedExact = this.translate(exactKey);
+    if (translatedExact !== exactKey) {
+      return translatedExact;
+    }
+    const lowerKey = `therapeuticPlan.visits.priority.${rawValue.toLowerCase()}`;
+    const translatedLower = this.translate(lowerKey);
+    if (translatedLower !== lowerKey) {
+      return translatedLower;
+    }
+    return rawValue;
   }
 
   addVisitManualJsonEntry(): void {

@@ -2,7 +2,7 @@ package com.qtm.tenants.ticket.service;
 
 import com.qtm.commonlib.dto.DepartmentDto;
 import com.qtm.tenants.ticket.client.TicketClient;
-import com.qtm.tenants.ticket.dto.TicketDto;
+import com.qtm.commonlib.dto.TicketDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

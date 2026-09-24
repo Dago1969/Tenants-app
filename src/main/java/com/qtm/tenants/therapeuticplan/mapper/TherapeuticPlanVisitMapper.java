@@ -22,6 +22,7 @@ public class TherapeuticPlanVisitMapper {
             .gastroenterologist(e.getGastroenterologist())
             .type(e.getType())
             .priority(e.getPriority())
+            .status(e.getStatus())
             .jsonVisit(e.getJsonVisit())
             .build();
     }
@@ -38,6 +39,7 @@ public class TherapeuticPlanVisitMapper {
             .gastroenterologist(d.getGastroenterologist())
             .type(d.getType())
             .priority(d.getPriority())
+            .status(d.getStatus())
             .jsonVisit(d.getJsonVisit())
             .build();
         return e;

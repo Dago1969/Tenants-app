@@ -1,6 +1,6 @@
 package com.qtm.tenants.ticket.client;
 
-import com.qtm.tenants.ticket.dto.TicketDto;
+import com.qtm.commonlib.dto.TicketDto;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -81,4 +81,7 @@ databaseChangeLog:
   - include:
       file: 20261002-01-add-therapeutic-plan-department.yaml
       relativeToChangelogFile: true
+  - include:
+      file: 20261002-02-add-discharge-fields-to-therapeutic-plans.yaml
+      relativeToChangelogFile: true
   # Patient-specific FK changes removed: patient table managed in QTMDB

@@ -43,7 +43,7 @@ import com.qtm.tenants.role.service.DashboardRoleClient;
 import com.qtm.tenants.structure.StructureModuleCodes;
 import com.qtm.tenants.structure.entity.StructureEntity;
 import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanDto;
-import com.qtm.tenants.ticket.dto.TicketDto;
+import com.qtm.commonlib.dto.TicketDto;
 
 import lombok.RequiredArgsConstructor;
 

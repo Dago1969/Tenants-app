@@ -1,0 +1,27 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20261002-02-add-discharge-fields-to-therapeutic-plans
+      author: copilot
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        not:
+          columnExists:
+            tableName: therapeutic_plan
+            columnName: discharge_date
+      changes:
+        - addColumn:
+            tableName: therapeutic_plan
+            columns:
+              - column:
+                  name: discharge_date
+                  type: DATE
+              - column:
+                  name: discharge_type
+                  type: VARCHAR(32)
+        - addColumn:
+            tableName: therapeutic_plan_visit
+            columns:
+              - column:
+                  name: status
+                  type: VARCHAR(64)

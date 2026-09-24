@@ -116,6 +116,8 @@ public class TherapeuticPlanMapper {
                 .drugCode(entity.getDrugCode())
                 .startDate(entity.getStartDate())
                 .endDate(entity.getEndDate())
+                .dischargeDate(entity.getDischargeDate())
+                .dischargeType(entity.getDischargeType())
                 .status(entity.getStatus())
                 .notes(entity.getNotes())
                 .build();
@@ -158,6 +160,8 @@ public class TherapeuticPlanMapper {
         entity.setDrugCode(dto.getDrugCode());
         entity.setStartDate(dto.getStartDate());
         entity.setEndDate(dto.getEndDate());
+        entity.setDischargeDate(dto.getDischargeDate());
+        entity.setDischargeType(dto.getDischargeType());
         entity.setStatus(dto.getStatus());
         entity.setNotes(dto.getNotes());
     }

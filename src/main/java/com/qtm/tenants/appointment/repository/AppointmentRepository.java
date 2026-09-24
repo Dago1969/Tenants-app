@@ -25,6 +25,13 @@ public interface AppointmentRepository extends JpaRepository<AppointmentEntity, 
     List<AppointmentEntity> findByTherapeuticPlan_Id(Long therapeuticPlanId);
 
     /**
+     * Elimina tutti gli appuntamenti per un determinato piano terapeutico.
+     *
+     * @param therapeuticPlanId ID del piano terapeutico
+     */
+    void deleteByTherapeuticPlan_Id(Long therapeuticPlanId);
+
+    /**
      * Trova gli appuntamenti per infermiere in una giornata specifica.
      * Restituisce appuntamenti che cadono nel giorno specificato.
      *

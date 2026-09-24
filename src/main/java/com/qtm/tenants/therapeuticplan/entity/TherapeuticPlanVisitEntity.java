@@ -55,6 +55,9 @@ public class TherapeuticPlanVisitEntity {
     @Column(name = "visit_priority", length = 32)
     private String priority;
 
+    @Column(name = "status", length = 64)
+    private String status;
+
     @Lob
     @Column(name = "json_visit", columnDefinition = "text")
     private String jsonVisit;

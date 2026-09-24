@@ -43,6 +43,8 @@ public class TherapeuticPlanDto {
     private String drugCode;
     private LocalDate startDate;
     private LocalDate endDate;
+    private LocalDate dischargeDate;
+    private String dischargeType;
     private String status;
     private String notes;
     /**

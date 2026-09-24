@@ -24,6 +24,7 @@ public class TherapeuticPlanVisitDto {
     private String gastroenterologist;
     private String type;
     private String priority;
+    private String status;
     /**
      * Campo JSON che contiene i dati dell'inserimento (può essere molto grande).
      */

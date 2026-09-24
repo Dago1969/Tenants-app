@@ -56,6 +56,21 @@
         </select>
         <small class="therapeutic-plan-field-help">{{ medicineSelectionInfo }}</small>
       </label>
+
+      <label class="therapeutic-plan-field">
+        <span>{{ translate('therapeuticPlan.field.dischargeDate') }}</span>
+        <input type="date" [(ngModel)]="formModel.dischargeDate" name="dischargeDate" />
+      </label>
+
+      <label class="therapeutic-plan-field">
+        <span>{{ translate('therapeuticPlan.field.dischargeType') }}</span>
+        <select [(ngModel)]="formModel.dischargeType" name="dischargeType" class="therapeutic-plan-select">
+          <option [ngValue]="null">-- {{ translate('common.select') }} --</option>
+          <option value="NAIVE">NAÏVE</option>
+          <option value="SWITCH">SWITCH</option>
+          <option value="SONDINO">Sondino</option>
+        </select>
+      </label>
     </section>
 
     <section *ngIf="currentStep.key === 'clinical'" class="therapeutic-plan-grid">
