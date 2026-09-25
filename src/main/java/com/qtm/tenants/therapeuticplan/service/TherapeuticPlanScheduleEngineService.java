@@ -11,7 +11,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.qtm.commonlib.dto.PatientDto;
 import com.qtm.commonlib.dto.TicketDto;
+import com.qtm.dashboard.client.HospitalClient;
+import com.qtm.dashboard.client.StructureDepartmentClient;
 import com.qtm.tenants.appointment.entity.AppointmentEntity;
 import com.qtm.tenants.appointment.entity.AppointmentTypeEntity;
 import com.qtm.tenants.appointment.entity.RecurrenceType;
@@ -20,6 +23,7 @@ import com.qtm.tenants.appointment.repository.AppointmentTypeRepository;
 import com.qtm.tenants.doctor.entity.DoctorEntity;
 import com.qtm.tenants.doctor.repository.DoctorRepository;
 import com.qtm.tenants.nurse.entity.NurseEntity;
+import com.qtm.tenants.patient.service.DashboardPatientClient;
 import com.qtm.tenants.project.service.DashboardProjectClient;
 import com.qtm.tenants.structure.entity.StructureEntity;
 import com.qtm.tenants.structure.repository.StructureRepository;
@@ -47,10 +51,14 @@ public class TherapeuticPlanScheduleEngineService {
     private final AppointmentRepository appointmentRepository;
     private final AppointmentTypeRepository appointmentTypeRepository;
     private final DashboardProjectClient dashboardProjectClient;
+    private final DashboardPatientClient dashboardPatientClient;
     private final StructureRepository structureRepository;
     private final DoctorRepository doctorRepository;
     private final TicketClient ticketClient;
     private final ObjectMapper objectMapper;
+    private final HospitalClient hospitalClient;
+    private final StructureDepartmentClient structureDepartmentClient;
+    
 
     /**
      * Genera o rigenera le visite in stato PROPOSTO_AUTOMATICO per un piano terapeutico.
@@ -249,8 +257,10 @@ public class TherapeuticPlanScheduleEngineService {
             Long departmentId = planEntity != null ? planEntity.getDepartmentId() : null;
 
                 TicketDto ticketDto = TicketDto.builder()
+                    // realm should contain the realm/client code where the user is operating (use projectCode if provided)
                     .realm(projectCode)
-                    .project("TENANTS")
+                    // project must contain the selected project code (use plan projectCode when available)
+                    .project(planEntity.getProjectCode() != null && !planEntity.getProjectCode().isBlank() ? planEntity.getProjectCode() : "TENANTS")
                     .patientId(patientIdStr)
                     .therapeuticPlanId(planIdStr)
                     .visitDate(appointment.getStartDateTime())
@@ -310,21 +320,86 @@ public class TherapeuticPlanScheduleEngineService {
                     root.put("prevalentDoctorName", doctor.getFullName());
                 }
 
-                // Ospedale / Struttura sanitaria
+//                // Ospedale / Struttura sanitaria
+//                Long structureId = planEntity.getStructureId();
+//                if (structureId != null) {
+//                    root.put("hospitalId", structureId);
+//                    StructureEntity structure = structureRepository.findById(structureId).orElse(null);
+//                            if (structure != null) {
+//                                root.put("hospitalCode", structure.getCode());
+//                                root.put("hospitalName", structure.getName());
+//                            }
+//                }
+//
+//                // Reparto
+//                Long departmentId = planEntity.getDepartmentId();
+//                if (departmentId != null) {
+//                    root.put("departmentId", departmentId);
+//                }
+                
+             // 1. Ospedale / Struttura (Chiamata a QTMDB: /api/hospital)
                 Long structureId = planEntity.getStructureId();
                 if (structureId != null) {
                     root.put("hospitalId", structureId);
-                    StructureEntity structure = structureRepository.findById(structureId).orElse(null);
-                    if (structure != null) {
-                        root.put("hospitalCode", structure.getCode());
-                        root.put("hospitalName", structure.getName());
+                    try {
+                        if (hospitalClient != null) {
+                            var hospital = hospitalClient.getHospitalById(structureId);
+                            if (hospital != null) {
+                                if (hospital.getCodiceStruttura() != null) {
+                                    root.put("hospitalCode", hospital.getCodiceStruttura());
+                                }
+                                if (hospital.getStruttura() != null) {
+                                    root.put("hospitalName", hospital.getStruttura());
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.warn("Impossibile recuperare l'ospedale ID {} da QTMDB (/api/hospital): {}", structureId, e.getMessage());
                     }
                 }
 
-                // Reparto
+                // 2. Dipartimento / Reparto (Chiamata a QTMDB: /api/structure-departments)
                 Long departmentId = planEntity.getDepartmentId();
                 if (departmentId != null) {
                     root.put("departmentId", departmentId);
+                    try {
+                        if (structureDepartmentClient != null) {
+                            var department = structureDepartmentClient.getDepartmentById(departmentId);
+                            if (department != null) {
+                                if (department.getReparto() != null) {
+                                    root.put("departmentCode", department.getReparto());
+                                }
+                                if (department.getAreaFunzionale() != null) {
+                                    root.put("departmentName", department.getAreaFunzionale());
+                                }
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.warn("Impossibile recuperare il dipartimento ID {} da QTMDB (/api/structure-departments): {}", departmentId, e.getMessage());
+                    }
+                }
+
+                // Enrich patient code and name via DashboardPatientClient if available
+                try {
+                    if (planEntity.getPatientId() != null && dashboardPatientClient != null) {
+                        PatientDto patient = dashboardPatientClient.findById(planEntity.getPatientId());
+                        if (patient != null) {
+                            if (patient.getAssistedId() != null) {
+                                root.put("patientCode", patient.getAssistedId());
+                            }
+                            String first = patient.getFirstName() == null ? "" : patient.getFirstName();
+                            String last = patient.getLastName() == null ? "" : patient.getLastName();
+                            String fullName = (first + " " + last).trim();
+                            if (!fullName.isBlank()) {
+                                root.put("patientName", fullName);
+                            }
+                            // also ensure patientId numeric/string is present
+                            if (patient.getId() != null) {
+                                root.put("patientId", patient.getId());
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {
                 }
             }
             return objectMapper.writeValueAsString(root);

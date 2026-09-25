@@ -1,14 +1,16 @@
 package com.qtm.tenants;
 
-import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.scheduling.annotation.EnableScheduling;
  
 /**
  * Entry point dell'applicazione tenants-app.
  */
 @SpringBootApplication
+@EnableFeignClients(basePackages = "com.qtm.dashboard.client") // oppure senza parametri se è nello stesso package
 @EnableScheduling
 @ConfigurationPropertiesScan
 public class TenantsAppApplication {

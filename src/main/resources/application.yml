@@ -10,6 +10,9 @@ server:
       timeout: ${SERVER_SESSION_TIMEOUT:60m}
 
 spring:
+  cloud:
+    compatibility-verifier:
+      enabled: false  
   profiles:
     active: collaudo
   mvc:
