@@ -1,4 +1,4 @@
-package com.qtm.dashboard.client;
+package com.qtm.external.client;
 
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
