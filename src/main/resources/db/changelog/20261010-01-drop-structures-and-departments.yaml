@@ -1,0 +1,83 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20261010-00-drop-fk-hospital-departments-structure
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - foreignKeyConstraintExists:
+            foreignKeyName: fk_hospital_departments_structure
+            foreignKeyTableName: hospital_departments
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: hospital_departments
+            constraintName: fk_hospital_departments_structure
+
+  - changeSet:
+      id: 20261010-01-drop-fk-hospital-dept-structure
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - foreignKeyConstraintExists:
+            foreignKeyName: fk_hospital_dept_structure
+            foreignKeyTableName: hospital_department_entity
+      changes:
+        - dropForeignKeyConstraint:
+            baseTableName: hospital_department_entity
+            constraintName: fk_hospital_dept_structure
+
+  - changeSet:
+      id: 20261010-02-drop-hospital-department-entity
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: hospital_department_entity
+      changes:
+        - dropTable:
+            tableName: hospital_department_entity
+            cascadeConstraints: true
+
+  - changeSet:
+      id: 20261010-03-drop-structure-external-columns
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: structures
+      changes:
+        - dropColumn:
+            tableName: structures
+            columnName: external_id
+        - dropColumn:
+            tableName: structures
+            columnName: external_source
+
+  - changeSet:
+      id: 20261010-04-drop-structure-types
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: structure_types
+      changes:
+        - dropTable:
+            tableName: structure_types
+            cascadeConstraints: true
+
+  - changeSet:
+      id: 20261010-05-drop-structures-table
+      author: copilot
+      preConditions:
+        - onFail: MARK_RAN
+        - onError: HALT
+        - tableExists:
+            tableName: structures
+      changes:
+        - dropTable:
+            tableName: structures
+            cascadeConstraints: true

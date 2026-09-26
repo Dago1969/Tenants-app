@@ -1,6 +1,8 @@
 package com.qtm.tenants.therapeuticplan.entity;
 
-import com.qtm.tenants.structure.entity.StructureEntity;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.ConstraintMode;
 import jakarta.persistence.Entity;
@@ -18,9 +20,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 /**
  * Entity della richiesta contatto associata a piano terapeutico, paziente e centro medico.

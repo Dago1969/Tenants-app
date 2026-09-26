@@ -1,12 +1,16 @@
 package com.qtm.tenants.therapeuticplan.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.qtm.tenants.project.service.DashboardProjectClient;
-import com.qtm.tenants.structure.repository.StructureRepository;
-import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanEntity;
-import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanVisitEntity;
-import com.qtm.tenants.therapeuticplan.repository.TherapeuticPlanVisitRepository;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.verify;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Stream;
+
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -16,14 +20,18 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.LocalDate;
-import java.util.List;
-import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.verify;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.qtm.external.client.HospitalClient;
+import com.qtm.external.client.StructureDepartmentClient;
+import com.qtm.tenants.appointment.repository.AppointmentRepository;
+import com.qtm.tenants.appointment.repository.AppointmentTypeRepository;
+import com.qtm.tenants.doctor.repository.DoctorRepository;
+import com.qtm.tenants.patient.service.DashboardPatientClient;
+import com.qtm.tenants.project.service.DashboardProjectClient;
+import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanEntity;
+import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanVisitEntity;
+import com.qtm.tenants.therapeuticplan.repository.TherapeuticPlanVisitRepository;
+import com.qtm.tenants.ticket.client.TicketClient;
 
 /**
  * Test unitario parametrizzato per la verifica del motore di calcolo
@@ -36,10 +44,28 @@ class TherapeuticPlanScheduleEngineServiceTest {
     private TherapeuticPlanVisitRepository visitRepository;
 
     @Mock
+    private AppointmentRepository appointmentRepository;
+
+    @Mock
+    private AppointmentTypeRepository appointmentTypeRepository;
+
+    @Mock
     private DashboardProjectClient dashboardProjectClient;
 
     @Mock
-    private StructureRepository structureRepository;
+    private DashboardPatientClient dashboardPatientClient;
+
+    @Mock
+    private DoctorRepository doctorRepository;
+
+    @Mock
+    private TicketClient ticketClient;
+
+    @Mock
+    private HospitalClient hospitalClient;
+
+    @Mock
+    private StructureDepartmentClient structureDepartmentClient;
 
     private TherapeuticPlanScheduleEngineService engineService;
 
@@ -50,9 +76,15 @@ class TherapeuticPlanScheduleEngineServiceTest {
     void setUp() {
         engineService = new TherapeuticPlanScheduleEngineService(
                 visitRepository,
+                appointmentRepository,
+                appointmentTypeRepository,
                 dashboardProjectClient,
-                structureRepository,
-                new ObjectMapper()
+                dashboardPatientClient,
+                doctorRepository,
+                ticketClient,
+                new ObjectMapper(),
+                hospitalClient,
+                structureDepartmentClient
         );
     }
 

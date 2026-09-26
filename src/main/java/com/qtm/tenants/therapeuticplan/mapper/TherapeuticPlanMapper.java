@@ -1,7 +1,6 @@
 package com.qtm.tenants.therapeuticplan.mapper;
 
 import com.qtm.tenants.equipment.entity.EquipmentEntity;
-import com.qtm.tenants.structure.entity.StructureEntity;
 import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanProfessionalAssignmentDto;
 import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanDto;
 import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanDoctorAssignmentEntity;
@@ -31,19 +30,6 @@ public class TherapeuticPlanMapper {
             return null;
         }
 
-        StructureEntity structure = null;
-        try {
-            // entity now stores structureId instead of StructureEntity; keep compatibility when structure relation exists
-            java.lang.reflect.Field f = entity.getClass().getDeclaredField("structureId");
-            f.setAccessible(true);
-            Object sid = f.get(entity);
-            if (sid != null) {
-                StructureEntity tmp = new StructureEntity();
-                tmp.setId((Long) sid);
-                structure = tmp;
-            }
-        } catch (NoSuchFieldException | IllegalAccessException ignored) {
-        }
         List<EquipmentEntity> equipments = entity.getEquipments() == null ? List.of() : entity.getEquipments();
         List<TherapeuticPlanNurseAssignmentEntity> nurseAssignments = entity.getNurseAssignments() == null ? List.of() : entity.getNurseAssignments();
         List<TherapeuticPlanDoctorAssignmentEntity> doctorAssignments = entity.getDoctorAssignments() == null ? List.of() : entity.getDoctorAssignments();
@@ -64,55 +50,53 @@ public class TherapeuticPlanMapper {
                         .filter(Objects::nonNull)
                         .toList())
                 .structureId(entity.getStructureId())
-                .structureType(structure != null ? structure.getStructureType() : null)
-                .structureName(structure != null ? structure.getName() : null)
                 .departmentId(entity.getDepartmentId())
-                        .nurseIds(nurseAssignments.stream()
-                            .map(TherapeuticPlanNurseAssignmentEntity::getNurse)
-                            .filter(Objects::nonNull)
-                            .map(currentNurse -> currentNurse.getId())
-                            .filter(Objects::nonNull)
-                            .toList())
-                        .nurseNames(nurseAssignments.stream()
-                            .map(TherapeuticPlanNurseAssignmentEntity::getNurse)
-                            .filter(Objects::nonNull)
-                            .map(currentNurse -> currentNurse.getFullName())
-                            .filter(Objects::nonNull)
-                            .toList())
-                        .nurseAssignments(nurseAssignments.stream()
-                            .map(assignment -> TherapeuticPlanProfessionalAssignmentDto.builder()
-                                .professionalId(assignment.getNurse() != null ? assignment.getNurse().getId() : null)
-                                .professionalName(assignment.getNurse() != null ? assignment.getNurse().getFullName() : null)
-                                .priorityIndex(assignment.getPriorityIndex())
-                                .build())
-                            .toList())
-                        .prevalentNurseId(prevalentNurseAssignment != null && prevalentNurseAssignment.getNurse() != null ? prevalentNurseAssignment.getNurse().getId() : null)
-                        .prevalentNurseName(prevalentNurseAssignment != null && prevalentNurseAssignment.getNurse() != null ? prevalentNurseAssignment.getNurse().getFullName() : null)
-                        .nurseId(prevalentNurseAssignment != null && prevalentNurseAssignment.getNurse() != null ? prevalentNurseAssignment.getNurse().getId() : null)
-                        .nurseName(prevalentNurseAssignment != null && prevalentNurseAssignment.getNurse() != null ? prevalentNurseAssignment.getNurse().getFullName() : null)
-                        .doctorIds(doctorAssignments.stream()
-                            .map(TherapeuticPlanDoctorAssignmentEntity::getDoctor)
-                            .filter(Objects::nonNull)
-                            .map(currentDoctor -> currentDoctor.getId())
-                            .filter(Objects::nonNull)
-                            .toList())
-                        .doctorNames(doctorAssignments.stream()
-                            .map(TherapeuticPlanDoctorAssignmentEntity::getDoctor)
-                            .filter(Objects::nonNull)
-                            .map(currentDoctor -> currentDoctor.getFullName())
-                            .filter(Objects::nonNull)
-                            .toList())
-                        .doctorAssignments(doctorAssignments.stream()
-                            .map(assignment -> TherapeuticPlanProfessionalAssignmentDto.builder()
-                                .professionalId(assignment.getDoctor() != null ? assignment.getDoctor().getId() : null)
-                                .professionalName(assignment.getDoctor() != null ? assignment.getDoctor().getFullName() : null)
-                                .priorityIndex(assignment.getPriorityIndex())
-                                .build())
-                            .toList())
-                        .prevalentDoctorId(prevalentDoctorAssignment != null && prevalentDoctorAssignment.getDoctor() != null ? prevalentDoctorAssignment.getDoctor().getId() : null)
-                        .prevalentDoctorName(prevalentDoctorAssignment != null && prevalentDoctorAssignment.getDoctor() != null ? prevalentDoctorAssignment.getDoctor().getFullName() : null)
-                        .doctorId(prevalentDoctorAssignment != null && prevalentDoctorAssignment.getDoctor() != null ? prevalentDoctorAssignment.getDoctor().getId() : null)
-                        .doctorName(prevalentDoctorAssignment != null && prevalentDoctorAssignment.getDoctor() != null ? prevalentDoctorAssignment.getDoctor().getFullName() : null)
+                .nurseIds(nurseAssignments.stream()
+                    .map(TherapeuticPlanNurseAssignmentEntity::getNurse)
+                    .filter(Objects::nonNull)
+                    .map(currentNurse -> currentNurse.getId())
+                    .filter(Objects::nonNull)
+                    .toList())
+                .nurseNames(nurseAssignments.stream()
+                    .map(TherapeuticPlanNurseAssignmentEntity::getNurse)
+                    .filter(Objects::nonNull)
+                    .map(currentNurse -> currentNurse.getFullName())
+                    .filter(Objects::nonNull)
+                    .toList())
+                .nurseAssignments(nurseAssignments.stream()
+                    .map(assignment -> TherapeuticPlanProfessionalAssignmentDto.builder()
+                        .professionalId(assignment.getNurse() != null ? assignment.getNurse().getId() : null)
+                        .professionalName(assignment.getNurse() != null ? assignment.getNurse().getFullName() : null)
+                        .priorityIndex(assignment.getPriorityIndex())
+                        .build())
+                    .toList())
+                .prevalentNurseId(prevalentNurseAssignment != null && prevalentNurseAssignment.getNurse() != null ? prevalentNurseAssignment.getNurse().getId() : null)
+                .prevalentNurseName(prevalentNurseAssignment != null && prevalentNurseAssignment.getNurse() != null ? prevalentNurseAssignment.getNurse().getFullName() : null)
+                .nurseId(prevalentNurseAssignment != null && prevalentNurseAssignment.getNurse() != null ? prevalentNurseAssignment.getNurse().getId() : null)
+                .nurseName(prevalentNurseAssignment != null && prevalentNurseAssignment.getNurse() != null ? prevalentNurseAssignment.getNurse().getFullName() : null)
+                .doctorIds(doctorAssignments.stream()
+                    .map(TherapeuticPlanDoctorAssignmentEntity::getDoctor)
+                    .filter(Objects::nonNull)
+                    .map(currentDoctor -> currentDoctor.getId())
+                    .filter(Objects::nonNull)
+                    .toList())
+                .doctorNames(doctorAssignments.stream()
+                    .map(TherapeuticPlanDoctorAssignmentEntity::getDoctor)
+                    .filter(Objects::nonNull)
+                    .map(currentDoctor -> currentDoctor.getFullName())
+                    .filter(Objects::nonNull)
+                    .toList())
+                .doctorAssignments(doctorAssignments.stream()
+                    .map(assignment -> TherapeuticPlanProfessionalAssignmentDto.builder()
+                        .professionalId(assignment.getDoctor() != null ? assignment.getDoctor().getId() : null)
+                        .professionalName(assignment.getDoctor() != null ? assignment.getDoctor().getFullName() : null)
+                        .priorityIndex(assignment.getPriorityIndex())
+                        .build())
+                    .toList())
+                .prevalentDoctorId(prevalentDoctorAssignment != null && prevalentDoctorAssignment.getDoctor() != null ? prevalentDoctorAssignment.getDoctor().getId() : null)
+                .prevalentDoctorName(prevalentDoctorAssignment != null && prevalentDoctorAssignment.getDoctor() != null ? prevalentDoctorAssignment.getDoctor().getFullName() : null)
+                .doctorId(prevalentDoctorAssignment != null && prevalentDoctorAssignment.getDoctor() != null ? prevalentDoctorAssignment.getDoctor().getId() : null)
+                .doctorName(prevalentDoctorAssignment != null && prevalentDoctorAssignment.getDoctor() != null ? prevalentDoctorAssignment.getDoctor().getFullName() : null)
                 .drugCode(entity.getDrugCode())
                 .startDate(entity.getStartDate())
                 .endDate(entity.getEndDate())
@@ -147,12 +131,6 @@ public class TherapeuticPlanMapper {
         entity.setPatientId(dto.getPatientId());
         entity.setProjectCode(dto.getProjectCode());
         entity.setEquipments(new ArrayList<>(equipments));
-        // structure is mapped by id in the entity; keep backward compatibility with provided StructureEntity
-//        if (structure != null) {
-//            entity.setStructureId(structure.getId());
-//        } else {
-//            entity.setStructureId(dto.getStructureId());
-//        }
         entity.setStructureId(structureId);
         entity.setDepartmentId(dto.getDepartmentId());
         syncNurseAssignments(entity, nurseAssignments);

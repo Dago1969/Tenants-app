@@ -18,8 +18,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.qtm.commonlib.dto.PatientDto;
 import com.qtm.tenants.patient.service.DashboardPatientClient;
-// DashboardPatientClient removed from TENAPP; use common DTO and external client from shared module
-import com.qtm.tenants.structure.entity.StructureEntity;
 import com.qtm.tenants.therapeuticplan.TherapeuticPlanContactRequestRules;
 import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanContactRequestDto;
 import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanContactRequestEntity;
@@ -41,7 +39,6 @@ public class TherapeuticPlanContactRequestService {
     private final DashboardPatientClient dashboardPatientClient;
     private final TherapeuticPlanRepository therapeuticPlanRepository;
     private final TherapeuticPlanContactRequestMapper contactRequestMapper;
-    private final com.qtm.tenants.structure.repository.StructureRepository structureRepository;
 
     @Transactional(readOnly = true)
     public List<TherapeuticPlanContactRequestDto> findAll(Long therapeuticPlanId) {
@@ -81,22 +78,19 @@ public class TherapeuticPlanContactRequestService {
                 "Il piano terapeutico deve avere un centro medico associato per registrare la richiesta contatto");
         }
 
-        StructureEntity structure = structureRepository.findById(structureId)
-            .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Struttura del piano terapeutico non trovata"));
-
         TherapeuticPlanContactRequestEntity savedEntity = contactRequestRepository.save(
                 contactRequestMapper.toNewEntity(
                         TherapeuticPlanContactRequestDto.builder()
                                 .id(normalizedDto.getId())
                                 .therapeuticPlanId(normalizedDto.getTherapeuticPlanId())
                                 .patientId(patient.getId())
+                                .structureId(structureId)
                                 .requestDate(normalizedDto.getRequestDate())
                                 .requestType(normalizedDto.getRequestType())
                                 .outpatientClinic(normalizedDto.getOutpatientClinic())
                                 .status(normalizedDto.getStatus())
                                 .build(),
-                        therapeuticPlan,
-                        structure
+                        therapeuticPlan
                 )
         );
         return contactRequestMapper.toDto(savedEntity, buildPatientDisplayName(patient));

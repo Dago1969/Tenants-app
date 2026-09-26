@@ -79,6 +79,12 @@ databaseChangeLog:
       file: 20260923-01-add-doctor-communication-otp.yaml
       relativeToChangelogFile: true
   - include:
+      file: 20261010-01-drop-structures-and-departments.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: 20261015-01-drop-hospital-departments.yaml
+      relativeToChangelogFile: true
+  - include:
       file: 20261002-01-add-therapeutic-plan-department.yaml
       relativeToChangelogFile: true
   - include:

@@ -40,8 +40,6 @@ import com.qtm.tenants.nurse.entity.NurseEntity;
 import com.qtm.tenants.role.entity.RoleEntity;
 import com.qtm.tenants.role.repository.RoleRepository;
 import com.qtm.tenants.role.service.DashboardRoleClient;
-import com.qtm.tenants.structure.StructureModuleCodes;
-import com.qtm.tenants.structure.entity.StructureEntity;
 import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanDto;
 import com.qtm.commonlib.dto.TicketDto;
 
@@ -54,7 +52,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AuthorizationManagementService {
 
-	private static final String MODULE_APPOINTMENT = "APPOINTMENT";
+    private static final String MODULE_APPOINTMENT = "APPOINTMENT";
     private static final String MODULE_APPOINTMENT_TYPE = "APPOINTMENT_TYPE";
     private static final String MODULE_DOCTOR = "DOCTOR";
     private static final String MODULE_EQUIPMENT = "EQUIPMENT";
@@ -91,8 +89,6 @@ public class AuthorizationManagementService {
             Map.of()
     );
 
-    private static final List<String> STRUCTURE_FIELDS = resolveEntityFields(StructureEntity.class, Set.of("id"), Map.of());
-
     private static final Map<String, ModuleDefinition> MODULE_DEFINITIONS = List.of(
             new ModuleDefinition(
                     MODULE_APPOINTMENT,
@@ -101,7 +97,6 @@ public class AuthorizationManagementService {
                     resolveEntityFields(AppointmentDto.class, Set.of("id", "therapeuticPlanPatientDisplayName", "appointmentTypeName", "appointmentTypeDurationMinutes", "nurseName"), Map.of()),
                     DEFAULT_COMMON_FUNCTION_CODES
             ),
-            structureModuleDefinition(StructureModuleCodes.ASL),
             new ModuleDefinition(
                     MODULE_EQUIPMENT,
                     "Attrezzature",
@@ -123,9 +118,6 @@ public class AuthorizationManagementService {
                     resolveEntityFields(FunctionEntity.class, Set.of(), Map.of()), 
                     List.of()
             ),
-            structureModuleDefinition(StructureModuleCodes.GENERIC),
-            structureModuleDefinition(StructureModuleCodes.HOSPITAL),
-            structureModuleDefinition(StructureModuleCodes.HOSPITAL_PHARMACY),
             new ModuleDefinition(
                     MODULE_NURSE,
                     "Infermieri",
@@ -133,8 +125,6 @@ public class AuthorizationManagementService {
                     resolveEntityFields(NurseEntity.class, Set.of("id"), Map.of()),
                     List.of()
             ),
-            structureModuleDefinition(StructureModuleCodes.LOGISTICS_WAREHOUSE),
-            structureModuleDefinition(StructureModuleCodes.MATERIAL_WAREHOUSE),
             new ModuleDefinition(
                     MODULE_MODULE, 
                     "Moduli", 
@@ -149,7 +139,6 @@ public class AuthorizationManagementService {
 //                    resolveEntityFields(PatientEntity.class, Set.of("id"), Map.of()),
 //                    List.of()
 //            ),
-            structureModuleDefinition(StructureModuleCodes.PHARMA_COMPANY),
             new ModuleDefinition(
                     MODULE_THERAPEUTIC_PLAN,
                     "Piani Terapeutici",
@@ -164,7 +153,6 @@ public class AuthorizationManagementService {
                     resolveEntityFields(ProjectDto.class, Set.of("id"), Map.of()), 
                     DEFAULT_COMMON_FUNCTION_CODES
             ),
-            structureModuleDefinition(StructureModuleCodes.RETAIL_PHARMACY),
             new ModuleDefinition(
                     MODULE_ROLE, 
                     "Ruoli", 
@@ -172,7 +160,6 @@ public class AuthorizationManagementService {
                     resolveEntityFields(RoleEntity.class, Set.of(), Map.of()), 
                     List.of()
             ),
-            structureModuleDefinition(StructureModuleCodes.SPECIALIST_CLINIC),
             new ModuleDefinition(
                     MODULE_TENANT, 
                     "Tenants", 
@@ -218,16 +205,6 @@ public class AuthorizationManagementService {
     private final FunctionModuleRoleAuthorizationRepository functionModuleRoleAuthorizationRepository;
     private final ControllerFunctionAuthorizationService controllerFunctionAuthorizationService;
     private final DashboardRoleClient dashboardRoleClient;
-
-        private static ModuleDefinition structureModuleDefinition(String moduleCode) {
-                return new ModuleDefinition(
-                                moduleCode,
-                                StructureModuleCodes.resolveModuleName(moduleCode),
-                                "structure",
-                                STRUCTURE_FIELDS,
-                                List.of()
-                );
-        }
 
     @Transactional(readOnly = true)
     public AuthorizationRoleMatrixDto getRoleMatrix(String roleId) {
@@ -280,116 +257,116 @@ public class AuthorizationManagementService {
                 ? List.of()
                 : request.getModules();
 
-                for (AuthorizationModuleDto requestedModule : requestedModules) {
-                        ModuleDefinition definition = MODULE_DEFINITIONS.get(requestedModule.getModuleCode());
-                        AuthorizationScope moduleScope = parseModuleScope(requestedModule.getModuleAuthorization());
-                        ModuleEntity module;
-                        ModuleRoleAuthorizationEntity moduleRoleAuthorization;
-                        if (definition != null) {
-                                module = ensureModule(definition);
-                                moduleRoleAuthorization = ensureModuleRoleAuthorization(module, role, moduleScope);
-                                if (moduleRoleAuthorization.getAuthorization() != moduleScope) {
-                                        moduleRoleAuthorization.setAuthorization(moduleScope);
-                                        moduleRoleAuthorization = moduleRoleAuthorizationRepository.save(moduleRoleAuthorization);
-                                }
-                                updateFieldAuthorizations(definition, moduleRoleAuthorization, requestedModule.getFields());
-                                updateFunctionAuthorizations(definition, role, module, functionsByCode, requestedModule.getFunctions());
-                        } else {
-                                // Modulo dinamico: gestisci solo il livello modulo
-                                module = moduleRepository.findById(java.util.Objects.requireNonNull(requestedModule.getModuleCode(), "moduleCode"))
-                                                .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Modulo non trovato: " + requestedModule.getModuleCode()));
-                                moduleRoleAuthorization = ensureModuleRoleAuthorization(module, role, moduleScope);
-                                if (moduleRoleAuthorization.getAuthorization() != moduleScope) {
-                                        moduleRoleAuthorization.setAuthorization(moduleScope);
-                                        moduleRoleAuthorizationRepository.save(moduleRoleAuthorization);
-                                }
-                                // Ignora fields e functions
-                        }
+        for (AuthorizationModuleDto requestedModule : requestedModules) {
+            ModuleDefinition definition = MODULE_DEFINITIONS.get(requestedModule.getModuleCode());
+            AuthorizationScope moduleScope = parseModuleScope(requestedModule.getModuleAuthorization());
+            ModuleEntity module;
+            ModuleRoleAuthorizationEntity moduleRoleAuthorization;
+            if (definition != null) {
+                module = ensureModule(definition);
+                moduleRoleAuthorization = ensureModuleRoleAuthorization(module, role, moduleScope);
+                if (moduleRoleAuthorization.getAuthorization() != moduleScope) {
+                    moduleRoleAuthorization.setAuthorization(moduleScope);
+                    moduleRoleAuthorization = moduleRoleAuthorizationRepository.save(moduleRoleAuthorization);
                 }
+                updateFieldAuthorizations(definition, moduleRoleAuthorization, requestedModule.getFields());
+                updateFunctionAuthorizations(definition, role, module, functionsByCode, requestedModule.getFunctions());
+            } else {
+                // Modulo dinamico: gestisci solo il livello modulo
+                module = moduleRepository.findById(java.util.Objects.requireNonNull(requestedModule.getModuleCode(), "moduleCode"))
+                        .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Modulo non trovato: " + requestedModule.getModuleCode()));
+                moduleRoleAuthorization = ensureModuleRoleAuthorization(module, role, moduleScope);
+                if (moduleRoleAuthorization.getAuthorization() != moduleScope) {
+                    moduleRoleAuthorization.setAuthorization(moduleScope);
+                    moduleRoleAuthorizationRepository.save(moduleRoleAuthorization);
+                }
+                // Ignora fields e functions
+            }
+        }
 
         return getRoleMatrix(roleId);
     }
 
-        @Transactional(readOnly = true)
-        public AuthorizationModuleDto getModuleForRole(String roleId, String moduleCode) {
-                RoleEntity role = findRole(roleId);
-                Map<String, FunctionEntity> functionsByCode = functionRepository.findAll().stream()
-                                .collect(Collectors.toMap(FunctionEntity::getCode, function -> function, (left, right) -> left, LinkedHashMap::new));
+    @Transactional(readOnly = true)
+    public AuthorizationModuleDto getModuleForRole(String roleId, String moduleCode) {
+        RoleEntity role = findRole(roleId);
+        Map<String, FunctionEntity> functionsByCode = functionRepository.findAll().stream()
+                .collect(Collectors.toMap(FunctionEntity::getCode, function -> function, (left, right) -> left, LinkedHashMap::new));
 
-                ModuleDefinition definition = MODULE_DEFINITIONS.get(moduleCode);
-                if (definition != null) {
-                        return toModuleDto(role, definition, functionsByCode);
-                }
-
-                // Dynamic module: build minimal representation
-                ModuleEntity module = moduleRepository.findById(java.util.Objects.requireNonNull(moduleCode, "moduleCode"))
-                                .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Modulo non trovato: " + moduleCode));
-
-                // Default minimal module DTO
-                return new AuthorizationModuleDto(
-                                module.getCode(),
-                                module.getName(),
-                                "",
-                                "allow",
-                                List.of(),
-                                List.of()
-                );
+        ModuleDefinition definition = MODULE_DEFINITIONS.get(moduleCode);
+        if (definition != null) {
+            return toModuleDto(role, definition, functionsByCode);
         }
 
-        @Transactional
-        public AuthorizationModuleDto updateModuleForRole(String roleId, AuthorizationModuleDto request) {
-                RoleEntity role = findRole(roleId);
-                Map<String, FunctionEntity> functionsByCode = functionRepository.findAll().stream()
-                                .collect(Collectors.toMap(FunctionEntity::getCode, function -> function, (left, right) -> left, LinkedHashMap::new));
+        // Dynamic module: build minimal representation
+        ModuleEntity module = moduleRepository.findById(java.util.Objects.requireNonNull(moduleCode, "moduleCode"))
+                .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Modulo non trovato: " + moduleCode));
 
-                String moduleCode = java.util.Objects.requireNonNull(request.getModuleCode(), "moduleCode");
-                ModuleDefinition definition = MODULE_DEFINITIONS.get(moduleCode);
-                ModuleEntity module;
-                ModuleRoleAuthorizationEntity moduleRoleAuthorization;
+        // Default minimal module DTO
+        return new AuthorizationModuleDto(
+                module.getCode(),
+                module.getName(),
+                "",
+                "allow",
+                List.of(),
+                List.of()
+        );
+    }
 
-                AuthorizationScope moduleScope = parseModuleScope(request.getModuleAuthorization());
+    @Transactional
+    public AuthorizationModuleDto updateModuleForRole(String roleId, AuthorizationModuleDto request) {
+        RoleEntity role = findRole(roleId);
+        Map<String, FunctionEntity> functionsByCode = functionRepository.findAll().stream()
+                .collect(Collectors.toMap(FunctionEntity::getCode, function -> function, (left, right) -> left, LinkedHashMap::new));
 
-                if (definition != null) {
-                        module = ensureModule(definition);
-                        moduleRoleAuthorization = ensureModuleRoleAuthorization(module, role, moduleScope);
-                        if (moduleRoleAuthorization.getAuthorization() != moduleScope) {
-                                moduleRoleAuthorization.setAuthorization(moduleScope);
-                                moduleRoleAuthorization = moduleRoleAuthorizationRepository.save(moduleRoleAuthorization);
-                        }
-                        updateFieldAuthorizations(definition, moduleRoleAuthorization, request.getFields());
-                        updateFunctionAuthorizations(definition, role, module, functionsByCode, request.getFunctions());
-                } else {
-                        // Dynamic module: allow only module-level authorization
-                        module = moduleRepository.findById(moduleCode)
-                                        .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Modulo non trovato: " + moduleCode));
-                        moduleRoleAuthorization = ensureModuleRoleAuthorization(module, role, moduleScope);
-                        if (moduleRoleAuthorization.getAuthorization() != moduleScope) {
-                                moduleRoleAuthorization.setAuthorization(moduleScope);
-                                moduleRoleAuthorizationRepository.save(moduleRoleAuthorization);
-                        }
-                }
+        String moduleCode = java.util.Objects.requireNonNull(request.getModuleCode(), "moduleCode");
+        ModuleDefinition definition = MODULE_DEFINITIONS.get(moduleCode);
+        ModuleEntity module;
+        ModuleRoleAuthorizationEntity moduleRoleAuthorization;
 
-                // Return updated module for role
-                return getModuleForRole(roleId, moduleCode);
+        AuthorizationScope moduleScope = parseModuleScope(request.getModuleAuthorization());
+
+        if (definition != null) {
+            module = ensureModule(definition);
+            moduleRoleAuthorization = ensureModuleRoleAuthorization(module, role, moduleScope);
+            if (moduleRoleAuthorization.getAuthorization() != moduleScope) {
+                moduleRoleAuthorization.setAuthorization(moduleScope);
+                moduleRoleAuthorization = moduleRoleAuthorizationRepository.save(moduleRoleAuthorization);
+            }
+            updateFieldAuthorizations(definition, moduleRoleAuthorization, request.getFields());
+            updateFunctionAuthorizations(definition, role, module, functionsByCode, request.getFunctions());
+        } else {
+            // Dynamic module: allow only module-level authorization
+            module = moduleRepository.findById(moduleCode)
+                    .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Modulo non trovato: " + moduleCode));
+            moduleRoleAuthorization = ensureModuleRoleAuthorization(module, role, moduleScope);
+            if (moduleRoleAuthorization.getAuthorization() != moduleScope) {
+                moduleRoleAuthorization.setAuthorization(moduleScope);
+                moduleRoleAuthorizationRepository.save(moduleRoleAuthorization);
+            }
         }
 
-        @Transactional
-        public void initializeRoleAuthorizations(String targetRoleId, String sourceRoleId) {
-                AuthorizationUpdateRequestDto request = new AuthorizationUpdateRequestDto();
-                if (sourceRoleId != null && !sourceRoleId.isBlank()) {
-                        AuthorizationRoleMatrixDto sourceMatrix = getRoleMatrix(sourceRoleId);
-                        request.setModules(sourceMatrix.getModules().stream()
-                                        .map(this::copyModuleAuthorization)
-                                        .toList());
-                        updateRoleMatrix(targetRoleId, request);
-                        return;
-                }
+        // Return updated module for role
+        return getModuleForRole(roleId, moduleCode);
+    }
 
-                request.setModules(MODULE_DEFINITIONS.values().stream()
-                                .map(this::buildDefaultDeniedModule)
-                                .toList());
-                updateRoleMatrix(targetRoleId, request);
+    @Transactional
+    public void initializeRoleAuthorizations(String targetRoleId, String sourceRoleId) {
+        AuthorizationUpdateRequestDto request = new AuthorizationUpdateRequestDto();
+        if (sourceRoleId != null && !sourceRoleId.isBlank()) {
+            AuthorizationRoleMatrixDto sourceMatrix = getRoleMatrix(sourceRoleId);
+            request.setModules(sourceMatrix.getModules().stream()
+                    .map(this::copyModuleAuthorization)
+                    .toList());
+            updateRoleMatrix(targetRoleId, request);
+            return;
         }
+
+        request.setModules(MODULE_DEFINITIONS.values().stream()
+                .map(this::buildDefaultDeniedModule)
+                .toList());
+        updateRoleMatrix(targetRoleId, request);
+    }
 
     private void updateFieldAuthorizations(
             ModuleDefinition definition,
@@ -574,19 +551,19 @@ public class AuthorizationManagementService {
 
     private ModuleEntity ensureModule(ModuleDefinition definition) {
         return moduleRepository.findById(java.util.Objects.requireNonNull(definition.code(), "moduleCode"))
-                                .map(existing -> {
-                                        if (!definition.name().equals(existing.getName())) {
-                                                existing.setName(definition.name());
-                                                return moduleRepository.save(existing);
-                                        }
-                                        return existing;
-                                })
-                                .orElseGet(() -> {
-                                        ModuleEntity module = new ModuleEntity();
-                                        module.setCode(definition.code());
-                                        module.setName(definition.name());
-                                        return moduleRepository.save(module);
-                                });
+                .map(existing -> {
+                    if (!definition.name().equals(existing.getName())) {
+                        existing.setName(definition.name());
+                        return moduleRepository.save(existing);
+                    }
+                    return existing;
+                })
+                .orElseGet(() -> {
+                    ModuleEntity module = new ModuleEntity();
+                    module.setCode(definition.code());
+                    module.setName(definition.name());
+                    return moduleRepository.save(module);
+                });
     }
 
     private ModuleRoleAuthorizationEntity ensureModuleRoleAuthorization(
@@ -687,75 +664,69 @@ public class AuthorizationManagementService {
                 definition.fields().stream()
                         .map(field -> new AuthorizationFieldDto(field, AuthorizationScope.HIDE_FIELD.getCode()))
                         .toList(),
-                                resolveSupportedFunctionCodes(definition).stream()
+                resolveSupportedFunctionCodes(definition).stream()
                         .map(functionCode -> new AuthorizationFunctionDto(functionCode, functionCode, AuthorizationScope.DENY.getCode(), controllerFunctionAuthorizationService.isCommonFunctionCode(functionCode)))
                         .toList()
         );
     }
 
-        private List<String> resolveSupportedFunctionCodes(ModuleDefinition definition) {
-                List<String> supportedFunctionCodes = getSupportedFunctionCodesSafely(definition.code());
-                if (!supportedFunctionCodes.isEmpty()) {
-                        return supportedFunctionCodes;
-                }
-                return definition.defaultFunctionCodes();
+    private List<String> resolveSupportedFunctionCodes(ModuleDefinition definition) {
+        List<String> supportedFunctionCodes = getSupportedFunctionCodesSafely(definition.code());
+        if (!supportedFunctionCodes.isEmpty()) {
+            return supportedFunctionCodes;
         }
+        return definition.defaultFunctionCodes();
+    }
 
-        private List<String> getSupportedFunctionCodesSafely(String moduleCode) {
-                try {
-                        return controllerFunctionAuthorizationService.getSupportedFunctionCodes(moduleCode);
-                } catch (ResponseStatusException exception) {
-                        if (exception.getStatusCode().value() == NOT_FOUND.value()) {
-                                return List.of();
-                        }
-                        throw exception;
-                }
+    private List<String> getSupportedFunctionCodesSafely(String moduleCode) {
+        try {
+            return controllerFunctionAuthorizationService.getSupportedFunctionCodes(moduleCode);
+        } catch (ResponseStatusException exception) {
+            if (exception.getStatusCode().value() == NOT_FOUND.value()) {
+                return List.of();
+            }
+            throw exception;
         }
+    }
 
-        /**
-         * Verifica ricorsivamente se un ruolo è NURSE_QTM o derivato da NURSE_QTM.
-         * Utilizza il DTO remoto da QTMDB per controllare il campo 'father'.
-         * @param roleId L'ID del ruolo da verificare
-         * @return true se il ruolo è NURSE_QTM o ha come ancestor NURSE_QTM, false altrimenti
-         */
-        /**
-         * Verifica ricorsivamente se un ruolo è NURSE_QTM o derivato da NURSE_QTM.
-         * Utilizza il DTO remoto da QTMDB per controllare il campo 'father'.
-         * @param roleId L'ID del ruolo da verificare
-         * @return true se il ruolo è NURSE_QTM o ha come ancestor NURSE_QTM, false altrimenti
-         */
-        private boolean isNurseRole(String roleId) {
-                if (roleId == null || roleId.isBlank()) {
-                        return false;
-                }
-                
-                // Se il ruolo ID è NURSE_QTM, ritorna true
-                if ("NURSE_QTM".equalsIgnoreCase(roleId)) {
-                        return true;
-                }
-                
-                // Recupera il DTO remoto da QTMDB
-                try {
-                        com.qtm.commonlib.dto.RoleDto remoteRole = dashboardRoleClient.findById(roleId);
-                        
-                        // Se il ruolo ha un padre, verifica ricorsivamente
-                        if (remoteRole.getFather() != null && !remoteRole.getFather().isBlank()) {
-                                return isNurseRole(remoteRole.getFather());
-                        }
-                } catch (Exception e) {
-                        // Se non riesci a recuperare il ruolo remoto, non è NURSE_QTM
-                        return false;
-                }
-                
-                return false;
+    /**
+     * Verifica ricorsivamente se un ruolo è NURSE_QTM o derivato da NURSE_QTM.
+     * Utilizza il DTO remoto da QTMDB per controllare il campo 'father'.
+     * @param roleId L'ID del ruolo da verificare
+     * @return true se il ruolo è NURSE_QTM o ha come ancestor NURSE_QTM, false altrimenti
+     */
+    private boolean isNurseRole(String roleId) {
+        if (roleId == null || roleId.isBlank()) {
+            return false;
         }
+        
+        // Se il ruolo ID è NURSE_QTM, ritorna true
+        if ("NURSE_QTM".equalsIgnoreCase(roleId)) {
+            return true;
+        }
+        
+        // Recupera il DTO remoto da QTMDB
+        try {
+            com.qtm.commonlib.dto.RoleDto remoteRole = dashboardRoleClient.findById(roleId);
+            
+            // Se il ruolo ha un padre, verifica ricorsivamente
+            if (remoteRole.getFather() != null && !remoteRole.getFather().isBlank()) {
+                return isNurseRole(remoteRole.getFather());
+            }
+        } catch (Exception e) {
+            // Se non riesci a recuperare il ruolo remoto, non è NURSE_QTM
+            return false;
+        }
+        
+        return false;
+    }
 
-        private record ModuleDefinition(
-                        String code,
-                        String name,
-                        String entityName,
-                        List<String> fields,
-                        List<String> defaultFunctionCodes
-        ) {
+    private record ModuleDefinition(
+            String code,
+            String name,
+            String entityName,
+            List<String> fields,
+            List<String> defaultFunctionCodes
+    ) {
     }
 }

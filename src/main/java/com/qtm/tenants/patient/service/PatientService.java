@@ -134,6 +134,7 @@ public class PatientService {
             }
             throw exception;
         }
+        
     }
 
     private void validatePrivacyConsent(PatientDto patientDto) {

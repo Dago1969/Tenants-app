@@ -15,8 +15,9 @@ export interface CrudField {
   key: string;
   labelKey: MessageKey;
   type: 'text' | 'textarea' | 'number' | 'checkbox' | 'date' | 'datetime-local' | 'select' | 'action';
-  placeholder?: string;      // <--- Supporto per il testo del placeholder
-    customClass?: string;      // <--- Classe CSS opzionale (es. 'placeholder-red')
+  folder?: string;
+  placeholder?: string;
+  customClass?: string;
   columnSpan?: number;
   rows?: number;
   hidden?: boolean;
@@ -265,7 +266,7 @@ interface ConsentOtpConfig {
                   </ng-container>
                   <ng-template #genericInput>
                     <ng-container *ngIf="field.type === 'textarea'; else genericTextInput">
-                        <textarea
+                      <textarea
                         class="crud-input crud-textarea"
                         [ngClass]="field.customClass"
                         [class.crud-input-invalid]="shouldShowRequiredError(field, genericField)"
@@ -373,7 +374,6 @@ interface ConsentOtpConfig {
                         {{ resolveOptionLabel(item.label) }}
                       </ng-template>
                     </ng-select>
-                    <!-- per-field inline spinner removed as requested -->
                     <div *ngIf="shouldShowRequiredError(field, null)" class="crud-field-error">
                       {{ translate(requiredFieldMessageKey) }}
                     </div>
@@ -448,14 +448,13 @@ interface ConsentOtpConfig {
     </section>
   `
 })
-export class CrudPageComponent implements OnInit, OnChanges {
+export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDestroy {
   readonly requiredFieldMessageKey = 'crud.validation.required' as MessageKey;
   readonly usernameTakenMessageKey: MessageKey = 'users.error.username.taken';
   readonly defaultPhoneCountryIsoCode = 'it';
   readonly phoneCountryOrder: NonNullable<AllOptions['countryOrder']> = ['it', 'us', 'gb', 'fr', 'de', 'es'];
   readonly loadPhoneInputUtils = () => import('intl-tel-input/utils');
   readonly consentOtpSmsChannel = 'sms';
-
 
   @Input({ required: true }) titleKey!: MessageKey;
   @Input({ required: true }) endpoint!: string;
@@ -508,7 +507,6 @@ export class CrudPageComponent implements OnInit, OnChanges {
   ) {}
 
   ngOnInit(): void {
-    // eslint-disable-next-line no-console
     console.log('[CrudPageComponent] ngOnInit for endpoint', this.endpoint, 'with initial model:', this.initialFormModel);
     this.applyInitialFormModel('ngOnInit');
     void this.initializePage();
@@ -601,6 +599,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
   resolveOptionLabel(label: string): string {
     return hasMessageKey(label) ? t(label) : label;
   }
+
   getSelectedOptionLabel(field: CrudField): string {
     const options = this.getFieldOptions(field);
     const val = this.formModel[field.key];
@@ -609,12 +608,10 @@ export class CrudPageComponent implements OnInit, OnChanges {
   }
 
   getFieldOptions(field: CrudField): SelectOption[] {
-    // Special case: dynamically include phone numbers in otpRecipient option labels
     if (field.key === 'otpRecipient') {
       const primary = this.asPhoneString(this.formModel['primaryPhone']);
       const caregiver = this.asPhoneString(this.formModel['caregiverPhone']);
 
-      // Prefer explicit field.options (declared in field definition) otherwise fall back to loaded options
       let sourceOptions: SelectOption[] = [];
       if (field.options && field.options.length > 0) {
         sourceOptions = field.options.map((o) => ({ value: o.value, label: o.label, source: { value: o.value, label: o.label } }));
@@ -683,7 +680,6 @@ export class CrudPageComponent implements OnInit, OnChanges {
     this.formModel[field.key] = value;
     this.applyRelatedFields(field, value);
 
-    // If otpRecipient changed, update consent destination preview
     if (field.key === 'otpRecipient') {
       this.consentOtpState.destination = this.getConsentPrimaryPhone();
     }
@@ -773,7 +769,6 @@ export class CrudPageComponent implements OnInit, OnChanges {
     }
 
     const payload = this.buildPayload();
-    // eslint-disable-next-line no-console
     console.log('[CrudPageComponent] Saving payload for endpoint', this.endpoint, ':', payload);
 
     if (this.loadedEntityKeyValue !== null || this.isEditMode) {
@@ -790,7 +785,6 @@ export class CrudPageComponent implements OnInit, OnChanges {
             this.pushOperationLog('success', 'crud.success.update');
           },
           error: (error) => {
-            // eslint-disable-next-line no-console
             console.error('[CrudPageComponent] Update failed for endpoint', this.endpoint, 'payload:', payload, 'error:', error);
             const message = this.buildErrorMessage('crud.error.update', error);
             this.pushOperationLog('error', message);
@@ -819,7 +813,6 @@ export class CrudPageComponent implements OnInit, OnChanges {
         }
       },
       error: (error) => {
-        // eslint-disable-next-line no-console
         console.error('[CrudPageComponent] Create failed for endpoint', this.endpoint, 'payload:', payload, 'error:', error);
         const message = this.buildErrorMessage('crud.error.create', error);
         this.pushOperationLog('error', message);
@@ -839,7 +832,6 @@ export class CrudPageComponent implements OnInit, OnChanges {
   }
 
   cancel(): void {
-    // Forza sempre la chiusura verso closeRoute se presente
     if (this.closeRoute) {
       void this.router.navigateByUrl(this.closeRoute);
       return;
@@ -915,7 +907,6 @@ export class CrudPageComponent implements OnInit, OnChanges {
     };
     this.syncPhoneInputs();
 
-    // eslint-disable-next-line no-console
     console.log(`[CrudPageComponent] Applied initial form model from ${source}:`, this.formModel);
   }
 
@@ -968,7 +959,7 @@ export class CrudPageComponent implements OnInit, OnChanges {
         ? environment.ticketApiBaseUrl
         : environment.apiBaseUrl;
       const requestUrl = `${baseUrl}/${resolvedEndpoint}`;
-      // eslint-disable-next-line no-console
+
       console.log('[CrudPageComponent] Loading select options', {
         fieldKey: field.key,
         optionsEndpoint: field.optionsEndpoint,
@@ -980,7 +971,6 @@ export class CrudPageComponent implements OnInit, OnChanges {
         this.fieldLoading[field.key] = false;
       })).subscribe({
         next: (items) => {
-          // eslint-disable-next-line no-console
           console.log('[CrudPageComponent] Loaded select options', {
             fieldKey: field.key,
             requestUrl,
@@ -992,7 +982,6 @@ export class CrudPageComponent implements OnInit, OnChanges {
           this.applyRelatedFields(field, this.formModel[field.key]);
         },
         error: (error: HttpErrorResponse) => {
-          // eslint-disable-next-line no-console
           console.error('[CrudPageComponent] Failed loading select options', {
             fieldKey: field.key,
             requestUrl,
@@ -1176,17 +1165,17 @@ export class CrudPageComponent implements OnInit, OnChanges {
     this.isHydratingDoctorAssignment = true;
 
     try {
-      let resolvedStructureId = structureId;
-      if (resolvedStructureId === null && departmentId !== null) {
-        resolvedStructureId = await this.resolveStructureIdFromDepartment(departmentId);
-      }
+      const resolvedStructureId = structureId;
 
       if (resolvedStructureId === null) {
         return;
       }
 
+      const currentRegionCode = this.normalizeRegionCodeForOverview(this.formModel['clinicalRegionCode']);
+      const currentAslCode = this.normalizeCode(this.formModel['aslCode']);
       let overviewRows = await this.fetchRecords(`${environment.apiBaseUrl}/structures/overview`, {
-        strutturaId: String(resolvedStructureId)
+        ...(currentRegionCode ? { regionCode: currentRegionCode } : {}),
+        ...(currentAslCode ? { aslCode: currentAslCode } : {})
       });
 
       if (overviewRows.length === 0) {
@@ -1198,12 +1187,12 @@ export class CrudPageComponent implements OnInit, OnChanges {
         return;
       }
 
-      const regionCode = this.normalizeRegionCodeForOverview(this.asText(matchedOverview['codiceRegione']));
+      const regionCode = this.normalizeRegionCodeForOverview(matchedOverview['codiceRegione']);
       const structureDbId = this.asNumericId(matchedOverview['strutturaId']) ?? resolvedStructureId;
       const structureTicketCode = this.asText(matchedOverview['codiceStruttura']);
       const aslId = this.asNumericId(matchedOverview['aslId']);
       const aslName = this.asText(matchedOverview['asl']);
-      const resolvedAslCode = this.asText(matchedOverview['codiceAsl']);
+      const resolvedAslCode = this.normalizeCode(matchedOverview['codiceAsl']);
 
       if (regionCode.length > 0) {
         this.formModel['clinicalRegionCode'] = regionCode;
@@ -1232,7 +1221,10 @@ export class CrudPageComponent implements OnInit, OnChanges {
 
       await this.loadSelectOptionsForFieldKey('aslId');
       if (aslId !== null || resolvedAslCode.length > 0) {
-        this.trySetSelectFromTicketMapping('aslId', [aslId, resolvedAslCode]);
+        this.trySetSelectFromTicketMapping('aslId', [aslId, resolvedAslCode], {
+          sourceFields: ['codiceAsl', 'codiceRegione'],
+          sourceValues: [resolvedAslCode, regionCode]
+        });
       }
 
       await this.loadSelectOptionsForFieldKey('structureId');
@@ -1256,7 +1248,15 @@ export class CrudPageComponent implements OnInit, OnChanges {
     return /^\d+$/.test(normalizedValue) ? normalizedValue.padStart(2, '0') : normalizedValue;
   }
 
-  private trySetSelectFromTicketMapping(fieldKey: string, preferredValues: unknown[]): void {
+  private normalizeCode(value: unknown): string {
+    return this.asText(value).trim().replace(/^0+(?=\d)/, '');
+  }
+
+  private trySetSelectFromTicketMapping(
+    fieldKey: string,
+    preferredValues: unknown[],
+    criteria?: { sourceFields: string[]; sourceValues: unknown[] }
+  ): void {
     const field = this.getAllFields().find((currentField) => currentField.key === fieldKey && currentField.type === 'select');
     if (!field) {
       return;
@@ -1269,7 +1269,18 @@ export class CrudPageComponent implements OnInit, OnChanges {
       return;
     }
 
-    const matchedOption = this.getFieldOptions(field).find((option) => candidateValues.includes(this.asText(option.value)));
+    const matchedOption = this.getFieldOptions(field).find((option) => {
+      if (candidateValues.includes(this.asText(option.value))) {
+        return true;
+      }
+      if (!criteria) {
+        return false;
+      }
+      return criteria.sourceFields.every((sourceField, index) => {
+        const expectedValue = this.normalizeCode(criteria.sourceValues[index]);
+        return expectedValue.length > 0 && this.normalizeCode(option.source[sourceField]) === expectedValue;
+      });
+    });
     if (!matchedOption) {
       return;
     }
@@ -1291,6 +1302,15 @@ export class CrudPageComponent implements OnInit, OnChanges {
 
   private async resolveStructureIdFromDepartment(departmentId: number): Promise<number | null> {
     const department = await this.fetchRecord(`${environment.ticketApiBaseUrl}/structure-departments/${departmentId}`);
+    const structureId = this.asNumericId(
+      department?.['structureId']
+      ?? department?.['strutturaId']
+      ?? department?.['hospitalId']
+    );
+    if (structureId !== null) {
+      return structureId;
+    }
+
     const structureCode = this.asText(department?.['codiceStruttura'] ?? department?.['structureCode']);
     if (!structureCode) {
       return null;
@@ -1606,7 +1626,6 @@ export class CrudPageComponent implements OnInit, OnChanges {
   }
 
   private getConsentPrimaryPhone(): string {
-    // If an OTP recipient selection is present, use it (e.g. caregiverPhone), otherwise fallback to primaryPhone
     const recipient = this.asString(this.formModel['otpRecipient']);
     if (recipient === 'caregiverPhone') {
       return this.asString(this.formModel['caregiverPhone']);
@@ -1664,9 +1683,6 @@ export class CrudPageComponent implements OnInit, OnChanges {
     return new Date(currentDate.getTime() - timezoneOffset).toISOString().slice(0, 16);
   }
 
-  /**
-   * Aggancia intl-tel-input agli input telefono attualmente renderizzati e sincronizza il modello E.164 usato dal backend.
-   */
   private syncPhoneInputs(): void {
     if (!this.phoneInputElements) {
       return;
@@ -1726,7 +1742,6 @@ export class CrudPageComponent implements OnInit, OnChanges {
 
         this.syncPhoneInputFromModel(fieldKey, input, iti);
         this.updatePhoneModelFromInput(fieldKey, input, iti);
-        // eslint-disable-next-line no-console
         console.log('[CrudPageComponent][phone-init]', {
           fieldKey,
           activeFolder: this.activeFolder,
@@ -1763,7 +1778,6 @@ export class CrudPageComponent implements OnInit, OnChanges {
     }
 
     this.formModel[fieldKey] = nextValue;
-    // eslint-disable-next-line no-console
     console.log('[CrudPageComponent][phone-change]', {
       fieldKey,
       activeFolder: this.activeFolder,
@@ -1788,9 +1802,6 @@ export class CrudPageComponent implements OnInit, OnChanges {
     }
   }
 
-  /**
-   * Aggiunge un messaggio di log (success/error) e lo rimuove automaticamente dopo 10s (success) o 20s (error).
-   */
   private pushOperationLog(type: 'success' | 'error', message: MessageKey | string): void {
     const entry: OperationLogEntry = {
       id: Date.now() + this.operationLogs.length,
@@ -1799,11 +1810,9 @@ export class CrudPageComponent implements OnInit, OnChanges {
     };
     this.operationLogs = [entry, ...this.operationLogs].slice(0, 5);
 
-    // Cancella eventuale timeout precedente per questo id
     if (this.operationLogTimeouts[entry.id]) {
       clearTimeout(this.operationLogTimeouts[entry.id]);
     }
-    // Imposta timeout per rimozione automatica
     const timeoutMs = type === 'error' ? 20000 : 10000;
     this.operationLogTimeouts[entry.id] = setTimeout(() => {
       this.operationLogs = this.operationLogs.filter((log) => log.id !== entry.id);

@@ -32,9 +32,6 @@ import com.qtm.tenants.nurse.entity.NurseEntity;
 import com.qtm.tenants.nurse.repository.NurseRepository;
 import com.qtm.tenants.patient.service.DashboardPatientClient;
 import com.qtm.tenants.project.service.DashboardProjectClient;
-// DashboardPatientClient removed from TENAPP; patient data retrieved from QTMDB via shared client
-import com.qtm.tenants.structure.entity.StructureEntity;
-import com.qtm.tenants.structure.repository.StructureRepository;
 import com.qtm.tenants.therapeuticplan.TherapeuticPlanStatusRules;
 import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanDto;
 import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanProfessionalAssignmentDto;
@@ -53,11 +50,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class TherapeuticPlanService {
 
-    private static final Set<String> ALLOWED_STRUCTURE_TYPES = Set.of("HOSPITAL", "SPECIALIST_CLINIC");
-
     private final TherapeuticPlanRepository therapeuticPlanRepository;
     private final DashboardPatientClient dashboardPatientClient;
-    private final StructureRepository structureRepository;
     private final NurseRepository nurseRepository;
     private final DoctorRepository doctorRepository;
     private final EquipmentRepository equipmentRepository;
@@ -94,21 +88,23 @@ public class TherapeuticPlanService {
 
     @Transactional(readOnly = true)
     public TherapeuticPlanDto findById(Long id) {
-    	return therapeuticPlanRepository.findById(requireId(id))
+        return therapeuticPlanRepository.findById(requireId(id))
             .map(entity -> enrichWithProjectJsonVisit(
                     therapeuticPlanMapper.toDto(entity, resolvePatientDisplayName(entity.getPatientId()))
             ))
-                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Piano terapeutico non trovato"));
+            .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Piano terapeutico non trovato"));
     }
 
     @Transactional
     public TherapeuticPlanDto create(TherapeuticPlanDto dto) {
         TherapeuticPlanDto normalizedDto = normalizeDto(dto);
         validatePatientExists(normalizedDto.getPatientId());
-        StructureEntity structure = resolveStructure(normalizedDto.getStructureId());
+        validateStructureId(normalizedDto.getStructureId());
+        
         List<TherapeuticPlanNurseAssignmentEntity> nurseAssignments = buildNurseAssignments(normalizedDto.getNurseIds());
         List<TherapeuticPlanDoctorAssignmentEntity> doctorAssignments = buildDoctorAssignments(normalizedDto.getDoctorIds());
         List<EquipmentEntity> selectedEquipments = resolveEquipments(normalizedDto.getEquipmentIds(), null);
+        
         TherapeuticPlanEntity entity = therapeuticPlanMapper.toNewEntity(
             normalizedDto,
             normalizedDto.getStructureId(),
@@ -117,10 +113,12 @@ public class TherapeuticPlanService {
             selectedEquipments
         );
         entity.setDepartmentId(normalizedDto.getDepartmentId());
+        
         TherapeuticPlanEntity savedEntity = therapeuticPlanRepository.save(entity);
         synchronizeEquipmentAssignments(List.of(), selectedEquipments, savedEntity);
         savedEntity.setEquipments(new ArrayList<>(selectedEquipments));
         therapeuticPlanScheduleEngineService.generateAutomaticVisits(savedEntity);
+        
         return enrichWithProjectJsonVisit(
                 therapeuticPlanMapper.toDto(savedEntity, resolvePatientDisplayName(savedEntity.getPatientId()))
         );
@@ -134,7 +132,8 @@ public class TherapeuticPlanService {
 
         TherapeuticPlanDto normalizedDto = normalizeDto(dto);
         validatePatientExists(normalizedDto.getPatientId());
-//        StructureEntity structure = resolveStructure(normalizedDto.getStructureId());
+        validateStructureId(normalizedDto.getStructureId());
+        
         List<TherapeuticPlanNurseAssignmentEntity> nurseAssignments = buildNurseAssignments(normalizedDto.getNurseIds());
         List<TherapeuticPlanDoctorAssignmentEntity> doctorAssignments = buildDoctorAssignments(normalizedDto.getDoctorIds());
         List<EquipmentEntity> currentEquipments = entity.getEquipments() == null
@@ -163,6 +162,7 @@ public class TherapeuticPlanService {
         synchronizeEquipmentAssignments(currentEquipments, selectedEquipments, savedEntity);
         savedEntity.setEquipments(new ArrayList<>(selectedEquipments));
         therapeuticPlanScheduleEngineService.generateAutomaticVisits(savedEntity);
+        
         return enrichWithProjectJsonVisit(
             therapeuticPlanMapper.toDto(savedEntity, resolvePatientDisplayName(savedEntity.getPatientId()))
         );
@@ -252,6 +252,12 @@ public class TherapeuticPlanService {
                 throw new ResponseStatusException(BAD_REQUEST, "Paziente non trovato", exception);
             }
             throw exception;
+        }
+    }
+
+    private void validateStructureId(Long structureId) {
+        if (structureId == null) {
+            throw new ResponseStatusException(BAD_REQUEST, "Struttura obbligatoria");
         }
     }
 
@@ -357,26 +363,6 @@ public class TherapeuticPlanService {
             }
             throw exception;
         }
-    }
-
-    private StructureEntity resolveStructure(Long structureId) {
-        if (structureId == null) {
-            throw new ResponseStatusException(BAD_REQUEST, "Struttura obbligatoria");
-        }
-
-        StructureEntity structure = structureRepository.findById(structureId)
-                .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Struttura non trovata"));
-
-        String structureType = structure.getStructureType() == null ? "" : structure.getStructureType().trim().toUpperCase(Locale.ROOT);
-        if (!ALLOWED_STRUCTURE_TYPES.contains(structureType)) {
-            throw new ResponseStatusException(BAD_REQUEST, "La struttura deve essere un ospedale o una specialist clinic");
-        }
-
-        if (!Boolean.TRUE.equals(structure.getActive())) {
-            throw new ResponseStatusException(BAD_REQUEST, "La struttura selezionata non e attiva");
-        }
-
-        return structure;
     }
 
     private List<TherapeuticPlanNurseAssignmentEntity> buildNurseAssignments(List<Long> nurseIds) {

@@ -1,6 +1,8 @@
 package com.qtm.tenants.geography.controller;
 
 import com.qtm.commonlib.dto.GeographicOptionDto;
+import com.qtm.external.client.HospitalClient;
+import com.qtm.external.client.TicketGeographyClient;
 import com.qtm.tenants.geography.service.TicketGeographyService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +22,7 @@ import java.util.List;
 @Slf4j
 public class TicketGeographyController {
 
-    private final TicketGeographyService ticketGeographyService;
+	private final TicketGeographyService ticketGeographyService;
 
     @GetMapping("/regions")
     public List<GeographicOptionDto> findRegions() {

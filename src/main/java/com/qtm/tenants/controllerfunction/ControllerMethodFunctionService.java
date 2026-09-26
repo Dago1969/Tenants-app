@@ -12,9 +12,6 @@ import com.qtm.tenants.module.repository.ModuleRepository;
 import com.qtm.tenants.nurse.controller.NurseController;
 // PatientController removed from TENAPP; module PATIENT managed externally in QTMDB
 import com.qtm.tenants.role.controller.RoleController;
-import com.qtm.tenants.structure.StructureModuleCodes;
-import com.qtm.tenants.structure.controller.StructureBulkImportController;
-import com.qtm.tenants.structure.controller.StructureController;
 import com.qtm.tenants.therapeuticplan.controller.TherapeuticPlanController;
 import com.qtm.tenants.user.controller.UserController;
 import lombok.RequiredArgsConstructor;
@@ -67,7 +64,7 @@ public class ControllerMethodFunctionService {
             DELETE_FUNCTION_CODE
     );
 
-        private static final Set<String> EXCLUDED_METHOD_NAMES = Set.of("getFieldPermissions");
+    private static final Set<String> EXCLUDED_METHOD_NAMES = Set.of("getFieldPermissions");
 
     private static final List<String> FUNCTION_DISPLAY_ORDER = List.of(
             CREATE_FUNCTION_CODE,
@@ -78,14 +75,14 @@ public class ControllerMethodFunctionService {
             APPROVE_FUNCTION_CODE
     );
 
-            private static final Map<String, Class<?>> MODULE_CONTROLLERS = buildModuleControllers();
+    private static final Map<String, Class<?>> MODULE_CONTROLLERS = buildModuleControllers();
 
     private static final Map<String, String> DEFAULT_METHOD_FUNCTION_CODES = buildDefaultMethodFunctionCodes();
 
     private static Map<String, Class<?>> buildModuleControllers() {
         LinkedHashMap<String, Class<?>> controllers = new LinkedHashMap<>();
         controllers.put("USER", UserController.class);
-//        controllers.put("PATIENT", PatientController.class);
+//      controllers.put("PATIENT", PatientController.class);
         controllers.put("DOCTOR", DoctorController.class);
         controllers.put("NURSE", NurseController.class);
         controllers.put("THERAPEUTIC_PLAN", TherapeuticPlanController.class);
@@ -94,8 +91,6 @@ public class ControllerMethodFunctionService {
         controllers.put("ROLE", RoleController.class);
         controllers.put("MODULE", ModuleController.class);
         controllers.put("FUNCTION", FunctionController.class);
-        StructureModuleCodes.AUTHORIZATION_MODULE_CODES.forEach(moduleCode -> controllers.put(moduleCode, StructureController.class));
-        controllers.put(StructureModuleCodes.BULK_IMPORT, StructureBulkImportController.class);
         return Map.copyOf(controllers);
     }
 
@@ -178,7 +173,7 @@ public class ControllerMethodFunctionService {
         List<String> exposedMethods = Arrays.stream(controllerClass.getDeclaredMethods())
                 .filter(this::isRequestHandlerMethod)
                 .map(Method::getName)
-            .filter(methodName -> !EXCLUDED_METHOD_NAMES.contains(methodName))
+                .filter(methodName -> !EXCLUDED_METHOD_NAMES.contains(methodName))
                 .sorted()
                 .toList();
 
@@ -255,7 +250,7 @@ public class ControllerMethodFunctionService {
         return Arrays.stream(getControllerClass(moduleCode).getDeclaredMethods())
                 .filter(this::isRequestHandlerMethod)
                 .map(Method::getName)
-            .filter(methodName -> !EXCLUDED_METHOD_NAMES.contains(methodName))
+                .filter(methodName -> !EXCLUDED_METHOD_NAMES.contains(methodName))
                 .collect(Collectors.toSet());
     }
 

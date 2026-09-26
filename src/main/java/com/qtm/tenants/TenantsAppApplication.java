@@ -3,6 +3,7 @@ package com.qtm.tenants;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.scheduling.annotation.EnableScheduling;
  
@@ -10,8 +11,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * Entry point dell'applicazione tenants-app.
  */
 @SpringBootApplication
-@EnableFeignClients(basePackages = "com.qtm.dashboard.client") // oppure senza parametri se è nello stesso package
+@EnableFeignClients(basePackages = {"com.qtm.external.client"})
 @EnableScheduling
+@EnableCaching // ABILITA LA CACHE IN SPRING
 @ConfigurationPropertiesScan
 public class TenantsAppApplication {
 

@@ -25,8 +25,6 @@ import com.qtm.tenants.doctor.repository.DoctorRepository;
 import com.qtm.tenants.nurse.entity.NurseEntity;
 import com.qtm.tenants.patient.service.DashboardPatientClient;
 import com.qtm.tenants.project.service.DashboardProjectClient;
-import com.qtm.tenants.structure.entity.StructureEntity;
-import com.qtm.tenants.structure.repository.StructureRepository;
 import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanDoctorAssignmentEntity;
 import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanEntity;
 import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanVisitEntity;
@@ -52,13 +50,11 @@ public class TherapeuticPlanScheduleEngineService {
     private final AppointmentTypeRepository appointmentTypeRepository;
     private final DashboardProjectClient dashboardProjectClient;
     private final DashboardPatientClient dashboardPatientClient;
-    private final StructureRepository structureRepository;
     private final DoctorRepository doctorRepository;
     private final TicketClient ticketClient;
     private final ObjectMapper objectMapper;
     private final HospitalClient hospitalClient;
     private final StructureDepartmentClient structureDepartmentClient;
-    
 
     /**
      * Genera o rigenera le visite in stato PROPOSTO_AUTOMATICO per un piano terapeutico.
@@ -256,7 +252,7 @@ public class TherapeuticPlanScheduleEngineService {
             Long hospitalId = planEntity != null ? planEntity.getStructureId() : null;
             Long departmentId = planEntity != null ? planEntity.getDepartmentId() : null;
 
-                TicketDto ticketDto = TicketDto.builder()
+            TicketDto ticketDto = TicketDto.builder()
                     // realm should contain the realm/client code where the user is operating (use projectCode if provided)
                     .realm(projectCode)
                     // project must contain the selected project code (use plan projectCode when available)
@@ -320,24 +316,7 @@ public class TherapeuticPlanScheduleEngineService {
                     root.put("prevalentDoctorName", doctor.getFullName());
                 }
 
-//                // Ospedale / Struttura sanitaria
-//                Long structureId = planEntity.getStructureId();
-//                if (structureId != null) {
-//                    root.put("hospitalId", structureId);
-//                    StructureEntity structure = structureRepository.findById(structureId).orElse(null);
-//                            if (structure != null) {
-//                                root.put("hospitalCode", structure.getCode());
-//                                root.put("hospitalName", structure.getName());
-//                            }
-//                }
-//
-//                // Reparto
-//                Long departmentId = planEntity.getDepartmentId();
-//                if (departmentId != null) {
-//                    root.put("departmentId", departmentId);
-//                }
-                
-             // 1. Ospedale / Struttura (Chiamata a QTMDB: /api/hospital)
+                // 1. Ospedale / Struttura (Chiamata a QTMDB: /api/hospital)
                 Long structureId = planEntity.getStructureId();
                 if (structureId != null) {
                     root.put("hospitalId", structureId);
@@ -412,8 +391,15 @@ public class TherapeuticPlanScheduleEngineService {
         if (planEntity.getStructureId() == null) {
             return null;
         }
-        StructureEntity structure = structureRepository.findById(planEntity.getStructureId()).orElse(null);
-        return structure != null ? structure.getName() : null;
+        try {
+            if (hospitalClient != null) {
+                var hospital = hospitalClient.getHospitalById(planEntity.getStructureId());
+                return hospital != null ? hospital.getStruttura() : null;
+            }
+        } catch (Exception e) {
+            log.warn("Impossibile recuperare il nome dell'ospedale ID {} da QTMDB (/api/hospital): {}", planEntity.getStructureId(), e.getMessage());
+        }
+        return null;
     }
 
     private String resolveProjectJsonVisit(String projectCode) {

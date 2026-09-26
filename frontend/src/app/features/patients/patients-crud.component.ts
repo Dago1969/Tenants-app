@@ -103,35 +103,51 @@ export class PatientsCrudComponent implements OnInit {
       transient: true,
       actionType: 'verify-patient-consent-otp'
     },
-    {
+	{
       key: 'clinicalRegionCode',
       labelKey: 'patients.field.region',
       type: 'select',
+      folder: 'medical',
+      columnSpan: 2,
       optionsEndpoint: 'geography/regions',
       optionValueKey: 'id',
       optionLabelKey: 'name',
       relatedFields: { region: 'name' },
-      resetFieldsOnChange: ['aslId', 'asl', 'aslCode', 'structureId', 'departmentId', 'ticketStructureCode'],
+      resetFieldsOnChange: [
+        'aslId', 
+        'asl', 
+        'aslCode', 
+        'structureId', 
+        'departmentId', 
+        'ticketStructureCode'
+      ],
       transient: true
     },
     {
       key: 'aslId',
       labelKey: 'patients.field.asl',
       type: 'select',
-      optionsEndpoint: 'structures/overview?regionCode={clinicalRegionCode}',
+      folder: 'medical',
+      columnSpan: 2,
+      // Filtra le ASL da QTMDB basandosi sulla regione selezionata
+      optionsEndpoint: 'asl/overview?regionCode={clinicalRegionCode}',
       optionValueKey: 'aslId',
       optionLabelKey: 'asl',
       relatedFields: { asl: 'asl', aslCode: 'codiceAsl' },
-      resetFieldsOnChange: ['structureId', 'departmentId', 'ticketStructureCode'],
+      resetFieldsOnChange: [
+        'structureId', 
+        'departmentId', 
+        'ticketStructureCode'
+      ],
       transient: true
     },
-    { key: 'asl', labelKey: 'patients.field.asl', type: 'text', hidden: true, transient: true },
-    { key: 'aslCode', labelKey: 'patients.field.asl', type: 'text', hidden: true, transient: true },
     {
       key: 'structureId',
       labelKey: 'patients.field.referenceHospitalStructure',
       type: 'select',
+      folder: 'medical',
       columnSpan: 2,
+      // Filtra le Strutture da QTMDB per Regione e ASL selezionate
       optionsEndpoint: 'structures/overview?regionCode={clinicalRegionCode}&aslCode={aslCode}',
       optionValueKey: 'strutturaId',
       optionLabelKey: 'struttura',
@@ -142,7 +158,10 @@ export class PatientsCrudComponent implements OnInit {
       key: 'departmentId',
       labelKey: 'patients.field.departmentId',
       type: 'select',
-      optionsEndpoint: 'structures/{structureId}/departments',
+      folder: 'medical',
+      columnSpan: 2,
+      // Recupera i reparti/dipartimenti da TICKET filtrati per codice/id struttura
+      optionsEndpoint: 'structure-departments?structureId={structureId}',
       optionValueKey: 'id',
       optionLabelKey: 'label',
       resetFieldsOnChange: ['prescribingSpecialist']
@@ -150,12 +169,11 @@ export class PatientsCrudComponent implements OnInit {
     {
       key: 'prescribingSpecialist',
       labelKey: 'patients.field.prescribingSpecialist',
-      type: 'select',
-      optionsEndpoint: 'doctors?departmentId={departmentId}&structureId={structureId}',
-      optionValueKey: 'id',
-      optionLabelKey: 'fullName'
+      type: 'text',
+      folder: 'medical',
+      columnSpan: 2
     },
-	{ key: 'therapyStatus', labelKey: 'patients.field.therapyStatus', type: 'text' },
+    { key: 'therapyStatus', labelKey: 'patients.field.therapyStatus', type: 'text' },
     { key: 'referencePharmacy', labelKey: 'patients.field.referencePharmacy', type: 'select' },
     { key: 'preferredPickupPharmacy', labelKey: 'patients.field.preferredPickupPharmacy', type: 'select' },
     { key: 'deliveryMode', labelKey: 'patients.field.deliveryMode', type: 'text' },
@@ -307,7 +325,7 @@ export class PatientsCrudComponent implements OnInit {
           key: 'aslId',
           labelKey: 'patients.field.asl',
           type: 'select',
-          optionsEndpoint: 'structures/overview?regionCode={clinicalRegionCode}',
+          optionsEndpoint: 'asl/overview?regionCode={clinicalRegionCode}',
           optionValueKey: 'aslId',
           optionLabelKey: 'asl',
           relatedFields: { asl: 'asl', aslCode: 'codiceAsl' },

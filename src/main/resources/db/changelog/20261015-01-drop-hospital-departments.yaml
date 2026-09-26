@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20261015-01-drop-hospital-departments
+      author: copilot
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        tableExists:
+          tableName: hospital_departments
+      changes:
+        - dropTable:
+            tableName: hospital_departments
+            cascadeConstraints: true

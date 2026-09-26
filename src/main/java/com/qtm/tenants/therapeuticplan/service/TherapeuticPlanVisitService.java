@@ -7,8 +7,6 @@ import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanVisitId;
 import com.qtm.tenants.therapeuticplan.mapper.TherapeuticPlanVisitMapper;
 import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanEntity;
 import com.qtm.tenants.therapeuticplan.repository.TherapeuticPlanRepository;
-import com.qtm.tenants.structure.entity.StructureEntity;
-import com.qtm.tenants.structure.repository.StructureRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.qtm.tenants.therapeuticplan.repository.TherapeuticPlanVisitRepository;
@@ -30,20 +28,17 @@ public class TherapeuticPlanVisitService {
     private final TherapeuticPlanRepository therapeuticPlanRepository;
     private final DashboardProjectClient dashboardProjectClient;
     private final ObjectMapper objectMapper;
-    private final StructureRepository structureRepository;
 
     public TherapeuticPlanVisitService(TherapeuticPlanVisitRepository repository,
                                        TherapeuticPlanVisitMapper mapper,
                                        TherapeuticPlanRepository therapeuticPlanRepository,
                                        DashboardProjectClient dashboardProjectClient,
-                                       ObjectMapper objectMapper,
-                                       StructureRepository structureRepository) {
+                                       ObjectMapper objectMapper) {
         this.repository = repository;
         this.mapper = mapper;
         this.therapeuticPlanRepository = therapeuticPlanRepository;
         this.dashboardProjectClient = dashboardProjectClient;
         this.objectMapper = objectMapper;
-        this.structureRepository = structureRepository;
     }
 
     public TherapeuticPlanVisitDto save(TherapeuticPlanVisitDto dto) {
@@ -51,10 +46,6 @@ public class TherapeuticPlanVisitService {
         TherapeuticPlanEntity planEntity = dto.getTherapeuticPlanId() != null
                 ? therapeuticPlanRepository.findById(dto.getTherapeuticPlanId()).orElse(null)
                 : null;
-
-        if ((entity.getClinicalCenter() == null || entity.getClinicalCenter().isBlank()) && planEntity != null) {
-            entity.setClinicalCenter(getPlanStructureName(planEntity));
-        }
 
         // Merge template JSON from therapeutic_plan.json_visit (if present) with DTO values
         try {
@@ -95,20 +86,6 @@ public class TherapeuticPlanVisitService {
 
         TherapeuticPlanVisitEntity saved = repository.save(entity);
         return mapper.toDto(saved);
-    }
-
-    private String getPlanStructureName(TherapeuticPlanEntity planEntity) {
-        Long structureId = planEntity.getStructureId();
-        if (structureId == null) {
-            return null;
-        }
-
-        StructureEntity structure = structureRepository.findById(structureId).orElse(null);
-        if (structure == null || structure.getName() == null || structure.getName().isBlank()) {
-            return null;
-        }
-
-        return structure.getName().trim();
     }
 
     public Optional<TherapeuticPlanVisitDto> findById(Long therapeuticPlanId, LocalDateTime date) {

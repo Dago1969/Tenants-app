@@ -1,10 +1,10 @@
 package com.qtm.tenants.therapeuticplan.mapper;
 
-import com.qtm.tenants.structure.entity.StructureEntity;
+import org.springframework.stereotype.Component;
+
 import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanContactRequestDto;
 import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanContactRequestEntity;
 import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanEntity;
-import org.springframework.stereotype.Component;
 
 /**
  * Mapper Spring per convertire entity e DTO della richiesta contatto del piano terapeutico.
@@ -22,18 +22,6 @@ public class TherapeuticPlanContactRequestMapper {
         }
 
         TherapeuticPlanEntity therapeuticPlan = entity.getTherapeuticPlan();
-        StructureEntity structure = null;
-        try {
-            java.lang.reflect.Field f = entity.getClass().getDeclaredField("structureId");
-            f.setAccessible(true);
-            Object sid = f.get(entity);
-            if (sid != null) {
-                StructureEntity tmp = new StructureEntity();
-                tmp.setId((Long) sid);
-                structure = tmp;
-            }
-        } catch (NoSuchFieldException | IllegalAccessException ignored) {
-        }
 
         return TherapeuticPlanContactRequestDto.builder()
                 .id(entity.getId())
@@ -44,15 +32,13 @@ public class TherapeuticPlanContactRequestMapper {
                 .requestType(entity.getRequestType())
                 .outpatientClinic(entity.getOutpatientClinic())
                 .structureId(entity.getStructureId())
-                .structureName(structure != null ? structure.getName() : null)
                 .status(entity.getStatus())
                 .build();
     }
 
     public TherapeuticPlanContactRequestEntity toNewEntity(
             TherapeuticPlanContactRequestDto dto,
-            TherapeuticPlanEntity therapeuticPlan,
-            StructureEntity structure
+            TherapeuticPlanEntity therapeuticPlan
     ) {
         return TherapeuticPlanContactRequestEntity.builder()
             .id(dto.getId())
@@ -61,7 +47,7 @@ public class TherapeuticPlanContactRequestMapper {
             .requestDate(dto.getRequestDate())
             .requestType(dto.getRequestType())
             .outpatientClinic(dto.getOutpatientClinic())
-            .structureId(structure != null ? structure.getId() : null)
+            .structureId(dto.getStructureId())
             .status(dto.getStatus())
             .build();
     }

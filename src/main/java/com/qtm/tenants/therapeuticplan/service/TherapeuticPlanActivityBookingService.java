@@ -18,8 +18,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.qtm.commonlib.dto.PatientDto;
 import com.qtm.tenants.patient.service.DashboardPatientClient;
-// DashboardPatientClient removed from TENAPP; use direct DTOs and external patient client in shared layer if needed
-import com.qtm.tenants.structure.entity.StructureEntity;
 import com.qtm.tenants.therapeuticplan.TherapeuticPlanActivityBookingRules;
 import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanActivityBookingDto;
 import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanActivityBookingEntity;
@@ -41,22 +39,20 @@ public class TherapeuticPlanActivityBookingService {
     private final DashboardPatientClient dashboardPatientClient;
     private final TherapeuticPlanRepository therapeuticPlanRepository;
     private final TherapeuticPlanActivityBookingMapper activityBookingMapper;
-    private final com.qtm.tenants.structure.repository.StructureRepository structureRepository;
 
     @Transactional(readOnly = true)
     public List<TherapeuticPlanActivityBookingDto> findAll(Long therapeuticPlanId) {
-    List<TherapeuticPlanActivityBookingEntity> bookings = activityBookingRepository.findByTherapeuticPlanId(
-        requireId(therapeuticPlanId, "Piano terapeutico obbligatorio")
-    );
-    Map<Long, PatientDto> patientsById = loadPatientsByIds(bookings.stream()
-        .map(TherapeuticPlanActivityBookingEntity::getPatientId)
-        .filter(Objects::nonNull)
-        .collect(Collectors.toSet()));
+        List<TherapeuticPlanActivityBookingEntity> bookings = activityBookingRepository.findByTherapeuticPlanId(
+            requireId(therapeuticPlanId, "Piano terapeutico obbligatorio")
+        );
+        Map<Long, PatientDto> patientsById = loadPatientsByIds(bookings.stream()
+            .map(TherapeuticPlanActivityBookingEntity::getPatientId)
+            .filter(Objects::nonNull)
+            .collect(Collectors.toSet()));
 
-    return bookings
-                .stream()
-        .map(entity -> activityBookingMapper.toDto(entity, buildPatientDisplayName(patientsById.get(entity.getPatientId()))))
-                .toList();
+        return bookings.stream()
+            .map(entity -> activityBookingMapper.toDto(entity, buildPatientDisplayName(patientsById.get(entity.getPatientId()))))
+            .toList();
     }
 
     @Transactional
@@ -79,9 +75,6 @@ public class TherapeuticPlanActivityBookingService {
                 "Il piano terapeutico deve avere un centro medico associato per registrare la prenotazione attivita");
         }
 
-        StructureEntity structure = structureRepository.findById(structureId)
-            .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Struttura del piano terapeutico non trovata"));
-
         TherapeuticPlanActivityBookingEntity savedEntity = activityBookingRepository.save(
             activityBookingMapper.toNewEntity(
                 TherapeuticPlanActivityBookingDto.builder()
@@ -92,8 +85,7 @@ public class TherapeuticPlanActivityBookingService {
                     .visitType(normalizedDto.getVisitType())
                     .protocolPlanned(normalizedDto.getProtocolPlanned())
                     .build(),
-                therapeuticPlan,
-                structure
+                therapeuticPlan
             )
         );
         return activityBookingMapper.toDto(savedEntity, buildPatientDisplayName(patient));

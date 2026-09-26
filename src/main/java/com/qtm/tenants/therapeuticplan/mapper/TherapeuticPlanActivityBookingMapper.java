@@ -1,10 +1,10 @@
 package com.qtm.tenants.therapeuticplan.mapper;
 
-import com.qtm.tenants.structure.entity.StructureEntity;
+import org.springframework.stereotype.Component;
+
 import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanActivityBookingDto;
 import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanActivityBookingEntity;
 import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanEntity;
-import org.springframework.stereotype.Component;
 
 /**
  * Mapper Spring per convertire entity e DTO della prenotazione attivita.
@@ -13,27 +13,23 @@ import org.springframework.stereotype.Component;
 public class TherapeuticPlanActivityBookingMapper {
 
     public TherapeuticPlanActivityBookingDto toDto(TherapeuticPlanActivityBookingEntity entity) {
-        return toDto(entity, null);
+        return toDto(entity, null, null);
     }
 
     public TherapeuticPlanActivityBookingDto toDto(TherapeuticPlanActivityBookingEntity entity, String patientName) {
+        return toDto(entity, patientName, null);
+    }
+
+    public TherapeuticPlanActivityBookingDto toDto(
+            TherapeuticPlanActivityBookingEntity entity,
+            String patientName,
+            String structureName
+    ) {
         if (entity == null) {
             return null;
         }
 
         TherapeuticPlanEntity therapeuticPlan = entity.getTherapeuticPlan();
-        StructureEntity structure = null;
-        try {
-            java.lang.reflect.Field f = entity.getClass().getDeclaredField("structureId");
-            f.setAccessible(true);
-            Object sid = f.get(entity);
-            if (sid != null) {
-                StructureEntity tmp = new StructureEntity();
-                tmp.setId((Long) sid);
-                structure = tmp;
-            }
-        } catch (NoSuchFieldException | IllegalAccessException ignored) {
-        }
 
         return TherapeuticPlanActivityBookingDto.builder()
                 .id(entity.getId())
@@ -41,7 +37,7 @@ public class TherapeuticPlanActivityBookingMapper {
                 .patientId(entity.getPatientId())
                 .patientName(patientName)
                 .structureId(entity.getStructureId())
-                .structureName(structure != null ? structure.getName() : null)
+                .structureName(structureName)
                 .bookingDate(entity.getBookingDate())
                 .visitType(entity.getVisitType())
                 .protocolPlanned(entity.getProtocolPlanned())
@@ -50,14 +46,13 @@ public class TherapeuticPlanActivityBookingMapper {
 
     public TherapeuticPlanActivityBookingEntity toNewEntity(
             TherapeuticPlanActivityBookingDto dto,
-            TherapeuticPlanEntity therapeuticPlan,
-            StructureEntity structure
+            TherapeuticPlanEntity therapeuticPlan
     ) {
         return TherapeuticPlanActivityBookingEntity.builder()
                 .id(dto.getId())
                 .therapeuticPlan(therapeuticPlan)
                 .patientId(dto.getPatientId())
-            .structureId(structure != null ? structure.getId() : null)
+                .structureId(dto.getStructureId())
                 .bookingDate(dto.getBookingDate())
                 .visitType(dto.getVisitType())
                 .protocolPlanned(dto.getProtocolPlanned())
