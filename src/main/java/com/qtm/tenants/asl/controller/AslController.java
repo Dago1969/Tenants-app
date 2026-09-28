@@ -52,7 +52,10 @@ public class AslController {
     ) {
         log.info("[AslController] GET /api/tenants/asl/overview via Feign Client selectedRole={}", selectedRole);
         controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, StructureModuleCodes.GENERIC);
-        return ResponseEntity.ok(aslClient.findAllWithImportStatus(regionCode));
+        List<ASLOverviewDto> associatedAsls = aslClient.findAllWithImportStatus(regionCode).stream()
+                .filter(asl -> Boolean.TRUE.equals(asl.getImported()))
+                .toList();
+        return ResponseEntity.ok(associatedAsls);
     }
 
     @GetMapping("/{id}")
