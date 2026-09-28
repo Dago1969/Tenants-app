@@ -64,6 +64,17 @@ public class UserOnboardingService {
         return createdUser;
     }
 
+    /**
+     * Compensa un provisioning remoto quando il salvataggio della risorsa tenant fallisce.
+     */
+    public void delete(String userId) {
+        if (isBlank(userId)) {
+            return;
+        }
+
+        userRemoteService.delete(Long.valueOf(userId));
+    }
+
     private void validateRequest(UserOnboardingRequest request) {
         if (request == null) {
             throw new ResponseStatusException(BAD_REQUEST, "Richiesta onboarding mancante");

@@ -2,6 +2,8 @@ package com.qtm.tenants.structure.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -13,9 +15,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.qtm.tenants.structure.client.StructureRemoteClient;
+import com.qtm.external.client.StructureClient;
 import com.qtm.tenants.structure.dto.StructureDto;
-import com.qtm.tenants.ticket.service.TicketService;
 
 /**
  * Test del service strutture delegato al client remoto QTMDB.
@@ -24,18 +25,14 @@ import com.qtm.tenants.ticket.service.TicketService;
 class StructureServiceTest {
 
     @Mock
-    private StructureRemoteClient structureRemoteClient;
-
-    @Mock
-    private TicketService ticketService;
+    private StructureClient structureClient;
 
     private StructureService structureService;
 
     @BeforeEach
     void setUp() {
         structureService = new StructureService(
-                structureRemoteClient,
-                ticketService
+            structureClient
         );
     }
 
@@ -55,8 +52,10 @@ class StructureServiceTest {
         hospital.setStructureType("HOSPITAL");
         hospital.setActive(true);
 
-        when(structureRemoteClient.fetchAsl()).thenReturn(List.of(asl));
-        when(structureRemoteClient.fetchHospitals()).thenReturn(List.of(hospital));
+        when(structureClient.findAll(eq("ASL"), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+            .thenReturn(List.of(asl));
+        when(structureClient.findAll(eq("HOSPITAL"), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+            .thenReturn(List.of(hospital));
 
         List<StructureDto> result = structureService.findAll(null, null);
 
@@ -73,7 +72,8 @@ class StructureServiceTest {
         hospital.setStructureType("HOSPITAL");
         hospital.setActive(true);
 
-        when(structureRemoteClient.fetchHospitals()).thenReturn(List.of(hospital));
+        when(structureClient.findAll(eq("HOSPITAL"), any(), any(), any(), any(), any(), any(), any(), any(), any()))
+            .thenReturn(List.of(hospital));
 
         StructureDto loaded = structureService.findById(2L);
 

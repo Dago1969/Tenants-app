@@ -73,20 +73,33 @@ public class NurseService {
         enforceModuleWriteAllowed(policy);
         enforceFieldWriteAllowed(nurseDto, null, policy.fieldScopes());
 
+        String createdUserId = null;
         // Se il frontend fornisce l'email (e altri dati utente), crea l'utente via onboarding
         // e associa il userid all'infermiere
         if (nurseDto.getEmail() != null && !nurseDto.getEmail().isBlank()) {
-            nurseDto.setUserid(createUserAndReturnId(nurseDto));
+            createdUserId = createUserAndReturnId(nurseDto);
+            nurseDto.setUserid(createdUserId);
         }
 
-        NurseEntity saved = nurseRepository.save(nurseMapper.toEntity(nurseDto));
+        try {
+            NurseEntity saved = nurseRepository.save(nurseMapper.toEntity(nurseDto));
 
-        if (saved.getNurseProjectId() == null || saved.getNurseProjectId().isBlank()) {
-            saved.setNurseProjectId(buildNurseProjectId(saved.getId()));
-            saved = nurseRepository.save(saved);
+            if (saved.getNurseProjectId() == null || saved.getNurseProjectId().isBlank()) {
+                saved.setNurseProjectId(buildNurseProjectId(saved.getId()));
+                saved = nurseRepository.save(saved);
+            }
+
+            return applyReadAuthorization(nurseMapper.toDto(saved), policy);
+        } catch (RuntimeException exception) {
+            if (createdUserId != null) {
+                try {
+                    userOnboardingService.delete(createdUserId);
+                } catch (RuntimeException compensationException) {
+                    log.error("[NurseService] Compensazione fallita per utente remoto userid={}", createdUserId, compensationException);
+                }
+            }
+            throw exception;
         }
-
-        return applyReadAuthorization(nurseMapper.toDto(saved), policy);
     }
 
     /**
@@ -103,12 +116,11 @@ public class NurseService {
             Long projectId = selectedProject != null ? selectedProject.getId() : null;
 
             if (selectedClient == null || tenantId == null || projectId == null) {
-                log.warn("[NurseService] Impossibile completare l'onboarding dell'utente: selectedClient={}, tenantId={}, projectId={}",
-                        selectedClient,
-                        tenantId,
-                        projectId);
-                return null;
-            }
+                throw new ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "Contesto tenant/progetto obbligatorio per creare l'utente dell'infermiere"
+                );
+                }
 
             // Crea la richiesta di onboarding con ruolo NURSE_QTM
             UserOnboardingRequest onboardingRequest = new UserOnboardingRequest();
@@ -117,7 +129,7 @@ public class NurseService {
             onboardingRequest.setEnabled(true);
             onboardingRequest.setTenantId(tenantId);
             onboardingRequest.setProjectId(projectId);
-            onboardingRequest.setClientId(selectedClient);
+            onboardingRequest.setClientId(toKeycloakClientId(selectedClient));
             onboardingRequest.setRoleId("NURSE_QTM");
 
             // Esegui l'onboarding che crea l'utente, la relazione role-project e invia la mail
@@ -149,6 +161,11 @@ public class NurseService {
             return null;
         }
         return selectedClientHeader.trim();
+    }
+
+    private String toKeycloakClientId(String selectedClient) {
+        String normalizedClient = selectedClient.trim();
+        return normalizedClient.endsWith("-A") ? normalizedClient : normalizedClient + "-A";
     }
 
     private ProjectDto extractProjectFromContext() {
