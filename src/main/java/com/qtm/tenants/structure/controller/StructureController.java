@@ -21,6 +21,7 @@ import com.qtm.tenants.structure.StructureModuleCodes;
 import com.qtm.tenants.structure.dto.StructureDepartmentOptionDto;
 import com.qtm.tenants.structure.dto.StructureDto;
 import com.qtm.tenants.structure.dto.StructureOverviewDto;
+import com.qtm.tenants.structure.service.StructureService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +36,7 @@ import lombok.extern.slf4j.Slf4j;
 public class StructureController {
 
     private final StructureClient structureClient;
+        private final StructureService structureService;
     private final ControllerFunctionAuthorizationService controllerFunctionAuthorizationService;
 
     @PostMapping
@@ -74,9 +76,18 @@ public class StructureController {
 
         controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, moduleCode);
 
-        return ResponseEntity.ok(structureClient.findAll(
+        List<StructureDto> structures = structureClient.findAll(
                 structureType, structureTypes, parentStructureId, code, name, region, parentStructureName, city, active, selectedRole
-        ));
+        );
+
+        if ("SPECIALIST_CLINIC".equalsIgnoreCase(structureType) && Boolean.TRUE.equals(active)) {
+            structures = structures.stream()
+                    .filter(structure -> "SPECIALIST_CLINIC".equalsIgnoreCase(structure.getStructureType()))
+                    .filter(StructureDto::isActive)
+                    .toList();
+        }
+
+        return ResponseEntity.ok(structures);
     }
 
     @GetMapping("/overview")
@@ -112,7 +123,7 @@ public class StructureController {
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
         log.info("[StructureController] GET /structures/{}/departments via Feign Client selectedRole={}", id, selectedRole);
-        List<StructureDepartmentOptionDto> departments = structureClient.findDepartmentsByStructureId(id, selectedRole);
+        List<StructureDepartmentOptionDto> departments = structureService.findDepartmentOptions(id);
         return ResponseEntity.ok(departments);
     }
 

@@ -4,7 +4,7 @@ import java.util.List;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
-import com.qtm.tenants.structure.dto.StructureDepartmentOptionDto;
+import com.qtm.commonlib.dto.StructureDepartmentSourceDto;
 import com.qtm.tenants.structure.dto.StructureDto;
 import com.qtm.tenants.structure.dto.StructureOverviewDto;
 
@@ -52,7 +52,7 @@ public interface StructureClient {
 //    );
 
     @GetMapping("/structure-departments/by-structure/{id}")
-    List<StructureDepartmentOptionDto> findDepartmentsByStructureId(
+        List<StructureDepartmentSourceDto> findDepartmentsByStructureId(
             @PathVariable("id") Long id,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     );

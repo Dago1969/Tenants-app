@@ -2,7 +2,6 @@ package com.qtm.tenants.ticket.client;
 
 import com.qtm.commonlib.dto.TicketDto;
 import jakarta.servlet.http.HttpServletRequest;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -26,10 +25,13 @@ import com.qtm.commonlib.dto.DepartmentDto;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class TicketClient {
 
     private final RestClient restClient;
+
+    public TicketClient(RestClient.Builder restClientBuilder) {
+        this.restClient = restClientBuilder.build();
+    }
 
     @Value("${qtm.ticket.base-url:http://localhost:8084/api/ticket}")
     private String ticketBaseUrl;

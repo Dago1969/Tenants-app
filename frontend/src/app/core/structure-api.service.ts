@@ -32,6 +32,9 @@ export interface StructureOverviewLookupDto {
   regione?: string;
   codiceAsl?: string;
   asl?: string;
+  denominazioneAzienda?: string;
+  aslName?: string;
+  aslDescription?: string;
   codiceStruttura?: string;
   struttura?: string;
 }

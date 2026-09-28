@@ -4,23 +4,18 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.qtm.commonlib.dto.DepartmentDto;
-import com.qtm.tenants.structure.client.StructureRemoteClient;
+import com.qtm.external.client.StructureClient;
 import com.qtm.tenants.structure.dto.StructureDepartmentOptionDto;
+import com.qtm.commonlib.dto.StructureDepartmentSourceDto;
 import com.qtm.tenants.structure.dto.StructureDto;
 import com.qtm.tenants.structure.dto.StructureOverviewDto;
-import com.qtm.tenants.ticket.dto.StructureDepartmentSourceDto;
-import com.qtm.tenants.ticket.service.TicketService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,8 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class StructureService {
 
-    private final StructureRemoteClient structureRemoteClient;
-    private final TicketService ticketService;
+    private final StructureClient structureClient;
 
     @Transactional
     public StructureDto create(StructureDto structureDto) {
@@ -67,7 +61,7 @@ public class StructureService {
                 
         if (includeAsl) {
             try {
-                List<StructureDto> remoteAsls = structureRemoteClient.fetchAsl();
+                List<StructureDto> remoteAsls = structureClient.findAll("ASL", null, null, null, null, null, null, null, null, null);
                 if (remoteAsls != null) {
                     allStructures.addAll(remoteAsls);
                 }
@@ -83,7 +77,7 @@ public class StructureService {
 
         if (includeHospital) {
             try {
-                List<StructureDto> remoteHospitals = structureRemoteClient.fetchHospitals();
+                List<StructureDto> remoteHospitals = structureClient.findAll("HOSPITAL", null, null, null, null, null, null, null, null, null);
                 if (remoteHospitals != null) {
                     allStructures.addAll(remoteHospitals);
                 }
@@ -107,7 +101,7 @@ public class StructureService {
 
     @Transactional(readOnly = true)
     public List<StructureOverviewDto> findOverview(String regionCode, String aslCode) {
-        return structureRemoteClient.fetchStructureOverview(regionCode, aslCode);
+        return structureClient.findOverview(regionCode, aslCode, null);
     }
 
     @Transactional(readOnly = true)
@@ -125,43 +119,11 @@ public class StructureService {
 
     @Transactional(readOnly = true)
     public List<StructureDepartmentOptionDto> findDepartmentOptions(Long structureId) {
-        StructureDto structure = findById(structureId);
-        String structureCode = structure.getCode();
-
-        log.info("[StructureService] Fetching structure_departments from QTMDB for structureCode={}", structureCode);
-        List<StructureDepartmentSourceDto> sourceDepartments = structureRemoteClient.fetchStructureDepartmentsByStructureCode(structureCode);
-
-        if (sourceDepartments != null && !sourceDepartments.isEmpty()) {
-            Map<String, DepartmentDto> departmentsByName = ticketService.listDepartments(null).stream()
-                    .filter(item -> item.getReparto() != null && !item.getReparto().isBlank())
-                    .collect(Collectors.toMap(item -> item.getReparto().trim().toLowerCase(), item -> item, (left, right) -> left, LinkedHashMap::new));
-
-            List<Long> departmentIds = sourceDepartments.stream()
-                    .map(sd -> {
-                        if (sd.getDisciplina() == null) return null;
-                        String key = sd.getDisciplina().trim().toLowerCase();
-                        DepartmentDto match = departmentsByName.get(key);
-                        if (match == null) {
-                            log.warn("[StructureService] No DepartmentDto match for disciplina='{}' for structureCode={}", sd.getDisciplina(), structureCode);
-                        }
-                        return match == null ? null : match.getId();
-                    })
-                    .filter(Objects::nonNull)
-                    .distinct()
-                    .toList();
-
-            if (!departmentIds.isEmpty()) {
-                Map<Long, DepartmentDto> departmentsById = ticketService.listDepartments(null).stream()
-                        .filter(item -> item.getId() != null)
-                        .collect(Collectors.toMap(DepartmentDto::getId, item -> item, (left, right) -> left, LinkedHashMap::new));
-
-                return departmentIds.stream()
-                        .map(departmentId -> toStructureDepartmentOption(departmentId, departmentsById.get(departmentId)))
-                        .toList();
-            }
-        }
-
-        return List.of();
+        return structureClient.findDepartmentsByStructureId(structureId, null).stream()
+            .map(department -> new StructureDepartmentOptionDto(
+                department.getId(),
+                department.getDescrizioneDisciplina()))
+            .toList();
     }
 
     @Transactional
@@ -210,19 +172,6 @@ public class StructureService {
 //            return null;
 //        }
 //    }
-
-    private StructureDepartmentOptionDto toStructureDepartmentOption(Long departmentId, DepartmentDto department) {
-        if (department == null) {
-            return new StructureDepartmentOptionDto(departmentId, String.valueOf(departmentId));
-        }
-
-        String departmentName = department.getReparto() == null || department.getReparto().isBlank()
-                ? String.valueOf(departmentId)
-                : department.getReparto().trim();
-        String area = department.getAreaFunzionale() == null ? "" : department.getAreaFunzionale().trim();
-        String label = area.isBlank() ? departmentName : departmentName + " - " + area;
-        return new StructureDepartmentOptionDto(departmentId, label);
-    }
 
     private boolean matchesFilter(String value, String filter) {
         if (filter == null || filter.isBlank()) {

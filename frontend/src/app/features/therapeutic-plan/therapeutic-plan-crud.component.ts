@@ -128,6 +128,8 @@ export class TherapeuticPlanCrudComponent implements OnInit {
   patients: PatientOption[] = [];
   regions: GeographicOptionDto[] = [];
   aslStructures: StructureDto[] = [];
+  allAssociatedAslList: StructureDto[] = [];
+  filteredAslList: StructureDto[] = [];
   departmentOptions: StructureDepartmentOptionDto[] = [];
   hospitalStructures: StructureDto[] = [];
   aslOptions: StructureDto[] = [];
@@ -229,10 +231,7 @@ export class TherapeuticPlanCrudComponent implements OnInit {
   }
 
   get availableAslStructures(): StructureDto[] {
-    if (this.clinicalFilters.regionId === null) {
-      return this.aslStructures;
-    }
-    return this.aslStructures.filter((structure) => this.matchesSelectedRegion(structure));
+    return this.filteredAslList;
   }
 
   get availableNurses(): NurseOption[] {
@@ -315,6 +314,7 @@ export class TherapeuticPlanCrudComponent implements OnInit {
 
   private clearCascadeSelectionsAfterRegionChange(): void {
     this.clinicalFilters.aslId = null;
+    this.clinicalAslValue = '';
     this.formModel.structureId = null;
     this.clearDepartmentSelection();
     this.aslStructures = [];
@@ -497,6 +497,12 @@ export class TherapeuticPlanCrudComponent implements OnInit {
 
   getStructureLabel(structure: StructureDto): string {
     return structure.selectionLabel?.trim().length ? structure.selectionLabel : structure.name;
+  }
+
+  private getAslLabel(row: StructureOverviewLookupDto, aslCode: string): string {
+    const aslName = [row.asl, row.denominazioneAzienda, row.aslName, row.aslDescription]
+      .find((value) => typeof value === 'string' && value.trim().length)?.trim();
+    return aslName ? `${aslName} (${aslCode})` : aslCode;
   }
 
   private loadReferenceData(): void {
@@ -820,6 +826,14 @@ export class TherapeuticPlanCrudComponent implements OnInit {
     // Load in sequence: 1) ASL list for region, 2) structures for ASL, 3) departments for structure
     try {
       await this.loadHospitalStructuresAsync(overviewRegionCode, overviewAslCode);
+
+      if (overviewAslCode !== undefined) {
+        const selectedAsl = this.filteredAslList.find((asl) => asl.code?.trim() === overviewAslCode.trim());
+        if (selectedAsl) {
+          this.clinicalFilters.aslId = this.normalizeNumericId(selectedAsl.id);
+        }
+      }
+
       await this.loadDepartmentsForSelectedStructureAsync();
       await this.loadAvailableDoctorsAsync();
 
@@ -852,9 +866,14 @@ export class TherapeuticPlanCrudComponent implements OnInit {
   private async loadHospitalStructuresAsync(overviewRegionCode?: string, overviewAslCode?: string): Promise<void> {
     const regionCode = overviewRegionCode ?? this.getNormalizedRegionCode(this.clinicalFilters.regionId);
     if (!regionCode) {
-      this.aslStructures = [];
+      const overviewRows = await firstValueFrom(this.structureApiService.getStructuresOverview({}).pipe(
+        catchError(() => of([] as StructureOverviewLookupDto[]))
+      ));
+      this.aslStructures = this.mapOverviewRowsToAslStructures(overviewRows);
+      this.allAssociatedAslList = [...this.aslStructures];
+      this.filteredAslList = [...this.allAssociatedAslList];
       this.hospitalStructures = [];
-      this.aslOptions = [];
+      this.aslOptions = [...this.filteredAslList];
       this.structureOptions = [];
       this.syncClinicalSelections();
       return;
@@ -866,7 +885,9 @@ export class TherapeuticPlanCrudComponent implements OnInit {
     );
     const overviewRegionRows = await firstValueFrom(overviewRegion$);
     this.aslStructures = this.mapOverviewRowsToAslStructures(overviewRegionRows);
-    this.aslOptions = [...this.aslStructures];
+    this.allAssociatedAslList = [...this.aslStructures];
+    this.filteredAslList = this.filterAslByRegion(this.allAssociatedAslList, this.clinicalFilters.regionId);
+    this.aslOptions = [...this.filteredAslList];
 
     // 2) Fetch structures for the selected ASL (if any). Prefer explicit overviewAslCode if provided.
     const aslCodeToUse = overviewAslCode ?? this.getNormalizedAslCode(this.clinicalFilters.aslId);
@@ -888,7 +909,7 @@ export class TherapeuticPlanCrudComponent implements OnInit {
 
   private async loadDepartmentsForSelectedStructureAsync(): Promise<void> {
     const selectedStructure = this.resolveSelectedStructureFromCurrentValue();
-    const structureDatabaseId = this.normalizeNumericId(selectedStructure?.id) ?? this.normalizeNumericId(this.formModel.structureId);
+    const structureDatabaseId = this.normalizeNumericId(this.formModel.structureId) ?? this.normalizeNumericId(selectedStructure?.id);
 
     if (structureDatabaseId === null) {
       this.clearDepartmentSelection();
@@ -955,15 +976,30 @@ export class TherapeuticPlanCrudComponent implements OnInit {
       catchError(() => of([] as StructureOverviewLookupDto[]))
     ).subscribe((overviewRows) => {
       this.aslStructures = this.mapOverviewRowsToAslStructures(overviewRows);
+      this.allAssociatedAslList = [...this.aslStructures];
+      this.filteredAslList = this.filterAslByRegion(this.allAssociatedAslList, this.clinicalFilters.regionId);
       this.hospitalStructures = this.mapOverviewRowsToHospitalStructures(overviewRows);
-      this.aslOptions = [...this.aslStructures];
+      this.aslOptions = [...this.filteredAslList];
       this.structureOptions = [...this.hospitalStructures];
       this.syncClinicalSelections();
     });
   }
 
+  private filterAslByRegion(aslList: StructureDto[], regionId: number | null): StructureDto[] {
+    if (regionId === null) {
+      return [...aslList];
+    }
+
+    return aslList.filter((asl) => this.matchesRegion(asl.regionId, regionId));
+  }
+
+  private matchesRegion(structureRegionId: number | string | undefined, selectedRegionId: number): boolean {
+    const normalizedStructureRegionId = this.normalizeNumericId(structureRegionId);
+    return normalizedStructureRegionId === selectedRegionId;
+  }
+
   private mapOverviewRowsToAslStructures(rows: StructureOverviewLookupDto[]): StructureDto[] {
-    const uniqueAslByCode = new Map<string, StructureDto>();
+    const uniqueAslByRegionAndCode = new Map<string, StructureDto>();
 
     for (const row of rows) {
       const aslCode = this.normalizeCodeValue(row.codiceAsl);
@@ -974,10 +1010,12 @@ export class TherapeuticPlanCrudComponent implements OnInit {
       const aslId = this.normalizeNumericId(row.aslId) ?? this.normalizeNumericId(aslCode);
       const regionCode = this.normalizeCodeValue(row.codiceRegione);
       const regionName = (row.regione ?? '').trim();
-      const aslName = (row.asl ?? '').trim() || aslCode;
-      const label = row.asl?.trim().length ? `${row.asl.trim()} (${aslCode})` : aslCode;
+      const aslKey = `${regionCode}:${aslCode}`;
+      const aslName = [row.asl, row.denominazioneAzienda, row.aslName, row.aslDescription]
+        .find((value) => typeof value === 'string' && value.trim().length)?.trim() || aslCode;
+      const label = this.getAslLabel(row, aslCode);
 
-      uniqueAslByCode.set(aslCode, {
+      uniqueAslByRegionAndCode.set(aslKey, {
         id: aslId ?? undefined,
         code: aslCode,
         name: aslName,
@@ -994,7 +1032,7 @@ export class TherapeuticPlanCrudComponent implements OnInit {
       });
     }
 
-    return [...uniqueAslByCode.values()].sort((left, right) => this.getStructureLabel(left).localeCompare(this.getStructureLabel(right), 'it', { sensitivity: 'base' }));
+    return [...uniqueAslByRegionAndCode.values()].sort((left, right) => this.getStructureLabel(left).localeCompare(this.getStructureLabel(right), 'it', { sensitivity: 'base' }));
   }
 
   private mapOverviewRowsToHospitalStructures(rows: StructureOverviewLookupDto[]): StructureDto[] {
@@ -1191,7 +1229,7 @@ export class TherapeuticPlanCrudComponent implements OnInit {
       allLabel
     );
     this.aslSelect2Data = this.toSelect2Data(
-      this.availableAslStructures.map((asl) => ({ id: asl.id ?? null, label: this.getStructureLabel(asl) })),
+      this.filteredAslList.map((asl) => ({ id: asl.id ?? null, label: this.getStructureLabel(asl) })),
       allLabel
     );
     this.structureSelect2Data = this.toSelect2Data(

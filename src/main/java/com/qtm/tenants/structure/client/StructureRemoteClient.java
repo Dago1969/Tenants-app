@@ -1,6 +1,7 @@
 package com.qtm.tenants.structure.client;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.qtm.commonlib.dto.StructureDepartmentSourceDto;
 import com.qtm.tenants.structure.dto.StructureDto;
 import com.qtm.tenants.structure.dto.StructureOverviewDto;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,7 +32,7 @@ public class StructureRemoteClient {
     };
     private static final ParameterizedTypeReference<List<HospitalOverviewRemoteDto>> HOSPITAL_LIST_TYPE = new ParameterizedTypeReference<>() {
     };
-    private static final ParameterizedTypeReference<List<com.qtm.tenants.ticket.dto.StructureDepartmentSourceDto>> STRUCTURE_DEPARTMENTS_LIST_TYPE = new ParameterizedTypeReference<>() {
+    private static final ParameterizedTypeReference<List<StructureDepartmentSourceDto>> STRUCTURE_DEPARTMENTS_LIST_TYPE = new ParameterizedTypeReference<>() {
     };
     private static final String SERVICE_UNAVAILABLE_MESSAGE = "Servizio ASL QTMDB non disponibile";
 
@@ -103,9 +104,9 @@ public class StructureRemoteClient {
                 .toList();
     }
 
-    public List<com.qtm.tenants.ticket.dto.StructureDepartmentSourceDto> fetchStructureDepartmentsByStructureCode(String codiceStruttura) {
+    public List<StructureDepartmentSourceDto> fetchStructureDepartmentsByStructureCode(String codiceStruttura) {
         log.info("[StructureRemoteClient] calling QTMDB /structure-departments/by-structure for codiceStruttura={}", codiceStruttura);
-        List<com.qtm.tenants.ticket.dto.StructureDepartmentSourceDto> rows = execute(() -> restClient.get()
+        List<StructureDepartmentSourceDto> rows = execute(() -> restClient.get()
                 .uri("/structure-departments/by-structure?codiceStruttura={codiceStruttura}", codiceStruttura)
                 .headers(this::applyForwardedHeaders)
                 .retrieve()
