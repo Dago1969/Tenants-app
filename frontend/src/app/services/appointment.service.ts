@@ -12,6 +12,7 @@ export interface AppointmentType {
 
 export interface Appointment {
   id: number;
+  visitId?: number | null;
   therapeuticPlanId: number | null;
   therapeuticPlanPatientDisplayName?: string | null;
   appointmentTypeId: number | null;

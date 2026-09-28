@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { Appointment, AppointmentService } from '../../../services/appointment.service';
 import { MessageKey, t } from '../../../i18n/messages';
 
@@ -110,6 +111,15 @@ import { MessageKey, t } from '../../../i18n/messages';
         </ng-container>
           </div>
           <div class="custom-modal-footer">
+            <button
+              *ngIf="selectedAppointment?.therapeuticPlanId"
+              type="button"
+              class="btn btn-primary"
+              (click)="onNavigateToVisit(selectedAppointment)"
+              [attr.title]="translate('appointment.action.executeVisit')"
+            >
+              <span aria-hidden="true">▶</span> {{ translate('appointment.action.executeVisit') }}
+            </button>
             <button type="button" class="btn btn-secondary" (click)="closeDetailsModal()">Chiudi</button>
           </div>
         </div>
@@ -193,7 +203,10 @@ export class AppointmentsCalendarComponent implements OnInit {
     t('appointment.weekDay.sun')
   ];
 
-  constructor(private readonly appointmentService: AppointmentService) {}
+  constructor(
+    private readonly appointmentService: AppointmentService,
+    private readonly router: Router
+  ) {}
 
   ngOnInit(): void {
     this.appointmentService.getCurrentNurse().subscribe({
@@ -306,6 +319,31 @@ export class AppointmentsCalendarComponent implements OnInit {
     this.isDetailsModalOpen = false;
     this.selectedAppointment = null;
     this.selectedDay = null;
+  }
+
+  onNavigateToVisit(appointment: Appointment | null): void {
+    if (!appointment) {
+      return;
+    }
+
+    const planId = appointment.therapeuticPlanId;
+    if (!planId) {
+      return;
+    }
+
+    const visitId = appointment.visitId ?? appointment.id;
+    this.closeDetailsModal();
+    void this.router.navigate([`/therapeutic-plans/manage/${planId}`], {
+      queryParams: {
+        tab: 'visits',
+        openVisitId: visitId,
+        appointmentId: appointment.id,
+        appointmentStartedAt: appointment.startDateTime,
+        appointmentDateTime: appointment.startDateTime,
+        autoOpenWizard: true,
+        openVisitWizard: true
+      }
+    });
   }
 
   clearSelection(): void { this.closeDetailsModal(); }

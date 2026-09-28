@@ -13,6 +13,7 @@ import { AppointmentService, Appointment } from '../../services/appointment.serv
 import { AppointmentFormComponent } from '../appointments/appointment-form/appointment-form.component';
 import { PatientContactsSearchComponent } from '../patient-contacts-search/patient-contacts-search.component';
 import { QtmStepModalComponent } from '../../shared/qtm-step-modal.component';
+import { QtmSortableTableComponent, QtmSortColumn, QtmSortState } from 'qtm-shared';
 import {
   formatQtmFlexibleDate,
   getQtmCurrentDateInputValue,
@@ -522,7 +523,7 @@ interface TherapeuticPlanMedicalRecordContentForm {
 @Component({
   selector: 'app-therapeutic-plan-manage',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppointmentFormComponent, PatientContactsSearchComponent, QtmStepModalComponent],
+  imports: [CommonModule, FormsModule, AppointmentFormComponent, PatientContactsSearchComponent, QtmStepModalComponent, QtmSortableTableComponent],
   templateUrl: './therapeutic-plan-manage.component.html',
   styleUrl: './therapeutic-plan-manage.component.css'
 })
@@ -924,8 +925,13 @@ export class TherapeuticPlanManageComponent implements OnInit {
   appointmentModalMode: 'create' | 'edit' = 'create';
   selectedAppointment: TherapeuticPlanAppointmentRecord | null = null;
   visitEntries: TherapeuticPlanVisitRecord[] = this.createMockVisitEntries();
+  visitTablePage = 0;
+  visitTablePageSize = 10;
+  visitTableSort: QtmSortState = { active: 'date', direction: 'desc' };
   visitModalOpen = false;
   visitModalStep = 1;
+  selectedVisit: TherapeuticPlanVisitRecord | null = null;
+  visitWizardMode: 'create' | 'execute' = 'create';
   visitErrorMessage = '';
   visitForm: TherapeuticPlanVisitForm = this.createEmptyVisitForm();
   private readonly visitSchemaArrayConfigCache = new Map<string, { hours: string[]; options: Array<{ value: string; label: string }> }>();
@@ -986,7 +992,8 @@ export class TherapeuticPlanManageComponent implements OnInit {
       this.pendingRequestedTab = 'visits';
     }
 
-    this.shouldOpenVisitWizard = this.route.snapshot.queryParamMap.get('openVisitWizard') === 'true';
+    this.shouldOpenVisitWizard = this.route.snapshot.queryParamMap.get('openVisitWizard') === 'true'
+      || this.route.snapshot.queryParamMap.get('autoOpenWizard') === 'true';
     this.pendingAppointmentId = this.parsePositiveNumber(this.route.snapshot.queryParamMap.get('appointmentId'));
     this.pendingAppointmentStartedAt = this.route.snapshot.queryParamMap.get('appointmentStartedAt');
     this.pendingAppointmentDateTime = this.route.snapshot.queryParamMap.get('appointmentDateTime');
@@ -1117,6 +1124,10 @@ export class TherapeuticPlanManageComponent implements OnInit {
   }
 
   setActiveTab(tabKey: TherapeuticPlanManageTab['key']): void {
+    if (tabKey === 'visits') {
+      console.log('[VISITE-TAB]', { activeTab: tabKey, visitsCount: this.visitEntries?.length });
+    }
+
     if (this.isNurseQtmRole && tabKey !== 'visits') {
       this.activeTab = 'visits';
       return;
@@ -1466,6 +1477,60 @@ export class TherapeuticPlanManageComponent implements OnInit {
 
   get visitResultCountLabel(): string {
     return `${this.visitEntries.length} ${this.translate('therapeuticPlan.visits.results')}`;
+  }
+
+  get visitTableColumns(): QtmSortColumn[] {
+    return [
+      { key: 'date', label: this.translate('therapeuticPlan.visits.field.date'), sortable: true },
+      { key: 'caregiver', label: this.translate('therapeuticPlan.visits.field.caregiver') },
+      { key: 'clinicalCenter', label: this.translate('therapeuticPlan.visits.field.clinicalCenter'), sortable: true },
+      { key: 'neurologist', label: this.translate('therapeuticPlan.visits.field.neurologist') },
+      { key: 'gastroenterologist', label: this.translate('therapeuticPlan.visits.field.gastroenterologist') },
+      { key: 'type', label: this.translate('therapeuticPlan.visits.field.type'), sortable: true },
+      { key: 'priority', label: this.translate('therapeuticPlan.visits.field.priority') },
+      { key: 'actions', label: this.translate('search.actions') }
+    ];
+  }
+
+  get visitTableData(): TherapeuticPlanVisitRecord[] {
+    const sorted = [...this.visitEntries].sort((left, right) => this.compareVisitEntries(left, right));
+    const start = this.visitTablePage * this.visitTablePageSize;
+    return sorted.slice(start, start + this.visitTablePageSize);
+  }
+
+  onVisitTableSortChange(sort: QtmSortState): void {
+    this.visitTableSort = sort;
+    this.visitTablePage = 0;
+  }
+
+  onVisitTablePageChange(page: number): void {
+    this.visitTablePage = Math.max(0, page);
+  }
+
+  onVisitTablePageSizeChange(pageSize: number): void {
+    this.visitTablePageSize = pageSize;
+    this.visitTablePage = 0;
+  }
+
+  private compareVisitEntries(left: TherapeuticPlanVisitRecord, right: TherapeuticPlanVisitRecord): number {
+    const active = this.visitTableSort.active;
+    if (!active || !this.visitTableSort.direction) {
+      return 0;
+    }
+
+    const leftValue = this.getVisitTableSortValue(left, active);
+    const rightValue = this.getVisitTableSortValue(right, active);
+    const comparison = leftValue.localeCompare(rightValue, undefined, { numeric: true, sensitivity: 'base' });
+    return this.visitTableSort.direction === 'asc' ? comparison : -comparison;
+  }
+
+  private getVisitTableSortValue(entry: TherapeuticPlanVisitRecord, key: string): string {
+    switch (key) {
+      case 'clinicalCenter': return entry.clinicalCenter ?? '';
+      case 'type': return this.getVisitTypeLabel(entry.type);
+      case 'date': return entry.date ?? '';
+      default: return '';
+    }
   }
 
   get visitPatientHeader(): TherapeuticPlanVisitPatientHeader {
@@ -1889,9 +1954,22 @@ export class TherapeuticPlanManageComponent implements OnInit {
     return this.translate(value ? 'common.yes' : 'common.no');
   }
 
-  openVisitModal(): void {
+  onExecuteVisit(visit: TherapeuticPlanVisitRecord): void {
+    this.selectedVisit = visit;
+    this.visitWizardMode = 'execute';
+    this.openVisitModal(visit);
+  }
+
+  private getVisitSpecialistValue(value: string | null | undefined, fallback: string): string {
+    const candidate = value?.trim();
+    return candidate || fallback.trim() || this.translate('common.notAvailable');
+  }
+
+  openVisitModal(selectedVisit: TherapeuticPlanVisitRecord | null = null): void {
     this.visitErrorMessage = '';
     this.visitModalStep = 1;
+    this.selectedVisit = selectedVisit;
+    this.visitWizardMode = selectedVisit ? 'execute' : 'create';
     this.resetVisitImageState();
     this.visitForm = this.createEmptyVisitForm();
     this.visitManualJsonEntries = [{ key: '', value: '' }];
@@ -1939,6 +2017,40 @@ export class TherapeuticPlanManageComponent implements OnInit {
     }
     this.refreshVisitSchemaArrayViews();
     this.syncVisitFormFromDynamic();
+
+    if (selectedVisit) {
+      this.visitForm = {
+        ...this.visitForm,
+        patientFirstName: selectedVisit.patientFirstName,
+        patientLastName: selectedVisit.patientLastName,
+        duodopaTherapyStartDate: selectedVisit.duodopaTherapyStartDate,
+        caregiver: selectedVisit.caregiver || this.visitForm.caregiver,
+        clinicalCenter: selectedVisit.clinicalCenter,
+        neurologist: this.getVisitSpecialistValue(selectedVisit.neurologist, this.doctorLabel),
+        gastroenterologist: this.getVisitSpecialistValue(selectedVisit.gastroenterologist, this.translate('common.notAvailable')),
+        date: selectedVisit.date || this.getCurrentDateTimeLocalInputValue(),
+        type: selectedVisit.type,
+        priority: selectedVisit.priority,
+        stomiaStatus: { ...selectedVisit.stomiaStatus },
+        stomiaActions: { ...selectedVisit.stomiaActions },
+        pegjStatus: { ...selectedVisit.pegjStatus },
+        pegjActions: { ...selectedVisit.pegjActions },
+        autonomyStatus: { ...selectedVisit.autonomyStatus },
+        autonomyActions: { ...selectedVisit.autonomyActions }
+      };
+      this.visitFormDynamic = {
+        ...this.visitFormDynamic,
+        ...(selectedVisit.manualJsonData ?? {})
+      };
+      this.syncVisitFormFromDynamic();
+      this.visitForm.caregiver = selectedVisit.caregiver;
+      this.visitForm.clinicalCenter = selectedVisit.clinicalCenter || this.getVisitClinicalCenterFallback();
+      this.visitForm.neurologist = this.getVisitSpecialistValue(selectedVisit.neurologist, this.doctorLabel);
+      this.visitForm.gastroenterologist = this.getVisitSpecialistValue(selectedVisit.gastroenterologist, this.translate('common.notAvailable'));
+      this.visitForm.date = selectedVisit.date || this.getCurrentDateTimeLocalInputValue();
+      this.visitForm.type = selectedVisit.type;
+      this.visitForm.priority = selectedVisit.priority;
+    }
 
     if (this.pendingAppointmentDateTime) {
       const appointmentDateTime = this.toDateTimeLocalInputValue(this.pendingAppointmentDateTime);
@@ -2159,6 +2271,8 @@ export class TherapeuticPlanManageComponent implements OnInit {
   closeVisitModal(): void {
     this.visitModalOpen = false;
     this.visitModalStep = 1;
+    this.selectedVisit = null;
+    this.visitWizardMode = 'create';
     this.visitErrorMessage = '';
     this.resetVisitImageState();
     this.visitJsonSchemaAvailable = false;

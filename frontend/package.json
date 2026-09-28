@@ -28,6 +28,7 @@
     "@ng-select/ng-select": "^13.9.1",
     "intl-tel-input": "^28.0.2",
     "ng-select2-component": "^17.2.10",
+    "qtm-shared": "file:../../QTMAngularShared/dist/qtm-shared-0.0.1.tgz",
     "rxjs": "7.8.1",
     "tslib": "2.7.0",
     "zone.js": "0.14.10"

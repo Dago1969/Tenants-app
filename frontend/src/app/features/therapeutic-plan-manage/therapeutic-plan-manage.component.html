@@ -988,65 +988,63 @@
           </label>
         </div>
 
-        <div *ngIf="visitEntries.length > 0; else visitsEmpty" class="peg-history-list-table-wrapper">
-          <table class="peg-history-list-table movement-list-table">
-            <thead>
-              <tr>
-                 <th>{{ translate('therapeuticPlan.visits.field.date') }}</th>
-                <th>{{ translate('therapeuticPlan.visits.field.caregiver') }}</th>
-                <th>{{ translate('therapeuticPlan.visits.field.clinicalCenter') }}</th>
-                <th>{{ translate('therapeuticPlan.visits.field.neurologist') }}</th>
-                <th>{{ translate('therapeuticPlan.visits.field.gastroenterologist') }}</th>
-                <th>{{ translate('therapeuticPlan.visits.field.type') }}</th>
-                <th>{{ translate('therapeuticPlan.visits.field.priority') }}</th>
-                <th class="visit-print-column">{{ translate('crud.actions.print') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let entry of visitEntries">
-                <td class="peg-history-list-date">{{ formatDate(entry.date) }}</td>
-                <td>{{ getVisitCaregiverLabel(entry.caregiver) }}</td>
-                <td>{{ entry.clinicalCenter }}</td>
-                <td>{{ entry.neurologist }}</td>
-                <td>{{ entry.gastroenterologist }}</td>
-                <td>{{ getVisitTypeLabel(entry.type) }}</td>
-                <td>{{ getVisitPriorityLabel(entry.priority) }}</td>
-                <td class="visit-actions-cell visit-actions-inline-cell">
-                  <button
-                    type="button"
-                    class="icon-btn"
-                    [attr.title]="translate('therapeuticPlan.visits.actions.summary')"
-                    (click)="openVisitSummaryModal(entry)"
-                  >
-                    <span class="icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" focusable="false" width="20" height="20">
-                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none" />
-                        <path d="M12 8v4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                        <circle cx="12" cy="16" r="1" fill="currentColor" />
-                      </svg>
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    class="therapeutic-plan-btn therapeutic-plan-btn-secondary therapeutic-plan-btn-small"
-                    (click)="printVisitDocument(entry)"
-                    [attr.aria-label]="translate('crud.actions.print')"
-                    [attr.title]="translate('crud.actions.print')"
-                  >
-                    <span class="visit-print-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" focusable="false">
-                        <path d="M7 8V3h10v5"></path>
-                        <path d="M6 17H4V9h16v8h-2"></path>
-                        <path d="M7 14h10v7H7z"></path>
-                        <path d="M17 11h.01"></path>
-                      </svg>
-                    </span>
-                  </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <ng-template #visitDateCell let-entry>
+          {{ formatDate(entry.date) }}
+        </ng-template>
+        <ng-template #visitCaregiverCell let-entry>
+          {{ getVisitCaregiverLabel(entry.caregiver) }}
+        </ng-template>
+        <ng-template #visitTypeCell let-entry>
+          {{ getVisitTypeLabel(entry.type) }}
+        </ng-template>
+        <ng-template #visitPriorityCell let-entry>
+          {{ getVisitPriorityLabel(entry.priority) }}
+        </ng-template>
+        <ng-template #visitActionsCell let-entry>
+          <button
+            type="button"
+            class="therapeutic-plan-btn therapeutic-plan-btn-primary therapeutic-plan-btn-small"
+            (click)="onExecuteVisit(entry)"
+            [attr.aria-label]="translate('therapeuticPlan.visits.actions.execute')"
+            [attr.title]="translate('therapeuticPlan.visits.actions.execute')"
+          >
+            <span aria-hidden="true">▶</span>
+          </button>
+          <button
+            type="button"
+            class="icon-btn"
+            [attr.title]="translate('therapeuticPlan.visits.actions.summary')"
+            (click)="openVisitSummaryModal(entry)"
+          >
+            <span class="icon" aria-hidden="true">ⓘ</span>
+          </button>
+          <button
+            type="button"
+            class="therapeutic-plan-btn therapeutic-plan-btn-secondary therapeutic-plan-btn-small"
+            (click)="printVisitDocument(entry)"
+            [attr.aria-label]="translate('crud.actions.print')"
+            [attr.title]="translate('crud.actions.print')"
+          >
+            <span class="visit-print-icon" aria-hidden="true">▣</span>
+          </button>
+        </ng-template>
+
+        <qtm-sortable-table
+          [columns]="visitTableColumns"
+          [data]="visitTableData"
+          [totalItems]="visitEntries.length"
+          [page]="visitTablePage"
+          [pageSize]="visitTablePageSize"
+          [pageSizeOptions]="[5, 10, 25]"
+          [currentSort]="visitTableSort"
+          [cellTemplates]="{ date: visitDateCell, caregiver: visitCaregiverCell, type: visitTypeCell, priority: visitPriorityCell, actions: visitActionsCell } || {}"
+          [emptyLabel]="translate('therapeuticPlan.visits.empty')"
+          [pageLabel]="translate('pagination.page')"
+          [ofLabel]="translate('pagination.of')"
+          (sortChange)="onVisitTableSortChange($event)"
+          (pageChange)="onVisitTablePageChange($event)"
+          (pageSizeChange)="onVisitTablePageSizeChange($event)"
+        ></qtm-sortable-table>
 
         <div class="peg-history-list-footer" *ngIf="visitEntries.length > 0">
           <span>{{ visitResultCountLabel }}</span>
