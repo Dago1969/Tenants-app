@@ -2104,7 +2104,7 @@
   (close)="closeVisitModal()"
 >
   <div class="alert-modal-shell" [ngClass]="{ 'visit-generated-json-shell': visitModalStep === 8 }">
-    <div *ngIf="visitErrorMessage" class="therapeutic-plan-alert therapeutic-plan-alert-error">
+    <div *ngIf="visitErrorMessage" id="visit-validation-error" class="therapeutic-plan-alert therapeutic-plan-alert-error" role="alert" aria-live="assertive">
       {{ visitErrorMessage }}
     </div>
 
@@ -2124,7 +2124,7 @@
       </label>
       <label class="alert-modal-field">
         {{ translate('therapeuticPlan.visits.field.date') }}
-        <input [(ngModel)]="visitForm.date" type="datetime-local" (ngModelChange)="onVisitDateChange($event)" />
+        <input [(ngModel)]="visitForm.date" type="datetime-local" required [attr.aria-invalid]="visitErrorMessage && !visitForm.date.trim() ? 'true' : null" [attr.aria-describedby]="visitErrorMessage && !visitForm.date.trim() ? 'visit-validation-error' : null" (ngModelChange)="onVisitDateChange($event)" />
       </label>
       <ng-container *ngIf="!visitJsonSchemaAvailable">
         <ng-template [ngTemplateOutlet]="manualVisitBaseFields"></ng-template>
@@ -2139,11 +2139,11 @@
         </label>
         <label class="alert-modal-field alert-modal-field-full">
           {{ translate('therapeuticPlan.visits.field.clinicalCenter') }}
-          <input [(ngModel)]="visitForm.clinicalCenter" type="text" maxlength="255" />
+          <input [(ngModel)]="visitForm.clinicalCenter" type="text" maxlength="255" required [attr.aria-invalid]="visitErrorMessage && !visitForm.clinicalCenter.trim() ? 'true' : null" [attr.aria-describedby]="visitErrorMessage && !visitForm.clinicalCenter.trim() ? 'visit-validation-error' : null" />
         </label>
         <label class="alert-modal-field alert-modal-field-full">
           {{ translate('therapeuticPlan.visits.field.neurologist') }}
-          <input [(ngModel)]="visitForm.neurologist" type="text" maxlength="255" />
+          <input [(ngModel)]="visitForm.neurologist" type="text" maxlength="255" required [attr.aria-invalid]="visitErrorMessage && !visitForm.neurologist.trim() ? 'true' : null" [attr.aria-describedby]="visitErrorMessage && !visitForm.neurologist.trim() ? 'visit-validation-error' : null" />
         </label>
         <label class="alert-modal-field alert-modal-field-full">
           {{ translate('therapeuticPlan.visits.field.gastroenterologist') }}

@@ -6,7 +6,6 @@ import { AuthService } from '../../core/auth.service';
 import { STRUCTURE_MODULE_CODES } from '../../core/structure-module-codes';
 import { MessageKey, t } from '../../i18n/messages';
 import { environment } from '../../../environments/environment';
-import { AppointmentsDailyComponent } from '../appointments/appointments-daily/appointments-daily.component';
 import { AppointmentsCalendarComponent } from '../appointments/appointments-calendar/appointments-calendar.component';
 
 interface AuthorizationModuleDto {
@@ -32,7 +31,7 @@ interface DashboardLink {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, AppointmentsDailyComponent, AppointmentsCalendarComponent],
+  imports: [CommonModule, RouterLink, AppointmentsCalendarComponent],
   template: `
     <div class="card">
       <h2>{{ translate('dashboard.tenant.title') }}</h2>
@@ -55,13 +54,8 @@ interface DashboardLink {
           </div>
         </ng-container>
         <ng-container *ngIf="isNurseRole">
-          <div style="display: flex; gap: 24px; margin-top: 24px; align-items: flex-start;">
-            <div class="dashboard-card" style="min-width:420px;max-width:600px;flex:2;">
-              <app-appointments-daily></app-appointments-daily>
-            </div>
-            <div class="dashboard-card" style="min-width:420px;max-width:600px;flex:2;">
-              <app-appointments-calendar></app-appointments-calendar>
-            </div>
+          <div class="nurse-dashboard-calendar">
+            <app-appointments-calendar></app-appointments-calendar>
           </div>
         </ng-container>
       </ng-container>
@@ -92,12 +86,19 @@ interface DashboardLink {
         background: #f3f4f6;
       }
 
+      .nurse-dashboard-calendar {
+        margin-top: 24px;
+        width: 100%;
+      }
+      .nurse-dashboard-calendar ::ng-deep .calendar-shell {
+        width: 100%;
+      }
       .dashboard-card {
         flex: 1 1 0;
         background: #f3f4f6;
         border-radius: 12px;
         padding: 24px 20px;
-        min-width: 260px;
+        min-width: 0;
         box-shadow: 0 2px 8px rgba(0,0,0,0.03);
         display: flex;
         flex-direction: column;

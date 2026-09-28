@@ -6,13 +6,18 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.qtm.commonlib.dto.PatientDto;
 import com.qtm.commonlib.dto.TicketDto;
 import com.qtm.tenants.appointment.dto.AppointmentDto;
 import com.qtm.tenants.appointment.entity.AppointmentEntity;
@@ -23,12 +28,14 @@ import com.qtm.tenants.appointment.repository.AppointmentRepository;
 import com.qtm.tenants.appointment.repository.AppointmentTypeRepository;
 import com.qtm.tenants.nurse.entity.NurseEntity;
 import com.qtm.tenants.nurse.repository.NurseRepository;
+import com.qtm.tenants.patient.service.DashboardPatientClient;
 import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanEntity;
 import com.qtm.tenants.therapeuticplan.repository.TherapeuticPlanRepository;
 import com.qtm.tenants.ticket.client.TicketClient;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 
 /**
  * Service orchestratore degli appuntamenti con logica di ricorrenza e
@@ -45,6 +52,16 @@ public class AppointmentService {
 	private final NurseRepository nurseRepository;
 	private final AppointmentMapper appointmentMapper;
 	private final TicketClient ticketClient;
+	private final DashboardPatientClient dashboardPatientClient;
+
+	@Value("${qtm.ticket.realm:TENANTS}")
+	private String ticketRealm;
+
+	@Value("${qtm.ticket.project:TENANTS}")
+	private String ticketProject;
+
+	@Value("${app.keycloak.realm-code:PILOTA}")
+	private String realmCode;
 
 	
 
@@ -86,6 +103,152 @@ public class AppointmentService {
 		validateDateRange(startDate, endDate);
 		return appointmentRepository.findByNurseAndDateRange(nurseId, startDate, endDate).stream()
 				.map(appointmentMapper::toDto).toList();
+	}
+
+	@Transactional(readOnly = true)
+	public List<AppointmentDto> findDashboardAppointments(Long nurseId, LocalDate startDate, LocalDate endDate) {
+		validateNurseExists(nurseId);
+		validateDateRange(startDate, endDate);
+
+		log.info("[DASHBOARD-NURSE] Inizio recupero visite da therapeutic_plan_visit per nurseId: {}, periodo: {} - {}",
+				nurseId, startDate, endDate);
+		List<AppointmentDto> appointments = new ArrayList<>(
+				appointmentRepository.findByNurseAndDateRange(nurseId, startDate, endDate).stream()
+						.map(this::mapVisitToAppointment).toList());
+		log.info("[DASHBOARD-NURSE] Trovate {} visite in therapeutic_plan_visit", appointments.size());
+		try {
+			log.info("[DASHBOARD-NURSE] Inizio chiamata FeignClient TICKET per nurseId: {}, realm: {}, project: {}",
+					nurseId, ticketRealm, ticketProject);
+			TicketDto[] tickets = ticketClient.findByNurse(nurseId, ticketRealm, ticketProject);
+			log.info("[DASHBOARD-NURSE] Ricevuti {} ticket da microservizio TICKET", tickets == null ? 0 : tickets.length);
+			for (TicketDto ticket : tickets == null ? new TicketDto[0] : tickets) {
+				if (ticket.getVisitDate() == null || ticket.getVisitDate().toLocalDate().isBefore(startDate)
+						|| ticket.getVisitDate().toLocalDate().isAfter(endDate)) {
+					continue;
+				}
+				appointments.add(mapTicketToAppointment(ticket, nurseId));
+			}
+		} catch (RuntimeException exception) {
+			log.error("[DASHBOARD-NURSE] Errore durante il recupero dei ticket: {}", exception.getMessage(), exception);
+		}
+		List<AppointmentDto> totalAppointments = appointments.stream().sorted(Comparator.comparing(AppointmentDto::getStartDateTime,
+				Comparator.nullsLast(Comparator.naturalOrder()))).toList();
+		log.info("[DASHBOARD-NURSE] Totale appuntamenti aggregati (Visite + Ticket) per la data {}: {} elementi",
+				startDate, totalAppointments.size());
+		return totalAppointments;
+	}
+
+	private AppointmentDto mapVisitToAppointment(AppointmentEntity entity) {
+		AppointmentDto appointment = appointmentMapper.toDto(entity);
+		TherapeuticPlanEntity plan = entity.getTherapeuticPlan();
+		if (plan == null || plan.getPatientId() == null) {
+			return appointment;
+		}
+
+		PatientDto patient = resolvePatient(String.valueOf(plan.getPatientId()));
+		if (patient == null) {
+			return appointment;
+		}
+
+		return appointment.toBuilder()
+				.patientCode(patient.getAssistedId())
+				.patientName(joinName(patient.getFirstName(), patient.getLastName()))
+				.patientFirstName(patient.getFirstName())
+				.patientLastName(patient.getLastName())
+				.patientFiscalCode(patient.getFiscalCode())
+				.patientPhone(patient.getPrimaryPhone())
+				.caregiverPhone(patient.getCaregiverPhone())
+				.patientAddress(formatAddress(patient))
+				.address(patient.getDeliveryAddress())
+				.city(patient.getCity())
+				.facility(patient.getReferenceHospitalStructure())
+				.dischargeType(plan.getDischargeType())
+				.dischargeDate(plan.getDischargeDate())
+				.appointmentCategory("Visita Piano Terapeutico")
+				.build();
+	}
+
+	private AppointmentDto mapTicketToAppointment(TicketDto ticket, Long nurseId) {
+		JsonNode content = parseTicketContent(ticket.getContentJson());
+		LocalDateTime start = dateTime(content, "startDateTime", ticket.getVisitDate());
+		LocalDateTime end = dateTime(content, "endDateTime", start);
+		String patientCode = text(content, "patientCode", ticket.getPatientId());
+		String patientName = text(content, "patientName", null);
+		String patientPhone = text(content, "patientPhone", null);
+		String caregiverPhone = text(content, "caregiverPhone", null);
+		String patientAddress = text(content, "patientAddress", text(content, "address", null));
+		PatientDto patient = resolvePatient(ticket.getPatientId());
+		if (patient != null) {
+			patientCode = firstValue(patient.getAssistedId(), patientCode);
+			patientName = firstValue(joinName(patient.getFirstName(), patient.getLastName()), patientName);
+			patientPhone = firstValue(patient.getPrimaryPhone(), patientPhone);
+			caregiverPhone = firstValue(patient.getCaregiverPhone(), caregiverPhone);
+			patientAddress = firstValue(formatAddress(patient), patientAddress);
+		}
+		String[] nameParts = splitPatientName(patientName);
+		return AppointmentDto.builder()
+				.id(ticket.getId()).appointmentTypeName("TICKET").appointmentCategory("Ticket di Intervento")
+				.nurseId(nurseId).startDateTime(start).endDateTime(end).status(text(content, "status", ticket.getStatus()))
+				.notes(text(content, "notes", ticket.getDescription())).patientCode(patientCode).patientName(patientName)
+				.patientFirstName(nameParts[1]).patientLastName(nameParts[0])
+				.patientFiscalCode(text(content, "patientFiscalCode", patient != null ? patient.getFiscalCode() : null))
+				.patientPhone(patientPhone).caregiverPhone(caregiverPhone).patientAddress(patientAddress)
+				.address(text(content, "address", null)).city(text(content, "city", null))
+				.facility(text(content, "hospitalName", text(content, "facility", null)))
+				.dischargeType(text(content, "dischargeType", null))
+				.dischargeDate(date(content, "dischargeDate"))
+				.prevalentDoctorCode(text(content, "prevalentDoctorCode", null))
+				.prevalentDoctorName(text(content, "prevalentDoctorName", null)).build();
+	}
+
+	private PatientDto resolvePatient(String patientId) {
+		try {
+			return patientId == null ? null : dashboardPatientClient.findById(Long.valueOf(patientId));
+		} catch (RuntimeException exception) {
+			log.debug("Impossibile arricchire il ticket con il paziente QTMDB {}: {}", patientId, exception.getMessage());
+			return null;
+		}
+	}
+
+	private String joinName(String firstName, String lastName) {
+		return Stream.of(firstName, lastName).filter(value -> value != null && !value.isBlank()).collect(Collectors.joining(" "));
+	}
+
+	private String formatAddress(PatientDto patient) {
+		return Stream.of(patient.getDeliveryAddress(), patient.getCity()).filter(value -> value != null && !value.isBlank()).collect(Collectors.joining(", "));
+	}
+
+	private String firstValue(String value, String fallback) {
+		return value == null || value.isBlank() ? fallback : value;
+	}
+
+	private JsonNode parseTicketContent(String contentJson) {
+		if (contentJson == null || contentJson.isBlank()) return com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode();
+		try { return new ObjectMapper().readTree(contentJson); } catch (Exception exception) {
+			log.warn("Impossibile leggere contentJson del ticket: {}", exception.getMessage());
+			return com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode();
+		}
+	}
+
+	private String text(JsonNode node, String field, String fallback) {
+		JsonNode value = node.get(field);
+		return value == null || value.isNull() || value.asText().isBlank() ? fallback : value.asText();
+	}
+
+	private LocalDateTime dateTime(JsonNode node, String field, LocalDateTime fallback) {
+		String value = text(node, field, null);
+		try { return value == null ? fallback : LocalDateTime.parse(value); } catch (RuntimeException exception) { return fallback; }
+	}
+
+	private LocalDate date(JsonNode node, String field) {
+		String value = text(node, field, null);
+		try { return value == null ? null : LocalDate.parse(value); } catch (RuntimeException exception) { return null; }
+	}
+
+	private String[] splitPatientName(String name) {
+		if (name == null || name.isBlank()) return new String[] { null, null };
+		int separator = name.indexOf(' ');
+		return separator < 0 ? new String[] { name, null } : new String[] { name.substring(separator + 1), name.substring(0, separator) };
 	}
 
 	/**
@@ -146,7 +309,7 @@ public class AppointmentService {
 
 				TicketDto ticketDto = TicketDto.builder()
 						// realm should be the tenant/realm context — use projectCode as default
-						.realm(projectCode)
+						.realm(realmCode)
 						// project should represent the selected project code when available
 						.project(therapeuticPlan.getProjectCode() != null && !therapeuticPlan.getProjectCode().isBlank()
 								? therapeuticPlan.getProjectCode()

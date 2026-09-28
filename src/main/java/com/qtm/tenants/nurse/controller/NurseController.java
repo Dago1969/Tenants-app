@@ -31,6 +31,11 @@ public class NurseController {
     private final NurseService nurseService;
     private final ControllerFunctionAuthorizationService controllerFunctionAuthorizationService;
 
+        @GetMapping("/me")
+        public ResponseEntity<NurseDto> findCurrentNurse() {
+                return ResponseEntity.ok(nurseService.findCurrentNurse());
+        }
+
     @PostMapping
     public ResponseEntity<NurseDto> create(
             @RequestBody NurseDto nurseDto,

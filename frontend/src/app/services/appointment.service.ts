@@ -13,6 +13,7 @@ export interface AppointmentType {
 export interface Appointment {
   id: number;
   therapeuticPlanId: number | null;
+  therapeuticPlanPatientDisplayName?: string | null;
   appointmentTypeId: number | null;
   appointmentTypeName: string;
   appointmentTypeDurationMinutes?: number | null;
@@ -26,6 +27,28 @@ export interface Appointment {
   reminderMinutesBefore?: number;
   status: string;
   notes: string | null;
+  appointmentCategory?: string | null;
+  patientFirstName?: string | null;
+  patientLastName?: string | null;
+  patientFiscalCode?: string | null;
+  patientPhone?: string | null;
+  caregiverPhone?: string | null;
+  patientAddress?: string | null;
+  address?: string | null;
+  city?: string | null;
+  facility?: string | null;
+  patientCode?: string | null;
+  patientName?: string | null;
+  dischargeType?: string | null;
+  dischargeDate?: string | null;
+  prevalentDoctorCode?: string | null;
+  prevalentDoctorName?: string | null;
+}
+
+export interface CurrentNurse {
+  id: number;
+  fullName: string;
+  email?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -84,12 +107,33 @@ export class AppointmentService {
     return this.http.get<Appointment[]>(`${this.apiBase}/nurse/${nurseId}/calendar`, { params });
   }
 
+  getCurrentNurse(): Observable<CurrentNurse> {
+    return this.http.get<CurrentNurse>(`${environment.apiBaseUrl}/nurses/me`);
+  }
+
   getByNurseAndDate(nurseId: number, date?: Date): Observable<Appointment[]> {
     let params = new HttpParams();
     if (date) {
       params = params.set('date', this.formatDate(date));
     }
     return this.http.get<Appointment[]>(`${this.apiBase}/nurse/${nurseId}/daily`, { params });
+  }
+
+  getNurseDashboardDaily(nurseId: number, date: Date): Observable<Appointment[]> {
+    const params = new HttpParams()
+      .set('nurseId', nurseId)
+      .set('date', this.formatDate(date));
+    console.log('[NurseDashboard] Richiesta appuntamenti per la data:', this.formatDate(date));
+    return this.http.get<Appointment[]>(`${environment.apiBaseUrl}/appointments/dashboard/nurse/appointments/daily`, { params });
+  }
+
+  getNurseDashboardCalendar(nurseId: number, month: number, year: number): Observable<Appointment[]> {
+    const params = new HttpParams()
+      .set('nurseId', nurseId)
+      .set('month', month)
+      .set('year', year);
+    console.log('[NurseDashboard] Richiesta appuntamenti per il mese:', { month, year });
+    return this.http.get<Appointment[]>(`${environment.apiBaseUrl}/appointments/dashboard/nurse/appointments/calendar`, { params });
   }
 
   private formatDate(date: Date): string {

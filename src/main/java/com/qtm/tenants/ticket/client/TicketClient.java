@@ -18,6 +18,9 @@ import java.net.URI;
 import java.util.Optional;
 import java.util.List;
 import com.qtm.commonlib.dto.DepartmentDto;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 /**
  * Client per comunicare con QTMTicket.
@@ -29,11 +32,14 @@ public class TicketClient {
 
     private final RestClient restClient;
 
-    public TicketClient(RestClient.Builder restClientBuilder) {
+    private final ObjectMapper objectMapper;
+
+    public TicketClient(RestClient.Builder restClientBuilder, ObjectMapper objectMapper) {
         this.restClient = restClientBuilder.build();
+        this.objectMapper = objectMapper;
     }
 
-    @Value("${qtm.ticket.base-url:http://localhost:8084/api/ticket}")
+    @Value("${qtm.ticket.base-url:http://localhost:8084/api}")
     private String ticketBaseUrl;
 
     /**
@@ -78,6 +84,33 @@ public class TicketClient {
                 .header(HttpHeaders.AUTHORIZATION, resolveAuthorizationHeader())
                 .retrieve()
                 .body(Object.class);
+            }
+
+            public TicketDto[] findByNurse(Long nurseId, String realm, String project) {
+            URI searchUri = UriComponentsBuilder.fromHttpUrl(ticketBaseUrl + "/tickets/search")
+                .queryParam("prevalentNurseId", nurseId)
+                .queryParamIfPresent("realm", Optional.ofNullable(realm))
+                .queryParamIfPresent("project", Optional.ofNullable(project))
+                .build(true)
+                .toUri();
+
+            log.debug("Recupero ticket assegnati all'infermiere {} da QTMTicket", nurseId);
+            JsonNode response = restClient.get()
+                .uri(searchUri)
+                .header(HttpHeaders.AUTHORIZATION, resolveAuthorizationHeader())
+                .retrieve()
+                .body(JsonNode.class);
+            JsonNode content = response != null && response.has("content") ? response.get("content") : response;
+            if (content == null || !content.isArray()) {
+                return new TicketDto[0];
+            }
+            try {
+                return objectMapper.treeToValue(content, TicketDto[].class);
+            } catch (JsonProcessingException exception) {
+                log.error("Impossibile convertire la risposta TICKET per nurseId {}: {}", nurseId,
+                        exception.getMessage(), exception);
+                return new TicketDto[0];
+            }
             }
 
     /**

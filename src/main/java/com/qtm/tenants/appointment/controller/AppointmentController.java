@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 
 /**
@@ -31,6 +32,19 @@ import java.util.List;
 public class AppointmentController {
 
     private final AppointmentService appointmentService;
+
+    @GetMapping("/dashboard/nurse/appointments/daily")
+    public List<AppointmentDto> getNurseDashboardDaily(@RequestParam LocalDate date,
+            @RequestParam Long nurseId) {
+        return appointmentService.findDashboardAppointments(nurseId, date, date);
+    }
+
+    @GetMapping("/dashboard/nurse/appointments/calendar")
+    public List<AppointmentDto> getNurseDashboardCalendar(@RequestParam int month,
+            @RequestParam int year, @RequestParam Long nurseId) {
+        YearMonth yearMonth = YearMonth.of(year, month);
+        return appointmentService.findDashboardAppointments(nurseId, yearMonth.atDay(1), yearMonth.atEndOfMonth());
+    }
     private final AppointmentTypeRepository appointmentTypeRepository;
     private final AppointmentTypeMapper appointmentTypeMapper;
 

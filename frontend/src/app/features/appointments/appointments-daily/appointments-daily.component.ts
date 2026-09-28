@@ -24,35 +24,42 @@ import { MessageKey, t } from '../../../i18n/messages';
 
       <p *ngIf="!errorMessage && appointments.length === 0">{{ translate('appointment.message.noAppointments') }}</p>
 
-      <table *ngIf="appointments.length > 0" class="daily-table">
-        <thead>
-          <tr>
-            <th>{{ translate('appointment.field.startDateTime') }}</th>
-            <th>{{ translate('appointment.field.endDateTime') }}</th>
-            <th>{{ translate('appointment.field.type') }}</th>
-            <th>{{ translate('appointment.field.patient') }}</th>
-            <th>{{ translate('search.column.status') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr *ngFor="let appointment of appointments">
-            <td>{{ formatTime(appointment.startDateTime) }}</td>
-            <td>{{ formatTime(appointment.endDateTime) }}</td>
-            <td>{{ appointment.appointmentTypeName || '-' }}</td>
-            <td>{{ appointment.therapeuticPlanId || '-' }}</td>
-            <td>{{ getStatusLabel(appointment.status) }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <div class="daily-table-wrap" *ngIf="appointments.length > 0">
+        <table class="daily-table">
+          <thead>
+            <tr>
+              <th>{{ translate('appointment.field.startDateTime') }}</th>
+              <th>{{ translate('appointment.field.endDateTime') }}</th>
+              <th>{{ translate('appointment.field.type') }}</th>
+              <th>{{ translate('appointment.field.patient') }}</th>
+              <th>{{ translate('search.column.status') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let appointment of appointments">
+              <td>{{ formatTime(appointment.startDateTime) }}</td>
+              <td>{{ formatTime(appointment.endDateTime) }}</td>
+              <td>{{ appointment.appointmentTypeName || '-' }}</td>
+              <td>{{ appointment.therapeuticPlanId || '-' }}</td>
+              <td>{{ getStatusLabel(appointment.status) }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </section>
   `,
   styles: [`
-    .daily-shell { display: grid; gap: 12px; }
-    .daily-header { align-items: center; display: flex; justify-content: space-between; }
-    .daily-actions { align-items: center; display: flex; gap: 8px; }
+    .daily-shell { display: grid; gap: 12px; min-width: 0; }
+    .daily-header { align-items: center; display: flex; flex-wrap: wrap; gap: 10px 16px; justify-content: space-between; margin-bottom: 4px; }
+    .daily-header h2 { flex: 1 1 180px; margin: 0; min-width: 0; }
+    .daily-actions { align-items: center; display: flex; flex: 0 1 auto; flex-wrap: wrap; gap: 8px; }
+    .daily-actions button, .daily-actions input { box-sizing: border-box; font-size: 0.85rem; height: 32px; line-height: 22px; padding: 4px 12px; }
+    .daily-actions input { min-width: 132px; }
     .daily-error { background: #fee2e2; border: 1px solid #fecaca; border-radius: 10px; color: #991b1b; padding: 10px; }
-    .daily-table { border-collapse: collapse; width: 100%; }
-    .daily-table th, .daily-table td { border-bottom: 1px solid #e2e8f0; padding: 8px; text-align: left; }
+    .daily-table-wrap { max-width: 100%; overflow-x: auto; }
+    .daily-table { border-collapse: collapse; min-width: 520px; width: 100%; }
+    .daily-table th, .daily-table td { border-bottom: 1px solid #e2e8f0; padding: 8px; text-align: left; white-space: nowrap; }
+    .daily-table th { background-color: #f5f5f5; font-weight: 700; }
   `]
 })
 export class AppointmentsDailyComponent {
@@ -62,8 +69,18 @@ export class AppointmentsDailyComponent {
   loading = false;
   errorMessage = '';
 
-  constructor(private readonly appointmentService: AppointmentService) {
-    this.loadAppointments();
+  constructor(private readonly appointmentService: AppointmentService) {}
+
+  ngOnInit(): void {
+    this.appointmentService.getCurrentNurse().subscribe({
+      next: (nurse) => {
+        this.nurseId = nurse.id;
+        this.loadAppointments();
+      },
+      error: (error: unknown) => {
+        this.errorMessage = this.resolveErrorMessage(error);
+      }
+    });
   }
 
   get selectedDateInput(): string {
@@ -131,8 +148,10 @@ export class AppointmentsDailyComponent {
 
     this.loading = true;
     this.errorMessage = '';
-    this.appointmentService.getByNurseAndDate(this.nurseId, this.selectedDate).subscribe({
+    this.appointmentService.getNurseDashboardDaily(this.nurseId, this.selectedDate).subscribe({
       next: (items) => {
+        console.log('[NurseDashboard] Risposta ricevuta dal server per appuntamenti giornalieri:', items);
+        console.log('[NurseDashboard] Numero appuntamenti ricevuti:', items?.length || 0);
         this.appointments = items;
         this.loading = false;
       },

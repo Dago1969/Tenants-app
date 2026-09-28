@@ -1899,6 +1899,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
     this.visitForm.patientFirstName = this.patient?.firstName || '';
     this.visitForm.patientLastName = this.patient?.lastName || '';
     this.visitForm.duodopaTherapyStartDate = this.plan?.startDate || '';
+    this.visitForm.clinicalCenter = this.getVisitClinicalCenterFallback();
     // Recupera il JSON schema dal piano terapeutico corrente (esempio: this.plan?.jsonVisit)
     let schema: any = null;
     try {
@@ -2172,6 +2173,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
   goToNextVisitModalStep(): void {
     this.visitErrorMessage = '';
     if (this.visitModalStep === 1 && !this.validateVisitBaseStep()) {
+      this.logInvalidVisitStep1();
       return;
     }
 
@@ -3517,6 +3519,76 @@ export class TherapeuticPlanManageComponent implements OnInit {
     }
 
     return true;
+  }
+
+  private getVisitClinicalCenterFallback(): string {
+    const planRecord = this.plan as unknown as Record<string, unknown> | null;
+    const candidates = [
+      planRecord?.['hospitalName'],
+      planRecord?.['hospitalId'],
+      planRecord?.['departmentName'],
+      planRecord?.['departmentId'],
+      this.structureLabel
+    ];
+
+    const unavailableLabel = this.translate('common.notAvailable').trim().toLowerCase();
+    const availableCandidate = candidates.find((candidate) => {
+      const value = String(candidate ?? '').trim();
+      return value.length > 0 && value.toLowerCase() !== unavailableLabel;
+    });
+
+    return String(availableCandidate ?? 'DEFAULT_CENTER').trim();
+  }
+
+  private logInvalidVisitStep1(): void {
+    const controls = this.visitJsonSchemaAvailable
+      ? this.visitSchemaRequired.map((key) => ({
+          name: key,
+          value: this.visitFormDynamic[key],
+          invalid: this.isVisitSchemaFieldEmpty(key),
+          touched: true,
+          disabled: false,
+          errors: this.isVisitSchemaFieldEmpty(key) ? { required: true } : null
+        }))
+      : [
+          {
+            name: 'date',
+            value: this.visitForm.date,
+            invalid: !this.visitForm.date.trim(),
+            touched: true,
+            disabled: false,
+            errors: !this.visitForm.date.trim() ? { required: true } : null
+          },
+          {
+            name: 'clinicalCenter',
+            value: this.visitForm.clinicalCenter,
+            invalid: !this.visitForm.clinicalCenter.trim(),
+            touched: true,
+            disabled: false,
+            errors: !this.visitForm.clinicalCenter.trim() ? { required: true } : null
+          },
+          {
+            name: 'neurologist',
+            value: this.visitForm.neurologist,
+            invalid: !this.visitForm.neurologist.trim(),
+            touched: true,
+            disabled: false,
+            errors: !this.visitForm.neurologist.trim() ? { required: true } : null
+          }
+        ];
+
+    console.group('❌ [VISIT-WIZARD] STEP 1 NON VALIDO - Dettaglio Errori');
+    console.error('Form Valid Status:', false);
+    controls.filter((control) => control.invalid).forEach((control) => {
+      console.error(`Campo NON valido: [${control.name}]`, {
+        errors: control.errors,
+        value: control.value,
+        touched: control.touched,
+        disabled: control.disabled
+      });
+    });
+    console.table(controls);
+    console.groupEnd();
   }
 
   private isVisitSchemaBaseField(key: string): boolean {

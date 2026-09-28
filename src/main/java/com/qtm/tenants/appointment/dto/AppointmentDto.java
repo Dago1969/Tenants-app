@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 public class AppointmentDto {
     private Long id;
     private Long therapeuticPlanId;
@@ -33,4 +33,20 @@ public class AppointmentDto {
     private Integer reminderMinutesBefore;
     private String status;
     private String notes;
+    private String appointmentCategory;
+    private String patientFirstName;
+    private String patientLastName;
+    private String patientFiscalCode;
+    private String patientPhone;
+    private String caregiverPhone;
+    private String patientAddress;
+    private String address;
+    private String city;
+    private String facility;
+    private String patientCode;
+    private String patientName;
+    private String dischargeType;
+    private LocalDate dischargeDate;
+    private String prevalentDoctorCode;
+    private String prevalentDoctorName;
 }

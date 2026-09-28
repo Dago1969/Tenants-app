@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Locale;
 
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -42,6 +43,9 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 @Slf4j
 public class TherapeuticPlanScheduleEngineService {
+
+    @Value("${app.keycloak.realm-code:PILOTA}")
+    private String realmCode;
 
     public static final String STATUS_PROPOSTO_AUTOMATICO = "PROPOSTO_AUTOMATICO";
 
@@ -254,7 +258,7 @@ public class TherapeuticPlanScheduleEngineService {
 
             TicketDto ticketDto = TicketDto.builder()
                     // realm should contain the realm/client code where the user is operating (use projectCode if provided)
-                    .realm(projectCode)
+                    .realm(realmCode)
                     // project must contain the selected project code (use plan projectCode when available)
                     .project(planEntity.getProjectCode() != null && !planEntity.getProjectCode().isBlank() ? planEntity.getProjectCode() : "TENANTS")
                     .patientId(patientIdStr)

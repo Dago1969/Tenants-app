@@ -223,6 +223,28 @@ public class NurseService {
     }
 
     @Transactional(readOnly = true)
+    public NurseDto findCurrentNurse() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Jwt jwt = authentication != null && authentication.getPrincipal() instanceof Jwt currentJwt
+                ? currentJwt
+                : null;
+        String sub = jwt != null ? trimToNull(jwt.getSubject()) : null;
+        String email = jwt != null ? trimToNull(jwt.getClaimAsString("email")) : null;
+
+        Optional<NurseEntity> nurse = nurseRepository.findByUseridOrEmail(sub, email);
+        if (nurse.isEmpty()) {
+            log.debug("[NurseService] Infermiere non trovato per sub={} email={}", sub, email);
+            throw new ResponseStatusException(NOT_FOUND, "Infermiere non configurato nel sistema.");
+        }
+
+        return nurseMapper.toDto(nurse.get());
+    }
+
+    private String trimToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    @Transactional(readOnly = true)
     public List<NurseDto> findAll() {
         AuthorizationPolicy policy = resolveAuthorizationPolicy();
         enforceModuleReadAllowed(policy);
