@@ -9,7 +9,7 @@ import com.qtm.tenants.structure.dto.StructureDto;
 import com.qtm.tenants.structure.dto.StructureOverviewDto;
 
 // Sostituisci 'name' e 'url' con il nome del servizio su Eureka o la proprietà application.yml
-@FeignClient(name = "qtmdb-structure-client", url = "${NG_APP_API_BASE_URL:http://localhost:8086/api}")
+@FeignClient(name = "qtmdb-structure-client", url = "${QTM_DASHBOARD_API_BASE_URL:${NG_APP_API_BASE_URL:http://localhost:8086/api}}")
 public interface StructureClient {
 
     @PostMapping("/hospital")

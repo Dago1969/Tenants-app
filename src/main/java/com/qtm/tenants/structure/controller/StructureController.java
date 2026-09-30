@@ -98,7 +98,10 @@ public class StructureController {
     ) {
         controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, StructureModuleCodes.GENERIC);
         log.info("[StructureController] GET /structures/overview via Feign Client regionCode={} aslCode={}", regionCode, aslCode);
-        return ResponseEntity.ok(structureClient.findOverview(regionCode, aslCode, selectedRole));
+        List<StructureOverviewDto> structures = structureClient.findOverview(regionCode, aslCode, selectedRole);
+        log.info("[StructureController] GET /structures/overview returned {} hospitals from QTMDB regionCode={} aslCode={}",
+            structures == null ? 0 : structures.size(), regionCode, aslCode);
+        return ResponseEntity.ok(structures);
     }
 
     @GetMapping("/{id}")
