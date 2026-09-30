@@ -25,14 +25,12 @@ public class TicketGeographyService {
                 .toList();
     }
 
-    @Cacheable(value = "geo_provinces", key = "#regionId")
     public List<GeographicOptionDto> findProvincesByRegionId(Long regionId) {
         return ticketGeographyClient.findProvincesByRegionId(regionId).stream()
                 .map(province -> new GeographicOptionDto(province.getId(), province.getName()))
                 .toList();
     }
 
-    @Cacheable(value = "geo_cities", key = "#provinceId")
     public List<GeographicOptionDto> findCitiesByProvinceId(Long provinceId) {
         log.info("[TicketGeographyService] Loading cities for provinceId={}", provinceId);
         return ticketGeographyClient.findCitiesByProvinceId(provinceId).stream()
