@@ -1,2 +1,2 @@
 eclipse.preferences.version=1
-spring.boot.launch.profile.history=SVILUPPO;sviluppo;collaudo;
+spring.boot.launch.profile.history=sviluppo;SVILUPPO;collaudo;

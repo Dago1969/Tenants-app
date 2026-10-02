@@ -4,7 +4,7 @@ import { throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 import { environment } from '../../environments/environment';
 
-const QTMDASHBOARD_LOGIN_URL = 'https://dashboard.qtmdev.quicare.com/login';
+const QTMDASHBOARD_LOGIN_URL = 'http://localhost:4200/login';
 
 /**
  * Interceptor che propaga Authorization Bearer con token condiviso.

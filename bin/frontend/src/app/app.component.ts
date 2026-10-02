@@ -45,8 +45,6 @@ export class AppComponent implements OnDestroy {
   managementMenuOpen = true;
   registryMenuOpen = true;
   structuresMenuOpen = true;
-  // Esponi la variabile per il template HTML
-  dashboardUrl = environment.dashboardUrl;
   private readonly subscriptions = new Subscription();
 
   constructor(
