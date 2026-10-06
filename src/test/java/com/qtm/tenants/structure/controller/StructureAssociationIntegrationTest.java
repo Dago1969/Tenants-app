@@ -8,6 +8,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+import com.qtm.external.client.HealthStructureClient;
+import com.qtm.external.client.StructureClient;
+import com.qtm.tenants.structure.dto.StructureDto;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -38,12 +41,14 @@ public class StructureAssociationIntegrationTest {
         private com.qtm.tenants.authorization.service.ControllerFunctionAuthorizationService controllerFunctionAuthorizationService;
 
         @org.springframework.boot.test.mock.mockito.MockBean
-        private com.qtm.tenants.structure.client.StructureRemoteClient structureRemoteClient;
+        private StructureClient structureClient;
+
+        @org.springframework.boot.test.mock.mockito.MockBean
+        private HealthStructureClient healthStructureClient;
 
     @Test
     void shouldAssociateAndDeactivateExternalStructure() throws Exception {
-        // remote client returns empty initially
-        org.mockito.Mockito.when(structureRemoteClient.fetchAsl()).thenReturn(java.util.List.of());
+        org.mockito.Mockito.when(healthStructureClient.findAsl()).thenReturn(java.util.List.of());
 
         // initially empty
         mockMvc.perform(get("/api/tenants/structures")
@@ -53,9 +58,20 @@ public class StructureAssociationIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0]").doesNotExist());
 
-        // associate external ASL
+        StructureDto associatedStructure = new StructureDto();
+        associatedStructure.setId(201L);
+        associatedStructure.setExternalId(201L);
+        associatedStructure.setExternalSource("HEALTH_STRUCTURE");
+        associatedStructure.setStructureType("ASL");
+        associatedStructure.setName("ASL TEST 201");
+        org.mockito.Mockito.when(structureClient.associate(
+                org.mockito.ArgumentMatchers.anyMap(),
+                org.mockito.ArgumentMatchers.nullable(String.class)))
+                .thenReturn(associatedStructure);
+
+        // L'associazione viene inoltrata a Dashboard, mentre il catalogo resta di Health Structure.
         String payload = "{" +
-                "\"externalSource\":\"QTMTicket\"," +
+                "\"externalSource\":\"HEALTH_STRUCTURE\"," +
                 "\"externalId\":201," +
                 "\"structureType\":\"ASL\"," +
                 "\"name\":\"ASL TEST 201\"" +
@@ -74,33 +90,27 @@ public class StructureAssociationIntegrationTest {
         Long createdId = node.get("id").asLong();
         assertThat(createdId).isNotNull();
 
-        // now GET should return one active ASL
-        // instruct remote client to return the ASL details for externalId 201
-        com.qtm.tenants.structure.dto.StructureDto remoteDto = new com.qtm.tenants.structure.dto.StructureDto();
-        remoteDto.setExternalId(201L);
-        remoteDto.setExternalSource("QTMTicket");
-        remoteDto.setStructureType("ASL");
-        remoteDto.setName("ASL TEST 201");
-        remoteDto.setCode("QTMTicket-201");
-        org.mockito.Mockito.when(structureRemoteClient.fetchAsl()).thenReturn(java.util.List.of(remoteDto));
-
         String listResponse = mockMvc.perform(get("/api/tenants/structures")
                         .param("structureType", "ASL")
                         .param("active", "true")
                 )
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0]").doesNotExist())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
 
         var arr = objectMapper.readTree(listResponse);
         assertThat(arr.isArray()).isTrue();
-        assertThat(arr.size()).isEqualTo(1);
-        assertThat(arr.get(0).get("externalId").asLong()).isEqualTo(201L);
+        assertThat(arr.size()).isZero();
 
         // deactivate
         mockMvc.perform(post("/api/tenants/structures/" + createdId + "/deactivate"))
                 .andExpect(status().isNoContent());
+        org.mockito.Mockito.verify(structureClient).associate(
+                org.mockito.ArgumentMatchers.anyMap(),
+                org.mockito.ArgumentMatchers.nullable(String.class));
+        org.mockito.Mockito.verify(structureClient).deactivate(201L, null);
 
         // GET active should be empty again
         mockMvc.perform(get("/api/tenants/structures")

@@ -36,8 +36,8 @@ spring:
         jwt:
           issuer-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI:http://localhost:8085/realms/${APP_KEYCLOAK_REALM_CODE:QTM}}
   mail:
-    host: smtp.gmail.com
-    port: 587
+    host: ${SPRING_MAIL_HOST:smtp.gmail.com}
+    port: ${SPRING_MAIL_PORT:587}
     username: francesco.tripodi@gmail.com
     password: ${SPRING_MAIL_PASSWORD:}
     protocol: smtp
@@ -51,7 +51,7 @@ spring:
           starttls:
             enable: true
           ssl:
-            trust: smtp.gmail.com
+            trust: ${SPRING_MAIL_HOST:smtp.gmail.com}
 
 logging:
   level:
@@ -68,16 +68,22 @@ app:
     admin-client-secret: ${APP_KEYCLOAK_ADMIN_CLIENT_SECRET:}
 
 # Proprietà custom per configurazione interna QTM (non standard Spring)
+services:
+  qtm-geography-service:
+    url: ${QTM_GEOGRAPHY_SERVICE_URL:http://localhost:8088/api/geography}
+  qtm-health-structure-service:
+    url: ${QTM_HEALTH_STRUCTURE_SERVICE_URL:http://localhost:8089/api/health-structure}
+
 qtm:
   http:
     client:
       connect-timeout: ${QTM_HTTP_CLIENT_CONNECT_TIMEOUT:60s}
       read-timeout: ${QTM_HTTP_CLIENT_READ_TIMEOUT:900s}
   dashboard:
-    api-base-url: http://localhost:8086/api
-    frontend-base-url: http://localhost:4200
+    api-base-url: ${QTM_DASHBOARD_API_BASE_URL:http://localhost:8086/api}
+    frontend-base-url: ${QTM_DASHBOARD_FRONTEND_BASE_URL:http://localhost:4200}
   frontend:
-    base-url: http://localhost:4201
+    base-url: ${QTM_FRONTEND_BASE_URL:http://localhost:4201}
   ticket:
     base-url: ${QTM_TICKET_BASE_URL:http://localhost:8084/api/ticket}
   otp:

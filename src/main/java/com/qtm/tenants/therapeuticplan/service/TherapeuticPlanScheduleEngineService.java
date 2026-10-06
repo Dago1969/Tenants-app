@@ -14,8 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.qtm.commonlib.dto.PatientDto;
 import com.qtm.commonlib.dto.TicketDto;
-import com.qtm.external.client.HospitalClient;
-import com.qtm.external.client.StructureDepartmentClient;
+import com.qtm.external.client.HealthStructureClient;
 import com.qtm.tenants.appointment.entity.AppointmentEntity;
 import com.qtm.tenants.appointment.entity.AppointmentTypeEntity;
 import com.qtm.tenants.appointment.entity.RecurrenceType;
@@ -57,8 +56,7 @@ public class TherapeuticPlanScheduleEngineService {
     private final DoctorRepository doctorRepository;
     private final TicketClient ticketClient;
     private final ObjectMapper objectMapper;
-    private final HospitalClient hospitalClient;
-    private final StructureDepartmentClient structureDepartmentClient;
+    private final HealthStructureClient healthStructureClient;
 
     /**
      * Genera o rigenera le visite in stato PROPOSTO_AUTOMATICO per un piano terapeutico.
@@ -325,8 +323,8 @@ public class TherapeuticPlanScheduleEngineService {
                 if (structureId != null) {
                     root.put("hospitalId", structureId);
                     try {
-                        if (hospitalClient != null) {
-                            var hospital = hospitalClient.getHospitalById(structureId);
+                        if (healthStructureClient != null) {
+                            var hospital = healthStructureClient.findHospitalById(structureId);
                             if (hospital != null) {
                                 if (hospital.getCodiceStruttura() != null) {
                                     root.put("hospitalCode", hospital.getCodiceStruttura());
@@ -346,8 +344,8 @@ public class TherapeuticPlanScheduleEngineService {
                 if (departmentId != null) {
                     root.put("departmentId", departmentId);
                     try {
-                        if (structureDepartmentClient != null) {
-                            var department = structureDepartmentClient.getDepartmentById(departmentId);
+                        if (healthStructureClient != null) {
+                            var department = healthStructureClient.findDepartmentById(departmentId);
                             if (department != null) {
                                 if (department.getReparto() != null) {
                                     root.put("departmentCode", department.getReparto());
@@ -396,8 +394,8 @@ public class TherapeuticPlanScheduleEngineService {
             return null;
         }
         try {
-            if (hospitalClient != null) {
-                var hospital = hospitalClient.getHospitalById(planEntity.getStructureId());
+            if (healthStructureClient != null) {
+                var hospital = healthStructureClient.findHospitalById(planEntity.getStructureId());
                 return hospital != null ? hospital.getStruttura() : null;
             }
         } catch (Exception e) {

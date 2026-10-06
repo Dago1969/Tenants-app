@@ -17,7 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.qtm.commonlib.dto.ASLDto;
 import com.qtm.commonlib.dto.ASLImportRequest;
 import com.qtm.commonlib.dto.ASLOverviewDto;
-import com.qtm.external.client.AslClient;
+import com.qtm.external.client.AslDashboardClient;
+import com.qtm.external.client.HealthStructureClient;
 import com.qtm.tenants.authorization.service.ControllerFunctionAuthorizationService;
 import com.qtm.tenants.structure.StructureModuleCodes;
 
@@ -25,7 +26,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Controller REST CRUD ASL che delega le operazioni via FeignClient (AslClient).
+ * Controller REST ASL che delega catalogo e persistenza a Health Structure.
  */
 @Slf4j
 @RestController
@@ -33,16 +34,17 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class AslController {
 
-    private final AslClient aslClient;
+        private final HealthStructureClient healthStructureClient;
+        private final AslDashboardClient aslDashboardClient;
     private final ControllerFunctionAuthorizationService controllerFunctionAuthorizationService;
 
     @GetMapping
     public ResponseEntity<List<ASLDto>> findAll(
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
-        log.info("[AslController] GET /api/tenants/asl via Feign Client selectedRole={}", selectedRole);
+        log.info("[AslController] GET /api/tenants/asl selectedRole={}", selectedRole);
         controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, StructureModuleCodes.GENERIC);
-        return ResponseEntity.ok(aslClient.findAll());
+        return ResponseEntity.ok(healthStructureClient.findAsl());
     }
 
     @GetMapping("/overview")
@@ -50,9 +52,9 @@ public class AslController {
     		@RequestParam(required = false) String regionCode,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
-        log.info("[AslController] GET /api/tenants/asl/overview via Feign Client selectedRole={}", selectedRole);
+        log.info("[AslController] GET /api/tenants/asl/overview selectedRole={}", selectedRole);
         controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, StructureModuleCodes.GENERIC);
-        List<ASLOverviewDto> associatedAsls = aslClient.findAllWithImportStatus(regionCode).stream()
+        List<ASLOverviewDto> associatedAsls = aslDashboardClient.findAllWithImportStatus(regionCode).stream()
                 .filter(asl -> Boolean.TRUE.equals(asl.getImported()))
                 .toList();
         return ResponseEntity.ok(associatedAsls);
@@ -63,10 +65,10 @@ public class AslController {
             @PathVariable Long id,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
-        log.info("[AslController] GET /api/tenants/asl/{} via Feign Client selectedRole={}", id, selectedRole);
+        log.info("[AslController] GET /api/tenants/asl/{} selectedRole={}", id, selectedRole);
         controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, StructureModuleCodes.GENERIC);
         
-        ASLDto dto = aslClient.findById(id);
+        ASLDto dto = healthStructureClient.findAslById(id);
         return dto != null ? ResponseEntity.ok(dto) : ResponseEntity.notFound().build();
     }
 
@@ -75,13 +77,13 @@ public class AslController {
             @RequestBody ASLImportRequest request,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
-        log.info("[AslController] POST /api/tenants/asl/import via Feign Client selectedRole={}", selectedRole);
+        log.info("[AslController] POST /api/tenants/asl/import selectedRole={}", selectedRole);
         controllerFunctionAuthorizationService.requireFullEditPermission(
                 selectedRole,
                 StructureModuleCodes.GENERIC,
                 ControllerFunctionAuthorizationService.CREATE_FUNCTION_CODE
         );
-        return ResponseEntity.ok(aslClient.importFromSource(request));
+        return ResponseEntity.ok(aslDashboardClient.importFromSource(request));
     }
 
     @PutMapping("/{id}")
@@ -90,13 +92,13 @@ public class AslController {
             @RequestBody ASLDto dto,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
-        log.info("[AslController] PUT /api/tenants/asl/{} via Feign Client selectedRole={}", id, selectedRole);
+        log.info("[AslController] PUT /api/tenants/asl/{} selectedRole={}", id, selectedRole);
         controllerFunctionAuthorizationService.requireFullEditPermission(
                 selectedRole,
                 StructureModuleCodes.GENERIC,
                 ControllerFunctionAuthorizationService.UPDATE_FUNCTION_CODE
         );
-        return ResponseEntity.ok(aslClient.update(id, dto));
+        return ResponseEntity.ok(healthStructureClient.updateAsl(id, dto));
     }
 
     @DeleteMapping("/{id}")
@@ -104,13 +106,13 @@ public class AslController {
             @PathVariable Long id,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
-        log.info("[AslController] DELETE /api/tenants/asl/{} via Feign Client selectedRole={}", id, selectedRole);
+        log.info("[AslController] DELETE /api/tenants/asl/{} selectedRole={}", id, selectedRole);
         controllerFunctionAuthorizationService.requireFullEditPermission(
                 selectedRole,
                 StructureModuleCodes.GENERIC,
                 ControllerFunctionAuthorizationService.DELETE_FUNCTION_CODE
         );
-        aslClient.deleteAssociation(id);
+        healthStructureClient.deleteAsl(id);
         return ResponseEntity.noContent().build();
     }
 }

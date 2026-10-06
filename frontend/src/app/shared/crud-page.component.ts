@@ -358,8 +358,8 @@ interface ConsentOtpConfig {
                       [items]="getFieldOptions(field)"
                       bindLabel="label"
                       bindValue="value"
-                      [(ngModel)]="formModel[field.key]"
-                      (change)="onSelectChange(field, formModel[field.key])"
+                      [ngModel]="formModel[field.key]"
+                      (ngModelChange)="onSelectChange(field, $event)"
                       [name]="field.key"
                       [id]="field.key"
                       [disabled]="isFieldDisabled(field)"
@@ -689,7 +689,7 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
     }
 
     this.resetFieldsOnChange(field);
-    this.loadSelectOptions();
+    this.loadSelectOptions(new Set([field.key, ...Object.keys(field.relatedFields ?? {})]));
   }
 
   goToNextFolder(): void {
@@ -926,9 +926,12 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
       && !this.isFieldHidden(field.key);
   }
 
-  private loadSelectOptions(): void {
+  private loadSelectOptions(dependencyKeys?: Set<string>): void {
     const selectFields = (this.wizardMode && this.folders.length > 0 ? this.currentFields : this.getAllFields())
-      .filter((currentField) => currentField.type === 'select');
+      .filter((currentField) => currentField.type === 'select')
+      .filter((currentField) => !dependencyKeys
+        || this.extractEndpointPlaceholders(currentField.optionsEndpoint ?? '')
+          .some((placeholder) => dependencyKeys.has(placeholder)));
 
     for (const field of selectFields) {
       if (field.options && field.options.length > 0) {
@@ -967,16 +970,17 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
         requestUrl
       });
       this.fieldLoading[field.key] = true;
-      this.http.get<Record<string, unknown>[]>(requestUrl).pipe(finalize(() => {
+      this.http.get<unknown>(requestUrl).pipe(finalize(() => {
         this.fieldLoading[field.key] = false;
       })).subscribe({
         next: (items) => {
+          const optionItems = this.normalizeSelectOptionItems(items);
           console.log('[CrudPageComponent] Loaded select options', {
             fieldKey: field.key,
             requestUrl,
-            itemCount: items?.length ?? 0
+            itemCount: optionItems.length
           });
-          this.fieldOptions[field.key] = (items ?? [])
+          this.fieldOptions[field.key] = optionItems
             .map((item) => this.mapToSelectOption(field, item))
             .filter((option): option is SelectOption => option !== null);
           this.applyRelatedFields(field, this.formModel[field.key]);
@@ -995,16 +999,34 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
     }
   }
 
+  private normalizeSelectOptionItems(response: unknown): Record<string, unknown>[] {
+    const records = (value: unknown): Record<string, unknown>[] => Array.isArray(value)
+      ? value.filter((item): item is Record<string, unknown> => item !== null && typeof item === 'object')
+      : [];
+
+    if (Array.isArray(response)) {
+      return records(response);
+    }
+
+    if (response !== null && typeof response === 'object') {
+      const wrapper = response as Record<string, unknown>;
+      return records(wrapper['content'] ?? wrapper['departments']);
+    }
+
+    return [];
+  }
+
   private mapToSelectOption(field: CrudField, item: Record<string, unknown>): SelectOption | null {
     const valueKey = field.optionValueKey ?? 'id';
     const labelKey = field.optionLabelKey ?? 'name';
-    const rawValue = item[valueKey];
+    const rawValue = item[valueKey] ?? item['id'];
 
     if (typeof rawValue !== 'string' && typeof rawValue !== 'number') {
       return null;
     }
 
-    const rawLabel = item[labelKey];
+    const rawLabel = item[labelKey] ?? item['label'] ?? item['name'] ?? item['description']
+      ?? item['descrizioneDisciplina'] ?? item['disciplina'] ?? item['codiceDisciplina'];
     const value = rawValue;
     const baseLabel = typeof rawLabel === 'string' && rawLabel.trim().length > 0
       ? rawLabel
@@ -1045,6 +1067,7 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
   private resetFieldsOnChange(field: CrudField): void {
     for (const targetField of field.resetFieldsOnChange ?? []) {
       this.formModel[targetField] = targetField.endsWith('Id') ? null : '';
+      this.fieldOptions[targetField] = [];
     }
   }
 

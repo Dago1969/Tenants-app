@@ -160,10 +160,10 @@ export class PatientsCrudComponent implements OnInit {
       type: 'select',
       folder: 'medical',
       columnSpan: 2,
-      // Recupera i reparti/dipartimenti da TICKET filtrati per codice/id struttura
-      optionsEndpoint: 'structure-departments?structureId={structureId}',
+      // Ricerca i dipartimenti nell'overview QTMDB per la struttura selezionata
+      optionsEndpoint: 'structures/departments/overview?regionCode={clinicalRegionCode}&aslCode={aslCode}&structureCode={ticketStructureCode}',
       optionValueKey: 'id',
-      optionLabelKey: 'label',
+      optionLabelKey: 'descrizioneDisciplina',
       resetFieldsOnChange: ['prescribingSpecialist']
     },
     {
@@ -349,9 +349,9 @@ export class PatientsCrudComponent implements OnInit {
           key: 'departmentId',
           labelKey: 'patients.field.departmentId',
           type: 'select',
-          optionsEndpoint: 'structures/{structureId}/departments',
+          optionsEndpoint: 'structures/departments/overview?regionCode={clinicalRegionCode}&aslCode={aslCode}&structureCode={ticketStructureCode}',
           optionValueKey: 'id',
-          optionLabelKey: 'label',
+          optionLabelKey: 'descrizioneDisciplina',
           resetFieldsOnChange: ['prescribingSpecialist']
         },
 		{

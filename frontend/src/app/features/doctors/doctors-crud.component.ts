@@ -125,9 +125,9 @@ export class DoctorsCrudComponent {
       key: 'departmentId',
       labelKey: 'doctors.field.departmentId',
       type: 'select',
-      optionsEndpoint: 'structures/{structureId}/departments',
+      optionsEndpoint: 'structures/departments/overview?regionCode={clinicalRegionCode}&aslCode={aslCode}&structureCode={ticketStructureCode}',
       optionValueKey: 'id',
-      optionLabelKey: 'label'
+      optionLabelKey: 'descrizioneDisciplina'
     },
     { key: 'specialization', labelKey: 'doctors.field.specialization', type: 'text' },
     { key: 'dataProcessingConsent', labelKey: 'doctors.field.dataProcessingConsent', type: 'checkbox', readonly: true, required: true, hidden: true },
@@ -301,9 +301,9 @@ export class DoctorsCrudComponent {
           key: 'departmentId',
           labelKey: 'doctors.field.departmentId',
           type: 'select',
-          optionsEndpoint: 'structures/{structureId}/departments',
+          optionsEndpoint: 'structures/departments/overview?regionCode={clinicalRegionCode}&aslCode={aslCode}&structureCode={ticketStructureCode}',
           optionValueKey: 'id',
-          optionLabelKey: 'label'
+          optionLabelKey: 'descrizioneDisciplina'
         }
       ]
     },
@@ -344,9 +344,9 @@ export class DoctorsCrudComponent {
           labelKey: 'doctors.field.departmentId',
           type: 'select',
           readonly: true,
-          optionsEndpoint: 'structures/{structureId}/departments',
+          optionsEndpoint: 'structures/departments/overview?regionCode={clinicalRegionCode}&aslCode={aslCode}&structureCode={ticketStructureCode}',
           optionValueKey: 'id',
-          optionLabelKey: 'label'
+          optionLabelKey: 'descrizioneDisciplina'
         },
         { key: 'specialization', labelKey: 'doctors.field.specialization', type: 'text', readonly: true },
         { key: 'dataProcessingConsentDateTime', labelKey: 'doctors.field.dataProcessingConsentDateTime', type: 'datetime-local', readonly: true }
