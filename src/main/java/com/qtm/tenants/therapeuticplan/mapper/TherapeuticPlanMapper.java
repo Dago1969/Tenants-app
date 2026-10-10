@@ -98,12 +98,15 @@ public class TherapeuticPlanMapper {
                 .doctorId(prevalentDoctorAssignment != null && prevalentDoctorAssignment.getDoctor() != null ? prevalentDoctorAssignment.getDoctor().getId() : null)
                 .doctorName(prevalentDoctorAssignment != null && prevalentDoctorAssignment.getDoctor() != null ? prevalentDoctorAssignment.getDoctor().getFullName() : null)
                 .drugCode(entity.getDrugCode())
+                .drugDescription(entity.getDrugDescription())
                 .startDate(entity.getStartDate())
                 .endDate(entity.getEndDate())
                 .dischargeDate(entity.getDischargeDate())
                 .dischargeType(entity.getDischargeType())
                 .status(entity.getStatus())
                 .notes(entity.getNotes())
+                .surveyAnswers(entity.getSurveyAnswers())
+                .surveyAcceptedAt(entity.getSurveyAcceptedAt())
                 .build();
     }
 
@@ -136,6 +139,7 @@ public class TherapeuticPlanMapper {
         syncNurseAssignments(entity, nurseAssignments);
         syncDoctorAssignments(entity, doctorAssignments);
         entity.setDrugCode(dto.getDrugCode());
+        entity.setDrugDescription(dto.getDrugDescription());
         entity.setStartDate(dto.getStartDate());
         entity.setEndDate(dto.getEndDate());
         entity.setDischargeDate(dto.getDischargeDate());

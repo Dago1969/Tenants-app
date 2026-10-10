@@ -71,6 +71,9 @@ public class TherapeuticPlanEntity {
     @Column(name = "drug_code", nullable = false, length = 128)
     private String drugCode;
 
+    @Column(name = "drug_description", length = 512)
+    private String drugDescription;
+
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
 
@@ -82,6 +85,15 @@ public class TherapeuticPlanEntity {
 
     @Column(name = "notes", length = 1000)
     private String notes;
+
+    @Column(name = "survey_answers", columnDefinition = "TEXT")
+    private String surveyAnswers;
+
+    @Column(name = "survey_accepted_at")
+    private LocalDateTime surveyAcceptedAt;
+
+    @Column(name = "survey_otp_recipient", length = 32)
+    private String surveyOtpRecipient;
 
     @Column(name = "discharge_date")
     private LocalDate dischargeDate;

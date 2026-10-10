@@ -93,12 +93,14 @@ public class DoctorController {
     @GetMapping
     public ResponseEntity<List<DoctorDto>> findAll(
             @RequestParam(required = false) Long regionId,
-            @RequestParam(required = false) Long structureId,
+            @RequestParam(required = false) Long hospitalId,
+            @RequestParam(name = "structureId", required = false) Long legacyStructureId,
             @RequestParam(required = false) Long departmentId,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
         controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
-        return ResponseEntity.ok(doctorService.findAll(regionId, structureId, departmentId));
+        Long resolvedHospitalId = hospitalId != null ? hospitalId : legacyStructureId;
+        return ResponseEntity.ok(doctorService.findAll(regionId, resolvedHospitalId, departmentId));
     }
 
     @GetMapping("/{id}")

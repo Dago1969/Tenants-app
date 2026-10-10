@@ -50,6 +50,7 @@ public class PatientService {
             "assistedId", "firstName", "lastName", "fiscalCode", "email", "primaryPhone", "secondaryPhone",
             "regionId", "region", "provinceId", "province", "cityId", "city", "deliveryAddress", "secondaryAddresses", "communicationChannels",
             "identificationDocumentReference", "dataProcessingConsent", "dataProcessingConsentDateTime",
+            "otpRecipient",
             "dataProcessingConsentRevocationLog", "additionalConsents", "therapyStatus", "prescribingSpecialist",
             "referenceHospitalStructure", "referencePharmacy", "preferredPickupPharmacy", "deliveryMode",
             "reminderEnabled", "caregiverFullName", "caregiverPhone", "preferredContact", "structureId"
@@ -91,7 +92,7 @@ public class PatientService {
         enforceModuleReadAllowed(policy);
 
         Map<String, String> permissions = PROTECTED_FIELDS.stream().collect(Collectors.toMap(
-                field -> field,
+                field -> "structureId".equals(field) ? "hospitalId" : field,
                 field -> policy.fieldScopes().getOrDefault(field, AuthorizationScope.FULL_EDIT).getCode(),
                 (left, right) -> right,
                 LinkedHashMap::new

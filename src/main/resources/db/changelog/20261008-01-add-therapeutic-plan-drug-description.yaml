@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20261008-01-add-therapeutic-plan-drug-description
+      author: copilot
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        not:
+          columnExists:
+            tableName: therapeutic_plan
+            columnName: drug_description
+      changes:
+        - addColumn:
+            tableName: therapeutic_plan
+            columns:
+              - column:
+                  name: drug_description
+                  type: VARCHAR(512)

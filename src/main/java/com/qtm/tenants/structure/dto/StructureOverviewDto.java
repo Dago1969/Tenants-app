@@ -1,5 +1,7 @@
 package com.qtm.tenants.structure.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -17,11 +19,15 @@ import lombok.Setter;
 public class StructureOverviewDto {
 
     private Long aslId;
+    @JsonProperty("hospitalId")
+    @JsonAlias({"structureId", "strutturaId"})
     private Long strutturaId;
     private String codiceRegione;
     private String regione;
     private String codiceAsl;
     private String asl;
+    @JsonProperty("hospitalCode")
+    @JsonAlias({"structureCode", "codiceStruttura"})
     private String codiceStruttura;
     private String struttura;
 }

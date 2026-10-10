@@ -26,6 +26,10 @@ export interface StructureOverviewLookupParams {
 }
 
 export interface StructureOverviewLookupDto {
+  hospitalId?: number;
+  hospitalCode?: string;
+  structureId?: number;
+  structureCode?: string;
   aslId?: number;
   strutturaId?: number;
   codiceRegione?: string;

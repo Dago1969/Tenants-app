@@ -29,7 +29,7 @@ export class DoctorsSearchComponent {
     { key: 'fullName', labelKey: 'doctors.field.fullName', type: 'text' },
     { key: 'email', labelKey: 'doctors.field.email', type: 'text' },
     { key: 'specialization', labelKey: 'doctors.field.specialization', type: 'text' },
-    { key: 'structureId', labelKey: 'doctors.field.structureId', type: 'number' }
+    { key: 'hospitalId', labelKey: 'doctors.field.structureId', type: 'number' }
   ];
 
   resultColumns: SearchField[] = [
@@ -37,6 +37,6 @@ export class DoctorsSearchComponent {
     { key: 'fullName', labelKey: 'doctors.field.fullName', type: 'text' },
     { key: 'email', labelKey: 'doctors.field.email', type: 'text' },
     { key: 'specialization', labelKey: 'doctors.field.specialization', type: 'text' },
-    { key: 'structureId', labelKey: 'doctors.field.structureId', type: 'number' }
+    { key: 'hospitalId', labelKey: 'doctors.field.structureId', type: 'number' }
   ];
 }

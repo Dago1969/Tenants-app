@@ -1,0 +1,41 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20261010-02-add-survey-otp-approval-ticket
+      author: copilot
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        not:
+          tableExists:
+            tableName: therapeutic_plan_survey_otp_ticket
+      changes:
+        - createTable:
+            tableName: therapeutic_plan_survey_otp_ticket
+            columns:
+              - column:
+                  name: token
+                  type: VARCHAR(36)
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: patient_id
+                  type: BIGINT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: therapeutic_plan_id
+                  type: BIGINT
+              - column:
+                  name: recipient
+                  type: VARCHAR(32)
+                  constraints:
+                    nullable: false
+              - column:
+                  name: expires_at
+                  type: DATETIME
+                  constraints:
+                    nullable: false
+      rollback:
+        - dropTable:
+            tableName: therapeutic_plan_survey_otp_ticket

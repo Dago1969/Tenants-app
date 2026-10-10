@@ -221,6 +221,88 @@ textarea {
   transform: scale(1.05);
 }
 
+app-consent-otp-form {
+  display: block;
+  width: 100%;
+}
+
+.consent-otp-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 12px;
+  width: 100%;
+}
+
+.consent-otp-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+  color: #355277;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.consent-otp-field input,
+.consent-otp-field select {
+  width: 100%;
+  min-width: 0;
+}
+
+.consent-otp-recipient {
+  grid-column: span 2;
+}
+
+.consent-otp-action {
+  display: flex;
+  min-height: 36px;
+  align-items: end;
+}
+
+.consent-otp-button {
+  min-height: 36px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 18px;
+  background: var(--Primary, #0876f9);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.consent-otp-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.consent-otp-date {
+  grid-column: span 1;
+}
+
+.consent-otp-status {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: #9a5b00;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.consent-otp-status-success {
+  color: #167248;
+}
+
+@media (max-width: 640px) {
+  .consent-otp-form {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .consent-otp-date {
+    grid-column: auto;
+  }
+}
+
 .visually-hidden {
   position: absolute !important;
   width: 1px;

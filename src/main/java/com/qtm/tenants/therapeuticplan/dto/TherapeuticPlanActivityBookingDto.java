@@ -1,5 +1,7 @@
 package com.qtm.tenants.therapeuticplan.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,6 +22,8 @@ public class TherapeuticPlanActivityBookingDto {
     private Long therapeuticPlanId;
     private Long patientId;
     private String patientName;
+    @JsonProperty("hospitalId")
+    @JsonAlias("structureId")
     private Long structureId;
     private String structureName;
     private LocalDate bookingDate;

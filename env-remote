@@ -40,3 +40,13 @@ SPRING_MAIL_USERNAME=CHANGE_ME
 SPRING_MAIL_PASSWORD=CHANGE_ME
 SPRING_MAIL_HOST=smtp.gmail.com
 SPRING_MAIL_PORT=587
+QTM_DASHBOARD_FRONTEND_BASE_URL=https://dashboard.example.com
+QTM_HTTP_CLIENT_CONNECT_TIMEOUT=60s
+QTM_HTTP_CLIENT_READ_TIMEOUT=900s
+QTM_OTP_TWILIO_DEFAULT_CHANNEL=sms
+DASHBOARD_URL=https://dashboard.example.com/dashboard
+
+# Variabili build/runtime frontend Tenants-app
+ANGULAR_BUILD_CONFIGURATION=collaudo
+NG_QTMDB_APP_BASE_URL=https://dashboard.qtmdev.quicare.com/dashboard
+NG_TENANTS_API_BASE_URL=https://tenants.qtmdev.quicare.com/api/tenants

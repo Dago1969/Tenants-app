@@ -32,7 +32,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/tenants/structures")
+@RequestMapping({"/api/tenants/hospitals", "/api/tenants/structures"})
 @RequiredArgsConstructor
 public class StructureController {
 
@@ -95,11 +95,22 @@ public class StructureController {
     public ResponseEntity<List<StructureOverviewDto>> findOverview(
             @RequestParam(required = false) String regionCode,
             @RequestParam(required = false) String aslCode,
+            @RequestParam(required = false) Long hospitalId,
+            @RequestParam(name = "structureId", required = false) Long legacyStructureId,
+            @RequestParam(name = "strutturaId", required = false) Long legacyItalianStructureId,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
         controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, StructureModuleCodes.GENERIC);
-        log.info("[StructureController] GET /structures/overview regionCode={} aslCode={}", regionCode, aslCode);
+        Long resolvedHospitalId = hospitalId != null ? hospitalId
+            : legacyStructureId != null ? legacyStructureId : legacyItalianStructureId;
+        log.info("[StructureController] GET /hospitals/overview regionCode={} aslCode={} hospitalId={}",
+            regionCode, aslCode, resolvedHospitalId);
         List<StructureOverviewDto> structures = structureService.findOverview(regionCode, aslCode);
+        if (resolvedHospitalId != null) {
+            structures = structures.stream()
+                .filter(hospital -> resolvedHospitalId.equals(hospital.getStrutturaId()))
+                .toList();
+        }
         log.info("[StructureController] GET /structures/overview returned {} hospitals regionCode={} aslCode={}",
             structures == null ? 0 : structures.size(), regionCode, aslCode);
         return ResponseEntity.ok(structures);
@@ -122,12 +133,14 @@ public class StructureController {
     public ResponseEntity<List<StructureDepartmentOverviewDto>> findDepartmentOverview(
             @RequestParam(required = false) String regionCode,
             @RequestParam(required = false) String aslCode,
-            @RequestParam(required = false) String structureCode,
+            @RequestParam(required = false) String hospitalCode,
+            @RequestParam(name = "structureCode", required = false) String legacyStructureCode,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
+        String resolvedHospitalCode = hospitalCode != null ? hospitalCode : legacyStructureCode;
         log.info("[StructureController] GET /structures/departments/overview regionCode={} aslCode={} structureCode={}",
-                regionCode, aslCode, structureCode);
-        return ResponseEntity.ok(structureClient.findDepartmentOverview(regionCode, aslCode, structureCode, selectedRole));
+            regionCode, aslCode, resolvedHospitalCode);
+        return ResponseEntity.ok(structureClient.findDepartmentOverview(regionCode, aslCode, resolvedHospitalCode, selectedRole));
     }
 
     @GetMapping("/{id}/departments")
