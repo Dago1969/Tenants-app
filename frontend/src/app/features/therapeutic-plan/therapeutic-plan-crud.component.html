@@ -77,9 +77,9 @@
         <span>{{ translate('therapeuticPlan.field.dischargeType') }}</span>
         <select [(ngModel)]="formModel.dischargeType" name="dischargeType" class="therapeutic-plan-select">
           <option [ngValue]="null">-- {{ translate('common.select') }} --</option>
-          <option value="NAIVE">NAÏVE</option>
-          <option value="SWITCH">SWITCH</option>
-          <option value="SONDINO">Sondino</option>
+          <option value="NAIVE">{{ translate('therapeuticPlan.option.dischargeType.naive') }}</option>
+          <option value="SWITCH">{{ translate('therapeuticPlan.option.dischargeType.switch') }}</option>
+          <option value="SONDINO">{{ translate('therapeuticPlan.option.dischargeType.feedingTube') }}</option>
         </select>
       </label>
     </section>

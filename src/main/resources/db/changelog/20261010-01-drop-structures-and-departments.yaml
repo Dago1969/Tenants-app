@@ -41,22 +41,6 @@ databaseChangeLog:
             cascadeConstraints: true
 
   - changeSet:
-      id: 20261010-03-drop-structure-external-columns
-      author: copilot
-      preConditions:
-        - onFail: MARK_RAN
-        - onError: HALT
-        - tableExists:
-            tableName: structures
-      changes:
-        - dropColumn:
-            tableName: structures
-            columnName: external_id
-        - dropColumn:
-            tableName: structures
-            columnName: external_source
-
-  - changeSet:
       id: 20261010-04-drop-structure-types
       author: copilot
       preConditions:

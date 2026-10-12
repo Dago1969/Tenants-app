@@ -16,7 +16,7 @@ import java.util.List;
  * Facade TENAPP per la ricerca dei farmaci condivisi dal microservizio TICKET.
  */
 @RestController
-@RequestMapping("/api/v1/drugs")
+@RequestMapping("/api/tenants/v1/drugs")
 @RequiredArgsConstructor
 public class DrugSearchController {
 

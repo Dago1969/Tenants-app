@@ -1,6 +1,8 @@
 package com.qtm.external.client;
 
+import com.qtm.commonlib.dto.HospitalOverviewDto;
 import com.qtm.commonlib.dto.StructureDepartmentOverviewDto;
+import com.qtm.commonlib.dto.StructureDepartmentSourceDto;
 import com.qtm.tenants.structure.dto.StructureDto;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -17,6 +19,8 @@ import java.util.Optional;
 public class StructureClient {
 
     private static final ParameterizedTypeReference<List<StructureDepartmentOverviewDto>> DEPARTMENT_OVERVIEW_LIST_TYPE = new ParameterizedTypeReference<>() { };
+        private static final ParameterizedTypeReference<List<HospitalOverviewDto>> HOSPITAL_OVERVIEW_LIST_TYPE = new ParameterizedTypeReference<>() { };
+        private static final ParameterizedTypeReference<List<StructureDepartmentSourceDto>> STRUCTURE_DEPARTMENT_LIST_TYPE = new ParameterizedTypeReference<>() { };
 
     private final RestClient restClient;
     private final String dashboardApiBaseUrl;
@@ -47,6 +51,33 @@ public class StructureClient {
                 .headers(headers -> RequestContextHeaderForwarder.forward(headers, selectedRole))
                 .retrieve()
                 .body(DEPARTMENT_OVERVIEW_LIST_TYPE);
+    }
+
+    public List<HospitalOverviewDto> findHospitalOverview(String regionCode, String aslCode) {
+        var uri = UriComponentsBuilder.fromUriString(dashboardApiBaseUrl + "/hospital/overview")
+                .queryParamIfPresent("regionCode", Optional.ofNullable(regionCode))
+                .queryParamIfPresent("aslCode", Optional.ofNullable(aslCode))
+                .build()
+                .toUri();
+
+        return restClient.get()
+                .uri(uri)
+                .headers(RequestContextHeaderForwarder::forward)
+                .retrieve()
+                .body(HOSPITAL_OVERVIEW_LIST_TYPE);
+    }
+
+    public List<StructureDepartmentSourceDto> findDepartmentsByStructureCode(String structureCode) {
+        var uri = UriComponentsBuilder.fromUriString(dashboardApiBaseUrl + "/structure-departments/by-structure")
+                .queryParam("codiceStruttura", structureCode)
+                .build()
+                .toUri();
+
+        return restClient.get()
+                .uri(uri)
+                .headers(RequestContextHeaderForwarder::forward)
+                .retrieve()
+                .body(STRUCTURE_DEPARTMENT_LIST_TYPE);
     }
 
     public StructureDto create(StructureDto structureDto, String selectedRole) {

@@ -12,7 +12,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.qtm.commonlib.dto.ASLDto;
 import com.qtm.commonlib.dto.HospitalDto;
+import com.qtm.commonlib.dto.HospitalOverviewDto;
+import com.qtm.commonlib.dto.StructureDepartmentSourceDto;
 import com.qtm.external.client.HealthStructureClient;
+import com.qtm.external.client.StructureClient;
 import com.qtm.tenants.structure.dto.StructureDepartmentOptionDto;
 import com.qtm.tenants.structure.dto.StructureDto;
 import com.qtm.tenants.structure.dto.StructureOverviewDto;
@@ -29,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 public class StructureService {
 
     private final HealthStructureClient healthStructureClient;
+    private final StructureClient structureClient;
 
     @Transactional
     public StructureDto create(StructureDto structureDto) {
@@ -105,9 +109,7 @@ public class StructureService {
 
     @Transactional(readOnly = true)
     public List<StructureOverviewDto> findOverview(String regionCode, String aslCode) {
-        return healthStructureClient.findHospitals().stream()
-            .filter(hospital -> matchesFilter(hospital.getCodiceRegione(), regionCode))
-            .filter(hospital -> matchesFilter(hospital.getCodiceAsl(), aslCode))
+        return structureClient.findHospitalOverview(regionCode, aslCode).stream()
             .map(this::toOverviewDto)
             .toList();
     }
@@ -127,11 +129,21 @@ public class StructureService {
 
     @Transactional(readOnly = true)
     public List<StructureDepartmentOptionDto> findDepartmentOptions(Long structureId) {
-        String structureCode = findById(structureId).getCode();
-        return healthStructureClient.findDepartmentsByStructureCode(structureCode).stream()
-            .map(department -> new StructureDepartmentOptionDto(
-                department.getId(),
-                department.getDescrizioneDisciplina()))
+        HospitalOverviewDto hospital = structureClient.findHospitalOverview(null, null).stream()
+            .filter(candidate -> Objects.equals(candidate.getStrutturaId(), structureId))
+            .findFirst()
+            .orElseThrow(() -> new ResponseStatusException(
+                NOT_FOUND, "Ospedale non trovato su QTMDB per ID: " + structureId));
+
+        String structureCode = hospital.getCodiceStruttura();
+        if (structureCode == null || structureCode.isBlank()) {
+            throw new ResponseStatusException(NOT_FOUND,
+                "Codice struttura mancante per l'ospedale ID: " + structureId);
+        }
+
+        List<StructureDepartmentSourceDto> departments = structureClient.findDepartmentsByStructureCode(structureCode);
+        return departments.stream()
+            .map(department -> new StructureDepartmentOptionDto(department.getId(), department.getDescrizioneDisciplina()))
             .toList();
     }
 
@@ -175,10 +187,10 @@ public class StructureService {
         return dto;
     }
 
-    private StructureOverviewDto toOverviewDto(HospitalDto hospital) {
+    private StructureOverviewDto toOverviewDto(HospitalOverviewDto hospital) {
         return StructureOverviewDto.builder()
                 .aslId(hospital.getAslId())
-                .strutturaId(hospital.getId())
+                .strutturaId(hospital.getStrutturaId())
                 .codiceRegione(hospital.getCodiceRegione())
                 .regione(hospital.getRegione())
                 .codiceAsl(hospital.getCodiceAsl())

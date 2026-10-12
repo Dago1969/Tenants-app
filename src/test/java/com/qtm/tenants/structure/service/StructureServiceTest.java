@@ -15,8 +15,13 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.qtm.commonlib.dto.ASLDto;
 import com.qtm.commonlib.dto.HospitalDto;
+import com.qtm.commonlib.dto.HospitalOverviewDto;
+import com.qtm.commonlib.dto.StructureDepartmentSourceDto;
 import com.qtm.external.client.HealthStructureClient;
+import com.qtm.external.client.StructureClient;
 import com.qtm.tenants.structure.dto.StructureDto;
+import com.qtm.tenants.structure.dto.StructureDepartmentOptionDto;
+import com.qtm.tenants.structure.dto.StructureOverviewDto;
 
 /**
  * Test del service strutture delegato al catalogo remoto Health Structure.
@@ -27,13 +32,60 @@ class StructureServiceTest {
     @Mock
     private HealthStructureClient healthStructureClient;
 
+    @Mock
+    private StructureClient structureClient;
+
     private StructureService structureService;
 
     @BeforeEach
     void setUp() {
         structureService = new StructureService(
-            healthStructureClient
+            healthStructureClient,
+            structureClient
         );
+    }
+
+    @Test
+    void shouldLoadHospitalOverviewFromDashboard() {
+        HospitalOverviewDto hospital = HospitalOverviewDto.builder()
+            .id(2L)
+            .strutturaId(2L)
+            .codiceRegione("09")
+            .regione("Toscana")
+            .codiceAsl("090601")
+            .asl("ASL Toscana")
+            .codiceStruttura("090601")
+            .struttura("Ospedale Centrale")
+            .build();
+        when(structureClient.findHospitalOverview("09", null)).thenReturn(List.of(hospital));
+
+        List<StructureOverviewDto> result = structureService.findOverview("09", null);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getStrutturaId()).isEqualTo(2L);
+        assertThat(result.get(0).getCodiceRegione()).isEqualTo("09");
+        assertThat(result.get(0).getStruttura()).isEqualTo("Ospedale Centrale");
+    }
+
+    @Test
+    void shouldLoadDepartmentsForHospitalFromDashboardByStructureCode() {
+        HospitalOverviewDto hospital = HospitalOverviewDto.builder()
+            .id(191L)
+            .strutturaId(191L)
+            .codiceStruttura("090623")
+            .build();
+        StructureDepartmentSourceDto department = StructureDepartmentSourceDto.builder()
+            .id(7L)
+            .descrizioneDisciplina("Neurologia")
+            .build();
+        when(structureClient.findHospitalOverview(null, null)).thenReturn(List.of(hospital));
+        when(structureClient.findDepartmentsByStructureCode("090623")).thenReturn(List.of(department));
+
+        List<StructureDepartmentOptionDto> result = structureService.findDepartmentOptions(191L);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getId()).isEqualTo(7L);
+        assertThat(result.get(0).getLabel()).isEqualTo("Neurologia");
     }
 
     @Test
