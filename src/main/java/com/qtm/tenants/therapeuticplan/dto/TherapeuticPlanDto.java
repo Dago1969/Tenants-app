@@ -1,11 +1,14 @@
 package com.qtm.tenants.therapeuticplan.dto;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -22,6 +25,8 @@ public class TherapeuticPlanDto {
     private String projectCode;
     private List<Long> equipmentIds;
     private List<String> equipmentCodes;
+    @JsonProperty("hospitalId")
+    @JsonAlias("structureId")
     private Long structureId;
     private String structureType;
     private String structureName;
@@ -41,6 +46,7 @@ public class TherapeuticPlanDto {
     private Long doctorId;
     private String doctorName;
     private String drugCode;
+    private String drugDescription;
     private LocalDate startDate;
     private LocalDate endDate;
     private LocalDate dischargeDate;
@@ -51,4 +57,12 @@ public class TherapeuticPlanDto {
      * Template JSON della visita risolto dal progetto associato al piano terapeutico.
      */
     private String jsonVisit;
+
+    /** Definizione JSON del questionario di accettazione configurato sul progetto. */
+    private String jsonSurvey;
+
+    private String surveyAnswers;
+    private LocalDateTime surveyAcceptedAt;
+    private String surveyAcceptanceToken;
+    private String surveyAcceptanceRecipient;
 }

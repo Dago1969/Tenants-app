@@ -88,12 +88,12 @@ public class DoctorService {
     }
 
     @Transactional(readOnly = true)
-    public List<DoctorDto> findAll(Long regionId, Long structureId, Long departmentId) {
+    public List<DoctorDto> findAll(Long regionId, Long hospitalId, Long departmentId) {
         AuthorizationPolicy policy = resolveAuthorizationPolicy();
         enforceModuleReadAllowed(policy);
         return doctorRepository.findAll().stream()
                 .filter(doctor -> regionId == null || java.util.Objects.equals(doctor.getRegionId(), regionId))
-                .filter(doctor -> structureId == null || java.util.Objects.equals(doctor.getStructureId(), structureId))
+                .filter(doctor -> hospitalId == null || java.util.Objects.equals(doctor.getStructureId(), hospitalId))
                 .filter(doctor -> departmentId == null || java.util.Objects.equals(doctor.getDepartmentId(), departmentId))
                 .map(doctorMapper::toDto)
                 .map(dto -> applyReadAuthorization(dto, policy))
@@ -113,7 +113,7 @@ public class DoctorService {
         enforceModuleReadAllowed(policy);
 
         Map<String, String> permissions = PROTECTED_FIELDS.stream().collect(Collectors.toMap(
-                field -> field,
+                field -> "structureId".equals(field) ? "hospitalId" : field,
                 field -> policy.fieldScopes().getOrDefault(field, AuthorizationScope.FULL_EDIT).getCode(),
                 (left, right) -> right,
                 LinkedHashMap::new

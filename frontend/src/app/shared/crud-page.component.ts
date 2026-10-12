@@ -10,6 +10,7 @@ import { environment } from '../../environments/environment';
 import { FunctionAuthorizationService } from '../core/function-authorization.service';
 import { OtpApiService, OtpVerificationResultResponse } from '../core/otp-api.service';
 import { hasMessageKey, MessageKey, t } from '../i18n/messages';
+import { ConsentOtpFormComponent, ConsentOtpOption } from './consent-otp-form.component';
 
 export interface CrudField {
   key: string;
@@ -85,7 +86,7 @@ interface ConsentOtpConfig {
 @Component({
   selector: 'app-crud-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgSelectModule],
+  imports: [CommonModule, FormsModule, NgSelectModule, ConsentOtpFormComponent],
   styleUrls: ['./crud-page.component.css'],
   template: `
     <section class="crud-shell" [class.crud-shell-popup]="popupMode">
@@ -358,8 +359,8 @@ interface ConsentOtpConfig {
                       [items]="getFieldOptions(field)"
                       bindLabel="label"
                       bindValue="value"
-                      [(ngModel)]="formModel[field.key]"
-                      (change)="onSelectChange(field, formModel[field.key])"
+                      [ngModel]="formModel[field.key]"
+                      (ngModelChange)="onSelectChange(field, $event)"
                       [name]="field.key"
                       [id]="field.key"
                       [disabled]="isFieldDisabled(field)"
@@ -393,6 +394,26 @@ interface ConsentOtpConfig {
               </ng-template>
             </div>
           </div>
+
+          <app-consent-otp-form
+            *ngIf="showConsentOtpPanel()"
+            [channel]="consentOtpSmsChannel"
+            [channelOptions]="consentOtpChannelOptions"
+            [recipient]="asString(formModel['otpRecipient'])"
+            [recipientOptions]="getConsentOtpRecipientOptions()"
+            [destination]="consentOtpState.destination"
+            [code]="getConsentOtpCode()"
+            [consentDate]="asString(formModel['dataProcessingConsentDateTime'])"
+            [pending]="consentOtpState.pending"
+            [sent]="consentOtpState.sent"
+            [verified]="consentOtpState.verified"
+            [disabled]="isViewMode"
+            [status]="consentOtpState.statusKey ? translate(consentOtpState.statusKey) : ''"
+            (recipientChange)="onConsentOtpRecipientChange($event)"
+            (codeChange)="setConsentOtpCode($event)"
+            (send)="runConsentOtpAction('send')"
+            (verify)="runConsentOtpAction('verify')"
+          />
 
           <div *ngIf="shouldShowConsentOtpSummary()" class="crud-log-panel crud-log-panel-inline">
             <div class="crud-log-entry crud-log-entry-success" *ngIf="consentOtpState.destination">
@@ -455,6 +476,7 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
   readonly phoneCountryOrder: NonNullable<AllOptions['countryOrder']> = ['it', 'us', 'gb', 'fr', 'de', 'es'];
   readonly loadPhoneInputUtils = () => import('intl-tel-input/utils');
   readonly consentOtpSmsChannel = 'sms';
+  readonly consentOtpChannelOptions: ConsentOtpOption[] = [{ value: 'sms', label: 'SMS' }];
 
   @Input({ required: true }) titleKey!: MessageKey;
   @Input({ required: true }) endpoint!: string;
@@ -534,12 +556,16 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
   }
 
   get currentFields(): CrudField[] {
+    const filterFields = (fields: CrudField[]) => fields
+      .filter((field) => this.shouldDisplayField(field))
+      .filter((field) => !this.isManagedByConsentOtpPanel(field));
+
     if (this.folders.length === 0) {
-      return this.fields.filter((field) => this.shouldDisplayField(field));
+      return filterFields(this.fields);
     }
 
     const active = this.folders.find((folder) => folder.key === this.activeFolder);
-    return (active?.fields ?? []).filter((field) => this.shouldDisplayField(field));
+    return filterFields(active?.fields ?? []);
   }
 
   get currentFolder(): CrudFolder {
@@ -634,6 +660,60 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
     return this.fieldOptions[field.key] ?? [];
   }
 
+  getConsentOtpRecipientOptions(): ConsentOtpOption[] {
+    const recipientField = this.folders
+      .flatMap((folder) => folder.fields)
+      .find((field) => field.key === 'otpRecipient');
+    return recipientField
+      ? this.getFieldOptions(recipientField).map((option) => ({
+        value: String(option.value),
+        label: this.resolveOptionLabel(option.label)
+      }))
+      : [];
+  }
+
+  showConsentOtpPanel(): boolean {
+    return this.activeFolder === 'privacy' && this.getConsentOtpConfig() !== null;
+  }
+
+  getConsentOtpCode(): string {
+    const config = this.getConsentOtpConfig();
+    return config ? this.asString(this.formModel[config.codeFieldKey]) : '';
+  }
+
+  setConsentOtpCode(code: string): void {
+    const config = this.getConsentOtpConfig();
+    if (!config) {
+      return;
+    }
+    this.formModel[config.codeFieldKey] = code;
+  }
+
+  onConsentOtpRecipientChange(recipient: string): void {
+    const field = this.folders.flatMap((folder) => folder.fields).find((item) => item.key === 'otpRecipient');
+    if (field) {
+      this.onSelectChange(field, recipient);
+    }
+    this.consentOtpState = this.createConsentOtpState();
+    this.formModel['dataProcessingConsentDateTime'] = '';
+    const config = this.getConsentOtpConfig();
+    if (config) {
+      this.formModel[config.codeFieldKey] = '';
+    }
+  }
+
+  runConsentOtpAction(action: 'send' | 'verify'): void {
+    const config = this.getConsentOtpConfig();
+    if (!config) {
+      return;
+    }
+    if (action === 'send') {
+      this.sendConsentOtp(config);
+    } else {
+      this.verifyConsentOtp(config);
+    }
+  }
+
   onFieldBlur(field: CrudField): void {
     if (field.key === 'username' && this.formModel['username'] && !this.loadedEntityKeyValue) {
       const usernameRaw = this.formModel['username'];
@@ -689,7 +769,7 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
     }
 
     this.resetFieldsOnChange(field);
-    this.loadSelectOptions();
+    this.loadSelectOptions(new Set([field.key, ...Object.keys(field.relatedFields ?? {})]));
   }
 
   goToNextFolder(): void {
@@ -926,9 +1006,12 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
       && !this.isFieldHidden(field.key);
   }
 
-  private loadSelectOptions(): void {
+  private loadSelectOptions(dependencyKeys?: Set<string>): void {
     const selectFields = (this.wizardMode && this.folders.length > 0 ? this.currentFields : this.getAllFields())
-      .filter((currentField) => currentField.type === 'select');
+      .filter((currentField) => currentField.type === 'select')
+      .filter((currentField) => !dependencyKeys
+        || this.extractEndpointPlaceholders(currentField.optionsEndpoint ?? '')
+          .some((placeholder) => dependencyKeys.has(placeholder)));
 
     for (const field of selectFields) {
       if (field.options && field.options.length > 0) {
@@ -967,16 +1050,17 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
         requestUrl
       });
       this.fieldLoading[field.key] = true;
-      this.http.get<Record<string, unknown>[]>(requestUrl).pipe(finalize(() => {
+      this.http.get<unknown>(requestUrl).pipe(finalize(() => {
         this.fieldLoading[field.key] = false;
       })).subscribe({
         next: (items) => {
+          const optionItems = this.normalizeSelectOptionItems(items);
           console.log('[CrudPageComponent] Loaded select options', {
             fieldKey: field.key,
             requestUrl,
-            itemCount: items?.length ?? 0
+            itemCount: optionItems.length
           });
-          this.fieldOptions[field.key] = (items ?? [])
+          this.fieldOptions[field.key] = optionItems
             .map((item) => this.mapToSelectOption(field, item))
             .filter((option): option is SelectOption => option !== null);
           this.applyRelatedFields(field, this.formModel[field.key]);
@@ -995,16 +1079,34 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
     }
   }
 
+  private normalizeSelectOptionItems(response: unknown): Record<string, unknown>[] {
+    const records = (value: unknown): Record<string, unknown>[] => Array.isArray(value)
+      ? value.filter((item): item is Record<string, unknown> => item !== null && typeof item === 'object')
+      : [];
+
+    if (Array.isArray(response)) {
+      return records(response);
+    }
+
+    if (response !== null && typeof response === 'object') {
+      const wrapper = response as Record<string, unknown>;
+      return records(wrapper['content'] ?? wrapper['departments']);
+    }
+
+    return [];
+  }
+
   private mapToSelectOption(field: CrudField, item: Record<string, unknown>): SelectOption | null {
     const valueKey = field.optionValueKey ?? 'id';
     const labelKey = field.optionLabelKey ?? 'name';
-    const rawValue = item[valueKey];
+    const rawValue = item[valueKey] ?? item['id'];
 
     if (typeof rawValue !== 'string' && typeof rawValue !== 'number') {
       return null;
     }
 
-    const rawLabel = item[labelKey];
+    const rawLabel = item[labelKey] ?? item['label'] ?? item['name'] ?? item['description']
+      ?? item['descrizioneDisciplina'] ?? item['disciplina'] ?? item['codiceDisciplina'];
     const value = rawValue;
     const baseLabel = typeof rawLabel === 'string' && rawLabel.trim().length > 0
       ? rawLabel
@@ -1045,6 +1147,7 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
   private resetFieldsOnChange(field: CrudField): void {
     for (const targetField of field.resetFieldsOnChange ?? []) {
       this.formModel[targetField] = targetField.endsWith('Id') ? null : '';
+      this.fieldOptions[targetField] = [];
     }
   }
 
@@ -1081,7 +1184,8 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
   }
 
   private getFieldPermission(fieldKey: string): string {
-    return this.fieldPermissions[fieldKey] ?? 'full-edit';
+    const apiFieldKey = fieldKey === 'hospitalId' ? 'structureId' : fieldKey;
+    return this.fieldPermissions[fieldKey] ?? this.fieldPermissions[apiFieldKey] ?? 'full-edit';
   }
 
   private isFieldHidden(fieldKey: string): boolean {
@@ -1103,7 +1207,12 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
     this.withLoading(this.http.get<CrudEntity>(`${environment.apiBaseUrl}/${this.endpoint}/${id}`)).subscribe({
       next: (entity) => {
         this.loadedEntityKeyValue = id;
-        this.formModel = { ...entity };
+        this.formModel = {
+          ...entity,
+          ...(entity['hospitalId'] === undefined && entity['structureId'] !== undefined
+            ? { hospitalId: entity['structureId'] }
+            : {})
+        };
         this.submissionAttempted = false;
         this.usernameTaken = false;
         this.phoneFieldTouched = {};
@@ -1142,22 +1251,22 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
     }
 
     const departmentId = this.asNumericId(this.formModel['departmentId']);
-    const structureIdFromPayload = this.asNumericId(this.formModel['structureId']);
+    const hospitalIdFromPayload = this.asNumericId(this.formModel['hospitalId']);
     const clinicalRegionCode = this.asText(this.formModel['clinicalRegionCode']);
     const aslCode = this.asText(this.formModel['aslCode']);
 
-    if (structureIdFromPayload === null && departmentId === null) {
+    if (hospitalIdFromPayload === null && departmentId === null) {
       return;
     }
 
-    if (clinicalRegionCode.length > 0 && aslCode.length > 0 && structureIdFromPayload !== null) {
+    if (clinicalRegionCode.length > 0 && aslCode.length > 0 && hospitalIdFromPayload !== null) {
       return;
     }
 
-    void this.hydrateDoctorAssignmentHierarchy(structureIdFromPayload, departmentId);
+    void this.hydrateDoctorAssignmentHierarchy(hospitalIdFromPayload, departmentId);
   }
 
-  private async hydrateDoctorAssignmentHierarchy(structureId: number | null, departmentId: number | null): Promise<void> {
+  private async hydrateDoctorAssignmentHierarchy(hospitalId: number | null, departmentId: number | null): Promise<void> {
     if (this.isHydratingDoctorAssignment) {
       return;
     }
@@ -1165,31 +1274,31 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
     this.isHydratingDoctorAssignment = true;
 
     try {
-      const resolvedStructureId = structureId;
+      const resolvedHospitalId = hospitalId;
 
-      if (resolvedStructureId === null) {
+      if (resolvedHospitalId === null) {
         return;
       }
 
       const currentRegionCode = this.normalizeRegionCodeForOverview(this.formModel['clinicalRegionCode']);
       const currentAslCode = this.normalizeCode(this.formModel['aslCode']);
-      let overviewRows = await this.fetchRecords(`${environment.apiBaseUrl}/structures/overview`, {
+      let overviewRows = await this.fetchRecords(`${environment.apiBaseUrl}/hospitals/overview`, {
         ...(currentRegionCode ? { regionCode: currentRegionCode } : {}),
         ...(currentAslCode ? { aslCode: currentAslCode } : {})
       });
 
       if (overviewRows.length === 0) {
-        overviewRows = await this.fetchRecords(`${environment.apiBaseUrl}/structures/overview`);
+        overviewRows = await this.fetchRecords(`${environment.apiBaseUrl}/hospitals/overview`);
       }
 
-      const matchedOverview = overviewRows.find((row) => this.asNumericId(row['strutturaId']) === resolvedStructureId) ?? null;
+      const matchedOverview = overviewRows.find((row) => this.asNumericId(row['hospitalId'] ?? row['strutturaId']) === resolvedHospitalId) ?? null;
       if (!matchedOverview) {
         return;
       }
 
       const regionCode = this.normalizeRegionCodeForOverview(matchedOverview['codiceRegione']);
-      const structureDbId = this.asNumericId(matchedOverview['strutturaId']) ?? resolvedStructureId;
-      const structureTicketCode = this.asText(matchedOverview['codiceStruttura']);
+      const hospitalDatabaseId = this.asNumericId(matchedOverview['hospitalId'] ?? matchedOverview['strutturaId']) ?? resolvedHospitalId;
+      const hospitalCode = this.asText(matchedOverview['hospitalCode'] ?? matchedOverview['codiceStruttura']);
       const aslId = this.asNumericId(matchedOverview['aslId']);
       const aslName = this.asText(matchedOverview['asl']);
       const resolvedAslCode = this.normalizeCode(matchedOverview['codiceAsl']);
@@ -1206,9 +1315,9 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
       if (resolvedAslCode.length > 0) {
         this.formModel['aslCode'] = resolvedAslCode;
       }
-      this.formModel['structureId'] = structureDbId;
-      if (structureTicketCode.length > 0) {
-        this.formModel['ticketStructureCode'] = structureTicketCode;
+      this.formModel['hospitalId'] = hospitalDatabaseId;
+      if (hospitalCode.length > 0) {
+        this.formModel['hospitalCode'] = hospitalCode;
       }
       if (departmentId !== null) {
         this.formModel['departmentId'] = departmentId;
@@ -1227,8 +1336,8 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
         });
       }
 
-      await this.loadSelectOptionsForFieldKey('structureId');
-      this.trySetSelectFromTicketMapping('structureId', [structureDbId, structureTicketCode]);
+      await this.loadSelectOptionsForFieldKey('hospitalId');
+      this.trySetSelectFromTicketMapping('hospitalId', [hospitalDatabaseId, hospitalCode]);
 
       await this.loadSelectOptionsForFieldKey('departmentId');
       if (departmentId !== null) {
@@ -1296,14 +1405,15 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
 
     return field.key === 'clinicalRegionCode'
       || field.key === 'aslId'
-      || field.key === 'structureId'
+      || field.key === 'hospitalId'
       || field.key === 'departmentId';
   }
 
-  private async resolveStructureIdFromDepartment(departmentId: number): Promise<number | null> {
+  private async resolveHospitalIdFromDepartment(departmentId: number): Promise<number | null> {
     const department = await this.fetchRecord(`${environment.ticketApiBaseUrl}/structure-departments/${departmentId}`);
     const structureId = this.asNumericId(
       department?.['structureId']
+      ?? department?.['hospitalId']
       ?? department?.['strutturaId']
       ?? department?.['hospitalId']
     );
@@ -1311,14 +1421,14 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
       return structureId;
     }
 
-    const structureCode = this.asText(department?.['codiceStruttura'] ?? department?.['structureCode']);
-    if (!structureCode) {
+    const hospitalCode = this.asText(department?.['hospitalCode'] ?? department?.['codiceStruttura'] ?? department?.['structureCode']);
+    if (!hospitalCode) {
       return null;
     }
 
-    const overviewRows = await this.fetchRecords(`${environment.apiBaseUrl}/structures/overview`);
-    const matchedOverview = overviewRows.find((row) => this.asText(row['codiceStruttura']) === structureCode) ?? null;
-    return this.asNumericId(matchedOverview?.['strutturaId']);
+    const overviewRows = await this.fetchRecords(`${environment.apiBaseUrl}/hospitals/overview`);
+    const matchedOverview = overviewRows.find((row) => this.asText(row['hospitalCode'] ?? row['codiceStruttura']) === hospitalCode) ?? null;
+    return this.asNumericId(matchedOverview?.['hospitalId'] ?? matchedOverview?.['strutturaId']);
   }
 
   private async loadSelectOptionsForFieldKey(fieldKey: string): Promise<void> {
@@ -1505,6 +1615,21 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
 
   private requiresConsentOtpVerificationForCurrentFolder(): boolean {
     return this.hasConsentOtpFlow() && this.activeFolder === 'privacy';
+  }
+
+  private isManagedByConsentOtpPanel(field: CrudField): boolean {
+    if (this.activeFolder !== 'privacy') {
+      return false;
+    }
+    const config = this.getConsentOtpConfig();
+    if (!config) {
+      return false;
+    }
+    return field.key === 'otpRecipient'
+      || field.key === config.codeFieldKey
+      || field.key === 'dataProcessingConsentDateTime'
+      || field.actionType === config.sendActionType
+      || field.actionType === config.verifyActionType;
   }
 
   private sendConsentOtp(consentOtpConfig: ConsentOtpConfig): void {

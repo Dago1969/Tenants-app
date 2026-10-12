@@ -3,9 +3,11 @@ databaseChangeLog:
       id: 20260923-01-create-doctor-communication-channels
       author: copilot
       preConditions:
-        - not:
-            tableExists:
-              tableName: doctor_communication_channels
+        onFail: MARK_RAN
+        onError: HALT
+        not:
+          tableExists:
+            tableName: doctor_communication_channels
       changes:
         - createTable:
             tableName: doctor_communication_channels
@@ -29,10 +31,12 @@ databaseChangeLog:
       id: 20260923-02-add-otp-recipient-column
       author: copilot
       preConditions:
-        - not:
-            columnExists:
-              tableName: doctors
-              columnName: otp_recipient
+        onFail: MARK_RAN
+        onError: HALT
+        not:
+          columnExists:
+            tableName: doctors
+            columnName: otp_recipient
       changes:
         - addColumn:
             tableName: doctors
@@ -45,9 +49,11 @@ databaseChangeLog:
       id: 20260923-03-add-foreignkey-doctor-communication
       author: copilot
       preConditions:
-        - not:
-            foreignKeyConstraintExists:
-              foreignKeyName: fk_doctor_comm_channel_doctor
+        onFail: MARK_RAN
+        onError: HALT
+        not:
+          foreignKeyConstraintExists:
+            foreignKeyName: fk_doctor_comm_channel_doctor
       changes:
         - preConditions:
             onFail: MARK_RAN

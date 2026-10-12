@@ -1,0 +1,73 @@
+databaseChangeLog:
+  - changeSet:
+      id: 20261010-01-add-therapeutic-plan-survey-answers
+      author: copilot
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        and:
+          - tableExists:
+              tableName: therapeutic_plan
+          - not:
+              columnExists:
+                tableName: therapeutic_plan
+                columnName: survey_answers
+      changes:
+        - addColumn:
+            tableName: therapeutic_plan
+            columns:
+              - column:
+                  name: survey_answers
+                  type: TEXT
+      rollback:
+        - dropColumn:
+            tableName: therapeutic_plan
+            columnName: survey_answers
+  - changeSet:
+      id: 20261010-02-add-therapeutic-plan-survey-accepted-at
+      author: copilot
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        and:
+          - tableExists:
+              tableName: therapeutic_plan
+          - not:
+              columnExists:
+                tableName: therapeutic_plan
+                columnName: survey_accepted_at
+      changes:
+        - addColumn:
+            tableName: therapeutic_plan
+            columns:
+              - column:
+                  name: survey_accepted_at
+                  type: DATETIME
+      rollback:
+        - dropColumn:
+            tableName: therapeutic_plan
+            columnName: survey_accepted_at
+  - changeSet:
+      id: 20261010-03-add-therapeutic-plan-survey-otp-recipient
+      author: copilot
+      preConditions:
+        onFail: MARK_RAN
+        onError: HALT
+        and:
+          - tableExists:
+              tableName: therapeutic_plan
+          - not:
+              columnExists:
+                tableName: therapeutic_plan
+                columnName: survey_otp_recipient
+      changes:
+        - addColumn:
+            tableName: therapeutic_plan
+            columns:
+              - column:
+                  name: survey_otp_recipient
+                  type: VARCHAR(32)
+      rollback:
+        - dropColumn:
+            tableName: therapeutic_plan
+            columnName: survey_otp_recipient

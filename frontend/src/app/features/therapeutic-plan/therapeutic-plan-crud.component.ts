@@ -1,17 +1,19 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Component, OnInit } from '@angular/core';
+import { Component, DestroyRef, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { Select2 } from 'ng-select2-component';
-import { forkJoin, of, firstValueFrom } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { forkJoin, of, firstValueFrom, Subject, timer } from 'rxjs';
+import { catchError, distinctUntilChanged, finalize, switchMap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { AuthService } from '../../core/auth.service';
+import { DrugService, FarmacoDto } from '../../core/drug.service';
 import { GeographyApiService, GeographicOptionDto } from '../../core/geography-api.service';
-import { MedicineApiService, MedicineLookupDto } from '../../core/medicine-api.service';
 import { StructureApiService, StructureDepartmentOptionDto, StructureDto, StructureOverviewLookupDto } from '../../core/structure-api.service';
 import { MessageKey, t } from '../../i18n/messages';
+import { ConsentOtpFormComponent, ConsentOtpOption } from '../../shared/consent-otp-form.component';
 import { QtmStepModalComponent } from '../../shared/qtm-step-modal.component';
 
 interface PatientOption {
@@ -19,6 +21,9 @@ interface PatientOption {
   assistedId?: string;
   firstName?: string;
   lastName?: string;
+  primaryPhone?: string;
+  caregiverPhone?: string;
+  otpRecipient?: string;
 }
 
 interface NurseOption {
@@ -53,7 +58,7 @@ interface TherapeuticPlanPayload {
   patientId: number | null;
   projectCode: string;
   equipmentIds: number[];
-  structureId: number | null;
+  hospitalId: number | null;
   departmentId?: number | null;
   nurseIds: number[];
   prevalentNurseId: number | null;
@@ -62,26 +67,57 @@ interface TherapeuticPlanPayload {
   prevalentDoctorId: number | null;
   doctorId?: number | null;
   drugCode: string;
+  drugDescription: string;
   startDate: string;
   endDate: string;
   dischargeDate?: string | null;
   dischargeType?: string | null;
   status: string;
   notes: string;
+  surveyAnswers?: string;
+  surveyAcceptanceToken?: string;
+  surveyAcceptanceRecipient?: string;
 }
 
-interface TherapeuticPlanResponse extends TherapeuticPlanPayload {
+interface TherapeuticPlanResponse extends Omit<TherapeuticPlanPayload, 'hospitalId'> {
+  hospitalId?: number | null;
+  structureId?: number | null;
   id?: number;
   nurseNames?: string[];
   doctorNames?: string[];
   nurseAssignments?: TherapeuticPlanProfessionalAssignment[];
   doctorAssignments?: TherapeuticPlanProfessionalAssignment[];
+  jsonSurvey?: string | null;
+  surveyAcceptedAt?: string | null;
 }
 
 interface WizardStep {
-  key: 'main' | 'clinical' | 'schedule';
+  key: 'main' | 'clinical' | 'schedule' | 'survey';
   title: MessageKey;
   description: MessageKey;
+}
+
+interface TherapeuticPlanSurveyChoice {
+  value: string | number | boolean;
+  text?: string;
+}
+
+interface TherapeuticPlanSurveyElement {
+  type: string;
+  name: string;
+  title: string;
+  isRequired?: boolean;
+  choices?: TherapeuticPlanSurveyChoice[];
+}
+
+interface TherapeuticPlanSurveyPage {
+  name?: string;
+  title?: string;
+  elements: TherapeuticPlanSurveyElement[];
+}
+
+interface TherapeuticPlanSurveyDefinition {
+  pages: TherapeuticPlanSurveyPage[];
 }
 
 interface Select2Option {
@@ -100,7 +136,7 @@ interface Select2UpdatePayload {
 @Component({
   selector: 'app-therapeutic-plan-crud',
   standalone: true,
-  imports: [CommonModule, FormsModule, QtmStepModalComponent, Select2],
+  imports: [CommonModule, FormsModule, QtmStepModalComponent, Select2, ConsentOtpFormComponent],
   templateUrl: './therapeutic-plan-crud.component.html',
   styleUrl: './therapeutic-plan-crud.component.css'
 })
@@ -109,7 +145,8 @@ export class TherapeuticPlanCrudComponent implements OnInit {
   readonly steps: WizardStep[] = [
     { key: 'main', title: 'therapeuticPlan.folder.main', description: 'therapeuticPlan.folder.main.desc' },
     { key: 'clinical', title: 'therapeuticPlan.folder.clinical', description: 'therapeuticPlan.folder.clinical.desc' },
-    { key: 'schedule', title: 'therapeuticPlan.folder.schedule', description: 'therapeuticPlan.folder.schedule.desc' }
+    { key: 'schedule', title: 'therapeuticPlan.folder.schedule', description: 'therapeuticPlan.folder.schedule.desc' },
+    { key: 'survey', title: 'therapeuticPlan.folder.survey', description: 'therapeuticPlan.folder.survey.desc' }
   ];
   readonly statusOptions = [
     { value: 'draft', labelKey: 'status.draft' as const },
@@ -124,6 +161,53 @@ export class TherapeuticPlanCrudComponent implements OnInit {
   errorMessage = '';
   currentStepIndex = 0;
   therapeuticPlanId: number | null = null;
+  surveyAcceptedAt: string | null = null;
+  surveyTemplate: TherapeuticPlanSurveyDefinition | null = null;
+  surveyAnswers: Record<string, unknown> = {};
+  private acceptedSurveyAnswersSignature: string | null = null;
+  surveyOtpCode = '';
+  surveyAcceptanceToken: string | null = null;
+  surveyOtpChannel = 'sms';
+  surveyOtpDestination = '';
+  surveyOtpRecipient = '';
+  surveyConsentDateTime = '';
+  surveyOtpSent = false;
+  surveyOtpVerified = false;
+  sendingSurveyOtp = false;
+  verifyingSurveyOtp = false;
+  loadingSurvey = false;
+  readonly surveyOtpChannels: ConsentOtpOption[] = [{ value: 'sms', label: 'SMS' }];
+
+  get surveyAnswersChanged(): boolean {
+    return this.acceptedSurveyAnswersSignature !== null
+      && this.getSurveyAnswersSignature(this.surveyAnswers) !== this.acceptedSurveyAnswersSignature;
+  }
+
+  get surveyOtpRequired(): boolean {
+    return !this.surveyAcceptedAt || this.surveyAnswersChanged;
+  }
+
+  get surveyOtpRecipientOptions(): ConsentOtpOption[] {
+    const patient = this.patients.find((option) => option.id === this.formModel.patientId);
+    if (!patient) {
+      return [];
+    }
+
+    const options: ConsentOtpOption[] = [];
+    if (patient.primaryPhone?.trim()) {
+      options.push({
+        value: 'primaryPhone',
+        label: `${this.translate('therapeuticPlan.survey.otp.patientPhone')}: ${patient.primaryPhone.trim()}`
+      });
+    }
+    if (patient.caregiverPhone?.trim()) {
+      options.push({
+        value: 'caregiverPhone',
+        label: `${this.translate('therapeuticPlan.survey.otp.caregiverPhone')}: ${patient.caregiverPhone.trim()}`
+      });
+    }
+    return options;
+  }
 
   patients: PatientOption[] = [];
   regions: GeographicOptionDto[] = [];
@@ -131,30 +215,34 @@ export class TherapeuticPlanCrudComponent implements OnInit {
   allAssociatedAslList: StructureDto[] = [];
   filteredAslList: StructureDto[] = [];
   departmentOptions: StructureDepartmentOptionDto[] = [];
-  hospitalStructures: StructureDto[] = [];
+  hospitals: StructureDto[] = [];
   aslOptions: StructureDto[] = [];
-  structureOptions: StructureDto[] = [];
+  hospitalsList: StructureDto[] = [];
   specialistClinics: StructureDto[] = [];
   nurses: NurseOption[] = [];
   doctors: DoctorOption[] = [];
-  medicineOptions: { value: string, label: string }[] = [];
+  medicineOptions: FarmacoDto[] = [];
+  medicineSearchQuery = '';
+  medicineSearchLoading = false;
   clinicalFilters: TherapeuticPlanClinicalFilters = this.createEmptyClinicalFilters();
   clinicalRegionValue = '';
   clinicalAslValue = '';
-  clinicalStructureValue = '';
+  clinicalHospitalValue = '';
   regionSelect2Data: Select2Option[] = [];
   aslSelect2Data: Select2Option[] = [];
-  structureSelect2Data: Select2Option[] = [];
+  hospitalSelect2Data: Select2Option[] = [];
 
   formModel: TherapeuticPlanPayload = this.createEmptyFormModel();
+  private readonly medicineSearchTerms = new Subject<string>();
 
   constructor(
     private readonly http: HttpClient,
     private readonly route: ActivatedRoute,
     private readonly router: Router,
     private readonly authService: AuthService,
+    private readonly destroyRef: DestroyRef,
     private readonly geographyApiService: GeographyApiService,
-    private readonly medicineApiService: MedicineApiService,
+    private readonly drugService: DrugService,
     private readonly structureApiService: StructureApiService
   ) {}
 
@@ -162,6 +250,7 @@ export class TherapeuticPlanCrudComponent implements OnInit {
     const idParam = this.route.snapshot.paramMap.get('id');
     this.therapeuticPlanId = idParam ? Number(idParam) : null;
     this.formModel.projectCode = this.authService.getSelectedProject().trim();
+    this.connectMedicineSearch();
     this.loadReferenceData();
   }
 
@@ -173,8 +262,22 @@ export class TherapeuticPlanCrudComponent implements OnInit {
     }
   }
 
+  private getCurrentDateTimeLocalInputValue(): string {
+    const now = new Date();
+    const timezoneOffset = now.getTimezoneOffset() * 60000;
+    return new Date(now.getTime() - timezoneOffset).toISOString().slice(0, 16);
+  }
+
   get currentStep(): WizardStep {
-    return this.steps[this.currentStepIndex] ?? this.steps[0];
+    return this.visibleSteps[this.currentStepIndex] ?? this.visibleSteps[0];
+  }
+
+  get visibleSteps(): WizardStep[] {
+    return this.steps;
+  }
+
+  get surveyElements(): TherapeuticPlanSurveyElement[] {
+    return this.surveyTemplate?.pages.flatMap((page) => page.elements ?? []) ?? [];
   }
 
   get isEditMode(): boolean {
@@ -191,17 +294,17 @@ export class TherapeuticPlanCrudComponent implements OnInit {
   }
 
   get isLastStep(): boolean {
-    return this.currentStepIndex === this.steps.length - 1;
+    return this.currentStepIndex === this.visibleSteps.length - 1;
   }
 
-  get selectedStructure(): StructureDto | null {
-    return this.availableStructures.find((structure) => this.normalizeNumericId(structure.id) === this.formModel.structureId) ?? null;
+  get selectedHospital(): StructureDto | null {
+    return this.availableHospitals.find((hospital) => this.normalizeNumericId(hospital.id) === this.formModel.hospitalId) ?? null;
   }
 
-  get availableStructures(): StructureDto[] {
+  get availableHospitals(): StructureDto[] {
     const selectedAsl = this.selectedAsl;
-    const visibleHospitals = this.hospitalStructures.filter((structure) => {
-      if (!this.matchesSelectedRegion(structure)) {
+    const visibleHospitals = this.hospitals.filter((hospital) => {
+      if (!this.matchesSelectedRegion(hospital)) {
         return false;
       }
 
@@ -209,18 +312,18 @@ export class TherapeuticPlanCrudComponent implements OnInit {
         return true;
       }
 
-      const parentStructureId = this.normalizeNumericId(structure.parentStructureId);
-      if (parentStructureId !== null) {
-        return parentStructureId === this.clinicalFilters.aslId;
+      const parentHospitalId = this.normalizeNumericId(hospital.parentStructureId);
+      if (parentHospitalId !== null) {
+        return parentHospitalId === this.clinicalFilters.aslId;
       }
 
       const selectedAslName = selectedAsl?.name?.trim().toLocaleLowerCase('it') ?? '';
-      const parentStructureName = structure.parentStructureName?.trim().toLocaleLowerCase('it') ?? '';
-      return !!selectedAslName && selectedAslName === parentStructureName;
+      const parentHospitalName = hospital.parentStructureName?.trim().toLocaleLowerCase('it') ?? '';
+      return !!selectedAslName && selectedAslName === parentHospitalName;
     });
 
-    const visibleSpecialistClinics = this.specialistClinics.filter((structure) => {
-      return this.matchesSelectedRegion(structure);
+    const visibleSpecialistClinics = this.specialistClinics.filter((hospital) => {
+      return this.matchesSelectedRegion(hospital);
     });
 
     return [...visibleHospitals, ...visibleSpecialistClinics].sort((left, right) => this.getStructureLabel(left).localeCompare(this.getStructureLabel(right), 'it', { sensitivity: 'base' }));
@@ -258,12 +361,48 @@ export class TherapeuticPlanCrudComponent implements OnInit {
       .filter((doctor): doctor is DoctorOption => doctor !== null);
   }
 
-  get medicineSelectionInfo(): string {
-    if (!this.formModel.drugCode) {
-      return '';
+  onMedicineSearchChange(query: string): void {
+    this.medicineSearchQuery = query;
+    if (query !== this.formModel.drugDescription) {
+      this.formModel.drugCode = '';
+      this.formModel.drugDescription = '';
     }
-    const med = this.medicineOptions.find(opt => opt.value === this.formModel.drugCode);
-    return med ? med.label : '';
+    this.medicineSearchTerms.next(query.trim());
+  }
+
+  selectMedicine(medicine: FarmacoDto): void {
+    this.formModel.drugCode = medicine.aicCode;
+    this.formModel.drugDescription = this.formatMedicine(medicine);
+    this.medicineSearchQuery = this.formModel.drugDescription;
+    this.medicineOptions = [];
+  }
+
+  formatMedicine(medicine: FarmacoDto): string {
+    const nameAndIngredient = [medicine.tradeName, medicine.activeIngredient]
+      .filter((value) => !!value?.trim())
+      .join(' - ');
+    const name = nameAndIngredient || medicine.aicCode;
+    return medicine.dosage?.trim() ? `${name} (${medicine.dosage.trim()})` : name;
+  }
+
+  private connectMedicineSearch(): void {
+    this.medicineSearchTerms.pipe(
+      distinctUntilChanged(),
+      switchMap((query) => {
+        if (query.length < 3) {
+          this.medicineSearchLoading = false;
+          this.medicineOptions = [];
+          return of([] as FarmacoDto[]);
+        }
+
+        this.medicineSearchLoading = true;
+        return timer(300).pipe(
+          switchMap(() => this.drugService.searchDrugs(query).pipe(catchError(() => of([] as FarmacoDto[])))),
+          finalize(() => this.medicineSearchLoading = false)
+        );
+      }),
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe((medicines) => this.medicineOptions = medicines);
   }
 
   onClinicalRegionChange(): void {
@@ -288,10 +427,10 @@ export class TherapeuticPlanCrudComponent implements OnInit {
   }
 
   onClinicalAslChange(): void {
-    this.formModel.structureId = null;
+    this.formModel.hospitalId = null;
     this.clearDepartmentSelection();
-    this.hospitalStructures = [];
-    this.structureOptions = [];
+    this.hospitals = [];
+    this.hospitalsList = [];
 
     this.syncClinicalFilterSelect2Values();
     this.refreshClinicalSelect2Data();
@@ -315,35 +454,35 @@ export class TherapeuticPlanCrudComponent implements OnInit {
   private clearCascadeSelectionsAfterRegionChange(): void {
     this.clinicalFilters.aslId = null;
     this.clinicalAslValue = '';
-    this.formModel.structureId = null;
+    this.formModel.hospitalId = null;
     this.clearDepartmentSelection();
     this.aslStructures = [];
-    this.hospitalStructures = [];
+    this.hospitals = [];
     this.aslOptions = [];
-    this.structureOptions = [];
+    this.hospitalsList = [];
   }
 
-  onStructureSelectionChange(): void {
+  onHospitalChange(): void {
     this.clearDepartmentSelection();
 
-    const selectedStructure = this.selectedStructure;
-    if (!selectedStructure) {
+    const selectedHospital = this.selectedHospital;
+    if (!selectedHospital) {
       this.syncClinicalSelections();
       this.loadAvailableDoctors();
       return;
     }
 
-    this.clinicalFilters.regionId = this.normalizeNumericId(selectedStructure.regionId);
-    this.clinicalFilters.aslId = this.normalizeNumericId(selectedStructure.parentStructureId);
-    this.formModel.structureId = this.normalizeNumericId(selectedStructure.id);
-    this.loadDepartmentsForSelectedStructure();
+    this.clinicalFilters.regionId = this.normalizeNumericId(selectedHospital.regionId);
+    this.clinicalFilters.aslId = this.normalizeNumericId(selectedHospital.parentStructureId);
+    this.formModel.hospitalId = this.normalizeNumericId(selectedHospital.id);
+    this.loadDepartmentsForSelectedHospital();
     this.loadAvailableDoctors();
   }
 
-  onStructureSelect2Update(event: Select2UpdatePayload): void {
-    this.clinicalStructureValue = this.normalizeSelect2Value(this.extractSingleValue(event.value));
-    this.formModel.structureId = this.toNullableNumber(this.clinicalStructureValue);
-    this.onStructureSelectionChange();
+  onHospitalSelect2Update(event: Select2UpdatePayload): void {
+    this.clinicalHospitalValue = this.normalizeSelect2Value(this.extractSingleValue(event.value));
+    this.formModel.hospitalId = this.toNullableNumber(this.clinicalHospitalValue);
+    this.onHospitalChange();
   }
 
   onDepartmentFilterChange(): void {
@@ -362,7 +501,117 @@ export class TherapeuticPlanCrudComponent implements OnInit {
       return;
     }
 
+    const nextStep = this.visibleSteps[this.currentStepIndex + 1];
+    if (nextStep?.key === 'survey' && !this.surveyTemplate) {
+      this.loadSurveyTemplate();
+      return;
+    }
+
     this.currentStepIndex += 1;
+  }
+
+  sendSurveyOtp(): void {
+    if (!this.formModel.patientId || !this.surveyOtpRecipient || this.sendingSurveyOtp) {
+      return;
+    }
+
+    this.errorMessage = '';
+    this.sendingSurveyOtp = true;
+    const params: Record<string, string> = {
+      patientId: String(this.formModel.patientId),
+      recipient: this.surveyOtpRecipient
+    };
+    if (this.therapeuticPlanId !== null) {
+      params['therapeuticPlanId'] = String(this.therapeuticPlanId);
+    }
+
+    this.http.post<{ destination: string; channel: string }>(`${environment.apiBaseUrl}/therapeutic-plans/survey/otp`, {}, { params }).subscribe({
+      next: (result) => {
+        this.sendingSurveyOtp = false;
+        this.surveyOtpSent = true;
+        this.surveyOtpVerified = false;
+          this.surveyAcceptanceToken = null;
+        this.surveyOtpDestination = result.destination;
+        this.surveyOtpChannel = result.channel || 'sms';
+        this.surveyConsentDateTime = '';
+      },
+      error: (error: HttpErrorResponse) => {
+        this.sendingSurveyOtp = false;
+        this.errorMessage = this.resolveErrorMessage(error);
+      }
+    });
+  }
+
+  verifySurveyOtp(): void {
+    if (!this.formModel.patientId || !this.surveyOtpRecipient || !this.surveyOtpCode.trim() || this.verifyingSurveyOtp) {
+      return;
+    }
+
+    this.errorMessage = '';
+    this.verifyingSurveyOtp = true;
+    const params: Record<string, string> = {
+      patientId: String(this.formModel.patientId),
+      recipient: this.surveyOtpRecipient,
+      code: this.surveyOtpCode.trim()
+    };
+    if (this.therapeuticPlanId !== null) {
+      params['therapeuticPlanId'] = String(this.therapeuticPlanId);
+    }
+
+    this.http.post<{ approved: boolean; destination: string; channel: string; token: string | null }>(
+      `${environment.apiBaseUrl}/therapeutic-plans/survey/otp/check`,
+      {},
+      { params }
+    ).subscribe({
+      next: (result) => {
+        this.verifyingSurveyOtp = false;
+        if (!result.approved) {
+          this.surveyOtpVerified = false;
+          this.surveyAcceptanceToken = null;
+          this.surveyConsentDateTime = '';
+          this.errorMessage = this.translate('therapeuticPlan.survey.error.otpRejected');
+          return;
+        }
+        if (!result.token) {
+          this.surveyOtpVerified = false;
+          this.surveyAcceptanceToken = null;
+          this.surveyConsentDateTime = '';
+          this.errorMessage = this.translate('therapeuticPlan.survey.error.otpRejected');
+          return;
+        }
+        this.surveyOtpVerified = true;
+        this.surveyAcceptanceToken = result.token;
+        this.surveyOtpDestination = result.destination || this.surveyOtpDestination;
+        this.surveyOtpChannel = result.channel || this.surveyOtpChannel;
+        this.surveyConsentDateTime = this.getCurrentDateTimeLocalInputValue();
+      },
+      error: (error: HttpErrorResponse) => {
+        this.verifyingSurveyOtp = false;
+        this.surveyOtpVerified = false;
+        this.surveyConsentDateTime = '';
+        this.errorMessage = this.resolveErrorMessage(error);
+      }
+    });
+  }
+
+  onSurveyAnswerChange(name: string, answer: unknown): void {
+    this.surveyAnswers[name] = answer;
+    if (this.surveyOtpRequired) {
+      this.surveyOtpCode = '';
+      this.surveyOtpSent = false;
+      this.surveyOtpVerified = false;
+      this.surveyAcceptanceToken = null;
+      this.surveyConsentDateTime = '';
+      return;
+    }
+
+    this.surveyOtpVerified = true;
+    this.surveyOtpCode = '';
+    this.surveyOtpSent = false;
+    this.surveyAcceptanceToken = null;
+    this.surveyConsentDateTime = this.surveyAcceptedAt
+      ? this.toDateTimeLocalValue(this.surveyAcceptedAt)
+      : '';
   }
 
   /**
@@ -510,22 +759,16 @@ export class TherapeuticPlanCrudComponent implements OnInit {
       regions: this.geographyApiService.getRegions().pipe(catchError(() => of([] as GeographicOptionDto[]))),
       patients: this.http.get<PatientOption[]>(`${environment.apiBaseUrl}/patients`).pipe(catchError(() => of([] as PatientOption[]))),
       specialistClinics: this.structureApiService.getStructuresByType('SPECIALIST_CLINIC', true).pipe(catchError(() => of([] as StructureDto[]))),
-      nurses: this.http.get<NurseOption[]>(`${environment.apiBaseUrl}/nurses`).pipe(catchError(() => of([] as NurseOption[]))),
-      medicines: this.medicineApiService.lookupMedicines().pipe(catchError(() => of([] as MedicineLookupDto[])))
+      nurses: this.http.get<NurseOption[]>(`${environment.apiBaseUrl}/nurses`).pipe(catchError(() => of([] as NurseOption[])))
     }).subscribe({
-      next: ({ regions, patients, specialistClinics, nurses, medicines }) => {
+      next: ({ regions, patients, specialistClinics, nurses }) => {
         this.regions = [...regions].sort((left, right) => left.name.localeCompare(right.name, 'it', { sensitivity: 'base' }));
         this.patients = [...patients].sort((left, right) => this.getPatientLabel(left).localeCompare(this.getPatientLabel(right), 'it', { sensitivity: 'base' }));
+        this.initializeSurveyOtpRecipient();
         this.specialistClinics = [...specialistClinics].sort((left, right) => this.getStructureLabel(left).localeCompare(this.getStructureLabel(right), 'it', { sensitivity: 'base' }));
         this.nurses = [...nurses]
           .filter((nurse) => nurse.enabled !== false)
           .sort((left, right) => left.fullName.localeCompare(right.fullName, 'it', { sensitivity: 'base' }));
-        this.medicineOptions = (medicines ?? [])
-          .filter((medicine) => !!medicine?.codiceAic)
-          .map((medicine) => ({
-            value: medicine.codiceAic,
-            label: [medicine.codiceAic, medicine.denominazione, medicine.forma].filter(Boolean).join(' | ')
-          }));
         this.refreshClinicalSelect2Data();
 
         if (this.therapeuticPlanId === null) {
@@ -548,12 +791,21 @@ export class TherapeuticPlanCrudComponent implements OnInit {
   private loadTherapeuticPlan(): void {
     this.http.get<TherapeuticPlanResponse>(`${environment.apiBaseUrl}/therapeutic-plans/${this.therapeuticPlanId}`).subscribe({
       next: (plan) => {
+        this.surveyAcceptedAt = plan.surveyAcceptedAt ?? null;
+        this.surveyAnswers = this.parseSurveyAnswers(plan.surveyAnswers);
+        this.acceptedSurveyAnswersSignature = this.surveyAcceptedAt
+          ? this.getSurveyAnswersSignature(this.surveyAnswers)
+          : null;
+        this.surveyOtpVerified = Boolean(this.surveyAcceptedAt);
+        this.surveyConsentDateTime = this.surveyAcceptedAt ? this.toDateTimeLocalValue(this.surveyAcceptedAt) : '';
         const loadedDepartmentId = typeof plan.departmentId === 'number' ? plan.departmentId : null;
         this.formModel = {
           patientId: typeof plan.patientId === 'number' ? plan.patientId : null,
           projectCode: typeof plan.projectCode === 'string' && plan.projectCode.trim().length ? plan.projectCode : this.authService.getSelectedProject().trim(),
           equipmentIds: Array.isArray(plan.equipmentIds) ? plan.equipmentIds.filter((currentId): currentId is number => typeof currentId === 'number') : [],
-          structureId: typeof plan.structureId === 'number' ? plan.structureId : null,
+          hospitalId: typeof plan.hospitalId === 'number'
+            ? plan.hospitalId
+            : typeof plan.structureId === 'number' ? plan.structureId : null,
           departmentId: loadedDepartmentId,
           nurseIds: this.normalizeLoadedProfessionalIds(plan.nurseIds, plan.prevalentNurseId, plan.nurseId),
           prevalentNurseId: this.resolveLoadedPrevalentId(plan.nurseIds, plan.prevalentNurseId, plan.nurseId),
@@ -562,6 +814,7 @@ export class TherapeuticPlanCrudComponent implements OnInit {
           prevalentDoctorId: this.resolveLoadedPrevalentId(plan.doctorIds, plan.prevalentDoctorId, plan.doctorId),
           doctorId: typeof plan.doctorId === 'number' ? plan.doctorId : null,
           drugCode: typeof plan.drugCode === 'string' ? plan.drugCode : '',
+          drugDescription: typeof plan.drugDescription === 'string' ? plan.drugDescription : '',
           startDate: typeof plan.startDate === 'string' ? plan.startDate : '',
           endDate: typeof plan.endDate === 'string' ? plan.endDate : '',
           dischargeDate: typeof plan.dischargeDate === 'string' ? plan.dischargeDate : '',
@@ -569,6 +822,8 @@ export class TherapeuticPlanCrudComponent implements OnInit {
           status: typeof plan.status === 'string' ? plan.status : 'draft',
           notes: typeof plan.notes === 'string' ? plan.notes : ''
         };
+        this.initializeSurveyOtpRecipient();
+        this.medicineSearchQuery = this.formModel.drugDescription || this.formModel.drugCode;
         if (loadedDepartmentId !== null) {
           this.clinicalFilters.departmentId = loadedDepartmentId;
         }
@@ -606,7 +861,7 @@ export class TherapeuticPlanCrudComponent implements OnInit {
     }
 
     if (this.currentStep.key === 'clinical') {
-      if (!this.formModel.structureId) {
+      if (!this.formModel.hospitalId) {
         this.errorMessage = this.translate('therapeuticPlan.validation.structureRequired');
         return false;
       }
@@ -631,16 +886,72 @@ export class TherapeuticPlanCrudComponent implements OnInit {
       }
     }
 
+    if (this.currentStep.key === 'survey' && this.surveyOtpRequired) {
+      if (this.surveyElements.length === 0) {
+        this.errorMessage = this.translate('therapeuticPlan.survey.error.noQuestions');
+        return false;
+      }
+      const missingRequiredAnswer = this.surveyElements.some((element) => {
+        const answer = this.surveyAnswers[element.name];
+        return element.isRequired && (answer === undefined || answer === null || answer === '');
+      });
+      if (missingRequiredAnswer) {
+        this.errorMessage = this.translate('therapeuticPlan.survey.error.requiredAnswers');
+        return false;
+      }
+      if (!this.surveyOtpSent || !this.surveyOtpVerified || !this.surveyAcceptanceToken) {
+        this.errorMessage = this.translate('therapeuticPlan.survey.error.otpRequired');
+        return false;
+      }
+    }
+
     return true;
+  }
+
+  private loadSurveyTemplate(): void {
+    this.loadingSurvey = true;
+    this.errorMessage = '';
+    this.http.get(`${environment.apiBaseUrl}/therapeutic-plans/survey`, {
+      params: { projectCode: this.formModel.projectCode.trim() },
+      responseType: 'text'
+    }).subscribe({
+      next: (jsonSurvey) => {
+        try {
+          const parsed = JSON.parse(jsonSurvey) as TherapeuticPlanSurveyDefinition;
+          if (!Array.isArray(parsed?.pages)) {
+            throw new Error('Invalid survey format');
+          }
+          this.surveyTemplate = parsed;
+          if (!this.surveyAcceptedAt) {
+            this.surveyAnswers = {};
+            this.surveyOtpCode = '';
+            this.surveyOtpDestination = '';
+            this.initializeSurveyOtpRecipient();
+            this.surveyConsentDateTime = '';
+            this.surveyOtpSent = false;
+            this.surveyOtpVerified = false;
+          }
+          this.currentStepIndex += 1;
+        } catch {
+          this.errorMessage = this.translate('therapeuticPlan.survey.error.invalidTemplate');
+        } finally {
+          this.loadingSurvey = false;
+        }
+      },
+      error: (error: HttpErrorResponse) => {
+        this.loadingSurvey = false;
+        this.errorMessage = this.resolveErrorMessage(error);
+      }
+    });
   }
 
   private buildPayload(): TherapeuticPlanPayload {
     const selectedDepartmentId = this.clinicalFilters.departmentId ?? this.formModel.departmentId ?? null;
-    return {
+    const payload: TherapeuticPlanPayload = {
       patientId: this.formModel.patientId,
       projectCode: this.formModel.projectCode.trim(),
       equipmentIds: [...this.formModel.equipmentIds],
-      structureId: this.formModel.structureId,
+      hospitalId: this.formModel.hospitalId,
       departmentId: selectedDepartmentId,
       nurseIds: [...this.formModel.nurseIds],
       prevalentNurseId: this.formModel.prevalentNurseId,
@@ -649,6 +960,7 @@ export class TherapeuticPlanCrudComponent implements OnInit {
       prevalentDoctorId: this.formModel.prevalentDoctorId,
       doctorId: this.formModel.prevalentDoctorId,
       drugCode: this.formModel.drugCode.trim(),
+      drugDescription: this.formModel.drugDescription.trim(),
       startDate: this.formModel.startDate,
       endDate: this.formModel.endDate,
       dischargeDate: this.formModel.dischargeDate || null,
@@ -656,6 +968,63 @@ export class TherapeuticPlanCrudComponent implements OnInit {
       status: this.formModel.status,
       notes: this.formModel.notes.trim()
     };
+
+    if (this.surveyTemplate) {
+      payload.surveyAnswers = JSON.stringify(this.surveyAnswers);
+    }
+
+    if (this.surveyOtpRequired) {
+      payload.surveyAcceptanceToken = this.surveyAcceptanceToken ?? undefined;
+      payload.surveyAcceptanceRecipient = this.surveyOtpRecipient;
+    }
+
+    return payload;
+  }
+
+  private parseSurveyAnswers(value?: string): Record<string, unknown> {
+    if (!value) {
+      return {};
+    }
+
+    try {
+      const parsed: unknown = JSON.parse(value);
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+        ? parsed as Record<string, unknown>
+        : {};
+    } catch {
+      return {};
+    }
+  }
+
+  private getSurveyAnswersSignature(answers: Record<string, unknown>): string {
+    return JSON.stringify(Object.keys(answers).sort().map((key) => [key, answers[key]]));
+  }
+
+  private toDateTimeLocalValue(value: string): string {
+    return value.length >= 16 ? value.slice(0, 16) : value;
+  }
+
+  onSurveyOtpRecipientChange(recipient: string): void {
+    this.surveyOtpRecipient = recipient;
+    this.surveyOtpCode = '';
+    this.surveyOtpDestination = '';
+    this.surveyOtpSent = false;
+    this.surveyOtpVerified = false;
+    this.surveyAcceptanceToken = null;
+    this.surveyConsentDateTime = '';
+  }
+
+  private initializeSurveyOtpRecipient(): void {
+    const options = this.surveyOtpRecipientOptions;
+    if (options.some((option) => option.value === this.surveyOtpRecipient)) {
+      return;
+    }
+
+    const patient = this.patients.find((option) => option.id === this.formModel.patientId);
+    const preferredRecipient = patient?.otpRecipient?.trim();
+    this.surveyOtpRecipient = options.some((option) => option.value === preferredRecipient)
+      ? preferredRecipient!
+      : options[0]?.value ?? '';
   }
 
   private createEmptyClinicalFilters(): TherapeuticPlanClinicalFilters {
@@ -671,7 +1040,7 @@ export class TherapeuticPlanCrudComponent implements OnInit {
       patientId: null,
       projectCode: '',
       equipmentIds: [],
-      structureId: null,
+      hospitalId: null,
       departmentId: null,
       nurseIds: [],
       prevalentNurseId: null,
@@ -680,6 +1049,7 @@ export class TherapeuticPlanCrudComponent implements OnInit {
       prevalentDoctorId: null,
       doctorId: null,
       drugCode: '',
+      drugDescription: '',
       startDate: '',
       endDate: '',
       dischargeDate: '',
@@ -740,28 +1110,28 @@ export class TherapeuticPlanCrudComponent implements OnInit {
   }
 
   private initializeClinicalFiltersFromFormModel(): void {
-    const structureId = this.formModel.structureId;
-    if (structureId === null) {
+    const hospitalId = this.formModel.hospitalId;
+    if (hospitalId === null) {
       this.clinicalFilters = this.createEmptyClinicalFilters();
       this.clearDepartmentSelection();
       this.syncClinicalSelections();
       return;
     }
 
-    const selectedStructure = this.findKnownStructureById(structureId);
-    if (selectedStructure) {
+    const selectedHospital = this.findKnownHospitalById(hospitalId);
+    if (selectedHospital) {
       const savedDept = (this.formModel as any).departmentId ?? null;
-      void this.applyClinicalFiltersFromStructure(selectedStructure, savedDept);
+      void this.applyClinicalFiltersFromHospital(selectedHospital, savedDept);
       return;
     }
 
     // Try to resolve the structure via the overview endpoint (avoid calling /structures/{id} which sometimes 404s)
     const params: Record<string, string> = {};
-    params['strutturaId'] = String(structureId);
-    this.http.get<any[]>(`${environment.apiBaseUrl}/structures/overview`, { params }).pipe(
+    params['hospitalId'] = String(hospitalId);
+    this.http.get<any[]>(`${environment.apiBaseUrl}/hospitals/overview`, { params }).pipe(
       catchError(() => of([] as any[]))
     ).subscribe(async (overviewRows) => {
-      const matched = (overviewRows ?? []).find((row) => this.normalizeNumericId(row['strutturaId']) === structureId) ?? null;
+      const matched = (overviewRows ?? []).find((row) => this.normalizeNumericId(row['hospitalId'] ?? row['strutturaId']) === hospitalId) ?? null;
       if (!matched) {
         this.clinicalFilters = this.createEmptyClinicalFilters();
         this.clearDepartmentSelection();
@@ -771,10 +1141,10 @@ export class TherapeuticPlanCrudComponent implements OnInit {
 
       // Build a minimal StructureDto from overview row and apply filters
       const structureDto: StructureDto = {
-        id: this.normalizeNumericId(matched['strutturaId']) ?? undefined,
-        code: this.normalizeCodeValue(matched['codiceStruttura']),
-        name: (matched['struttura'] ?? '').trim() || this.normalizeCodeValue(matched['codiceStruttura']),
-        selectionLabel: (matched['struttura'] ?? '').trim().length ? `${(matched['struttura'] ?? '').trim()} (${this.normalizeCodeValue(matched['codiceStruttura'])})` : this.normalizeCodeValue(matched['codiceStruttura']),
+        id: this.normalizeNumericId(matched['hospitalId'] ?? matched['strutturaId']) ?? undefined,
+        code: this.normalizeCodeValue(matched['hospitalCode'] ?? matched['codiceStruttura']),
+        name: (matched['struttura'] ?? '').trim() || this.normalizeCodeValue(matched['hospitalCode'] ?? matched['codiceStruttura']),
+        selectionLabel: (matched['struttura'] ?? '').trim().length ? `${(matched['struttura'] ?? '').trim()} (${this.normalizeCodeValue(matched['hospitalCode'] ?? matched['codiceStruttura'])})` : this.normalizeCodeValue(matched['hospitalCode'] ?? matched['codiceStruttura']),
         address: '',
         cap: '',
         provinceId: '',
@@ -791,24 +1161,24 @@ export class TherapeuticPlanCrudComponent implements OnInit {
       const savedDept = (this.formModel as any).departmentId ?? null;
       const regionCode = this.normalizeCodeValue(matched['codiceRegione']);
       const aslCode = this.normalizeCodeValue(matched['codiceAsl']);
-      const strutturaId = this.normalizeNumericId(matched['strutturaId']);
-      await this.applyClinicalFiltersFromStructure(structureDto, savedDept, regionCode, aslCode, this.normalizeNumericId(matched['aslId']) ?? undefined, strutturaId ?? undefined);
+      const overviewHospitalId = this.normalizeNumericId(matched['hospitalId'] ?? matched['strutturaId']);
+      await this.applyClinicalFiltersFromHospital(structureDto, savedDept, regionCode, aslCode, this.normalizeNumericId(matched['aslId']) ?? undefined, overviewHospitalId ?? undefined);
     });
   }
 
-  private async applyClinicalFiltersFromStructure(
-    selectedStructure: StructureDto,
+  private async applyClinicalFiltersFromHospital(
+    selectedHospital: StructureDto,
     initialDepartmentId: number | null = null,
     overviewRegionCode?: string,
     overviewAslCode?: string,
     overviewAslId?: number | undefined,
     overviewStrutturaId?: number | undefined
   ): Promise<void> {
-    const matchedAsl = this.resolveAslForStructure(selectedStructure);
+    const matchedAsl = this.resolveAslForStructure(selectedHospital);
 
     this.clinicalFilters = {
-      regionId: this.normalizeNumericId(selectedStructure.regionId),
-      aslId: matchedAsl?.id ?? this.normalizeNumericId(selectedStructure.parentStructureId),
+      regionId: this.normalizeNumericId(selectedHospital.regionId),
+      aslId: matchedAsl?.id ?? this.normalizeNumericId(selectedHospital.parentStructureId),
       departmentId: initialDepartmentId ?? null
     };
 
@@ -834,7 +1204,7 @@ export class TherapeuticPlanCrudComponent implements OnInit {
         }
       }
 
-      await this.loadDepartmentsForSelectedStructureAsync();
+      await this.loadDepartmentsForSelectedHospitalAsync();
       await this.loadAvailableDoctorsAsync();
 
       // After options are populated, assign formModel values (programmatic set, avoid triggering change handlers)
@@ -848,7 +1218,7 @@ export class TherapeuticPlanCrudComponent implements OnInit {
         (this.formModel as any).aslId = overviewAslId;
       }
       if (overviewStrutturaId !== undefined && overviewStrutturaId !== null) {
-        this.formModel.structureId = overviewStrutturaId;
+        this.formModel.hospitalId = overviewStrutturaId;
       }
 
       // Ensure departmentId from initialDepartmentId is applied after departments list loaded
@@ -872,9 +1242,9 @@ export class TherapeuticPlanCrudComponent implements OnInit {
       this.aslStructures = this.mapOverviewRowsToAslStructures(overviewRows);
       this.allAssociatedAslList = [...this.aslStructures];
       this.filteredAslList = [...this.allAssociatedAslList];
-      this.hospitalStructures = [];
+      this.hospitals = [];
       this.aslOptions = [...this.filteredAslList];
-      this.structureOptions = [];
+      this.hospitalsList = [];
       this.syncClinicalSelections();
       return;
     }
@@ -903,22 +1273,22 @@ export class TherapeuticPlanCrudComponent implements OnInit {
       overviewRowsForStructures = overviewRegionRows;
     }
 
-    this.hospitalStructures = this.mapOverviewRowsToHospitalStructures(overviewRowsForStructures);
-    this.structureOptions = [...this.hospitalStructures];
+    this.hospitals = this.mapOverviewRowsToHospitalStructures(overviewRowsForStructures);
+    this.hospitalsList = [...this.hospitals];
   }
 
-  private async loadDepartmentsForSelectedStructureAsync(): Promise<void> {
-    const selectedStructure = this.resolveSelectedStructureFromCurrentValue();
-    const structureDatabaseId = this.normalizeNumericId(this.formModel.structureId) ?? this.normalizeNumericId(selectedStructure?.id);
+  private async loadDepartmentsForSelectedHospitalAsync(): Promise<void> {
+    const selectedHospital = this.resolveSelectedHospitalFromCurrentValue();
+    const hospitalDatabaseId = this.normalizeNumericId(this.formModel.hospitalId) ?? this.normalizeNumericId(selectedHospital?.id);
 
-    if (structureDatabaseId === null) {
+    if (hospitalDatabaseId === null) {
       this.clearDepartmentSelection();
       return;
     }
 
-    this.formModel.structureId = structureDatabaseId;
+    this.formModel.hospitalId = hospitalDatabaseId;
 
-    const departments$ = this.structureApiService.getDepartmentsByStructure(structureDatabaseId).pipe(
+    const departments$ = this.structureApiService.getDepartmentsByStructure(hospitalDatabaseId).pipe(
       catchError(() => of([] as StructureDepartmentOptionDto[]))
     );
 
@@ -936,8 +1306,8 @@ export class TherapeuticPlanCrudComponent implements OnInit {
       params['regionId'] = this.clinicalFilters.regionId;
     }
 
-    if (this.formModel.structureId !== null) {
-      params['structureId'] = this.formModel.structureId;
+    if (this.formModel.hospitalId !== null) {
+      params['hospitalId'] = this.formModel.hospitalId;
     }
 
     if (this.clinicalFilters.departmentId !== null) {
@@ -952,18 +1322,18 @@ export class TherapeuticPlanCrudComponent implements OnInit {
     this.doctors = [...doctors].sort((left, right) => left.fullName.localeCompare(right.fullName, 'it', { sensitivity: 'base' }));
   }
 
-  private findKnownStructureById(structureId: number): StructureDto | null {
-    return [...this.hospitalStructures, ...this.specialistClinics]
-      .find((structure) => this.normalizeNumericId(structure.id) === structureId) ?? null;
+  private findKnownHospitalById(hospitalId: number): StructureDto | null {
+    return [...this.hospitals, ...this.specialistClinics]
+      .find((hospital) => this.normalizeNumericId(hospital.id) === hospitalId) ?? null;
   }
 
   private loadHospitalStructures(): void {
     const regionCode = this.getNormalizedRegionCode(this.clinicalFilters.regionId);
     if (!regionCode) {
       this.aslStructures = [];
-      this.hospitalStructures = [];
+      this.hospitals = [];
       this.aslOptions = [];
-      this.structureOptions = [];
+      this.hospitalsList = [];
       this.syncClinicalSelections();
       return;
     }
@@ -978,9 +1348,9 @@ export class TherapeuticPlanCrudComponent implements OnInit {
       this.aslStructures = this.mapOverviewRowsToAslStructures(overviewRows);
       this.allAssociatedAslList = [...this.aslStructures];
       this.filteredAslList = this.filterAslByRegion(this.allAssociatedAslList, this.clinicalFilters.regionId);
-      this.hospitalStructures = this.mapOverviewRowsToHospitalStructures(overviewRows);
+      this.hospitals = this.mapOverviewRowsToHospitalStructures(overviewRows);
       this.aslOptions = [...this.filteredAslList];
-      this.structureOptions = [...this.hospitalStructures];
+      this.hospitalsList = [...this.hospitals];
       this.syncClinicalSelections();
     });
   }
@@ -1039,20 +1409,20 @@ export class TherapeuticPlanCrudComponent implements OnInit {
     const uniqueStructuresByCode = new Map<string, StructureDto>();
 
     for (const row of rows) {
-      const structureCode = this.normalizeCodeValue(row.codiceStruttura);
-      if (!structureCode) {
+      const hospitalCode = this.normalizeCodeValue(row.hospitalCode ?? row.codiceStruttura);
+      if (!hospitalCode) {
         continue;
       }
 
-      const structureId = this.normalizeNumericId(row.strutturaId) ?? this.normalizeNumericId(structureCode);
+      const hospitalId = this.normalizeNumericId(row.hospitalId ?? row.strutturaId) ?? this.normalizeNumericId(hospitalCode);
       const aslCode = this.normalizeCodeValue(row.codiceAsl);
       const regionCode = this.normalizeCodeValue(row.codiceRegione);
-      const structureName = (row.struttura ?? '').trim() || structureCode;
-      const label = row.struttura?.trim().length ? `${row.struttura.trim()} (${structureCode})` : structureCode;
+      const structureName = (row.struttura ?? '').trim() || hospitalCode;
+      const label = row.struttura?.trim().length ? `${row.struttura.trim()} (${hospitalCode})` : hospitalCode;
 
-      uniqueStructuresByCode.set(structureCode, {
-        id: structureId ?? undefined,
-        code: structureCode,
+      uniqueStructuresByCode.set(hospitalCode, {
+        id: hospitalId ?? undefined,
+        code: hospitalCode,
         name: structureName,
         selectionLabel: label,
         address: '',
@@ -1128,8 +1498,8 @@ export class TherapeuticPlanCrudComponent implements OnInit {
       params['regionId'] = this.clinicalFilters.regionId;
     }
 
-    if (this.formModel.structureId !== null) {
-      params['structureId'] = this.formModel.structureId;
+    if (this.formModel.hospitalId !== null) {
+      params['hospitalId'] = this.formModel.hospitalId;
     }
 
     if (this.clinicalFilters.departmentId !== null) {
@@ -1144,19 +1514,19 @@ export class TherapeuticPlanCrudComponent implements OnInit {
     });
   }
 
-  private loadDepartmentsForSelectedStructure(): void {
-    const selectedStructure = this.resolveSelectedStructureFromCurrentValue();
-    const structureDatabaseId = this.normalizeNumericId(selectedStructure?.id);
+  private loadDepartmentsForSelectedHospital(): void {
+    const selectedHospital = this.resolveSelectedHospitalFromCurrentValue();
+    const hospitalDatabaseId = this.normalizeNumericId(selectedHospital?.id);
 
-    if (structureDatabaseId === null) {
+    if (hospitalDatabaseId === null) {
       this.clearDepartmentSelection();
       this.syncClinicalSelections();
       return;
     }
 
-    this.formModel.structureId = structureDatabaseId;
+    this.formModel.hospitalId = hospitalDatabaseId;
 
-    this.structureApiService.getDepartmentsByStructure(structureDatabaseId).pipe(
+    this.structureApiService.getDepartmentsByStructure(hospitalDatabaseId).pipe(
       catchError(() => of([] as StructureDepartmentOptionDto[]))
     ).subscribe((departments) => {
       this.departmentOptions = [...departments].sort((left, right) => left.label.localeCompare(right.label, 'it', { sensitivity: 'base' }));
@@ -1172,31 +1542,31 @@ export class TherapeuticPlanCrudComponent implements OnInit {
     this.departmentOptions = [];
   }
 
-  private resolveSelectedStructureFromCurrentValue(): StructureDto | null {
-    const selectedStructureId = this.formModel.structureId;
-    if (selectedStructureId === null) {
+  private resolveSelectedHospitalFromCurrentValue(): StructureDto | null {
+    const selectedHospitalId = this.formModel.hospitalId;
+    if (selectedHospitalId === null) {
       return null;
     }
 
-    return this.availableStructures.find((structure) => {
-      const databaseId = this.normalizeNumericId(structure.id);
-      if (databaseId !== null && databaseId === selectedStructureId) {
+    return this.availableHospitals.find((hospital) => {
+      const databaseId = this.normalizeNumericId(hospital.id);
+      if (databaseId !== null && databaseId === selectedHospitalId) {
         return true;
       }
 
-      const structureCode = this.normalizeNumericId(structure.code);
-      return structureCode !== null && structureCode === selectedStructureId;
+      const hospitalCode = this.normalizeNumericId(hospital.code);
+      return hospitalCode !== null && hospitalCode === selectedHospitalId;
     }) ?? null;
   }
 
   private syncClinicalSelections(): void {
     const availableStructureIds = new Set(
-      this.availableStructures
+      this.availableHospitals
         .map((structure) => this.normalizeNumericId(structure.id))
         .filter((structureId): structureId is number => typeof structureId === 'number')
     );
-    if (this.formModel.structureId !== null && !availableStructureIds.has(this.formModel.structureId)) {
-      this.formModel.structureId = null;
+    if (this.formModel.hospitalId !== null && !availableStructureIds.has(this.formModel.hospitalId)) {
+      this.formModel.hospitalId = null;
       this.clearDepartmentSelection();
     }
 
@@ -1219,7 +1589,7 @@ export class TherapeuticPlanCrudComponent implements OnInit {
   private syncClinicalFilterSelect2Values(): void {
     this.clinicalRegionValue = this.toSelect2Value(this.clinicalFilters.regionId);
     this.clinicalAslValue = this.toSelect2Value(this.clinicalFilters.aslId);
-    this.clinicalStructureValue = this.toSelect2Value(this.formModel.structureId);
+    this.clinicalHospitalValue = this.toSelect2Value(this.formModel.hospitalId);
   }
 
   private refreshClinicalSelect2Data(): void {
@@ -1232,8 +1602,8 @@ export class TherapeuticPlanCrudComponent implements OnInit {
       this.filteredAslList.map((asl) => ({ id: asl.id ?? null, label: this.getStructureLabel(asl) })),
       allLabel
     );
-    this.structureSelect2Data = this.toSelect2Data(
-      this.availableStructures.map((structure) => ({ id: structure.id ?? null, label: this.getStructureLabel(structure) })),
+    this.hospitalSelect2Data = this.toSelect2Data(
+      this.availableHospitals.map((hospital) => ({ id: hospital.id ?? null, label: this.getStructureLabel(hospital) })),
       allLabel
     );
   }
@@ -1347,9 +1717,4 @@ export class TherapeuticPlanCrudComponent implements OnInit {
     void this.router.navigateByUrl('/therapeutic-plans/search');
   }
 
-  private getMedicineLabel(medicine: MedicineLookupDto): string {
-    const denominazione = medicine.denominazione?.trim();
-    const codiceAic = medicine.codiceAic?.trim() ?? '';
-    return denominazione?.length ? `${denominazione} (${codiceAic})` : codiceAic;
-  }
 }

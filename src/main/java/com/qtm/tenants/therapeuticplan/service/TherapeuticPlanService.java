@@ -3,7 +3,12 @@ package com.qtm.tenants.therapeuticplan.service;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.NOT_FOUND;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.qtm.commonlib.dto.ProjectDto;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -32,14 +37,21 @@ import com.qtm.tenants.nurse.entity.NurseEntity;
 import com.qtm.tenants.nurse.repository.NurseRepository;
 import com.qtm.tenants.patient.service.DashboardPatientClient;
 import com.qtm.tenants.project.service.DashboardProjectClient;
+import com.qtm.tenants.otp.dto.OtpPhoneVerificationCheckRequest;
+import com.qtm.tenants.otp.dto.OtpPhoneVerificationSendRequest;
+import com.qtm.tenants.otp.dto.OtpVerificationResultResponse;
+import com.qtm.tenants.otp.service.UserOtpService;
 import com.qtm.tenants.therapeuticplan.TherapeuticPlanStatusRules;
 import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanDto;
 import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanProfessionalAssignmentDto;
+import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanSurveyOtpVerificationResponse;
 import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanDoctorAssignmentEntity;
 import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanEntity;
 import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanNurseAssignmentEntity;
+import com.qtm.tenants.therapeuticplan.entity.TherapeuticPlanSurveyOtpApprovalEntity;
 import com.qtm.tenants.therapeuticplan.mapper.TherapeuticPlanMapper;
 import com.qtm.tenants.therapeuticplan.repository.TherapeuticPlanRepository;
+import com.qtm.tenants.therapeuticplan.repository.TherapeuticPlanSurveyOtpApprovalRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -56,7 +68,10 @@ public class TherapeuticPlanService {
     private final DoctorRepository doctorRepository;
     private final EquipmentRepository equipmentRepository;
     private final TherapeuticPlanMapper therapeuticPlanMapper;
+    private final TherapeuticPlanSurveyOtpApprovalRepository surveyOtpApprovalRepository;
     private final DashboardProjectClient dashboardProjectClient;
+    private final UserOtpService userOtpService;
+    private final ObjectMapper objectMapper;
     private final AlertRepository alertRepository;
     private final NotificationRepository notificationRepository;
     private final TherapeuticPlanScheduleEngineService therapeuticPlanScheduleEngineService;
@@ -98,7 +113,8 @@ public class TherapeuticPlanService {
     @Transactional
     public TherapeuticPlanDto create(TherapeuticPlanDto dto) {
         TherapeuticPlanDto normalizedDto = normalizeDto(dto);
-        validatePatientExists(normalizedDto.getPatientId());
+        PatientDto patient = validatePatientExists(normalizedDto.getPatientId());
+        String otpRecipient = verifySurveyAcceptance(normalizedDto, patient, null);
         validateStructureId(normalizedDto.getStructureId());
         
         List<TherapeuticPlanNurseAssignmentEntity> nurseAssignments = buildNurseAssignments(normalizedDto.getNurseIds());
@@ -113,6 +129,9 @@ public class TherapeuticPlanService {
             selectedEquipments
         );
         entity.setDepartmentId(normalizedDto.getDepartmentId());
+        entity.setSurveyAnswers(normalizedDto.getSurveyAnswers());
+        entity.setSurveyAcceptedAt(LocalDateTime.now());
+        entity.setSurveyOtpRecipient(otpRecipient);
         
         TherapeuticPlanEntity savedEntity = therapeuticPlanRepository.save(entity);
         synchronizeEquipmentAssignments(List.of(), selectedEquipments, savedEntity);
@@ -131,7 +150,13 @@ public class TherapeuticPlanService {
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Piano terapeutico non trovato"));
 
         TherapeuticPlanDto normalizedDto = normalizeDto(dto);
-        validatePatientExists(normalizedDto.getPatientId());
+        PatientDto patient = validatePatientExists(normalizedDto.getPatientId());
+        boolean surveyAnswersChanged = normalizedDto.getSurveyAnswers() != null
+            && !surveyAnswersEqual(entity.getSurveyAnswers(), normalizedDto.getSurveyAnswers());
+        boolean surveyAcceptanceRequired = entity.getSurveyAcceptedAt() == null || surveyAnswersChanged;
+        String otpRecipient = surveyAcceptanceRequired
+            ? verifySurveyAcceptance(normalizedDto, patient, therapeuticPlanId)
+            : null;
         validateStructureId(normalizedDto.getStructureId());
         
         List<TherapeuticPlanNurseAssignmentEntity> nurseAssignments = buildNurseAssignments(normalizedDto.getNurseIds());
@@ -158,6 +183,15 @@ public class TherapeuticPlanService {
                 selectedEquipments
         );
         entity.setDepartmentId(normalizedDto.getDepartmentId());
+        if (otpRecipient != null) {
+            entity.setSurveyAnswers(normalizedDto.getSurveyAnswers());
+            entity.setSurveyAcceptedAt(LocalDateTime.now());
+            entity.setSurveyOtpRecipient(otpRecipient);
+        } else if (normalizedDto.getSurveyAnswers() != null) {
+            String jsonSurvey = getSurveyTemplate(normalizedDto.getProjectCode());
+            validateSurveyAnswers(jsonSurvey, normalizedDto.getSurveyAnswers());
+            entity.setSurveyAnswers(normalizedDto.getSurveyAnswers());
+        }
         TherapeuticPlanEntity savedEntity = therapeuticPlanRepository.save(entity);
         synchronizeEquipmentAssignments(currentEquipments, selectedEquipments, savedEntity);
         savedEntity.setEquipments(new ArrayList<>(selectedEquipments));
@@ -228,16 +262,148 @@ public class TherapeuticPlanService {
                 .prevalentDoctorId(normalizedDoctorIds.get(0))
                 .doctorId(normalizedDoctorIds.get(0))
                 .drugCode(normalizeRequiredText(dto.getDrugCode(), "Codice farmaco obbligatorio"))
+                .drugDescription(normalizeOptionalText(dto.getDrugDescription()))
                 .startDate(startDate)
                 .endDate(endDate)
                 .dischargeDate(dto.getDischargeDate())
                 .dischargeType(normalizeOptionalText(dto.getDischargeType()))
                 .status(normalizeStatus(dto.getStatus()))
                 .notes(normalizeOptionalText(dto.getNotes()))
+                .surveyAnswers(normalizeOptionalText(dto.getSurveyAnswers()))
+                .surveyAcceptanceToken(normalizeOptionalText(dto.getSurveyAcceptanceToken()))
+                .surveyAcceptanceRecipient(normalizeOptionalText(dto.getSurveyAcceptanceRecipient()))
                 .build();
     }
 
-    private void validatePatientExists(Long patientId) {
+    public OtpVerificationResultResponse sendSurveyAcceptanceOtp(Long patientId, Long therapeuticPlanId, String requestedRecipient) {
+        if (therapeuticPlanId != null) {
+            TherapeuticPlanEntity plan = therapeuticPlanRepository.findById(requireId(therapeuticPlanId))
+                    .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Piano terapeutico non trovato"));
+            if (!Objects.equals(plan.getPatientId(), patientId)) {
+                throw new ResponseStatusException(BAD_REQUEST, "Il paziente non corrisponde al piano terapeutico");
+            }
+        }
+
+        PatientDto patient = validatePatientExists(patientId);
+        OtpPhoneVerificationSendRequest request = new OtpPhoneVerificationSendRequest();
+        request.setPhoneNumber(resolveSurveyAcceptancePhone(patient, requestedRecipient));
+        request.setChannel("sms");
+        return userOtpService.sendOtpForPhone(request);
+    }
+
+    @Transactional
+    public TherapeuticPlanSurveyOtpVerificationResponse verifySurveyAcceptanceOtp(Long patientId, Long therapeuticPlanId, String requestedRecipient, String code) {
+        if (normalizeOptionalText(code) == null) {
+            throw new ResponseStatusException(BAD_REQUEST, "Codice OTP obbligatorio");
+        }
+        if (therapeuticPlanId != null) {
+            TherapeuticPlanEntity plan = therapeuticPlanRepository.findById(requireId(therapeuticPlanId))
+                    .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Piano terapeutico non trovato"));
+            if (!Objects.equals(plan.getPatientId(), patientId)) {
+                throw new ResponseStatusException(BAD_REQUEST, "Il paziente non corrisponde al piano terapeutico");
+            }
+        }
+
+        PatientDto patient = validatePatientExists(patientId);
+        OtpPhoneVerificationCheckRequest request = new OtpPhoneVerificationCheckRequest();
+        request.setPhoneNumber(resolveSurveyAcceptancePhone(patient, requestedRecipient));
+        request.setCode(code.trim());
+        request.setChannel("sms");
+        OtpVerificationResultResponse result = userOtpService.checkOtpForPhone(request);
+        if (!result.approved()) {
+            return new TherapeuticPlanSurveyOtpVerificationResponse(
+                false, result.destination(), result.channel(), result.status(), null);
+        }
+
+        String token = java.util.UUID.randomUUID().toString();
+        surveyOtpApprovalRepository.save(TherapeuticPlanSurveyOtpApprovalEntity.builder()
+            .token(token)
+            .patientId(patientId)
+            .therapeuticPlanId(therapeuticPlanId)
+            .recipient(resolveSurveyOtpRecipient(patient, requestedRecipient))
+            .expiresAt(LocalDateTime.now().plusMinutes(10))
+            .build());
+        return new TherapeuticPlanSurveyOtpVerificationResponse(
+            true, result.destination(), result.channel(), result.status(), token);
+    }
+
+    public String getSurveyTemplate(String projectCode) {
+        ProjectDto project = resolveProject(projectCode);
+        String jsonSurvey = project == null ? null : normalizeOptionalText(project.getJsonSurvey());
+        if (jsonSurvey == null) {
+            throw new ResponseStatusException(BAD_REQUEST, "Questionario di accettazione non configurato per il progetto");
+        }
+        validateSurveyTemplate(jsonSurvey);
+        return jsonSurvey;
+    }
+
+    private String verifySurveyAcceptance(TherapeuticPlanDto dto, PatientDto patient, Long therapeuticPlanId) {
+        if (dto.getSurveyAcceptanceToken() == null) {
+            throw new ResponseStatusException(BAD_REQUEST, "Verifica OTP di accettazione obbligatoria");
+        }
+        if (dto.getSurveyAnswers() == null) {
+            throw new ResponseStatusException(BAD_REQUEST, "Risposte al questionario obbligatorie");
+        }
+
+        String jsonSurvey = getSurveyTemplate(dto.getProjectCode());
+        validateSurveyAnswers(jsonSurvey, dto.getSurveyAnswers());
+
+        String otpRecipient = resolveSurveyOtpRecipient(patient, dto.getSurveyAcceptanceRecipient());
+        TherapeuticPlanSurveyOtpApprovalEntity approval = surveyOtpApprovalRepository
+                .findForUpdateByToken(dto.getSurveyAcceptanceToken())
+                .orElseThrow(() -> new ResponseStatusException(BAD_REQUEST, "Verifica OTP scaduta o non valida"));
+        if (!Objects.equals(approval.getPatientId(), patient.getId())
+                || !Objects.equals(approval.getTherapeuticPlanId(), therapeuticPlanId)
+                || !Objects.equals(approval.getRecipient(), otpRecipient)
+                || !approval.getExpiresAt().isAfter(LocalDateTime.now())) {
+            throw new ResponseStatusException(BAD_REQUEST, "Verifica OTP scaduta o non valida");
+        }
+        surveyOtpApprovalRepository.delete(approval);
+        return otpRecipient;
+    }
+
+    private void validateSurveyTemplate(String jsonSurvey) {
+        try {
+            JsonNode template = objectMapper.readTree(jsonSurvey);
+            if (template == null || !template.isObject() || !template.path("pages").isArray()) {
+                throw new ResponseStatusException(BAD_REQUEST, "Il questionario del progetto non ha un formato valido");
+            }
+        } catch (JsonProcessingException exception) {
+            throw new ResponseStatusException(BAD_REQUEST, "Il questionario del progetto contiene JSON non valido", exception);
+        }
+    }
+
+    private void validateSurveyAnswers(String jsonSurvey, String surveyAnswers) {
+        try {
+            JsonNode answers = objectMapper.readTree(surveyAnswers);
+            if (answers == null || !answers.isObject()) {
+                throw new ResponseStatusException(BAD_REQUEST, "Le risposte al questionario devono essere un oggetto JSON");
+            }
+            JsonNode pages = objectMapper.readTree(jsonSurvey).path("pages");
+            if (pages.isEmpty()) {
+                throw new ResponseStatusException(BAD_REQUEST, "Il questionario del progetto non contiene domande");
+            }
+        } catch (JsonProcessingException exception) {
+            throw new ResponseStatusException(BAD_REQUEST, "Le risposte al questionario contengono JSON non valido", exception);
+        }
+    }
+
+    private boolean surveyAnswersEqual(String currentAnswers, String requestedAnswers) {
+        if (Objects.equals(normalizeOptionalText(currentAnswers), normalizeOptionalText(requestedAnswers))) {
+            return true;
+        }
+        if (currentAnswers == null || requestedAnswers == null) {
+            return false;
+        }
+
+        try {
+            return Objects.equals(objectMapper.readTree(currentAnswers), objectMapper.readTree(requestedAnswers));
+        } catch (JsonProcessingException exception) {
+            return false;
+        }
+    }
+
+    private PatientDto validatePatientExists(Long patientId) {
         if (patientId == null) {
             throw new ResponseStatusException(BAD_REQUEST, "Paziente obbligatorio");
         }
@@ -247,12 +413,38 @@ public class TherapeuticPlanService {
             if (dashboardPatient == null) {
                 throw new ResponseStatusException(BAD_REQUEST, "Paziente non trovato");
             }
+            return dashboardPatient;
         } catch (ResponseStatusException exception) {
             if (exception.getStatusCode() == NOT_FOUND) {
                 throw new ResponseStatusException(BAD_REQUEST, "Paziente non trovato", exception);
             }
             throw exception;
         }
+    }
+
+    private String resolveSurveyOtpRecipient(PatientDto patient, String requestedRecipient) {
+        String recipient = normalizeOptionalText(requestedRecipient);
+        if (recipient == null) {
+            recipient = normalizeOptionalText(patient.getOtpRecipient());
+        }
+        if (recipient == null || "primaryPhone".equalsIgnoreCase(recipient)) {
+            return "primaryPhone";
+        }
+        if ("caregiverPhone".equalsIgnoreCase(recipient)) {
+            return "caregiverPhone";
+        }
+        throw new ResponseStatusException(BAD_REQUEST, "Destinatario OTP del paziente non valido");
+    }
+
+    private String resolveSurveyAcceptancePhone(PatientDto patient, String requestedRecipient) {
+        String recipient = resolveSurveyOtpRecipient(patient, requestedRecipient);
+        String phoneNumber = "caregiverPhone".equals(recipient)
+                ? normalizeOptionalText(patient.getCaregiverPhone())
+                : normalizeOptionalText(patient.getPrimaryPhone());
+        if (phoneNumber == null) {
+            throw new ResponseStatusException(BAD_REQUEST, "Numero di telefono selezionato non presente nell'anagrafica paziente");
+        }
+        return phoneNumber;
     }
 
     private void validateStructureId(Long structureId) {
@@ -345,18 +537,20 @@ public class TherapeuticPlanService {
             return null;
         }
 
-        dto.setJsonVisit(resolveProjectJsonVisit(dto.getProjectCode()));
+        ProjectDto project = resolveProject(dto.getProjectCode());
+        dto.setJsonVisit(project == null ? null : normalizeOptionalText(project.getJsonVisit()));
+        dto.setJsonSurvey(project == null ? null : normalizeOptionalText(project.getJsonSurvey()));
         return dto;
     }
 
-    private String resolveProjectJsonVisit(String projectCode) {
+    private ProjectDto resolveProject(String projectCode) {
         String normalizedProjectCode = normalizeOptionalText(projectCode);
         if (normalizedProjectCode == null) {
             return null;
         }
 
         try {
-            return normalizeOptionalText(dashboardProjectClient.findByCodeAndCurrentTenant(normalizedProjectCode).getJsonVisit());
+            return dashboardProjectClient.findByCodeAndCurrentTenant(normalizedProjectCode);
         } catch (ResponseStatusException exception) {
             if (exception.getStatusCode() == NOT_FOUND) {
                 return null;

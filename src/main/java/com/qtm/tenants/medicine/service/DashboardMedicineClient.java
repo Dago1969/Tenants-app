@@ -18,23 +18,23 @@ import java.util.List;
 import static org.springframework.http.HttpStatus.BAD_GATEWAY;
 
 /**
- * Client REST verso QTMDashboard per consultare il catalogo farmaci di QTMDB.
+ * Client REST verso QTMTicket per consultare il catalogo farmaci condiviso.
  */
 @Service
 public class DashboardMedicineClient {
 
     private static final ParameterizedTypeReference<List<MedicineDto>> MEDICINE_LIST_TYPE = new ParameterizedTypeReference<>() {
     };
-    private static final String SERVICE_UNAVAILABLE_MESSAGE = "Servizio farmaci QTMDashboard non disponibile";
+    private static final String SERVICE_UNAVAILABLE_MESSAGE = "Servizio farmaci QTMTicket non disponibile";
 
     private final RestClient restClient;
 
     public DashboardMedicineClient(
             RestClient.Builder restClientBuilder,
-            @Value("${qtm.dashboard.api-base-url}") String dashboardApiBaseUrl
+            @Value("${qtm.ticket.base-url:http://localhost:8084/api/ticket}") String ticketApiBaseUrl
     ) {
         this.restClient = restClientBuilder
-                .baseUrl(dashboardApiBaseUrl)
+                .baseUrl(ticketApiBaseUrl)
                 .build();
     }
 
@@ -93,7 +93,7 @@ public class DashboardMedicineClient {
     private String buildDownstreamMessage(RestClientResponseException exception) {
         String responseBody = exception.getResponseBodyAsString();
         if (responseBody == null || responseBody.isBlank()) {
-            return "Errore restituito da QTMDashboard durante la consultazione dei farmaci";
+            return "Errore restituito da QTMTicket durante la consultazione dei farmaci";
         }
         return responseBody;
     }

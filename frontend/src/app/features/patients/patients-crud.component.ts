@@ -117,9 +117,9 @@ export class PatientsCrudComponent implements OnInit {
         'aslId', 
         'asl', 
         'aslCode', 
-        'structureId', 
+        'hospitalId',
         'departmentId', 
-        'ticketStructureCode'
+        'hospitalCode'
       ],
       transient: true
     },
@@ -135,23 +135,23 @@ export class PatientsCrudComponent implements OnInit {
       optionLabelKey: 'asl',
       relatedFields: { asl: 'asl', aslCode: 'codiceAsl' },
       resetFieldsOnChange: [
-        'structureId', 
-        'departmentId', 
-        'ticketStructureCode'
+        'hospitalId',
+        'departmentId',
+        'hospitalCode'
       ],
       transient: true
     },
     {
-      key: 'structureId',
+      key: 'hospitalId',
       labelKey: 'patients.field.referenceHospitalStructure',
       type: 'select',
       folder: 'medical',
       columnSpan: 2,
       // Filtra le Strutture da QTMDB per Regione e ASL selezionate
-      optionsEndpoint: 'structures/overview?regionCode={clinicalRegionCode}&aslCode={aslCode}',
-      optionValueKey: 'strutturaId',
+      optionsEndpoint: 'hospitals/overview?regionCode={clinicalRegionCode}&aslCode={aslCode}',
+      optionValueKey: 'hospitalId',
       optionLabelKey: 'struttura',
-      relatedFields: { ticketStructureCode: 'codiceStruttura' },
+      relatedFields: { hospitalCode: 'hospitalCode' },
       resetFieldsOnChange: ['departmentId']
     },
     {
@@ -160,10 +160,10 @@ export class PatientsCrudComponent implements OnInit {
       type: 'select',
       folder: 'medical',
       columnSpan: 2,
-      // Recupera i reparti/dipartimenti da TICKET filtrati per codice/id struttura
-      optionsEndpoint: 'structure-departments?structureId={structureId}',
+      // Ricerca i dipartimenti nell'overview QTMDB per la struttura selezionata
+      optionsEndpoint: 'hospitals/departments/overview?regionCode={clinicalRegionCode}&aslCode={aslCode}&hospitalCode={hospitalCode}',
       optionValueKey: 'id',
-      optionLabelKey: 'label',
+      optionLabelKey: 'descrizioneDisciplina',
       resetFieldsOnChange: ['prescribingSpecialist']
     },
     {
@@ -280,7 +280,6 @@ export class PatientsCrudComponent implements OnInit {
           labelKey: 'patients.field.otpRecipient',
           type: 'select',
 		  columnSpan: 2,
-          transient: true,
           options: [
             { value: 'primaryPhone', label: 'patients.otp.recipient.primary' },
             { value: 'caregiverPhone', label: 'patients.otp.recipient.caregiver' }
@@ -318,7 +317,7 @@ export class PatientsCrudComponent implements OnInit {
           optionValueKey: 'id',
           optionLabelKey: 'name',
           relatedFields: { region: 'name' },
-          resetFieldsOnChange: ['aslId', 'asl', 'aslCode', 'structureId', 'departmentId', 'ticketStructureCode'],
+          resetFieldsOnChange: ['aslId', 'asl', 'aslCode', 'hospitalId', 'departmentId', 'hospitalCode'],
           transient: true
         },
         {
@@ -329,36 +328,36 @@ export class PatientsCrudComponent implements OnInit {
           optionValueKey: 'aslId',
           optionLabelKey: 'asl',
           relatedFields: { asl: 'asl', aslCode: 'codiceAsl' },
-          resetFieldsOnChange: ['structureId', 'departmentId', 'ticketStructureCode'],
+          resetFieldsOnChange: ['hospitalId', 'departmentId', 'hospitalCode'],
           transient: true
         },
         { key: 'asl', labelKey: 'patients.field.asl', type: 'text', hidden: true, transient: true },
         { key: 'aslCode', labelKey: 'patients.field.asl', type: 'text', hidden: true, transient: true },
         {
-          key: 'structureId',
+          key: 'hospitalId',
           labelKey: 'patients.field.referenceHospitalStructure',
           type: 'select',
           columnSpan: 2,
-          optionsEndpoint: 'structures/overview?regionCode={clinicalRegionCode}&aslCode={aslCode}',
-          optionValueKey: 'strutturaId',
+          optionsEndpoint: 'hospitals/overview?regionCode={clinicalRegionCode}&aslCode={aslCode}',
+          optionValueKey: 'hospitalId',
           optionLabelKey: 'struttura',
-          relatedFields: { ticketStructureCode: 'codiceStruttura' },
+          relatedFields: { hospitalCode: 'hospitalCode' },
           resetFieldsOnChange: ['departmentId']
         },
         {
           key: 'departmentId',
           labelKey: 'patients.field.departmentId',
           type: 'select',
-          optionsEndpoint: 'structures/{structureId}/departments',
+          optionsEndpoint: 'hospitals/departments/overview?regionCode={clinicalRegionCode}&aslCode={aslCode}&hospitalCode={hospitalCode}',
           optionValueKey: 'id',
-          optionLabelKey: 'label',
+          optionLabelKey: 'descrizioneDisciplina',
           resetFieldsOnChange: ['prescribingSpecialist']
         },
 		{
 		  key: 'prescribingSpecialist',
 		  labelKey: 'patients.field.prescribingSpecialist',
 		  type: 'select',
-		  optionsEndpoint: 'doctors?departmentId={departmentId}&structureId={structureId}',
+          optionsEndpoint: 'doctors?departmentId={departmentId}&hospitalId={hospitalId}',
 		  optionValueKey: 'id',
 		  optionLabelKey: 'fullName'
 		},

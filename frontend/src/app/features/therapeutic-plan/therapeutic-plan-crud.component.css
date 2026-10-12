@@ -21,6 +21,47 @@
   grid-column: 1 / -1;
 }
 
+.therapeutic-plan-medicine-autocomplete {
+  position: relative;
+}
+
+.therapeutic-plan-medicine-options {
+  position: absolute;
+  z-index: 5;
+  top: calc(100% - 24px);
+  right: 0;
+  left: 0;
+  max-height: 240px;
+  margin: 0;
+  padding: 4px;
+  overflow-y: auto;
+  list-style: none;
+  background: #ffffff;
+  border: 1px solid #d3e5f8;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgb(22 48 76 / 14%);
+}
+
+.therapeutic-plan-medicine-options li {
+  margin: 0;
+}
+
+.therapeutic-plan-medicine-option {
+  width: 100%;
+  padding: 10px 12px;
+  color: #1a3a5d;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.therapeutic-plan-medicine-option:hover,
+.therapeutic-plan-medicine-option:focus-visible {
+  background: #eef6ff;
+  outline: none;
+}
+
 .therapeutic-plan-medicine-select {
   display: block;
   --select2-single-height: 50px;

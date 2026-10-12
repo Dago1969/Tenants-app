@@ -3,6 +3,7 @@ package com.qtm.tenants.structure.controller;
 import java.util.List;
 import java.util.Objects;
 
+import com.qtm.commonlib.dto.StructureDepartmentOverviewDto;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,16 +28,16 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 /**
- * Controller REST CRUD strutture che delega le operazioni via FeignClient.
+ * Controller REST per il catalogo Health Structure e le mutazioni gestite da Dashboard.
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/tenants/structures")
+@RequestMapping({"/api/tenants/hospitals", "/api/tenants/structures"})
 @RequiredArgsConstructor
 public class StructureController {
 
     private final StructureClient structureClient;
-        private final StructureService structureService;
+    private final StructureService structureService;
     private final ControllerFunctionAuthorizationService controllerFunctionAuthorizationService;
 
     @PostMapping
@@ -71,13 +72,13 @@ public class StructureController {
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
         String moduleCode = resolveSearchModuleCode(structureType, structureTypes);
-        log.info("[StructureController] GET /structures via Feign Client params: structureType={}, active={}, selectedRole={}",
+        log.info("[StructureController] GET /structures params: structureType={}, active={}, selectedRole={}",
                 structureType, active, selectedRole);
 
         controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, moduleCode);
 
-        List<StructureDto> structures = structureClient.findAll(
-                structureType, structureTypes, parentStructureId, code, name, region, parentStructureName, city, active, selectedRole
+        List<StructureDto> structures = structureService.findAll(
+            structureType, structureTypes, parentStructureId, code, name, region, parentStructureName, city, active
         );
 
         if ("SPECIALIST_CLINIC".equalsIgnoreCase(structureType) && Boolean.TRUE.equals(active)) {
@@ -94,12 +95,23 @@ public class StructureController {
     public ResponseEntity<List<StructureOverviewDto>> findOverview(
             @RequestParam(required = false) String regionCode,
             @RequestParam(required = false) String aslCode,
+            @RequestParam(required = false) Long hospitalId,
+            @RequestParam(name = "structureId", required = false) Long legacyStructureId,
+            @RequestParam(name = "strutturaId", required = false) Long legacyItalianStructureId,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
         controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, StructureModuleCodes.GENERIC);
-        log.info("[StructureController] GET /structures/overview via Feign Client regionCode={} aslCode={}", regionCode, aslCode);
-        List<StructureOverviewDto> structures = structureClient.findOverview(regionCode, aslCode, selectedRole);
-        log.info("[StructureController] GET /structures/overview returned {} hospitals from QTMDB regionCode={} aslCode={}",
+        Long resolvedHospitalId = hospitalId != null ? hospitalId
+            : legacyStructureId != null ? legacyStructureId : legacyItalianStructureId;
+        log.info("[StructureController] GET /hospitals/overview regionCode={} aslCode={} hospitalId={}",
+            regionCode, aslCode, resolvedHospitalId);
+        List<StructureOverviewDto> structures = structureService.findOverview(regionCode, aslCode);
+        if (resolvedHospitalId != null) {
+            structures = structures.stream()
+                .filter(hospital -> resolvedHospitalId.equals(hospital.getStrutturaId()))
+                .toList();
+        }
+        log.info("[StructureController] GET /structures/overview returned {} hospitals regionCode={} aslCode={}",
             structures == null ? 0 : structures.size(), regionCode, aslCode);
         return ResponseEntity.ok(structures);
     }
@@ -109,15 +121,26 @@ public class StructureController {
             @PathVariable Long id,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
-        // Se la chiamata al Feign client restituisce direttamente la struttura:
-        StructureDto dto = structureClient.findById(id, selectedRole);
-        if (dto != null) {
-            controllerFunctionAuthorizationService.requireModuleAccess(
-                    selectedRole,
-                    resolveModuleCode(dto.getStructureType())
-            );
-        }
+        StructureDto dto = structureService.findById(id);
+        controllerFunctionAuthorizationService.requireModuleAccess(
+            selectedRole,
+            resolveModuleCode(dto.getStructureType())
+        );
         return ResponseEntity.ok(dto);
+    }
+
+    @GetMapping("/departments/overview")
+    public ResponseEntity<List<StructureDepartmentOverviewDto>> findDepartmentOverview(
+            @RequestParam(required = false) String regionCode,
+            @RequestParam(required = false) String aslCode,
+            @RequestParam(required = false) String hospitalCode,
+            @RequestParam(name = "structureCode", required = false) String legacyStructureCode,
+            @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
+    ) {
+        String resolvedHospitalCode = hospitalCode != null ? hospitalCode : legacyStructureCode;
+        log.info("[StructureController] GET /structures/departments/overview regionCode={} aslCode={} structureCode={}",
+            regionCode, aslCode, resolvedHospitalCode);
+        return ResponseEntity.ok(structureClient.findDepartmentOverview(regionCode, aslCode, resolvedHospitalCode, selectedRole));
     }
 
     @GetMapping("/{id}/departments")

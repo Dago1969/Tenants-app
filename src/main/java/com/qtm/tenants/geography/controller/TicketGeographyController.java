@@ -1,8 +1,6 @@
 package com.qtm.tenants.geography.controller;
 
 import com.qtm.commonlib.dto.GeographicOptionDto;
-import com.qtm.external.client.HospitalClient;
-import com.qtm.external.client.TicketGeographyClient;
 import com.qtm.tenants.geography.service.TicketGeographyService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 /**
- * Controller REST che espone a TENANTS-APP le anagrafiche geografiche fornite da QTMTicket.
+ * Controller REST che espone a TENANTS-APP le anagrafiche geografiche fornite dal servizio Geography.
  */
 @RestController
 @RequestMapping("/api/tenants/geography")
@@ -28,7 +26,7 @@ public class TicketGeographyController {
     public List<GeographicOptionDto> findRegions() {
         log.info("[TicketGeographyController] Chiamata a /api/tenants/geography/regions");
         List<GeographicOptionDto> result = ticketGeographyService.findRegions();
-        log.info("[TicketGeographyController] Restituite {} regioni", result != null ? result.size() : 0);
+        log.info("[TicketGeographyController] Restituite {} regioni", result.size());
         return result;
     }
 

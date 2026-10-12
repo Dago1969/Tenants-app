@@ -1,7 +1,7 @@
 <qtm-step-modal
   [title]="translate(titleKey)"
   [step]="currentStepIndex + 1"
-  [totalSteps]="steps.length"
+  [totalSteps]="visibleSteps.length"
   [stepTitle]="translate(currentStep.title)"
   [stepDescription]="translate(currentStep.description)"
   (close)="cancel()"
@@ -46,16 +46,27 @@
         </select>
       </label>
 
-      <label class="therapeutic-plan-field">
+      <div class="therapeutic-plan-field therapeutic-plan-medicine-autocomplete">
         <span>{{ translate('therapeuticPlan.field.medicine') }}</span>
-        <select [(ngModel)]="formModel.drugCode">
-          <option [ngValue]="''">{{ translate('therapeuticPlan.field.medicinePlaceholder') }}</option>
-          <option *ngFor="let med of medicineOptions" [ngValue]="med.value">
-            {{ med.label }}
-          </option>
-        </select>
-        <small class="therapeutic-plan-field-help">{{ medicineSelectionInfo }}</small>
-      </label>
+        <input
+          type="text"
+          [ngModel]="medicineSearchQuery"
+          (ngModelChange)="onMedicineSearchChange($event)"
+          [placeholder]="translate('therapeuticPlan.field.medicinePlaceholder')"
+          [attr.aria-label]="translate('therapeuticPlan.field.medicine')"
+        />
+        <small class="therapeutic-plan-field-help">{{ translate('therapeuticPlan.field.medicineSearchHint') }}</small>
+        <ul *ngIf="medicineOptions.length" class="therapeutic-plan-medicine-options" role="listbox">
+          <li *ngFor="let medicine of medicineOptions">
+            <button type="button" role="option" class="therapeutic-plan-medicine-option" (click)="selectMedicine(medicine)">
+              {{ formatMedicine(medicine) }}
+            </button>
+          </li>
+        </ul>
+        <small *ngIf="medicineSearchQuery.trim().length >= 3 && !medicineSearchLoading && !medicineOptions.length" class="therapeutic-plan-field-help">
+          {{ translate('therapeuticPlan.field.medicineNoResults') }}
+        </small>
+      </div>
 
       <label class="therapeutic-plan-field">
         <span>{{ translate('therapeuticPlan.field.dischargeDate') }}</span>
@@ -66,9 +77,9 @@
         <span>{{ translate('therapeuticPlan.field.dischargeType') }}</span>
         <select [(ngModel)]="formModel.dischargeType" name="dischargeType" class="therapeutic-plan-select">
           <option [ngValue]="null">-- {{ translate('common.select') }} --</option>
-          <option value="NAIVE">NAÏVE</option>
-          <option value="SWITCH">SWITCH</option>
-          <option value="SONDINO">Sondino</option>
+          <option value="NAIVE">{{ translate('therapeuticPlan.option.dischargeType.naive') }}</option>
+          <option value="SWITCH">{{ translate('therapeuticPlan.option.dischargeType.switch') }}</option>
+          <option value="SONDINO">{{ translate('therapeuticPlan.option.dischargeType.feedingTube') }}</option>
         </select>
       </label>
     </section>
@@ -106,19 +117,19 @@
         <span>{{ translate('therapeuticPlan.field.structure') }}</span>
         <ng-select2
           class="therapeutic-plan-medicine-select"
-          [(ngModel)]="clinicalStructureValue"
-          name="clinicalStructure"
-          [data]="structureSelect2Data"
+          [(ngModel)]="clinicalHospitalValue"
+          name="clinicalHospital"
+          [data]="hospitalSelect2Data"
           [placeholder]="translate('search.option.all')"
           [displaySearchStatus]="'always'"
           [resettable]="true"
-          (update)="onStructureSelect2Update($event)"
+          (update)="onHospitalSelect2Update($event)"
         ></ng-select2>
       </div>
 
       <label class="therapeutic-plan-field therapeutic-plan-field-full">
         <span>{{ translate('doctors.field.departmentId') }}</span>
-        <select [(ngModel)]="clinicalFilters.departmentId" (ngModelChange)="onDepartmentFilterChange()" [disabled]="formModel.structureId === null || departmentOptions.length === 0">
+        <select [(ngModel)]="clinicalFilters.departmentId" (ngModelChange)="onDepartmentFilterChange()" [disabled]="formModel.hospitalId === null || departmentOptions.length === 0">
           <option [ngValue]="null"></option>
           <option *ngFor="let department of departmentOptions" [ngValue]="department.id">
             {{ department.label }}
@@ -126,8 +137,8 @@
         </select>
       </label>
 
-      <div *ngIf="selectedStructure" class="therapeutic-plan-inline-hint therapeutic-plan-field-full">
-        {{ translate('therapeuticPlan.field.structureType') }}: {{ selectedStructure.structureType }}
+      <div *ngIf="selectedHospital" class="therapeutic-plan-inline-hint therapeutic-plan-field-full">
+        {{ translate('therapeuticPlan.field.structureType') }}: {{ selectedHospital.structureType }}
       </div>
 
       <div class="therapeutic-plan-field therapeutic-plan-field-full therapeutic-plan-operator-panel">
@@ -242,6 +253,73 @@
         <span>{{ translate('therapeuticPlan.field.notes') }}</span>
         <textarea [(ngModel)]="formModel.notes" rows="5"></textarea>
       </label>
+    </section>
+
+    <section *ngIf="currentStep.key === 'survey'" class="therapeutic-plan-grid">
+      <div *ngIf="loadingSurvey" class="therapeutic-plan-inline-hint therapeutic-plan-field-full">
+        {{ translate('therapeuticPlan.survey.loading') }}
+      </div>
+
+      <ng-container *ngIf="surveyTemplate && !loadingSurvey">
+        <ng-container *ngFor="let page of surveyTemplate.pages">
+          <h3 *ngIf="page.title || page.name" class="therapeutic-plan-field-full">
+            {{ page.title || page.name }}
+          </h3>
+
+          <ng-container *ngFor="let element of page.elements">
+            <label *ngIf="element.type === 'text'" class="therapeutic-plan-field therapeutic-plan-field-full">
+              <span>{{ element.title }}<strong *ngIf="element.isRequired"> *</strong></span>
+              <input [ngModel]="surveyAnswers[element.name]" [ngModelOptions]="{ standalone: true }" (ngModelChange)="onSurveyAnswerChange(element.name, $event)" type="text" />
+            </label>
+
+            <label *ngIf="element.type === 'boolean'" class="therapeutic-plan-field">
+              <span>{{ element.title }}<strong *ngIf="element.isRequired"> *</strong></span>
+              <select [ngModel]="surveyAnswers[element.name]" [ngModelOptions]="{ standalone: true }" (ngModelChange)="onSurveyAnswerChange(element.name, $event)">
+                <option [ngValue]="null">-- {{ translate('common.select') }} --</option>
+                <option [ngValue]="false">{{ translate('therapeuticPlan.survey.answer.no') }}</option>
+                <option [ngValue]="true">{{ translate('therapeuticPlan.survey.answer.yes') }}</option>
+              </select>
+            </label>
+
+            <label *ngIf="element.type === 'dropdown'" class="therapeutic-plan-field">
+              <span>{{ element.title }}<strong *ngIf="element.isRequired"> *</strong></span>
+              <select [ngModel]="surveyAnswers[element.name]" [ngModelOptions]="{ standalone: true }" (ngModelChange)="onSurveyAnswerChange(element.name, $event)">
+                <option [ngValue]="null">-- {{ translate('common.select') }} --</option>
+                <option *ngFor="let choice of element.choices ?? []" [ngValue]="choice.value">
+                  {{ choice.text || choice.value }}
+                </option>
+              </select>
+            </label>
+          </ng-container>
+        </ng-container>
+
+        <app-consent-otp-form
+          class="therapeutic-plan-field therapeutic-plan-field-full"
+          [channel]="surveyOtpChannel"
+          [channelOptions]="surveyOtpChannels"
+          [recipient]="surveyOtpRecipient"
+          [recipientOptions]="surveyOtpRecipientOptions"
+          [destination]="surveyOtpDestination"
+          [code]="surveyOtpCode"
+          [consentDate]="surveyConsentDateTime"
+          [pending]="sendingSurveyOtp || verifyingSurveyOtp"
+          [sent]="surveyOtpSent"
+          [verified]="surveyOtpVerified"
+          [status]="surveyOtpVerified ? translate('therapeuticPlan.survey.otp.verified') : (surveyOtpSent ? translate('therapeuticPlan.survey.otp.sent') : '')"
+          [channelLabelKey]="'therapeuticPlan.survey.otp.channel'"
+          [recipientLabelKey]="'therapeuticPlan.survey.otp.recipient'"
+          [sendLabelKey]="'therapeuticPlan.survey.otp.send'"
+          [sendingLabelKey]="'therapeuticPlan.survey.otp.sending'"
+          [codeLabelKey]="'therapeuticPlan.survey.otp.code'"
+          [verifyLabelKey]="'therapeuticPlan.survey.otp.verify'"
+          [consentDateLabelKey]="'therapeuticPlan.survey.otp.consentDate'"
+          (channelChange)="surveyOtpChannel = $event"
+          (recipientChange)="onSurveyOtpRecipientChange($event)"
+          (codeChange)="surveyOtpCode = $event; surveyOtpVerified = false; surveyConsentDateTime = ''"
+          (send)="sendSurveyOtp()"
+          (verify)="verifySurveyOtp()"
+        />
+      </ng-container>
     </section>
   </div>
 

@@ -5,9 +5,11 @@ import com.qtm.tenants.alert.service.AlertService;
 import com.qtm.tenants.authorization.service.ControllerFunctionAuthorizationService;
 import com.qtm.tenants.notification.dto.NotificationDto;
 import com.qtm.tenants.notification.service.NotificationService;
+import com.qtm.tenants.otp.dto.OtpVerificationResultResponse;
 import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanActivityBookingDto;
 import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanContactRequestDto;
 import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanDto;
+import com.qtm.tenants.therapeuticplan.dto.TherapeuticPlanSurveyOtpVerificationResponse;
 import com.qtm.tenants.therapeuticplan.service.TherapeuticPlanActivityBookingService;
 import com.qtm.tenants.therapeuticplan.service.TherapeuticPlanContactRequestService;
 import com.qtm.tenants.therapeuticplan.service.TherapeuticPlanService;
@@ -77,7 +79,7 @@ public class TherapeuticPlanController {
 						.description("Codice del progetto associato").type("string").build(),
 				TherapeuticPlanAttributeDto.builder().name("equipmentIds").label("Attrezzature")
 						.description("Lista delle attrezzature collegate").type("list:number").build(),
-				TherapeuticPlanAttributeDto.builder().name("structureId").label("Struttura")
+				TherapeuticPlanAttributeDto.builder().name("hospitalId").label("Ospedale")
 						.description("Struttura sanitaria associata").type("number").build(),
 				TherapeuticPlanAttributeDto.builder().name("nurseIds").label("Infermieri")
 						.description("Lista ordinata degli infermieri associati").type("list:number").build(),
@@ -102,11 +104,36 @@ public class TherapeuticPlanController {
 						.build()));
 	}
 
-	@GetMapping("/{id}")
+	@GetMapping("/{id:[0-9]+}")
 	public TherapeuticPlanDto findById(@PathVariable Long id,
 			@RequestHeader(name = "X-Selected-Role", required = false) String selectedRole) {
 		controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
 		return therapeuticPlanService.findById(id);
+	}
+
+	@GetMapping("/survey")
+	public String getSurveyTemplate(@RequestParam String projectCode,
+			@RequestHeader(name = "X-Selected-Role", required = false) String selectedRole) {
+		controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
+		return therapeuticPlanService.getSurveyTemplate(projectCode);
+	}
+
+	@PostMapping("/survey/otp")
+	public OtpVerificationResultResponse sendSurveyAcceptanceOtp(@RequestParam Long patientId,
+			@RequestParam(required = false) Long therapeuticPlanId,
+			@RequestParam(required = false) String recipient,
+			@RequestHeader(name = "X-Selected-Role", required = false) String selectedRole) {
+		controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
+		return therapeuticPlanService.sendSurveyAcceptanceOtp(patientId, therapeuticPlanId, recipient);
+	}
+
+	@PostMapping("/survey/otp/check")
+	public TherapeuticPlanSurveyOtpVerificationResponse verifySurveyAcceptanceOtp(@RequestParam Long patientId,
+			@RequestParam(required = false) Long therapeuticPlanId, @RequestParam(required = false) String recipient,
+			@RequestParam String code,
+			@RequestHeader(name = "X-Selected-Role", required = false) String selectedRole) {
+		controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
+		return therapeuticPlanService.verifySurveyAcceptanceOtp(patientId, therapeuticPlanId, recipient, code);
 	}
 
 	@GetMapping("/{id}/alerts")

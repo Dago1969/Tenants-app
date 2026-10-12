@@ -24,7 +24,7 @@ public class KeycloakAdminClient {
     private final String adminClientSecret;
 
     public KeycloakAdminClient(RestClient.Builder restClientBuilder,
-                               @Value("${	:${APP_KEYCLOAK_SERVER_URL:https://auth.qtmdev.quicare.com}}") String baseUrl,
+                               @Value("${app.keycloak.server-url:${APP_KEYCLOAK_SERVER_URL:https://auth.qtmdev.quicare.com}}") String baseUrl,
                                @Value("${app.keycloak.realm:${APP_KEYCLOAK_REALM_CODE:Lecigimon}}") String realm,
                                @Value("${app.keycloak.admin-client-id:${APP_KEYCLOAK_ADMIN_CLIENT_ID:tenants-app-admin}}") String adminClientId,
                                @Value("${app.keycloak.admin-client-secret:${APP_KEYCLOAK_ADMIN_CLIENT_SECRET:}}") String adminClientSecret) {

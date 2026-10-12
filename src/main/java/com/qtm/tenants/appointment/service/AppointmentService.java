@@ -117,7 +117,7 @@ public class AppointmentService {
 						.map(this::mapVisitToAppointment).toList());
 		log.info("[DASHBOARD-NURSE] Trovate {} visite in therapeutic_plan_visit", appointments.size());
 		try {
-			log.info("[DASHBOARD-NURSE] Inizio chiamata FeignClient TICKET per nurseId: {}, realm: {}, project: {}",
+			log.info("[DASHBOARD-NURSE] Inizio chiamata RestClient TICKET per nurseId: {}, realm: {}, project: {}",
 					nurseId, ticketRealm, ticketProject);
 			TicketDto[] tickets = ticketClient.findByNurse(nurseId, ticketRealm, ticketProject);
 			log.info("[DASHBOARD-NURSE] Ricevuti {} ticket da microservizio TICKET", tickets == null ? 0 : tickets.length);

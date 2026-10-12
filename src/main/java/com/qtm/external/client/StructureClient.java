@@ -1,85 +1,125 @@
 package com.qtm.external.client;
 
-import java.util.List;
-import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.*;
-
+import com.qtm.commonlib.dto.HospitalOverviewDto;
+import com.qtm.commonlib.dto.StructureDepartmentOverviewDto;
 import com.qtm.commonlib.dto.StructureDepartmentSourceDto;
 import com.qtm.tenants.structure.dto.StructureDto;
-import com.qtm.tenants.structure.dto.StructureOverviewDto;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 
-// Sostituisci 'name' e 'url' con il nome del servizio su Eureka o la proprietà application.yml
-@FeignClient(name = "qtmdb-structure-client", url = "${QTM_DASHBOARD_API_BASE_URL:${NG_APP_API_BASE_URL:http://localhost:8086/api}}")
-public interface StructureClient {
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
-    @PostMapping("/hospital")
-    StructureDto create(
-            @RequestBody StructureDto structureDto,
-            @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
-    );
+/** Client REST per le operazioni sulle strutture tenant ancora gestite da Dashboard. */
+@Component
+public class StructureClient {
 
-    @GetMapping("/hospital")
-    List<StructureDto> findAll(
-            @RequestParam(name = "structureType", required = false) String structureType,
-            @RequestParam(name = "structureTypes", required = false) String structureTypes,
-            @RequestParam(name = "parentStructureId", required = false) Long parentStructureId,
-            @RequestParam(name = "code", required = false) String code,
-            @RequestParam(name = "name", required = false) String name,
-            @RequestParam(name = "region", required = false) String region,
-            @RequestParam(name = "parentStructureName", required = false) String parentStructureName,
-            @RequestParam(name = "city", required = false) String city,
-            @RequestParam(name = "active", required = false) Boolean active,
-            @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
-    );
+    private static final ParameterizedTypeReference<List<StructureDepartmentOverviewDto>> DEPARTMENT_OVERVIEW_LIST_TYPE = new ParameterizedTypeReference<>() { };
+        private static final ParameterizedTypeReference<List<HospitalOverviewDto>> HOSPITAL_OVERVIEW_LIST_TYPE = new ParameterizedTypeReference<>() { };
+        private static final ParameterizedTypeReference<List<StructureDepartmentSourceDto>> STRUCTURE_DEPARTMENT_LIST_TYPE = new ParameterizedTypeReference<>() { };
 
-    @GetMapping("/hospital/overview")
-    List<StructureOverviewDto> findOverview(
-            @RequestParam(name = "regionCode", required = false) String regionCode,
-            @RequestParam(name = "aslCode", required = false) String aslCode,
-            @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
-    );
+    private final RestClient restClient;
+    private final String dashboardApiBaseUrl;
 
-    @GetMapping("/hospital/{id}")
-    StructureDto findById(
-            @PathVariable("id") Long id,
-            @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
-    );
+    public StructureClient(
+            RestClient.Builder restClientBuilder,
+            @Value("${qtm.dashboard.api-base-url}") String dashboardApiBaseUrl
+    ) {
+        this.restClient = restClientBuilder.baseUrl(dashboardApiBaseUrl).build();
+        this.dashboardApiBaseUrl = dashboardApiBaseUrl;
+    }
 
-//    @GetMapping("/hospital/{id}/departments")
-//    List<StructureDepartmentOptionDto> findDepartmentsByStructureId(
-//            @PathVariable("id") Long id,
-//            @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
-//    );
+    public List<StructureDepartmentOverviewDto> findDepartmentOverview(
+            String regionCode,
+            String aslCode,
+            String structureCode,
+            String selectedRole
+    ) {
+        var uri = UriComponentsBuilder.fromUriString(dashboardApiBaseUrl + "/structure-departments/overview")
+                .queryParamIfPresent("regionCode", Optional.ofNullable(regionCode))
+                .queryParamIfPresent("aslCode", Optional.ofNullable(aslCode))
+                .queryParamIfPresent("structureCode", Optional.ofNullable(structureCode))
+                .build()
+                .toUri();
 
-    @GetMapping("/structure-departments/by-structure/{id}")
-        List<StructureDepartmentSourceDto> findDepartmentsByStructureId(
-            @PathVariable("id") Long id,
-            @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
-    );
-    
-    @PutMapping("/hospital/{id}")
-    StructureDto update(
-            @PathVariable("id") Long id,
-            @RequestBody StructureDto structureDto,
-            @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
-    );
+        return restClient.get()
+                .uri(uri)
+                .headers(headers -> RequestContextHeaderForwarder.forward(headers, selectedRole))
+                .retrieve()
+                .body(DEPARTMENT_OVERVIEW_LIST_TYPE);
+    }
 
-    
-    @DeleteMapping("/hospital/{id}")
-    void delete(
-            @PathVariable("id") Long id,
-            @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
-    );
+    public List<HospitalOverviewDto> findHospitalOverview(String regionCode, String aslCode) {
+        var uri = UriComponentsBuilder.fromUriString(dashboardApiBaseUrl + "/hospital/overview")
+                .queryParamIfPresent("regionCode", Optional.ofNullable(regionCode))
+                .queryParamIfPresent("aslCode", Optional.ofNullable(aslCode))
+                .build()
+                .toUri();
 
-    @PostMapping("/hospital/associate")
-    StructureDto associate(
-            @RequestBody java.util.Map<String, Object> body,
-            @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
-    );
+        return restClient.get()
+                .uri(uri)
+                .headers(RequestContextHeaderForwarder::forward)
+                .retrieve()
+                .body(HOSPITAL_OVERVIEW_LIST_TYPE);
+    }
 
-    @PostMapping("/hospital/{id}/deactivate")
-    void deactivate(
-            @PathVariable("id") Long id,
-            @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
-    );
+    public List<StructureDepartmentSourceDto> findDepartmentsByStructureCode(String structureCode) {
+        var uri = UriComponentsBuilder.fromUriString(dashboardApiBaseUrl + "/structure-departments/by-structure")
+                .queryParam("codiceStruttura", structureCode)
+                .build()
+                .toUri();
+
+        return restClient.get()
+                .uri(uri)
+                .headers(RequestContextHeaderForwarder::forward)
+                .retrieve()
+                .body(STRUCTURE_DEPARTMENT_LIST_TYPE);
+    }
+
+    public StructureDto create(StructureDto structureDto, String selectedRole) {
+        return restClient.post()
+                .uri("/hospital")
+                .headers(headers -> RequestContextHeaderForwarder.forward(headers, selectedRole))
+                .body(structureDto)
+                .retrieve()
+                .body(StructureDto.class);
+    }
+
+    public StructureDto update(Long id, StructureDto structureDto, String selectedRole) {
+        return restClient.put()
+                .uri("/hospital/{id}", id)
+                .headers(headers -> RequestContextHeaderForwarder.forward(headers, selectedRole))
+                .body(structureDto)
+                .retrieve()
+                .body(StructureDto.class);
+    }
+
+    public void delete(Long id, String selectedRole) {
+        restClient.delete()
+                .uri("/hospital/{id}", id)
+                .headers(headers -> RequestContextHeaderForwarder.forward(headers, selectedRole))
+                .retrieve()
+                .toBodilessEntity();
+    }
+
+    public StructureDto associate(Map<String, Object> body, String selectedRole) {
+        return restClient.post()
+                .uri("/hospital/associate")
+                .headers(headers -> RequestContextHeaderForwarder.forward(headers, selectedRole))
+                .body(body)
+                .retrieve()
+                .body(StructureDto.class);
+    }
+
+    public void deactivate(Long id, String selectedRole) {
+        restClient.post()
+                .uri("/hospital/{id}/deactivate", id)
+                .headers(headers -> RequestContextHeaderForwarder.forward(headers, selectedRole))
+                .retrieve()
+                .toBodilessEntity();
+    }
 }

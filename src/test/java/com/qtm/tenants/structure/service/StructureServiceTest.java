@@ -2,8 +2,6 @@ package com.qtm.tenants.structure.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -15,14 +13,24 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.qtm.commonlib.dto.ASLDto;
+import com.qtm.commonlib.dto.HospitalDto;
+import com.qtm.commonlib.dto.HospitalOverviewDto;
+import com.qtm.commonlib.dto.StructureDepartmentSourceDto;
+import com.qtm.external.client.HealthStructureClient;
 import com.qtm.external.client.StructureClient;
 import com.qtm.tenants.structure.dto.StructureDto;
+import com.qtm.tenants.structure.dto.StructureDepartmentOptionDto;
+import com.qtm.tenants.structure.dto.StructureOverviewDto;
 
 /**
- * Test del service strutture delegato al client remoto QTMDB.
+ * Test del service strutture delegato al catalogo remoto Health Structure.
  */
 @ExtendWith(MockitoExtension.class)
 class StructureServiceTest {
+
+    @Mock
+    private HealthStructureClient healthStructureClient;
 
     @Mock
     private StructureClient structureClient;
@@ -32,30 +40,69 @@ class StructureServiceTest {
     @BeforeEach
     void setUp() {
         structureService = new StructureService(
+            healthStructureClient,
             structureClient
         );
     }
 
     @Test
+    void shouldLoadHospitalOverviewFromDashboard() {
+        HospitalOverviewDto hospital = HospitalOverviewDto.builder()
+            .id(2L)
+            .strutturaId(2L)
+            .codiceRegione("09")
+            .regione("Toscana")
+            .codiceAsl("090601")
+            .asl("ASL Toscana")
+            .codiceStruttura("090601")
+            .struttura("Ospedale Centrale")
+            .build();
+        when(structureClient.findHospitalOverview("09", null)).thenReturn(List.of(hospital));
+
+        List<StructureOverviewDto> result = structureService.findOverview("09", null);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getStrutturaId()).isEqualTo(2L);
+        assertThat(result.get(0).getCodiceRegione()).isEqualTo("09");
+        assertThat(result.get(0).getStruttura()).isEqualTo("Ospedale Centrale");
+    }
+
+    @Test
+    void shouldLoadDepartmentsForHospitalFromDashboardByStructureCode() {
+        HospitalOverviewDto hospital = HospitalOverviewDto.builder()
+            .id(191L)
+            .strutturaId(191L)
+            .codiceStruttura("090623")
+            .build();
+        StructureDepartmentSourceDto department = StructureDepartmentSourceDto.builder()
+            .id(7L)
+            .descrizioneDisciplina("Neurologia")
+            .build();
+        when(structureClient.findHospitalOverview(null, null)).thenReturn(List.of(hospital));
+        when(structureClient.findDepartmentsByStructureCode("090623")).thenReturn(List.of(department));
+
+        List<StructureDepartmentOptionDto> result = structureService.findDepartmentOptions(191L);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getId()).isEqualTo(7L);
+        assertThat(result.get(0).getLabel()).isEqualTo("Neurologia");
+    }
+
+    @Test
     void shouldFindAllStructuresFromRemoteClient() {
-        StructureDto asl = new StructureDto();
-        asl.setId(1L);
-        asl.setCode("ASL-ROMA");
-        asl.setName("Poliambulatorio Roma");
-        asl.setStructureType("ASL");
-        asl.setActive(true);
+        ASLDto asl = ASLDto.builder()
+            .id(1L)
+            .codiceAzienda("ASL-ROMA")
+            .denominazioneAzienda("Poliambulatorio Roma")
+            .build();
+        HospitalDto hospital = HospitalDto.builder()
+            .id(2L)
+            .codiceStruttura("HOSP-001")
+            .struttura("Ospedale Centrale")
+            .build();
 
-        StructureDto hospital = new StructureDto();
-        hospital.setId(2L);
-        hospital.setCode("HOSP-001");
-        hospital.setName("Ospedale Centrale");
-        hospital.setStructureType("HOSPITAL");
-        hospital.setActive(true);
-
-        when(structureClient.findAll(eq("ASL"), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-            .thenReturn(List.of(asl));
-        when(structureClient.findAll(eq("HOSPITAL"), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-            .thenReturn(List.of(hospital));
+        when(healthStructureClient.findAsl()).thenReturn(List.of(asl));
+        when(healthStructureClient.findHospitals()).thenReturn(List.of(hospital));
 
         List<StructureDto> result = structureService.findAll(null, null);
 
@@ -72,8 +119,12 @@ class StructureServiceTest {
         hospital.setStructureType("HOSPITAL");
         hospital.setActive(true);
 
-        when(structureClient.findAll(eq("HOSPITAL"), any(), any(), any(), any(), any(), any(), any(), any(), any()))
-            .thenReturn(List.of(hospital));
+        when(healthStructureClient.findAsl()).thenReturn(List.of());
+        when(healthStructureClient.findHospitals()).thenReturn(List.of(HospitalDto.builder()
+            .id(2L)
+            .codiceStruttura("HOSP-001")
+            .struttura("Ospedale Centrale")
+            .build()));
 
         StructureDto loaded = structureService.findById(2L);
 

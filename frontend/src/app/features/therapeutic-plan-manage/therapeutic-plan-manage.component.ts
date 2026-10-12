@@ -27,7 +27,8 @@ interface TherapeuticPlanManageResponse {
   patientId: number | null;
   projectCode: string;
   equipmentIds: number[];
-  structureId: number | null;
+  hospitalId?: number | null;
+  structureId?: number | null;
   nurseIds?: number[];
   prevalentNurseId?: number | null;
   nurseId: number | null;
@@ -87,7 +88,7 @@ interface TherapeuticPlanManageUpdatePayload {
   patientId: number | null;
   projectCode: string;
   equipmentIds: number[];
-  structureId: number | null;
+  hospitalId: number | null;
   nurseIds: number[];
   prevalentNurseId: number | null;
   nurseId: number | null;
@@ -181,7 +182,7 @@ interface TherapeuticPlanActivityBookingRecord {
   therapeuticPlanId: number;
   patientId: number | null;
   patientName: string;
-  structureId: number | null;
+  hospitalId: number | null;
   structureName: string;
   bookingDate: string;
   visitType: TherapeuticPlanVisitType;
@@ -206,7 +207,7 @@ interface TherapeuticPlanContactRequestRecord {
   requestDate: string;
   requestType: TherapeuticPlanContactRequestType;
   outpatientClinic: string;
-  structureId: number | null;
+  hospitalId: number | null;
   structureName: string;
   status: TherapeuticPlanContactRequestStatus;
 }
@@ -1042,7 +1043,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
       therapeuticPlanId: typeof entry?.therapeuticPlanId === 'number' ? entry.therapeuticPlanId : (this.planId ?? 0),
       patientId: typeof entry?.patientId === 'number' ? entry.patientId : this.plan?.patientId ?? null,
       patientName: this.getFirstNonBlankString(entry?.patientName, this.patientDisplayName),
-      structureId: typeof entry?.structureId === 'number' ? entry.structureId : this.plan?.structureId ?? null,
+      hospitalId: typeof entry?.hospitalId === 'number' ? entry.hospitalId : typeof entry?.structureId === 'number' ? entry.structureId : this.plan?.hospitalId ?? this.plan?.structureId ?? null,
       structureName: this.getFirstNonBlankString(entry?.structureName, this.structureLabel),
       bookingDate: this.getFirstNonBlankString(entry?.bookingDate),
       visitType: (this.getFirstNonBlankString(entry?.visitType, 'outpatient') as TherapeuticPlanVisitType),
@@ -1059,7 +1060,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
       requestDate: this.getFirstNonBlankString(entry?.requestDate),
       requestType: (this.getFirstNonBlankString(entry?.requestType, 'patientViaContactCenter') as TherapeuticPlanContactRequestType),
       outpatientClinic: this.getFirstNonBlankString(entry?.outpatientClinic),
-      structureId: typeof entry?.structureId === 'number' ? entry.structureId : this.plan?.structureId ?? null,
+      hospitalId: typeof entry?.hospitalId === 'number' ? entry.hospitalId : typeof entry?.structureId === 'number' ? entry.structureId : this.plan?.hospitalId ?? this.plan?.structureId ?? null,
       structureName: this.getFirstNonBlankString(entry?.structureName, this.structureLabel),
       status: (this.getFirstNonBlankString(entry?.status, 'received') as TherapeuticPlanContactRequestStatus)
     };
@@ -2910,7 +2911,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
         }
         this.plan = plan;
         this.patient = patients.find((currentPatient) => currentPatient.id === plan.patientId) ?? null;
-        this.structure = [...hospitals, ...specialistClinics].find((currentStructure) => currentStructure.id === plan.structureId) ?? null;
+        this.structure = [...hospitals, ...specialistClinics].find((currentStructure) => currentStructure.id === (plan.hospitalId ?? plan.structureId)) ?? null;
         this.availableNurses = nurses ?? [];
         this.nurse = nurses.find((currentNurse) => currentNurse.id === plan.nurseId) ?? null;
         this.doctor = doctors.find((currentDoctor) => currentDoctor.id === plan.doctorId) ?? null;
@@ -2985,7 +2986,7 @@ export class TherapeuticPlanManageComponent implements OnInit {
       patientId: this.plan?.patientId ?? null,
       projectCode: this.plan?.projectCode ?? '',
       equipmentIds,
-      structureId: this.plan?.structureId ?? null,
+      hospitalId: this.plan?.hospitalId ?? this.plan?.structureId ?? null,
       nurseIds,
       prevalentNurseId: nurseIds[0] ?? null,
       nurseId: this.plan?.nurseId ?? null,

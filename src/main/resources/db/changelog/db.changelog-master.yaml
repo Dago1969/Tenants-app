@@ -68,10 +68,6 @@ databaseChangeLog:
       relativeToChangelogFile: true
 
   - include:
-      file: 20260911-01-add-structure-external-columns.yaml
-      relativeToChangelogFile: true
-
-  - include:
       file: 20260912-01-add-doctor-type-and-department.yaml
       relativeToChangelogFile: true
 
@@ -89,5 +85,14 @@ databaseChangeLog:
       relativeToChangelogFile: true
   - include:
       file: 20261002-02-add-discharge-fields-to-therapeutic-plans.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: 20261008-01-add-therapeutic-plan-drug-description.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: 20261010-01-add-therapeutic-plan-survey-acceptance.yaml
+      relativeToChangelogFile: true
+  - include:
+      file: 20261010-02-add-survey-otp-approval-ticket.yaml
       relativeToChangelogFile: true
   # Patient-specific FK changes removed: patient table managed in QTMDB

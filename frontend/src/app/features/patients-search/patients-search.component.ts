@@ -46,7 +46,7 @@ export class PatientsSearchComponent {
     { key: 'lastName', labelKey: 'patients.field.lastName', type: 'text' },
     { key: 'email', labelKey: 'patients.field.email', type: 'text' },
     { key: 'fiscalCode', labelKey: 'patients.field.fiscalCode', type: 'text' },
-    { key: 'structureId', labelKey: 'patients.field.structureId', type: 'number' }
+    { key: 'hospitalId', labelKey: 'patients.field.structureId', type: 'number' }
   ];
 
   resultColumns: SearchField[] = [
@@ -55,6 +55,6 @@ export class PatientsSearchComponent {
     { key: 'lastName', labelKey: 'patients.field.lastName', type: 'text' },
     { key: 'email', labelKey: 'patients.field.email', type: 'text' },
     { key: 'fiscalCode', labelKey: 'patients.field.fiscalCode', type: 'text' },
-    { key: 'structureId', labelKey: 'patients.field.structureId', type: 'number' }
+    { key: 'hospitalId', labelKey: 'patients.field.structureId', type: 'number' }
   ];
 }

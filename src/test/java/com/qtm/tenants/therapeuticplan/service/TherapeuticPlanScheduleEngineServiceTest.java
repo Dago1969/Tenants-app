@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -21,8 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.qtm.external.client.HospitalClient;
-import com.qtm.external.client.StructureDepartmentClient;
+import com.qtm.external.client.HealthStructureClient;
 import com.qtm.tenants.appointment.repository.AppointmentRepository;
 import com.qtm.tenants.appointment.repository.AppointmentTypeRepository;
 import com.qtm.tenants.doctor.repository.DoctorRepository;
@@ -62,10 +60,7 @@ class TherapeuticPlanScheduleEngineServiceTest {
     private TicketClient ticketClient;
 
     @Mock
-    private HospitalClient hospitalClient;
-
-    @Mock
-    private StructureDepartmentClient structureDepartmentClient;
+    private HealthStructureClient healthStructureClient;
 
     private TherapeuticPlanScheduleEngineService engineService;
 
@@ -83,8 +78,7 @@ class TherapeuticPlanScheduleEngineServiceTest {
                 doctorRepository,
                 ticketClient,
                 new ObjectMapper(),
-                hospitalClient,
-                structureDepartmentClient
+                healthStructureClient
         );
     }
 
