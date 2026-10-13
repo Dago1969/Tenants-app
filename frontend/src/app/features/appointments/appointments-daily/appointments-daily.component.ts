@@ -3,11 +3,12 @@ import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Appointment, AppointmentService } from '../../../services/appointment.service';
 import { MessageKey, t } from '../../../i18n/messages';
+import { QtmConsentWarningBadgeComponent } from 'qtm-shared';
 
 @Component({
   selector: 'app-appointments-daily',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, QtmConsentWarningBadgeComponent],
   template: `
     <section class="daily-shell">
       <header class="daily-header">
@@ -40,7 +41,13 @@ import { MessageKey, t } from '../../../i18n/messages';
               <td>{{ formatTime(appointment.startDateTime) }}</td>
               <td>{{ formatTime(appointment.endDateTime) }}</td>
               <td>{{ appointment.appointmentTypeName || '-' }}</td>
-              <td>{{ appointment.therapeuticPlanId || '-' }}</td>
+              <td>
+                {{ getPatientName(appointment) }}
+                <qtm-consent-warning-badge
+                  [consentRevoked]="appointment.consentRevoked === true"
+                  [tooltip]="translate('patients.consentRevoked.warning')"
+                />
+              </td>
               <td>{{ getStatusLabel(appointment.status) }}</td>
             </tr>
           </tbody>
@@ -124,6 +131,14 @@ export class AppointmentsDailyComponent {
       return value;
     }
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  getPatientName(appointment: Appointment): string {
+    return appointment.patientName
+      || [appointment.patientLastName, appointment.patientFirstName].filter(Boolean).join(' ')
+      || appointment.therapeuticPlanPatientDisplayName
+      || appointment.therapeuticPlanId?.toString()
+      || '-';
   }
 
   getStatusLabel(status: string): string {

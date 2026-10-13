@@ -45,6 +45,7 @@ public class AppointmentDto {
     private String facility;
     private String patientCode;
     private String patientName;
+    private Boolean consentRevoked;
     private String dischargeType;
     private LocalDate dischargeDate;
     private String prevalentDoctorCode;

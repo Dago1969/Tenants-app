@@ -50,6 +50,7 @@ public class PatientService {
             "assistedId", "firstName", "lastName", "fiscalCode", "email", "primaryPhone", "secondaryPhone",
             "regionId", "region", "provinceId", "province", "cityId", "city", "deliveryAddress", "secondaryAddresses", "communicationChannels",
             "identificationDocumentReference", "dataProcessingConsent", "dataProcessingConsentDateTime",
+            "dataProcessingConsentRevocationDateTime", "dataProcessingConsentRevocationReason",
             "otpRecipient",
             "dataProcessingConsentRevocationLog", "additionalConsents", "therapyStatus", "prescribingSpecialist",
             "referenceHospitalStructure", "referencePharmacy", "preferredPickupPharmacy", "deliveryMode",
@@ -64,7 +65,7 @@ public class PatientService {
     public PatientDto create(PatientDto patientDto) {
         AuthorizationPolicy policy = resolveAuthorizationPolicy();
         enforceModuleWriteAllowed(policy);
-        validatePrivacyConsent(patientDto);
+        validatePrivacyConsent(patientDto, null);
         enforceFieldWriteAllowed(patientDto, null, policy.fieldScopes());
 
         return applyReadAuthorization(dashboardPatientClient.create(patientDto), policy);
@@ -110,9 +111,8 @@ public class PatientService {
     public PatientDto update(Long id, PatientDto patientDto) {
         AuthorizationPolicy policy = resolveAuthorizationPolicy();
         enforceModuleWriteAllowed(policy);
-        validatePrivacyConsent(patientDto);
-
         PatientDto currentDto = findPatientById(id);
+        validatePrivacyConsent(patientDto, currentDto);
         enforceFieldWriteAllowed(patientDto, currentDto, policy.fieldScopes());
 
         return applyReadAuthorization(dashboardPatientClient.update(id, patientDto), policy);
@@ -138,17 +138,31 @@ public class PatientService {
         
     }
 
-    private void validatePrivacyConsent(PatientDto patientDto) {
+    private void validatePrivacyConsent(PatientDto patientDto, PatientDto currentDto) {
         if (patientDto == null) {
             throw new ResponseStatusException(BAD_REQUEST, "Dati paziente obbligatori");
         }
 
-        if (!Boolean.TRUE.equals(patientDto.getDataProcessingConsent())) {
-            throw new ResponseStatusException(BAD_REQUEST, "Il consenso al trattamento dati e obbligatorio");
+        if (Boolean.TRUE.equals(patientDto.getDataProcessingConsent())) {
+            if (patientDto.getDataProcessingConsentDateTime() == null) {
+                throw new ResponseStatusException(BAD_REQUEST, "La data del consenso al trattamento dati e obbligatoria dopo la verifica OTP");
+            }
+            return;
         }
 
+        boolean consentWasPreviouslyGranted = currentDto != null
+                && currentDto.getDataProcessingConsentDateTime() != null;
+        if (!consentWasPreviouslyGranted) {
+            throw new ResponseStatusException(BAD_REQUEST, "Il consenso deve essere acquisito prima di poterlo revocare");
+        }
         if (patientDto.getDataProcessingConsentDateTime() == null) {
-            throw new ResponseStatusException(BAD_REQUEST, "La data del consenso al trattamento dati e obbligatoria dopo la verifica OTP");
+            throw new ResponseStatusException(BAD_REQUEST, "La data del consenso al trattamento dati e obbligatoria");
+        }
+        boolean revocationAlreadyRecorded = currentDto.getDataProcessingConsentRevocationDateTime() != null;
+        boolean newRevocation = Boolean.TRUE.equals(currentDto.getDataProcessingConsent());
+        if ((revocationAlreadyRecorded || newRevocation)
+                && patientDto.getDataProcessingConsentRevocationDateTime() == null) {
+            throw new ResponseStatusException(BAD_REQUEST, "Data del consenso e data di revoca sono obbligatorie");
         }
     }
 

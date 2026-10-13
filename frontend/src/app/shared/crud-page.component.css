@@ -313,10 +313,6 @@
   width: 100%;
 }
 
-.crud-log-panel-inline {
-  margin-top: 12px;
-}
-
 @media (max-width: 1200px) {
   .crud-fields {
     grid-template-columns: repeat(3, 1fr);
@@ -364,16 +360,6 @@
   color: #36557f;
   font-weight: 700;
   margin-bottom: 6px;
-}
-
-.otp-recipient-select {
-  /* increase width visually by using full column and larger font */
-  padding: 10px 12px;
-}
-
-.otp-code-input {
-  max-width: 160px;
-  width: 100%;
 }
 
 /* placeholder-red styling: ensure placeholder text is red. Put in component CSS; ::ng-deep used to penetrate ng-select/inputs if necessary. */

@@ -40,6 +40,7 @@ export interface Appointment {
   facility?: string | null;
   patientCode?: string | null;
   patientName?: string | null;
+  consentRevoked?: boolean;
   dischargeType?: string | null;
   dischargeDate?: string | null;
   prevalentDoctorCode?: string | null;

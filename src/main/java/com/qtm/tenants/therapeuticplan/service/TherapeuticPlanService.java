@@ -77,14 +77,15 @@ public class TherapeuticPlanService {
     private final TherapeuticPlanScheduleEngineService therapeuticPlanScheduleEngineService;
 
     @Transactional(readOnly = true)
-    public List<TherapeuticPlanDto> findAll(String patientName, String nurseName, String doctorName, String projectCode, String status, String drugCode) {
+    public List<TherapeuticPlanDto> findAll(String patientName, String nurseName, String doctorName, String projectCode, String status, String drugCode, Long patientId) {
         String normalizedPatientName = normalizeFilter(patientName);
         String normalizedNurseName = normalizeFilter(nurseName);
         String normalizedDoctorName = normalizeFilter(doctorName);
         List<TherapeuticPlanEntity> therapeuticPlans = therapeuticPlanRepository.searchByFilters(
                         normalizeFilter(projectCode),
                         normalizeStatusFilter(status),
-                        normalizeFilter(drugCode)
+                        normalizeFilter(drugCode),
+                        patientId
             );
         Map<Long, PatientDto> patientsById = loadPatientsByIds(therapeuticPlans.stream()
             .map(TherapeuticPlanEntity::getPatientId)
@@ -92,9 +93,7 @@ public class TherapeuticPlanService {
             .collect(Collectors.toSet()));
 
         return therapeuticPlans.stream()
-            .map(entity -> enrichWithProjectJsonVisit(
-                therapeuticPlanMapper.toDto(entity, buildPatientDisplayName(patientsById.get(entity.getPatientId())))
-            ))
+            .map(entity -> toDtoWithPatient(entity, patientsById.get(entity.getPatientId())))
             .filter(dto -> matchesPatientName(dto.getPatientDisplayName(), normalizedPatientName))
             .filter(dto -> matchesAssignmentNames(dto.getNurseAssignments(), dto.getNurseName(), normalizedNurseName))
             .filter(dto -> matchesAssignmentNames(dto.getDoctorAssignments(), dto.getDoctorName(), normalizedDoctorName))
@@ -104,9 +103,7 @@ public class TherapeuticPlanService {
     @Transactional(readOnly = true)
     public TherapeuticPlanDto findById(Long id) {
         return therapeuticPlanRepository.findById(requireId(id))
-            .map(entity -> enrichWithProjectJsonVisit(
-                    therapeuticPlanMapper.toDto(entity, resolvePatientDisplayName(entity.getPatientId()))
-            ))
+            .map(entity -> toDtoWithPatient(entity, resolvePatient(entity.getPatientId())))
             .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Piano terapeutico non trovato"));
     }
 
@@ -138,9 +135,7 @@ public class TherapeuticPlanService {
         savedEntity.setEquipments(new ArrayList<>(selectedEquipments));
         therapeuticPlanScheduleEngineService.generateAutomaticVisits(savedEntity);
         
-        return enrichWithProjectJsonVisit(
-                therapeuticPlanMapper.toDto(savedEntity, resolvePatientDisplayName(savedEntity.getPatientId()))
-        );
+        return toDtoWithPatient(savedEntity, patient);
     }
 
     @Transactional
@@ -197,9 +192,7 @@ public class TherapeuticPlanService {
         savedEntity.setEquipments(new ArrayList<>(selectedEquipments));
         therapeuticPlanScheduleEngineService.generateAutomaticVisits(savedEntity);
         
-        return enrichWithProjectJsonVisit(
-            therapeuticPlanMapper.toDto(savedEntity, resolvePatientDisplayName(savedEntity.getPatientId()))
-        );
+        return toDtoWithPatient(savedEntity, patient);
     }
 
     @Transactional
@@ -467,19 +460,25 @@ public class TherapeuticPlanService {
                 .collect(Collectors.toMap(PatientDto::getId, Function.identity(), (left, right) -> left, HashMap::new));
     }
 
-    private String resolvePatientDisplayName(Long patientId) {
+    private PatientDto resolvePatient(Long patientId) {
         if (patientId == null) {
             return null;
         }
 
         try {
-            return buildPatientDisplayName(dashboardPatientClient.findById(patientId));
+            return dashboardPatientClient.findById(patientId);
         } catch (ResponseStatusException exception) {
             if (exception.getStatusCode() == NOT_FOUND) {
                 return null;
             }
             throw exception;
         }
+    }
+
+    private TherapeuticPlanDto toDtoWithPatient(TherapeuticPlanEntity entity, PatientDto patient) {
+        TherapeuticPlanDto dto = therapeuticPlanMapper.toDto(entity, buildPatientDisplayName(patient));
+        dto.setConsentRevoked(patient != null && Boolean.TRUE.equals(patient.getConsentRevoked()));
+        return enrichWithProjectJsonVisit(dto);
     }
 
     private String buildPatientDisplayName(PatientDto patient) {

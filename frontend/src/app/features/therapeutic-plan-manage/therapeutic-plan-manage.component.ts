@@ -13,7 +13,7 @@ import { AppointmentService, Appointment } from '../../services/appointment.serv
 import { AppointmentFormComponent } from '../appointments/appointment-form/appointment-form.component';
 import { PatientContactsSearchComponent } from '../patient-contacts-search/patient-contacts-search.component';
 import { QtmStepModalComponent } from '../../shared/qtm-step-modal.component';
-import { QtmSortableTableComponent, QtmSortColumn, QtmSortState } from 'qtm-shared';
+import { QtmConsentWarningBadgeComponent, QtmSortableTableComponent, QtmSortColumn, QtmSortState } from 'qtm-shared';
 import {
   formatQtmFlexibleDate,
   getQtmCurrentDateInputValue,
@@ -25,6 +25,7 @@ import {
 interface TherapeuticPlanManageResponse {
   id?: number;
   patientId: number | null;
+  consentRevoked?: boolean;
   projectCode: string;
   equipmentIds: number[];
   hospitalId?: number | null;
@@ -48,6 +49,7 @@ interface TherapeuticPlanManageResponse {
 
 interface TherapeuticPlanPatient {
   id: number;
+  consentRevoked?: boolean;
   assistedId?: string;
   firstName?: string;
   lastName?: string;
@@ -524,7 +526,7 @@ interface TherapeuticPlanMedicalRecordContentForm {
 @Component({
   selector: 'app-therapeutic-plan-manage',
   standalone: true,
-  imports: [CommonModule, FormsModule, AppointmentFormComponent, PatientContactsSearchComponent, QtmStepModalComponent, QtmSortableTableComponent],
+  imports: [CommonModule, FormsModule, AppointmentFormComponent, PatientContactsSearchComponent, QtmStepModalComponent, QtmSortableTableComponent, QtmConsentWarningBadgeComponent],
   templateUrl: './therapeutic-plan-manage.component.html',
   styleUrl: './therapeutic-plan-manage.component.css'
 })
@@ -1174,6 +1176,10 @@ export class TherapeuticPlanManageComponent implements OnInit {
 
     const fullName = `${this.patient.firstName ?? ''} ${this.patient.lastName ?? ''}`.trim();
     return fullName || this.translate('common.notAvailable');
+  }
+
+  get patientConsentRevoked(): boolean {
+    return this.patient?.consentRevoked === true || this.plan?.consentRevoked === true;
   }
 
   get patientCode(): string {

@@ -4,11 +4,12 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Appointment, AppointmentService } from '../../../services/appointment.service';
 import { MessageKey, t } from '../../../i18n/messages';
+import { QtmConsentWarningBadgeComponent } from 'qtm-shared';
 
 @Component({
   selector: 'app-appointments-calendar',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, QtmConsentWarningBadgeComponent],
   template: `
     <section class="calendar-shell">
       <header class="calendar-header">
@@ -43,6 +44,10 @@ import { MessageKey, t } from '../../../i18n/messages';
                 [class.ticket-event]="isTicket(appointment)" [class.service-event]="!isTicket(appointment)"
                 (click)="selectAppointment(appointment, $event)">
                 {{ getEventLabel(appointment) }}
+                <qtm-consent-warning-badge
+                  [consentRevoked]="appointment.consentRevoked === true"
+                  [tooltip]="translate('patients.consentRevoked.warning')"
+                />
               </button>
             </div>
           </ng-container>
@@ -51,17 +56,29 @@ import { MessageKey, t } from '../../../i18n/messages';
       <div class="calendar-list" *ngIf="activeView === 'list'">
         <button *ngFor="let appointment of appointments" type="button" class="list-event" (click)="selectAppointment(appointment)">
           <strong>{{ formatDateTime(appointment.startDateTime) }}</strong> {{ getEventLabel(appointment) }}
+          <qtm-consent-warning-badge
+            [consentRevoked]="appointment.consentRevoked === true"
+            [tooltip]="translate('patients.consentRevoked.warning')"
+          />
         </button>
         <p *ngIf="appointments.length === 0">{{ translate('appointment.message.noAppointments') }}</p>
       </div>
       <div class="calendar-day-view" *ngIf="activeView === 'day'">
         <button *ngFor="let appointment of getAppointmentsForDay(currentDate.getDate())" type="button" class="list-event" (click)="selectAppointment(appointment)">
           <strong>{{ formatDateTime(appointment.startDateTime) }}</strong> {{ getEventLabel(appointment) }}
+          <qtm-consent-warning-badge
+            [consentRevoked]="appointment.consentRevoked === true"
+            [tooltip]="translate('patients.consentRevoked.warning')"
+          />
         </button>
       </div>
       <div class="calendar-list" *ngIf="activeView === 'week'">
         <button *ngFor="let appointment of getAppointmentsForCurrentWeek()" type="button" class="list-event" (click)="selectAppointment(appointment)">
           <strong>{{ formatDateTime(appointment.startDateTime) }}</strong> {{ getEventLabel(appointment) }}
+          <qtm-consent-warning-badge
+            [consentRevoked]="appointment.consentRevoked === true"
+            [tooltip]="translate('patients.consentRevoked.warning')"
+          />
         </button>
         <p *ngIf="getAppointmentsForCurrentWeek().length === 0">{{ translate('appointment.message.noAppointments') }}</p>
       </div>
@@ -83,7 +100,16 @@ import { MessageKey, t } from '../../../i18n/messages';
           <div class="detail-grid">
             <section class="detail-section">
               <h4>{{ translate('appointment.field.patient') }}</h4>
-              <div class="detail-field"><span>{{ translate('appointment.field.name') }}</span><strong>{{ getPatientName(appointment) }}</strong></div>
+              <div class="detail-field">
+                <span>{{ translate('appointment.field.name') }}</span>
+                <strong>
+                  {{ getPatientName(appointment) }}
+                  <qtm-consent-warning-badge
+                    [consentRevoked]="appointment.consentRevoked === true"
+                    [tooltip]="translate('patients.consentRevoked.warning')"
+                  />
+                </strong>
+              </div>
               <div class="detail-field"><span>Telefono</span><strong>{{ appointment.patientPhone || '-' }}</strong></div>
               <div class="detail-field"><span>Telefono Caregiver</span><strong>{{ appointment.caregiverPhone || 'Non presente' }}</strong></div>
               <div class="detail-field"><span>Indirizzo</span><strong>{{ appointment.patientAddress || '-' }}</strong></div>

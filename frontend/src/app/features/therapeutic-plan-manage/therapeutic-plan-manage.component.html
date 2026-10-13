@@ -16,7 +16,13 @@
     <section class="manage-overview-strip">
       <article class="overview-card">
         <span class="overview-label">{{ translate('therapeuticPlan.field.patient') }}</span>
-        <strong>{{ patientDisplayName }}</strong>
+        <strong>
+          {{ patientDisplayName }}
+          <qtm-consent-warning-badge
+            [consentRevoked]="patientConsentRevoked"
+            [tooltip]="translate('patients.consentRevoked.warning')"
+          />
+        </strong>
       </article>
       <article class="overview-card">
         <span class="overview-label">{{ translate('therapeuticPlan.field.status') }}</span>
