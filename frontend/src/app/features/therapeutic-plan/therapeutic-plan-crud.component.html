@@ -27,6 +27,14 @@
         </ng-template>
       </label>
 
+      <div *ngIf="selectedPatientConsentRevoked" class="therapeutic-plan-alert therapeutic-plan-alert-error therapeutic-plan-field-full">
+        <qtm-consent-warning-badge
+          [consentRevoked]="true"
+          [tooltip]="translate('patients.consentRevoked.warning')"
+        />
+        {{ translate('patients.consentRevoked.warning') }}
+      </div>
+
       <label class="therapeutic-plan-field">
         <span>{{ translate('therapeuticPlan.field.projectCode') }}</span>
         <ng-container *ngIf="isEditMode; else projectInput">

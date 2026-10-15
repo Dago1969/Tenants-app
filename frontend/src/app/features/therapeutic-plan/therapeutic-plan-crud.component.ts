@@ -15,9 +15,11 @@ import { StructureApiService, StructureDepartmentOptionDto, StructureDto, Struct
 import { MessageKey, t } from '../../i18n/messages';
 import { ConsentOtpFormComponent, ConsentOtpOption } from '../../shared/consent-otp-form.component';
 import { QtmStepModalComponent } from '../../shared/qtm-step-modal.component';
+import { QtmConsentWarningBadgeComponent } from 'qtm-shared';
 
 interface PatientOption {
   id: number;
+  consentRevoked?: boolean;
   assistedId?: string;
   firstName?: string;
   lastName?: string;
@@ -136,7 +138,7 @@ interface Select2UpdatePayload {
 @Component({
   selector: 'app-therapeutic-plan-crud',
   standalone: true,
-  imports: [CommonModule, FormsModule, QtmStepModalComponent, Select2, ConsentOtpFormComponent],
+  imports: [CommonModule, FormsModule, QtmStepModalComponent, Select2, ConsentOtpFormComponent, QtmConsentWarningBadgeComponent],
   templateUrl: './therapeutic-plan-crud.component.html',
   styleUrl: './therapeutic-plan-crud.component.css'
 })
@@ -287,6 +289,10 @@ export class TherapeuticPlanCrudComponent implements OnInit {
   get selectedPatientLabel(): string {
     const patient = this.patients.find((p) => p.id === this.formModel.patientId) ?? null;
     return patient ? this.getPatientLabel(patient) : '';
+  }
+
+  get selectedPatientConsentRevoked(): boolean {
+    return this.patients.some((patient) => patient.id === this.formModel.patientId && patient.consentRevoked === true);
   }
 
   get isFirstStep(): boolean {
@@ -1714,7 +1720,10 @@ export class TherapeuticPlanCrudComponent implements OnInit {
   }
 
   private close(): void {
-    void this.router.navigateByUrl('/therapeutic-plans/search');
+    const patientId = this.route.snapshot.queryParamMap.get('patientId');
+    void this.router.navigate(['/therapeutic-plans/search'], {
+      queryParams: patientId !== null ? { patientId } : {}
+    });
   }
 
 }

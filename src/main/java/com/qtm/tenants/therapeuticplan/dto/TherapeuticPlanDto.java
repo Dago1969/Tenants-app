@@ -22,6 +22,7 @@ public class TherapeuticPlanDto {
     private Long id;
     private Long patientId;
     private String patientDisplayName;
+    private Boolean consentRevoked;
     private String projectCode;
     private List<Long> equipmentIds;
     private List<String> equipmentCodes;

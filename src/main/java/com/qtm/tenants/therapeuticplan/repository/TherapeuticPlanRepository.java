@@ -26,11 +26,13 @@ public interface TherapeuticPlanRepository extends JpaRepository<TherapeuticPlan
     WHERE (:projectCode = '' OR LOWER(COALESCE(therapeuticPlan.projectCode, '')) LIKE LOWER(CONCAT('%', :projectCode, '%')))
           AND (:status = '' OR LOWER(COALESCE(therapeuticPlan.status, '')) = LOWER(:status))
           AND (:drugCode = '' OR LOWER(COALESCE(therapeuticPlan.drugCode, '')) LIKE LOWER(CONCAT('%', :drugCode, '%')))
+          AND (:patientId IS NULL OR therapeuticPlan.patientId = :patientId)
         ORDER BY therapeuticPlan.startDate DESC, therapeuticPlan.id DESC
         """)
     List<TherapeuticPlanEntity> searchByFilters(
             @Param("projectCode") String projectCode,
             @Param("status") String status,
-            @Param("drugCode") String drugCode
+            @Param("drugCode") String drugCode,
+            @Param("patientId") Long patientId
     );
 }

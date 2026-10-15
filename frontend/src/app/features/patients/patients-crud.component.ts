@@ -35,9 +35,19 @@ export class PatientsCrudComponent implements OnInit {
   initialFormModel = {
     dataProcessingConsent: true,
     dataProcessingConsentDateTime: '',
+    dataProcessingConsentRevocationDateTime: '',
+    dataProcessingConsentRevocationReason: '',
     patientConsentOtpCode: '',
     otpRecipient: 'primaryPhone'
   };
+
+  readonly therapyStatusOptions = [
+    { value: 'not_started', label: 'patients.therapyStatus.notStarted' },
+    { value: 'active', label: 'patients.therapyStatus.active' },
+    { value: 'suspended', label: 'patients.therapyStatus.suspended' },
+    { value: 'completed', label: 'patients.therapyStatus.completed' },
+    { value: 'discontinued', label: 'patients.therapyStatus.discontinued' }
+  ];
 
   fields: CrudField[] = [
 	// RIGA 1: assistedId (15 car), fiscalCode, lastName, firstName
@@ -83,8 +93,10 @@ export class PatientsCrudComponent implements OnInit {
       ]
     },
     { key: 'identificationDocumentReference', labelKey: 'patients.field.identificationDocumentReference', type: 'text', columnSpan: 2 ,placeholder: 'DA DEFINIRE' },
-    { key: 'dataProcessingConsent', labelKey: 'patients.field.dataProcessingConsent', type: 'checkbox', readonly: true, required: true },
+    { key: 'dataProcessingConsent', labelKey: 'patients.field.dataProcessingConsent', type: 'checkbox' },
     { key: 'dataProcessingConsentDateTime', labelKey: 'patients.field.dataProcessingConsentDateTime', type: 'datetime-local', readonly: true, required: true },
+    { key: 'dataProcessingConsentRevocationDateTime', labelKey: 'patients.field.dataProcessingConsentRevocationDateTime', type: 'datetime-local', required: true },
+    { key: 'dataProcessingConsentRevocationReason', labelKey: 'patients.field.dataProcessingConsentRevocationReason', type: 'textarea', columnSpan: 2, rows: 2 },
     { key: 'dataProcessingConsentRevocationLog', labelKey: 'patients.field.dataProcessingConsentRevocationLog', type: 'text' },
     { key: 'additionalConsents', labelKey: 'patients.field.additionalConsents', type: 'text' },
     { key: 'patientConsentOtpCode', labelKey: 'patients.privacy.otp.code', type: 'text', transient: true, columnSpan: 2 },
@@ -119,7 +131,8 @@ export class PatientsCrudComponent implements OnInit {
         'aslCode', 
         'hospitalId',
         'departmentId', 
-        'hospitalCode'
+        'hospitalCode',
+        'prescribingSpecialist'
       ],
       transient: true
     },
@@ -137,7 +150,8 @@ export class PatientsCrudComponent implements OnInit {
       resetFieldsOnChange: [
         'hospitalId',
         'departmentId',
-        'hospitalCode'
+        'hospitalCode',
+        'prescribingSpecialist'
       ],
       transient: true
     },
@@ -152,7 +166,7 @@ export class PatientsCrudComponent implements OnInit {
       optionValueKey: 'hospitalId',
       optionLabelKey: 'struttura',
       relatedFields: { hospitalCode: 'hospitalCode' },
-      resetFieldsOnChange: ['departmentId']
+      resetFieldsOnChange: ['departmentId', 'prescribingSpecialist']
     },
     {
       key: 'departmentId',
@@ -161,7 +175,7 @@ export class PatientsCrudComponent implements OnInit {
       folder: 'medical',
       columnSpan: 2,
       // Ricerca i dipartimenti nell'overview QTMDB per la struttura selezionata
-      optionsEndpoint: 'hospitals/departments/overview?regionCode={clinicalRegionCode}&aslCode={aslCode}&hospitalCode={hospitalCode}',
+      optionsEndpoint: 'hospitals/departments/overview?regionCode={clinicalRegionCode}&aslCode={aslCode}&hospitalCode={hospitalCode}&importedOnly=true',
       optionValueKey: 'id',
       optionLabelKey: 'descrizioneDisciplina',
       resetFieldsOnChange: ['prescribingSpecialist']
@@ -169,11 +183,21 @@ export class PatientsCrudComponent implements OnInit {
     {
       key: 'prescribingSpecialist',
       labelKey: 'patients.field.prescribingSpecialist',
-      type: 'text',
+      type: 'select',
       folder: 'medical',
-      columnSpan: 2
+      columnSpan: 2,
+      requiresFields: ['departmentId'],
+      optionsEndpoint: 'doctors?departmentId={departmentId}&hospitalId={hospitalId}',
+      optionValueKey: 'id',
+      optionLabelKey: 'fullName',
+      optionLabelPrefixKey: 'doctorFlyerId'
     },
-    { key: 'therapyStatus', labelKey: 'patients.field.therapyStatus', type: 'text' },
+    {
+      key: 'therapyStatus',
+      labelKey: 'patients.field.therapyStatus',
+      type: 'select',
+      options: this.therapyStatusOptions
+    },
     { key: 'referencePharmacy', labelKey: 'patients.field.referencePharmacy', type: 'select' },
     { key: 'preferredPickupPharmacy', labelKey: 'patients.field.preferredPickupPharmacy', type: 'select' },
     { key: 'deliveryMode', labelKey: 'patients.field.deliveryMode', type: 'text' },
@@ -214,10 +238,6 @@ export class PatientsCrudComponent implements OnInit {
 	        // RIGA 4: caregiverFullName, caregiverPhone (15 car)
 	        { key: 'caregiverFullName', labelKey: 'patients.field.caregiverFullName', type: 'text' },
 	        { key: 'caregiverPhone', labelKey: 'patients.field.caregiverPhone', type: 'text' },
-			
-			
-        { key: 'caregiverFullName', labelKey: 'patients.field.caregiverFullName', type: 'text' },
-        { key: 'caregiverPhone', labelKey: 'patients.field.caregiverPhone', type: 'text' },
         {
           key: 'regionId',
           labelKey: 'patients.field.region',
@@ -263,18 +283,9 @@ export class PatientsCrudComponent implements OnInit {
       key: 'privacy',
       titleKey: 'patients.folder.privacy',
       fields: [
-        { key: 'dataProcessingConsent', labelKey: 'patients.field.dataProcessingConsent', type: 'checkbox', readonly: true, required: true, columnSpan: 1 },
-		{
-	         key: 'communicationChannels',
-	         labelKey: 'patients.field.communicationChannels',
-	         type: 'select',
-	         columnSpan: 1,
-	         options: [
-	           { value: 'whatsapp', label: 'patients.communicationChannel.whatsapp' },
-	           { value: 'SMS', label: 'patients.communicationChannel.sms' },
-	           { value: 'EMail', label: 'patients.communicationChannel.email' }
-	         ]
-	       },
+        { key: 'dataProcessingConsent', labelKey: 'patients.field.dataProcessingConsent', type: 'checkbox', columnSpan: 1 },
+        { key: 'dataProcessingConsentRevocationDateTime', labelKey: 'patients.field.dataProcessingConsentRevocationDateTime', type: 'datetime-local', required: true },
+        { key: 'dataProcessingConsentRevocationReason', labelKey: 'patients.field.dataProcessingConsentRevocationReason', type: 'textarea', columnSpan: 2, rows: 2 },
 		 {
           key: 'otpRecipient',
           labelKey: 'patients.field.otpRecipient',
@@ -301,7 +312,6 @@ export class PatientsCrudComponent implements OnInit {
           actionType: 'verify-patient-consent-otp'
         },
         { key: 'dataProcessingConsentDateTime', labelKey: 'patients.field.dataProcessingConsentDateTime', type: 'datetime-local', readonly: true, required: true },
-        { key: 'dataProcessingConsentRevocationLog', labelKey: 'patients.field.dataProcessingConsentRevocationLog', type: 'text' , placeholder: 'DA DEFINIRE',  customClass: 'placeholder-red' },
         { key: 'additionalConsents', labelKey: 'patients.field.additionalConsents', type: 'text', placeholder: 'DA DEFINIRE',  customClass: 'placeholder-red'  }
       ]
     },
@@ -317,7 +327,7 @@ export class PatientsCrudComponent implements OnInit {
           optionValueKey: 'id',
           optionLabelKey: 'name',
           relatedFields: { region: 'name' },
-          resetFieldsOnChange: ['aslId', 'asl', 'aslCode', 'hospitalId', 'departmentId', 'hospitalCode'],
+          resetFieldsOnChange: ['aslId', 'asl', 'aslCode', 'hospitalId', 'departmentId', 'hospitalCode', 'prescribingSpecialist'],
           transient: true
         },
         {
@@ -328,7 +338,7 @@ export class PatientsCrudComponent implements OnInit {
           optionValueKey: 'aslId',
           optionLabelKey: 'asl',
           relatedFields: { asl: 'asl', aslCode: 'codiceAsl' },
-          resetFieldsOnChange: ['hospitalId', 'departmentId', 'hospitalCode'],
+          resetFieldsOnChange: ['hospitalId', 'departmentId', 'hospitalCode', 'prescribingSpecialist'],
           transient: true
         },
         { key: 'asl', labelKey: 'patients.field.asl', type: 'text', hidden: true, transient: true },
@@ -342,13 +352,13 @@ export class PatientsCrudComponent implements OnInit {
           optionValueKey: 'hospitalId',
           optionLabelKey: 'struttura',
           relatedFields: { hospitalCode: 'hospitalCode' },
-          resetFieldsOnChange: ['departmentId']
+          resetFieldsOnChange: ['departmentId', 'prescribingSpecialist']
         },
         {
           key: 'departmentId',
           labelKey: 'patients.field.departmentId',
           type: 'select',
-          optionsEndpoint: 'hospitals/departments/overview?regionCode={clinicalRegionCode}&aslCode={aslCode}&hospitalCode={hospitalCode}',
+          optionsEndpoint: 'hospitals/departments/overview?regionCode={clinicalRegionCode}&aslCode={aslCode}&hospitalCode={hospitalCode}&importedOnly=true',
           optionValueKey: 'id',
           optionLabelKey: 'descrizioneDisciplina',
           resetFieldsOnChange: ['prescribingSpecialist']
@@ -357,11 +367,18 @@ export class PatientsCrudComponent implements OnInit {
 		  key: 'prescribingSpecialist',
 		  labelKey: 'patients.field.prescribingSpecialist',
 		  type: 'select',
+      requiresFields: ['departmentId'],
           optionsEndpoint: 'doctors?departmentId={departmentId}&hospitalId={hospitalId}',
 		  optionValueKey: 'id',
-		  optionLabelKey: 'fullName'
+		  optionLabelKey: 'fullName',
+          optionLabelPrefixKey: 'doctorFlyerId'
 		},
-		{ key: 'therapyStatus', labelKey: 'patients.field.therapyStatus', type: 'text' },
+        {
+          key: 'therapyStatus',
+          labelKey: 'patients.field.therapyStatus',
+          type: 'select',
+          options: this.therapyStatusOptions
+        },
         { key: 'referencePharmacy', labelKey: 'patients.field.referencePharmacy', type: 'select' },
         { key: 'preferredPickupPharmacy', labelKey: 'patients.field.preferredPickupPharmacy', type: 'select' },
         { key: 'deliveryMode', labelKey: 'patients.field.deliveryMode', type: 'text' , placeholder: 'DA DEFINIRE',  customClass: 'placeholder-red' },

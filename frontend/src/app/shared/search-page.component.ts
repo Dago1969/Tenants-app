@@ -1,12 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
-import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, OnInit, Output, SimpleChanges, TemplateRef } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../core/auth.service';
 import { FunctionAuthorizationService } from '../core/function-authorization.service';
 import { environment } from '../../environments/environment';
 import { hasMessageKey, MessageKey, t } from '../i18n/messages';
+import { QtmConsentWarningBadgeComponent } from 'qtm-shared';
 
 export interface SearchField {
   key: string;
@@ -84,7 +85,7 @@ type DeleteDialogMode = 'confirm' | 'reassign';
 @Component({
   selector: 'app-search-page',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, QtmConsentWarningBadgeComponent],
   styleUrls: ['./search-page.component.css'],
   template: `
     <div class="search-main modern-search">
@@ -214,7 +215,16 @@ type DeleteDialogMode = 'confirm' | 'reassign';
                     {{ translate(getStatusLabelKey(column.key, row[column.key])) }}
                   </span>
                 </ng-container>
-                <ng-template #normalCell>{{ getDisplayValue(column, row[column.key], row) }}</ng-template>
+                <ng-template #normalCell>
+                  <ng-container *ngIf="showConsentWarning(column.key, row); else plainCell">
+                    <span class="search-patient-name-cell">{{ getDisplayValue(column, row[column.key], row) }}</span>
+                    <qtm-consent-warning-badge
+                      [consentRevoked]="true"
+                      [tooltip]="translate('patients.consentRevoked.warning')"
+                    />
+                  </ng-container>
+                  <ng-template #plainCell>{{ getDisplayValue(column, row[column.key], row) }}</ng-template>
+                </ng-template>
               </td>
               <td *ngIf="hasRowActions" class="actions">
                 <button *ngIf="showEditAction && canEdit" class="icon-btn" type="button" (click)="openEdit(getRowIdentifier(row))" [title]="translate('search.action.edit')">
@@ -239,6 +249,7 @@ type DeleteDialogMode = 'confirm' | 'reassign';
                 <button *ngIf="showCloseAction" class="icon-btn" type="button" (click)="closeRow(getRowIdentifier(row))" [title]="translate('ticket.action.close')">
                   <span class="icon">🔒</span>
                 </button>
+                <ng-container *ngIf="rowActionsTemplate" [ngTemplateOutlet]="rowActionsTemplate" [ngTemplateOutletContext]="{ $implicit: row }"></ng-container>
               </td>
             </tr>
           </tbody>
@@ -405,6 +416,8 @@ export class SearchPageComponent implements OnInit, OnChanges {
   @Input() printSections: SearchPrintSection[] = [];
   @Input() viewLabelKeys: Record<string, MessageKey | string> = {};
   @Input() viewValueFormatter?: SearchViewValueFormatter;
+  @Input() rowActionsTemplate?: TemplateRef<{ $implicit: SearchResult }>;
+  @Input() routeQueryParams: Record<string, string> = {};
   @Output() editAction = new EventEmitter<string>();
   @Output() closeAction = new EventEmitter<string>();
 
@@ -477,6 +490,10 @@ export class SearchPageComponent implements OnInit, OnChanges {
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['filters']) {
       this.loadSelectOptions();
+    }
+    if (changes['fixedParams'] && !changes['fixedParams'].firstChange && this.autoSearch) {
+      this.results = [];
+      this.search(false);
     }
   }
 
@@ -588,6 +605,19 @@ export class SearchPageComponent implements OnInit, OnChanges {
     return `search-autocomplete-${field.key}`;
   }
 
+  showConsentWarning(columnKey: string, row: SearchResult): boolean {
+    if (row['consentRevoked'] !== true) {
+      return false;
+    }
+
+    const hasFirstName = typeof row['firstName'] === 'string' && row['firstName'].trim().length > 0;
+    return columnKey === 'patientDisplayName'
+      || columnKey === 'patientFullName'
+      || columnKey === 'patientName'
+      || columnKey === 'firstName'
+      || (columnKey === 'lastName' && !hasFirstName);
+  }
+
   getDisplayValue(field: SearchField, value: unknown, row?: SearchResult): string {
     if (value === undefined || value === null) {
       return '';
@@ -684,7 +714,7 @@ export class SearchPageComponent implements OnInit, OnChanges {
   }
 
   get hasRowActions(): boolean {
-    return this.showEditAction || this.showViewAction || this.showDeleteAction || this.showManageAction;
+    return this.showEditAction || this.showViewAction || this.showDeleteAction || this.showManageAction || !!this.rowActionsTemplate;
   }
 
   search(showFeedback = true): void {
@@ -712,9 +742,7 @@ export class SearchPageComponent implements OnInit, OnChanges {
       },
       error: (error) => {
         this.results = [];
-        if (showFeedback) {
-          this.pushOperationLog('error', this.buildErrorMessage('search.error.search', error));
-        }
+        this.pushOperationLog('error', this.buildErrorMessage('search.error.search', error));
       }
     });
   }
@@ -852,11 +880,11 @@ export class SearchPageComponent implements OnInit, OnChanges {
     if (mode === 'edit' && id === 'new' && this.createRoute) {
       // Se la createRoute è una route assoluta (wizard), naviga direttamente
       if (this.createRoute.startsWith('/')) {
-        void this.router.navigateByUrl(this.createRoute);
+        void this.router.navigate([this.createRoute], { queryParams: this.routeQueryParams });
         return;
       }
       // Altrimenti mantieni la logica esistente
-      void this.router.navigate([this.createRoute]);
+      void this.router.navigate([this.createRoute], { queryParams: this.routeQueryParams });
       return;
     }
 
@@ -869,7 +897,9 @@ export class SearchPageComponent implements OnInit, OnChanges {
 
     if (this.detailRouteBase) {
       const detailUrl = `${this.detailRouteBase}/${normalizedId}`;
-      void this.router.navigateByUrl(mode === 'view' ? `${detailUrl}?mode=view` : detailUrl);
+      void this.router.navigate([detailUrl], {
+        queryParams: mode === 'view' ? { ...this.routeQueryParams, mode } : this.routeQueryParams
+      });
       return;
     }
 

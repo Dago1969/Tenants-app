@@ -58,9 +58,10 @@ public class TherapeuticPlanController {
 			@RequestParam(required = false) String nurseName, @RequestParam(required = false) String doctorName,
 			@RequestParam(required = false) String projectCode, @RequestParam(required = false) String status,
 			@RequestParam(required = false) String drugCode,
+			@RequestParam(required = false) Long patientId,
 			@RequestHeader(name = "X-Selected-Role", required = false) String selectedRole) {
 		controllerFunctionAuthorizationService.requireModuleAccess(selectedRole, MODULE_CODE);
-		return therapeuticPlanService.findAll(patientName, nurseName, doctorName, projectCode, status, drugCode);
+		return therapeuticPlanService.findAll(patientName, nurseName, doctorName, projectCode, status, drugCode, patientId);
 	}
 
 	/**

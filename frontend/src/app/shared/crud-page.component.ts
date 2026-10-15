@@ -29,7 +29,9 @@ export interface CrudField {
   options?: Array<{ value: string; label: string }>;
   optionValueKey?: string;
   optionLabelKey?: string;
+  optionLabelPrefixKey?: string;
   resetFieldsOnChange?: string[];
+  requiresFields?: string[];
   includeValueInOptionLabel?: boolean;
   relatedFields?: Record<string, string>;
   required?: boolean;
@@ -230,7 +232,7 @@ interface ConsentOtpConfig {
               <ng-template #normalFieldBlock>
                 <label class="crud-label" [for]="field.key">
                   {{ translate(field.labelKey) }}
-                  <span *ngIf="field.required === true" class="crud-required-marker">*</span>
+                  <span *ngIf="isFieldRequired(field)" class="crud-required-marker">*</span>
                 </label>
                 <div *ngIf="field.type === 'action'" class="crud-field-control crud-field-control-action">
                   <button
@@ -255,7 +257,7 @@ interface ConsentOtpConfig {
                       [name]="field.key"
                       [disabled]="isFieldDisabled(field)"
                       (blur)="onFieldBlur(field)"
-                      [required]="field.required === true"
+                      [required]="isFieldRequired(field)"
                       #usernameInput="ngModel"
                     />
                     <div *ngIf="usernameTaken" class="crud-field-error">
@@ -276,7 +278,7 @@ interface ConsentOtpConfig {
                         [name]="field.key"
                         [disabled]="isFieldDisabled(field)"
                         (blur)="onFieldBlur(field)"
-                        [required]="field.required === true"
+                        [required]="isFieldRequired(field)"
                         [rows]="field.rows ?? 6"
                         [placeholder]="field.placeholder || ''"
                         #genericField="ngModel"
@@ -297,7 +299,7 @@ interface ConsentOtpConfig {
                             [attr.data-phone-field-key]="field.key"
                             [name]="field.key"
                             [disabled]="isFieldDisabled(field)"
-                            [required]="field.required === true"
+                            [required]="isFieldRequired(field)"
                             (blur)="onPhoneFieldBlur(field)"
                           />
                         </div>
@@ -317,7 +319,7 @@ interface ConsentOtpConfig {
                           [disabled]="isFieldDisabled(field)"
                           [readOnly]="isFieldReadonly(field)"
                           (blur)="onFieldBlur(field)"
-                          [required]="field.required === true"
+                          [required]="isFieldRequired(field)"
                           [attr.title]="asString(formModel[field.key])"
                           [placeholder]="field.placeholder || ''"
                           #genericField="ngModel"
@@ -341,7 +343,7 @@ interface ConsentOtpConfig {
                       (ngModelChange)="onSelectChange(field, $event)"
                       [name]="field.key"
                       [disabled]="isFieldDisabled(field)"
-                      [required]="field.required === true"
+                      [required]="isFieldRequired(field)"
                       #selectField="ngModel"
                     >
                       <option value=""></option>
@@ -365,7 +367,7 @@ interface ConsentOtpConfig {
                       [id]="field.key"
                       [disabled]="isFieldDisabled(field)"
                       [clearable]="true"
-                      [required]="field.required === true"
+                      [required]="isFieldRequired(field)"
                       [multiple]="field.multiple === true"
                     >
                       <ng-template ng-option-tmp let-item="item">
@@ -385,10 +387,11 @@ interface ConsentOtpConfig {
                     class="crud-checkbox"
                     [id]="field.key"
                     type="checkbox"
-                    [(ngModel)]="formModel[field.key]"
+                    [ngModel]="formModel[field.key]"
+                    (ngModelChange)="onCheckboxChange(field, $event)"
                     [name]="field.key"
                     [disabled]="isFieldDisabled(field)"
-                    [required]="field.required === true"
+                    [required]="isFieldRequired(field)"
                   />
                 </label>
               </ng-template>
@@ -397,7 +400,7 @@ interface ConsentOtpConfig {
 
           <app-consent-otp-form
             *ngIf="showConsentOtpPanel()"
-            [channel]="consentOtpSmsChannel"
+            [channel]="consentOtpChannel"
             [channelOptions]="consentOtpChannelOptions"
             [recipient]="asString(formModel['otpRecipient'])"
             [recipientOptions]="getConsentOtpRecipientOptions()"
@@ -409,20 +412,12 @@ interface ConsentOtpConfig {
             [verified]="consentOtpState.verified"
             [disabled]="isViewMode"
             [status]="consentOtpState.statusKey ? translate(consentOtpState.statusKey) : ''"
+            (channelChange)="onConsentOtpChannelChange($event)"
             (recipientChange)="onConsentOtpRecipientChange($event)"
             (codeChange)="setConsentOtpCode($event)"
             (send)="runConsentOtpAction('send')"
             (verify)="runConsentOtpAction('verify')"
           />
-
-          <div *ngIf="shouldShowConsentOtpSummary()" class="crud-log-panel crud-log-panel-inline">
-            <div class="crud-log-entry crud-log-entry-success" *ngIf="consentOtpState.destination">
-              {{ consentOtpState.destination }}
-            </div>
-            <div class="crud-log-entry" *ngIf="consentOtpState.statusKey">
-              {{ translate(consentOtpState.statusKey) }}
-            </div>
-          </div>
 
           <div class="crud-actions" *ngIf="!hideActions && !isViewMode && !wizardMode">
             <button class="crud-btn crud-btn-secondary" type="button" (click)="cancel()">
@@ -475,8 +470,12 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
   readonly defaultPhoneCountryIsoCode = 'it';
   readonly phoneCountryOrder: NonNullable<AllOptions['countryOrder']> = ['it', 'us', 'gb', 'fr', 'de', 'es'];
   readonly loadPhoneInputUtils = () => import('intl-tel-input/utils');
-  readonly consentOtpSmsChannel = 'sms';
-  readonly consentOtpChannelOptions: ConsentOtpOption[] = [{ value: 'sms', label: 'SMS' }];
+  consentOtpChannel = 'sms';
+  readonly consentOtpChannelOptions: ConsentOtpOption[] = [
+    { value: 'sms', label: t('users.otpChannel.sms') },
+    { value: 'whatsapp', label: t('users.otpChannel.whatsapp') },
+    { value: 'call', label: t('users.otpChannel.call') }
+  ];
 
   @Input({ required: true }) titleKey!: MessageKey;
   @Input({ required: true }) endpoint!: string;
@@ -611,7 +610,23 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
       || this.isReadonlyDisabledField(field)
       || (field.lockOnEdit === true && (this.loadedEntityKeyValue !== null || this.isEditMode))
       || this.hasUnresolvedSelectDependencies(field)
+      || (field.requiresFields ?? []).some((fieldKey) => this.asText(this.formModel[fieldKey]).length === 0)
+      || (this.endpoint === 'patients'
+        && field.key === 'dataProcessingConsent'
+        && !this.hasValue(this.formModel['dataProcessingConsentDateTime']))
+      || (this.endpoint === 'patients'
+        && field.key === 'dataProcessingConsentRevocationReason'
+        && this.formModel['dataProcessingConsent'] !== false)
       || this.getFieldPermission(field.key) === 'read-only';
+  }
+
+  isFieldRequired(field: CrudField): boolean {
+    if (this.endpoint === 'patients' && field.key === 'dataProcessingConsentRevocationDateTime') {
+      return this.formModel['dataProcessingConsent'] === false
+        && (this.hasValue(this.formModel['dataProcessingConsentDateTime'])
+          || this.hasValue(this.formModel['dataProcessingConsentRevocationDateTime']));
+    }
+    return field.required === true;
   }
 
   isFieldReadonly(field: CrudField): boolean {
@@ -689,13 +704,24 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
     this.formModel[config.codeFieldKey] = code;
   }
 
+  onConsentOtpChannelChange(channel: string): void {
+    if (this.consentOtpChannel === channel) {
+      return;
+    }
+    this.consentOtpChannel = channel;
+    const config = this.getConsentOtpConfig();
+    if (config) {
+      this.formModel[config.codeFieldKey] = '';
+    }
+    this.consentOtpState = this.createConsentOtpState();
+  }
+
   onConsentOtpRecipientChange(recipient: string): void {
     const field = this.folders.flatMap((folder) => folder.fields).find((item) => item.key === 'otpRecipient');
     if (field) {
       this.onSelectChange(field, recipient);
     }
     this.consentOtpState = this.createConsentOtpState();
-    this.formModel['dataProcessingConsentDateTime'] = '';
     const config = this.getConsentOtpConfig();
     if (config) {
       this.formModel[config.codeFieldKey] = '';
@@ -739,7 +765,7 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
   }
 
   shouldShowRequiredError(field: CrudField, control: NgModel | null): boolean {
-    if (field.required !== true || control === null) {
+    if (!this.isFieldRequired(field) || control === null) {
       return false;
     }
 
@@ -748,7 +774,7 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
   }
 
   shouldShowPhoneRequiredError(field: CrudField): boolean {
-    if (field.required !== true) {
+    if (!this.isFieldRequired(field)) {
       return false;
     }
 
@@ -756,7 +782,28 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
       && this.asPhoneString(this.formModel[field.key]).trim().length === 0;
   }
 
+  onCheckboxChange(field: CrudField, value: boolean): void {
+    this.formModel[field.key] = value;
+    if (this.endpoint !== 'patients' || field.key !== 'dataProcessingConsent') {
+      return;
+    }
+
+    this.formModel['patientConsentOtpCode'] = '';
+    this.consentOtpState = this.createConsentOtpState();
+    if (value) {
+      this.formModel['dataProcessingConsentDateTime'] = '';
+      this.formModel['dataProcessingConsentRevocationDateTime'] = '';
+      this.formModel['dataProcessingConsentRevocationReason'] = '';
+      return;
+    }
+
+    this.formModel['dataProcessingConsentRevocationDateTime'] = this.getCurrentDateTimeLocalInputValue();
+    this.formModel['dataProcessingConsentRevocationReason'] = '';
+  }
+
   onSelectChange(field: CrudField, value: unknown): void {
+    const previousValue = this.formModel[field.key];
+    const unchanged = !field.multiple && this.asText(previousValue) === this.asText(value);
     this.formModel[field.key] = value;
     this.applyRelatedFields(field, value);
 
@@ -764,16 +811,20 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
       this.consentOtpState.destination = this.getConsentPrimaryPhone();
     }
 
-    if (this.shouldSkipResetDuringDoctorHydration(field)) {
+    if (unchanged || this.shouldSkipResetDuringDoctorHydration(field)) {
       return;
     }
 
     this.resetFieldsOnChange(field);
-    this.loadSelectOptions(new Set([field.key, ...Object.keys(field.relatedFields ?? {})]));
+    this.loadSelectOptions(new Set([
+      field.key,
+      ...Object.keys(field.relatedFields ?? {}),
+      ...(field.resetFieldsOnChange ?? [])
+    ]));
   }
 
-  goToNextFolder(): void {
-    if (this.isLastFolder) {
+  async goToNextFolder(): Promise<void> {
+    if (this.isLastFolder || this.isHydratingDoctorAssignment) {
       return;
     }
 
@@ -793,6 +844,14 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
 
     const nextFolder = this.folders[this.currentFolderIndex + 1];
     if (nextFolder) {
+      const opensAssignmentFolder = nextFolder.fields.some((field) => field.key === 'clinicalRegionCode');
+      if ((this.endpoint === 'doctors' || this.endpoint === 'patients') && opensAssignmentFolder) {
+        await this.hydrateDoctorAssignmentHierarchy(
+          this.asNumericId(this.formModel['hospitalId']),
+          this.asNumericId(this.formModel['departmentId'])
+        );
+      }
+
       this.submissionAttempted = false;
       this.activeFolder = nextFolder.key;
       this.loadSelectOptions();
@@ -804,7 +863,7 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
       return true;
     }
 
-    return this.consentOtpState.pending;
+    return this.consentOtpState.pending || this.isHydratingDoctorAssignment;
   }
 
   goToPreviousFolder(): void {
@@ -1001,9 +1060,17 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
   }
 
   private shouldDisplayField(field: CrudField): boolean {
+    const isRevocationField = this.endpoint === 'patients'
+      && (field.key === 'dataProcessingConsentRevocationDateTime'
+        || field.key === 'dataProcessingConsentRevocationReason');
+    const hasRevokedConsent = this.formModel['dataProcessingConsent'] === false
+      && (this.hasValue(this.formModel['dataProcessingConsentDateTime'])
+        || this.hasValue(this.formModel['dataProcessingConsentRevocationDateTime']));
+
     return !field.hidden
       && !(field.createOnly === true && this.loadedEntityKeyValue !== null)
-      && !this.isFieldHidden(field.key);
+      && !this.isFieldHidden(field.key)
+      && (!isRevocationField || hasRevokedConsent);
   }
 
   private loadSelectOptions(dependencyKeys?: Set<string>): void {
@@ -1014,7 +1081,19 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
           .some((placeholder) => dependencyKeys.has(placeholder)));
 
     for (const field of selectFields) {
+      if ((field.requiresFields ?? []).some((fieldKey) => this.asText(this.formModel[fieldKey]).length === 0)) {
+        this.fieldOptions[field.key] = [];
+        continue;
+      }
+
       if (field.options && field.options.length > 0) {
+        if (this.endpoint === 'patients' && field.key === 'therapyStatus') {
+          const currentStatus = this.asText(this.formModel[field.key]);
+          if (currentStatus.length > 0 && !field.options.some((option) => option.value === currentStatus)) {
+            console.warn('[CrudPageComponent] Unsupported patient therapy status; a new selection is required', currentStatus);
+            this.formModel[field.key] = null;
+          }
+        }
         this.fieldOptions[field.key] = field.options.map((option) => ({
           value: option.value,
           label: option.label,
@@ -1054,6 +1133,9 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
         this.fieldLoading[field.key] = false;
       })).subscribe({
         next: (items) => {
+          if (this.resolveOptionsEndpoint(field) !== resolvedEndpoint) {
+            return;
+          }
           const optionItems = this.normalizeSelectOptionItems(items);
           console.log('[CrudPageComponent] Loaded select options', {
             fieldKey: field.key,
@@ -1111,7 +1193,10 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
     const baseLabel = typeof rawLabel === 'string' && rawLabel.trim().length > 0
       ? rawLabel
       : String(rawValue);
-    const label = field.includeValueInOptionLabel === true && baseLabel !== String(rawValue)
+    const prefix = field.optionLabelPrefixKey ? this.asText(item[field.optionLabelPrefixKey]) : '';
+    const label = prefix.length > 0
+      ? `${prefix} - ${baseLabel}`
+      : field.includeValueInOptionLabel === true && baseLabel !== String(rawValue)
       ? `${rawValue} - ${baseLabel}`
       : baseLabel;
 
@@ -1218,21 +1303,26 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
         this.phoneFieldTouched = {};
         this.consentOtpState = this.createConsentOtpState();
         const consentOtpConfig = this.getConsentOtpConfig();
-        if (consentOtpConfig && this.hasValue(this.formModel['dataProcessingConsentDateTime'])) {
+        const consentActive = this.formModel['dataProcessingConsent'] === true;
+        const verifiedDate = this.endpoint !== 'patients' || consentActive
+          ? this.formModel['dataProcessingConsentDateTime']
+          : this.formModel['dataProcessingConsentRevocationDateTime'];
+        if (consentOtpConfig && this.hasValue(verifiedDate)) {
           this.consentOtpState = {
             pending: false,
             sent: true,
             verified: true,
             destination: '',
-            statusKey: this.getConsentOtpMessageKey(consentOtpConfig, 'status.verified')
+            statusKey: this.getConsentOtpMessageKey(
+              consentOtpConfig,
+              this.endpoint === 'patients' && !consentActive
+                ? 'status.revocationVerified'
+                : 'status.verified'
+            )
           };
         }
         this.loadSelectOptions();
         this.syncPhoneInputs();
-        this.resolveSelectDependenciesOnEdit();
-        for (const field of this.getAllFields().filter((currentField) => currentField.type === 'select')) {
-          this.applyRelatedFields(field, this.formModel[field.key]);
-        }
       },
       error: (error) => {
         const message = this.buildErrorMessage('crud.error.load', error);
@@ -1245,27 +1335,6 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
     return typeof value === 'string' ? value : '';
   }
 
-  private resolveSelectDependenciesOnEdit(): void {
-    if (this.endpoint !== 'doctors' && this.endpoint !== 'patients') {
-      return;
-    }
-
-    const departmentId = this.asNumericId(this.formModel['departmentId']);
-    const hospitalIdFromPayload = this.asNumericId(this.formModel['hospitalId']);
-    const clinicalRegionCode = this.asText(this.formModel['clinicalRegionCode']);
-    const aslCode = this.asText(this.formModel['aslCode']);
-
-    if (hospitalIdFromPayload === null && departmentId === null) {
-      return;
-    }
-
-    if (clinicalRegionCode.length > 0 && aslCode.length > 0 && hospitalIdFromPayload !== null) {
-      return;
-    }
-
-    void this.hydrateDoctorAssignmentHierarchy(hospitalIdFromPayload, departmentId);
-  }
-
   private async hydrateDoctorAssignmentHierarchy(hospitalId: number | null, departmentId: number | null): Promise<void> {
     if (this.isHydratingDoctorAssignment) {
       return;
@@ -1274,10 +1343,15 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
     this.isHydratingDoctorAssignment = true;
 
     try {
-      const resolvedHospitalId = hospitalId;
+      let resolvedHospitalId = hospitalId;
 
       if (resolvedHospitalId === null) {
-        return;
+        resolvedHospitalId = departmentId === null
+          ? null
+          : await this.resolveHospitalIdFromDepartment(departmentId);
+        if (resolvedHospitalId === null) {
+          return;
+        }
       }
 
       const currentRegionCode = this.normalizeRegionCodeForOverview(this.formModel['clinicalRegionCode']);
@@ -1542,7 +1616,7 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
   }
 
   private isRequiredFieldMissing(field: CrudField): boolean {
-    if (field.required !== true || field.hidden || field.type === 'action') {
+    if (!this.isFieldRequired(field) || field.hidden || field.type === 'action') {
       return false;
     }
 
@@ -1552,12 +1626,6 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
     }
 
     return value === null || value === undefined || String(value).trim().length === 0;
-  }
-
-  shouldShowConsentOtpSummary(): boolean {
-    return this.hasConsentOtpFlow()
-      && this.activeFolder === 'privacy'
-      && (this.consentOtpState.destination.length > 0 || this.consentOtpState.statusKey !== null);
   }
 
   isActionFieldDisabled(field: CrudField): boolean {
@@ -1604,11 +1672,15 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
       return false;
     }
 
-    return this.formModel['dataProcessingConsent'] !== true || !this.hasValue(this.formModel['dataProcessingConsentDateTime']);
+    return !this.hasValue(this.formModel['dataProcessingConsentDateTime'])
+      || (this.formModel['dataProcessingConsent'] === false
+        && !this.hasValue(this.formModel['dataProcessingConsentRevocationDateTime'])
+        && this.loadedEntityKeyValue === null);
   }
 
   private hasConsentOtpSaveBlock(): boolean {
     return this.hasConsentOtpFlow()
+      && this.formModel['dataProcessingConsent'] === true
       && !this.consentOtpState.verified
       && !this.hasValue(this.formModel['dataProcessingConsentDateTime']);
   }
@@ -1646,13 +1718,9 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
       destination: this.consentOtpState.destination,
       statusKey: this.getConsentOtpMessageKey(consentOtpConfig, 'status.sending')
     };
-    this.formModel['dataProcessingConsent'] = true;
-    this.formModel['dataProcessingConsentDateTime'] = '';
-
-    this.otpApiService.sendPhoneOtp(phoneNumber, this.consentOtpSmsChannel).subscribe({
+    this.otpApiService.sendPhoneOtp(phoneNumber, this.consentOtpChannel).subscribe({
       next: (result) => {
         this.applyConsentOtpSendResult(consentOtpConfig, result);
-        this.pushOperationLog('success', this.getConsentOtpMessageKey(consentOtpConfig, 'success.sent'));
       },
       error: () => {
         this.consentOtpState = {
@@ -1662,7 +1730,6 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
           destination: '',
           statusKey: this.getConsentOtpMessageKey(consentOtpConfig, 'error.send')
         };
-        this.pushOperationLog('error', this.getConsentOtpMessageKey(consentOtpConfig, 'error.send'));
       }
     });
   }
@@ -1687,7 +1754,7 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
       statusKey: this.getConsentOtpMessageKey(consentOtpConfig, 'status.verifying')
     };
 
-    this.otpApiService.checkPhoneOtp(phoneNumber, code, this.consentOtpSmsChannel).subscribe({
+    this.otpApiService.checkPhoneOtp(phoneNumber, code, this.consentOtpChannel).subscribe({
       next: (result) => {
         if (!result.approved) {
           this.consentOtpState = {
@@ -1697,21 +1764,31 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
             destination: result.destination,
             statusKey: this.getConsentOtpMessageKey(consentOtpConfig, 'error.rejected')
           };
-          this.formModel['dataProcessingConsentDateTime'] = '';
-          this.pushOperationLog('error', this.getConsentOtpMessageKey(consentOtpConfig, 'error.rejected'));
           return;
         }
 
-        this.formModel['dataProcessingConsent'] = true;
-        this.formModel['dataProcessingConsentDateTime'] = this.getCurrentDateTimeLocalInputValue();
+        const isPatient = this.endpoint === 'patients';
+        const consentGranted = this.formModel['dataProcessingConsent'] === true;
+        const verifiedAt = this.getCurrentDateTimeLocalInputValue();
+        if (!isPatient || consentGranted) {
+          this.formModel['dataProcessingConsent'] = true;
+          this.formModel['dataProcessingConsentDateTime'] = verifiedAt;
+          this.formModel['dataProcessingConsentRevocationDateTime'] = '';
+          this.formModel['dataProcessingConsentRevocationReason'] = '';
+        } else {
+          this.formModel['dataProcessingConsent'] = false;
+          this.formModel['dataProcessingConsentRevocationDateTime'] = verifiedAt;
+        }
         this.consentOtpState = {
           pending: false,
           sent: true,
           verified: true,
           destination: result.destination,
-          statusKey: this.getConsentOtpMessageKey(consentOtpConfig, 'status.verified')
+          statusKey: this.getConsentOtpMessageKey(
+            consentOtpConfig,
+            isPatient && !consentGranted ? 'status.revocationVerified' : 'status.verified'
+          )
         };
-        this.pushOperationLog('success', this.getConsentOtpMessageKey(consentOtpConfig, 'success.verified'));
       },
       error: () => {
         this.consentOtpState = {
@@ -1721,7 +1798,6 @@ export class CrudPageComponent implements OnInit, OnChanges, AfterViewInit, OnDe
           destination: this.consentOtpState.destination,
           statusKey: this.getConsentOtpMessageKey(consentOtpConfig, 'error.check')
         };
-        this.pushOperationLog('error', this.getConsentOtpMessageKey(consentOtpConfig, 'error.check'));
       }
     });
   }

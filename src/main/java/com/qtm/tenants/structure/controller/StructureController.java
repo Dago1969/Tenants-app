@@ -135,12 +135,13 @@ public class StructureController {
             @RequestParam(required = false) String aslCode,
             @RequestParam(required = false) String hospitalCode,
             @RequestParam(name = "structureCode", required = false) String legacyStructureCode,
+            @RequestParam(defaultValue = "false") boolean importedOnly,
             @RequestHeader(name = "X-Selected-Role", required = false) String selectedRole
     ) {
         String resolvedHospitalCode = hospitalCode != null ? hospitalCode : legacyStructureCode;
         log.info("[StructureController] GET /structures/departments/overview regionCode={} aslCode={} structureCode={}",
             regionCode, aslCode, resolvedHospitalCode);
-        return ResponseEntity.ok(structureClient.findDepartmentOverview(regionCode, aslCode, resolvedHospitalCode, selectedRole));
+        return ResponseEntity.ok(structureClient.findDepartmentOverview(regionCode, aslCode, resolvedHospitalCode, importedOnly, selectedRole));
     }
 
     @GetMapping("/{id}/departments")

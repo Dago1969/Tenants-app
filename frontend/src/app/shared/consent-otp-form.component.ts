@@ -12,46 +12,45 @@ export interface ConsentOtpOption {
   selector: 'app-consent-otp-form',
   standalone: true,
   imports: [CommonModule, FormsModule],
+  styleUrl: './consent-otp-form.component.css',
   template: `
     <section class="consent-otp-form" [attr.aria-busy]="pending">
-      <label class="consent-otp-field">
-        <span>{{ translate(channelLabelKey) }}</span>
-        <select [ngModel]="channel" [ngModelOptions]="{ standalone: true }" (ngModelChange)="channelChange.emit($event)" [disabled]="disabled || pending">
-          <option *ngFor="let option of channelOptions" [ngValue]="option.value">{{ option.label }}</option>
-        </select>
-      </label>
+      <div class="consent-otp-send-row">
+        <label class="consent-otp-field">
+          <span>{{ translate(channelLabelKey) }}</span>
+          <select [ngModel]="channel" [ngModelOptions]="{ standalone: true }" (ngModelChange)="channelChange.emit($event)" [disabled]="disabled || pending">
+            <option *ngFor="let option of channelOptions" [ngValue]="option.value">{{ option.label }}</option>
+          </select>
+        </label>
 
-      <label class="consent-otp-field consent-otp-recipient">
-        <span>{{ translate(recipientLabelKey) }}</span>
-        <select *ngIf="recipientOptions.length > 0; else resolvedRecipient" [ngModel]="recipient" [ngModelOptions]="{ standalone: true }" (ngModelChange)="recipientChange.emit($event)" [disabled]="disabled || pending">
-          <option *ngFor="let option of recipientOptions" [ngValue]="option.value">{{ option.label }}</option>
-        </select>
-        <ng-template #resolvedRecipient>
-          <input type="text" [value]="destination" readonly />
-        </ng-template>
-      </label>
+        <label class="consent-otp-field consent-otp-recipient">
+          <span>{{ translate(recipientLabelKey) }}</span>
+          <select *ngIf="recipientOptions.length > 0; else resolvedRecipient" [ngModel]="recipient" [ngModelOptions]="{ standalone: true }" (ngModelChange)="recipientChange.emit($event)" [disabled]="disabled || pending">
+            <option *ngFor="let option of recipientOptions" [ngValue]="option.value">{{ option.label }}</option>
+          </select>
+          <ng-template #resolvedRecipient>
+            <input type="text" [value]="destination" readonly />
+          </ng-template>
+        </label>
 
-      <div class="consent-otp-action">
+        <label class="consent-otp-field consent-otp-date">
+          <span>{{ translate(consentDateLabelKey) }}</span>
+          <input type="datetime-local" [value]="consentDate" readonly />
+        </label>
+      </div>
+
+      <div class="consent-otp-verify-row">
         <button type="button" class="consent-otp-button" (click)="send.emit()" [disabled]="disabled || pending || !channel">
           {{ translate(pending ? sendingLabelKey : sendLabelKey) }}
         </button>
-      </div>
-
-      <label class="consent-otp-field">
-        <span>{{ translate(codeLabelKey) }}</span>
-        <input type="text" inputmode="numeric" autocomplete="one-time-code" [ngModel]="code" [ngModelOptions]="{ standalone: true }" (ngModelChange)="codeChange.emit($event)" [disabled]="disabled || pending || !sent" />
-      </label>
-
-      <div class="consent-otp-action">
+        <label class="consent-otp-field">
+          <span>{{ translate(codeLabelKey) }}</span>
+          <input type="text" inputmode="numeric" autocomplete="one-time-code" [ngModel]="code" [ngModelOptions]="{ standalone: true }" (ngModelChange)="codeChange.emit($event)" [disabled]="disabled || pending || !sent" />
+        </label>
         <button type="button" class="consent-otp-button" (click)="verify.emit()" [disabled]="disabled || pending || !sent || !code.trim() || verified">
           {{ translate(verifyLabelKey) }}
         </button>
       </div>
-
-      <label class="consent-otp-field consent-otp-date">
-        <span>{{ translate(consentDateLabelKey) }}</span>
-        <input type="datetime-local" [value]="consentDate" readonly />
-      </label>
 
       <p *ngIf="status" class="consent-otp-status" [class.consent-otp-status-success]="verified" role="status">{{ status }}</p>
     </section>
@@ -70,7 +69,7 @@ export class ConsentOtpFormComponent {
   @Input() verified = false;
   @Input() disabled = false;
   @Input() status = '';
-  @Input() channelLabelKey: MessageKey = 'patients.field.communicationChannels';
+  @Input() channelLabelKey: MessageKey = 'patients.privacy.otp.channel';
   @Input() recipientLabelKey: MessageKey = 'patients.field.otpRecipient';
   @Input() sendLabelKey: MessageKey = 'patients.privacy.otp.sendAction';
   @Input() sendingLabelKey: MessageKey = 'patients.privacy.otp.status.sending';

@@ -68,7 +68,7 @@ public class AppointmentService {
 	@Transactional(readOnly = true)
 	public List<AppointmentDto> findByTherapeuticPlan(Long therapeuticPlanId) {
 		validateTherapeuticPlanExists(therapeuticPlanId);
-		return appointmentRepository.findByTherapeuticPlan_Id(therapeuticPlanId).stream().map(appointmentMapper::toDto)
+		return appointmentRepository.findByTherapeuticPlan_Id(therapeuticPlanId).stream().map(this::mapVisitToAppointment)
 				.toList();
 	}
 
@@ -84,7 +84,7 @@ public class AppointmentService {
 	public List<AppointmentDto> findByNurseAndDate(Long nurseId, LocalDate date) {
 		validateNurseExists(nurseId);
 		LocalDate queryDate = date != null ? date : LocalDate.now();
-		return appointmentRepository.findByNurseAndDate(nurseId, queryDate).stream().map(appointmentMapper::toDto)
+		return appointmentRepository.findByNurseAndDate(nurseId, queryDate).stream().map(this::mapVisitToAppointment)
 				.toList();
 	}
 
@@ -102,7 +102,7 @@ public class AppointmentService {
 		validateNurseExists(nurseId);
 		validateDateRange(startDate, endDate);
 		return appointmentRepository.findByNurseAndDateRange(nurseId, startDate, endDate).stream()
-				.map(appointmentMapper::toDto).toList();
+				.map(this::mapVisitToAppointment).toList();
 	}
 
 	@Transactional(readOnly = true)
@@ -151,6 +151,7 @@ public class AppointmentService {
 		}
 
 		return appointment.toBuilder()
+				.consentRevoked(Boolean.TRUE.equals(patient.getConsentRevoked()))
 				.patientCode(patient.getAssistedId())
 				.patientName(joinName(patient.getFirstName(), patient.getLastName()))
 				.patientFirstName(patient.getFirstName())
@@ -190,6 +191,7 @@ public class AppointmentService {
 				.id(ticket.getId()).appointmentTypeName("TICKET").appointmentCategory("Ticket di Intervento")
 				.nurseId(nurseId).startDateTime(start).endDateTime(end).status(text(content, "status", ticket.getStatus()))
 				.notes(text(content, "notes", ticket.getDescription())).patientCode(patientCode).patientName(patientName)
+				.consentRevoked(patient != null && Boolean.TRUE.equals(patient.getConsentRevoked()))
 				.patientFirstName(nameParts[1]).patientLastName(nameParts[0])
 				.patientFiscalCode(text(content, "patientFiscalCode", patient != null ? patient.getFiscalCode() : null))
 				.patientPhone(patientPhone).caregiverPhone(caregiverPhone).patientAddress(patientAddress)
@@ -265,7 +267,7 @@ public class AppointmentService {
 		validateTherapeuticPlanExists(therapeuticPlanId);
 		validateDateRange(startDate, endDate);
 		return appointmentRepository.findByTherapeuticPlanAndDateRange(therapeuticPlanId, startDate, endDate).stream()
-				.map(appointmentMapper::toDto).toList();
+				.map(this::mapVisitToAppointment).toList();
 	}
 
 	/**
@@ -333,7 +335,7 @@ public class AppointmentService {
 		}
 
 		// Restituisci il primo (rappresentativo della serie)
-		return appointmentMapper.toDto(savedAppointments.get(0));
+		return mapVisitToAppointment(savedAppointments.get(0));
 	}
 
 	/**
@@ -359,7 +361,7 @@ public class AppointmentService {
 		appointmentMapper.updateEntity(entity, dto, therapeuticPlan, appointmentType, nurse);
 		AppointmentEntity savedEntity = appointmentRepository.save(entity);
 
-		return appointmentMapper.toDto(savedEntity);
+		return mapVisitToAppointment(savedEntity);
 	}
 
 	/**

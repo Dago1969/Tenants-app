@@ -1,12 +1,15 @@
 
-import { Component, ViewChild, OnInit } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import { CommonModule } from '@angular/common';
+import { Component, DestroyRef, ViewChild, OnInit } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, RouterLink, RouterOutlet } from '@angular/router';
 import { SearchField, SearchPageComponent, SearchPrintSection } from '../../shared/search-page.component';
 import { AuthService } from '../../core/auth.service';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { t } from '../../i18n/messages';
 
 /**
  * Pagina di ricerca dei piani terapeutici con wizard popup su route figlia.
@@ -14,7 +17,7 @@ import { of } from 'rxjs';
 @Component({
   selector: 'app-therapeutic-plans-search',
   standalone: true,
-  imports: [SearchPageComponent, RouterOutlet],
+  imports: [CommonModule, SearchPageComponent, RouterLink, RouterOutlet],
   template: `
     <app-search-page
       #searchPage
@@ -32,7 +35,13 @@ import { of } from 'rxjs';
       [printSections]="printSections"
       [autoSearch]="true"
       [fixedParams]="getFixedParams()"
-    />
+      [routeQueryParams]="patientQueryParams"
+    >
+      <span search-header-action *ngIf="patientQueryParams['patientId']">
+        {{ patientScopeLabel }}: #{{ patientQueryParams['patientId'] }}
+        <a routerLink="/therapeutic-plans/search" [queryParams]="{}">{{ allPlansLabel }}</a>
+      </span>
+    </app-search-page>
 
     <router-outlet (deactivate)="refreshAfterWizardClose()"></router-outlet>
   `
@@ -49,6 +58,9 @@ export class TherapeuticPlansSearchComponent implements OnInit {
   manageRouteBase = '/therapeutic-plans/manage';
   manageActionLabelKey = 'therapeuticPlan.manage.action';
   fixedParams: Record<string, string> = {};
+  patientQueryParams: Record<string, string> = {};
+  patientScopeLabel = t('therapeuticPlan.search.patientScope');
+  allPlansLabel = t('therapeuticPlan.search.allPlans');
 
   filters: SearchField[] = [];
   patientOptions: { value: string; label: string }[] = [];
@@ -57,7 +69,9 @@ export class TherapeuticPlansSearchComponent implements OnInit {
 
   constructor(
     private readonly authService: AuthService,
-    private readonly http: HttpClient
+    private readonly http: HttpClient,
+    private readonly route: ActivatedRoute,
+    private readonly destroyRef: DestroyRef
   ) {
     const projectCode = this.authService.getSelectedProject();
     if (projectCode) {
@@ -66,6 +80,15 @@ export class TherapeuticPlansSearchComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.route.queryParamMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const patientId = params.get('patientId');
+      this.patientQueryParams = patientId !== null ? { patientId } : {};
+      const projectCode = this.authService.getSelectedProject();
+      this.fixedParams = {
+        ...(projectCode ? { projectCode } : {}),
+        ...this.patientQueryParams
+      };
+    });
     this.updateFilters();
 
     this.http.get<any[]>(`${environment.apiBaseUrl}/patients`)
