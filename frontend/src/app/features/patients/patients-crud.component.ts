@@ -175,7 +175,7 @@ export class PatientsCrudComponent implements OnInit {
       folder: 'medical',
       columnSpan: 2,
       // Ricerca i dipartimenti nell'overview QTMDB per la struttura selezionata
-      optionsEndpoint: 'hospitals/departments/overview?regionCode={clinicalRegionCode}&aslCode={aslCode}&hospitalCode={hospitalCode}',
+      optionsEndpoint: 'hospitals/departments/overview?regionCode={clinicalRegionCode}&aslCode={aslCode}&hospitalCode={hospitalCode}&importedOnly=true',
       optionValueKey: 'id',
       optionLabelKey: 'descrizioneDisciplina',
       resetFieldsOnChange: ['prescribingSpecialist']
@@ -358,7 +358,7 @@ export class PatientsCrudComponent implements OnInit {
           key: 'departmentId',
           labelKey: 'patients.field.departmentId',
           type: 'select',
-          optionsEndpoint: 'hospitals/departments/overview?regionCode={clinicalRegionCode}&aslCode={aslCode}&hospitalCode={hospitalCode}',
+          optionsEndpoint: 'hospitals/departments/overview?regionCode={clinicalRegionCode}&aslCode={aslCode}&hospitalCode={hospitalCode}&importedOnly=true',
           optionValueKey: 'id',
           optionLabelKey: 'descrizioneDisciplina',
           resetFieldsOnChange: ['prescribingSpecialist']

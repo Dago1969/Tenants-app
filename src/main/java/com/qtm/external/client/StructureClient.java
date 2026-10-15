@@ -37,12 +37,14 @@ public class StructureClient {
             String regionCode,
             String aslCode,
             String structureCode,
+            boolean importedOnly,
             String selectedRole
     ) {
         var uri = UriComponentsBuilder.fromUriString(dashboardApiBaseUrl + "/structure-departments/overview")
                 .queryParamIfPresent("regionCode", Optional.ofNullable(regionCode))
                 .queryParamIfPresent("aslCode", Optional.ofNullable(aslCode))
                 .queryParamIfPresent("structureCode", Optional.ofNullable(structureCode))
+                .queryParam("importedOnly", importedOnly)
                 .build()
                 .toUri();
 
